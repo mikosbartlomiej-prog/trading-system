@@ -1,0 +1,31 @@
+name: Price Monitor — Momentum Breakout
+
+on:
+  schedule:
+    # Co 5 minut podczas sesji giełdowej (9:30-16:00 ET = 13:30-20:00 UTC)
+    # Poniedziałek-Piątek
+    - cron: '*/5 13-20 * * 1-5'
+  # Możliwość ręcznego uruchomienia z GitHuba
+  workflow_dispatch:
+
+jobs:
+  check-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r price-monitor/requirements.txt
+
+      - name: Run price monitor (single check)
+        env:
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+        run: python price-monitor/monitor.py --once

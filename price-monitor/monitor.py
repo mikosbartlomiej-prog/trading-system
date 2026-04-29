@@ -149,18 +149,24 @@ def run_checks():
 # ─── Start ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    import sys
+
+    once_mode = "--once" in sys.argv  # GitHub Actions odpala jednorazowo
+
     print("=" * 55)
     print("  Momentum Breakout Monitor — start")
+    print(f"  Tryb: {'jednorazowy (GitHub Actions)' if once_mode else 'ciagly (lokalny)'}")
     print(f"  Tickery: {', '.join(TICKERS)}")
     print(f"  Worker URL: {CLOUDFLARE_WORKER_URL}")
     print("=" * 55 + "\n")
 
-    # Pierwsze sprawdzenie od razu
-    run_checks()
-
-    # Harmonogram: co 5 minut
-    schedule.every(5).minutes.do(run_checks)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+    if once_mode:
+        # GitHub Actions: jedno sprawdzenie i koniec
+        run_checks()
+    else:
+        # Tryb lokalny: nieskonczona petla co 5 minut
+        run_checks()
+        schedule.every(5).minutes.do(run_checks)
+        while True:
+            schedule.run_pending()
+            time.sleep(30)
