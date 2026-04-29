@@ -1,17 +1,16 @@
 """
-Momentum Breakout Price Monitor
+Momentum Breakout Price Monitor — Finnhub edition
 Strategia: cena przebija 20-dniowe maksimum + wolumen + RSI
 Wysyla alerty do Cloudflare Worker co 5 minut podczas sesji gieldowej
 """
 
 import os
+import sys
 import time
-import json
 import requests
 import schedule
 import pytz
-import yfinance as yf
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
 
@@ -20,35 +19,73 @@ CLOUDFLARE_WORKER_URL = os.environ.get(
     "https://tradingview-proxy.mikosbartlomiej.workers.dev"
 )
 
-# Tickery do monitorowania (zgodne z tickers-whitelist.md w repo)
+FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
+
+# Tickery do monitorowania
 TICKERS = ["AAPL", "MSFT", "GOOGL", "NVDA", "SPY"]
 
-# Rozmiar pojedynczego trade (USD) — zgodnie z CLAUDE.md max 5% equity
+# Rozmiar pojedynczego trade (USD)
 SIZE_USD = 500
 
-# ─── Funkcje pomocnicze ──────────────────────────────────────────────────────
+# ─── Finnhub API ─────────────────────────────────────────────────────────────
 
-def is_market_open():
-    """Sprawdza czy gielda US jest otwarta"""
-    et = pytz.timezone("America/New_York")
-    now = datetime.now(et)
-    # Weekend
-    if now.weekday() >= 5:
-        return False
-    # Godziny sesji: 9:30 - 16:00 ET
-    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
-    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
-    return market_open <= now <= market_close
+def finnhub_get(endpoint, params):
+    """Wywoluje Finnhub API"""
+    params["token"] = FINNHUB_API_KEY
+    response = requests.get(
+        f"https://finnhub.io/api/v1{endpoint}",
+        params=params,
+        timeout=15,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
-def calculate_rsi(series, period=14):
+def get_candles(ticker, days=30):
+    """Pobiera dane OHLCV za ostatnie N dni"""
+    now = int(datetime.now().timestamp())
+    from_ts = int((datetime.now() - timedelta(days=days + 5)).timestamp())
+
+    data = finnhub_get("/stock/candle", {
+        "symbol": ticker,
+        "resolution": "D",
+        "from": from_ts,
+        "to": now,
+    })
+
+    if data.get("s") != "ok" or not data.get("c"):
+        return None
+
+    return {
+        "close":  data["c"],
+        "high":   data["h"],
+        "low":    data["l"],
+        "open":   data["o"],
+        "volume": data["v"],
+        "time":   data["t"],
+    }
+
+
+# ─── Wskazniki techniczne ────────────────────────────────────────────────────
+
+def calculate_rsi(closes, period=14):
     """Oblicza RSI"""
-    delta = series.diff()
-    gain = delta.where(delta > 0, 0).rolling(period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
-    rs = gain / loss
+    if len(closes) < period + 1:
+        return None
+    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+    gains = [d if d > 0 else 0 for d in deltas]
+    losses = [-d if d < 0 else 0 for d in deltas]
+
+    avg_gain = sum(gains[-period:]) / period
+    avg_loss = sum(losses[-period:]) / period
+
+    if avg_loss == 0:
+        return 100
+    rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
 
+
+# ─── Strategia ───────────────────────────────────────────────────────────────
 
 def check_momentum_breakout(ticker):
     """
@@ -56,52 +93,49 @@ def check_momentum_breakout(ticker):
     1. Cena dzisiaj > najwyzsze 20 dni (breakout)
     2. Wolumen dzisiaj > 1.5x sredni wolumen 20 dni (potwierdzenie)
     3. RSI(14) w przedziale 50-70 (momentum ale nie wykupiony)
-
-    Zwraca slownik alertu lub None jesli brak sygnalu.
     """
     try:
-        data = yf.download(ticker, period="30d", interval="1d", progress=False, auto_adjust=True)
-
-        if len(data) < 22:
-            print(f"  {ticker}: za malo danych ({len(data)} dni)")
+        candles = get_candles(ticker, days=35)
+        if not candles or len(candles["close"]) < 22:
+            print(f"  {ticker}: za malo danych ({len(candles['close']) if candles else 0} dni)")
             return None
 
-        current_price = float(data["Close"].iloc[-1])
-        current_volume = float(data["Volume"].iloc[-1])
+        closes  = candles["close"]
+        highs   = candles["high"]
+        volumes = candles["volume"]
 
-        # 20-dniowe maksimum (bez dzisiejszego dnia)
-        high_20d = float(data["High"].iloc[-21:-1].max())
+        current_price  = closes[-1]
+        current_volume = volumes[-1]
 
-        # Sredni wolumen 20 dni (bez dzisiejszego)
-        avg_volume = float(data["Volume"].iloc[-21:-1].mean())
+        # 20-dniowe max i sredni wolumen (bez dzisiaj)
+        high_20d   = max(highs[-21:-1])
+        avg_volume = sum(volumes[-21:-1]) / 20
 
         # RSI
-        rsi_series = calculate_rsi(data["Close"])
-        current_rsi = float(rsi_series.iloc[-1])
+        current_rsi = calculate_rsi(closes)
 
-        # Warunki breakout
+        # Warunki
         price_breakout = current_price > high_20d
-        volume_ok = current_volume > avg_volume * 1.5
-        rsi_ok = 50 <= current_rsi <= 70
+        volume_ok      = current_volume > avg_volume * 1.5
+        rsi_ok         = current_rsi is not None and 50 <= current_rsi <= 70
 
         print(
             f"  {ticker}: cena={current_price:.2f} high20d={high_20d:.2f} "
-            f"vol_ratio={current_volume/avg_volume:.2f}x RSI={current_rsi:.1f} "
+            f"vol_ratio={current_volume/avg_volume:.2f}x RSI={current_rsi:.1f if current_rsi else 'N/A'} "
             f"| breakout={price_breakout} vol={volume_ok} rsi={rsi_ok}"
         )
 
         if price_breakout and volume_ok and rsi_ok:
-            stop_loss = round(current_price * 0.97, 2)   # SL: -3%
-            take_profit = round(current_price * 1.05, 2)  # TP: +5% => R:R ~1.67
-
+            stop_loss   = round(current_price * 0.97, 2)
+            take_profit = round(current_price * 1.05, 2)
             return {
-                "symbol": ticker,
-                "action": "BUY",
-                "strategy": "momentum-breakout",
-                "price": round(current_price, 2),
-                "stop_loss": stop_loss,
+                "symbol":     ticker,
+                "action":     "BUY",
+                "strategy":   "momentum-breakout",
+                "price":      round(current_price, 2),
+                "stop_loss":  stop_loss,
                 "take_profit": take_profit,
-                "size_usd": SIZE_USD,
+                "size_usd":   SIZE_USD,
             }
 
     except Exception as e:
@@ -109,6 +143,8 @@ def check_momentum_breakout(ticker):
 
     return None
 
+
+# ─── Wysylanie alertu ────────────────────────────────────────────────────────
 
 def send_alert(alert):
     """Wysyla alert do Cloudflare Worker"""
@@ -125,7 +161,17 @@ def send_alert(alert):
         return False
 
 
-# ─── Glowna petla sprawdzajaca ───────────────────────────────────────────────
+# ─── Glowna petla ────────────────────────────────────────────────────────────
+
+def is_market_open():
+    et = pytz.timezone("America/New_York")
+    now = datetime.now(et)
+    if now.weekday() >= 5:
+        return False
+    market_open  = now.replace(hour=9,  minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0,  second=0, microsecond=0)
+    return market_open <= now <= market_close
+
 
 def run_checks():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -139,9 +185,9 @@ def run_checks():
     for ticker in TICKERS:
         alert = check_momentum_breakout(ticker)
         if alert:
-            print(f"  🚀 SYGNAŁ BREAKOUT: {ticker}!")
+            print(f"  SYGNAL BREAKOUT: {ticker}!")
             send_alert(alert)
-        time.sleep(1)  # rate limiting yfinance
+        time.sleep(1)
 
     print(f"  Nastepne sprawdzenie za 5 minut.\n")
 
@@ -149,9 +195,7 @@ def run_checks():
 # ─── Start ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import sys
-
-    once_mode = "--once" in sys.argv  # GitHub Actions odpala jednorazowo
+    once_mode = "--once" in sys.argv
 
     print("=" * 55)
     print("  Momentum Breakout Monitor — start")
@@ -160,11 +204,13 @@ if __name__ == "__main__":
     print(f"  Worker URL: {CLOUDFLARE_WORKER_URL}")
     print("=" * 55 + "\n")
 
+    if not FINNHUB_API_KEY:
+        print("BLAD: Brak FINNHUB_API_KEY w zmiennych srodowiskowych!")
+        sys.exit(1)
+
     if once_mode:
-        # GitHub Actions: jedno sprawdzenie i koniec
         run_checks()
     else:
-        # Tryb lokalny: nieskonczona petla co 5 minut
         run_checks()
         schedule.every(5).minutes.do(run_checks)
         while True:
