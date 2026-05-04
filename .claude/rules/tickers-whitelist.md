@@ -20,3 +20,9 @@ BTC/USD, ETH/USD
 - Penny stocks — brak płynności
 - Lewarowane ETF (TQQQ, SOXL) — zbyt ryzykowne
 - Małe biotechs — ryzyko earnings
+
+## Spółki obronne (geopolitical strategy)
+RTX, LMT, NOC, LHX, GD
+
+## Energia (geopolitical strategy)
+XOM, CVX
