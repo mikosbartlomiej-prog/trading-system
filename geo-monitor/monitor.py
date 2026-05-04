@@ -93,7 +93,7 @@ def fetch_finnhub_news() -> list[dict]:
             timeout=10,
         )
         items = resp.json() if resp.ok else []
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
         result = []
         for item in items:
             ts = datetime.fromtimestamp(item.get("datetime", 0), tz=timezone.utc)
@@ -105,6 +105,7 @@ def fetch_finnhub_news() -> list[dict]:
                     "source":  item.get("source", "Finnhub"),
                     "time":    ts.isoformat(),
                 })
+        print(f"  Finnhub: {len(result)} newsów (ostatnie 24h)")
         return result
     except Exception as e:
         print(f"  Finnhub error: {e}")
@@ -116,7 +117,7 @@ def fetch_newsapi(query: str) -> list[dict]:
     if not NEWSAPI_KEY:
         return []
     try:
-        from_time = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        from_time = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
         resp = requests.get(
             "https://newsapi.org/v2/everything",
             params={
@@ -139,6 +140,7 @@ def fetch_newsapi(query: str) -> list[dict]:
                 "source":  item.get("source", {}).get("name", "NewsAPI"),
                 "time":    item.get("publishedAt", ""),
             })
+        print(f"  NewsAPI: {len(result)} newsów (ostatnie 24h, status: {data.get('status')})")
         return result
     except Exception as e:
         print(f"  NewsAPI error: {e}")
@@ -148,10 +150,11 @@ def fetch_newsapi(query: str) -> list[dict]:
 def fetch_rss_feeds() -> list[dict]:
     """Pobiera newsy z RSS feedów"""
     result = []
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
     for url in RSS_FEEDS:
         try:
             feed = feedparser.parse(url)
+            count_before = len(result)
             for entry in feed.entries[:20]:
                 pub = entry.get("published_parsed")
                 if pub:
@@ -165,6 +168,7 @@ def fetch_rss_feeds() -> list[dict]:
                     "source":  feed.feed.get("title", url),
                     "time":    entry.get("published", ""),
                 })
+            print(f"  RSS {feed.feed.get('title', url)[:40]}: {len(result) - count_before} newsów")
         except Exception as e:
             print(f"  RSS error ({url}): {e}")
     return result
