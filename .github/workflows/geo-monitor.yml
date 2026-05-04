@@ -1,0 +1,33 @@
+name: Geopolitical News Monitor
+
+on:
+  schedule:
+    # Co 15 minut podczas sesji giełdowej (9:00-17:00 ET = 13:00-21:00 UTC)
+    # Poniedziałek-Piątek
+    - cron: '*/15 13-21 * * 1-5'
+  # Ręczne uruchomienie
+  workflow_dispatch:
+
+jobs:
+  scan-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r geo-monitor/requirements.txt
+
+      - name: Run geopolitical scan
+        env:
+          FINNHUB_API_KEY:         ${{ secrets.FINNHUB_API_KEY }}
+          NEWSAPI_KEY:             ${{ secrets.NEWSAPI_KEY }}
+          CLOUDFLARE_GEO_WORKER_URL: ${{ secrets.CLOUDFLARE_GEO_WORKER_URL }}
+        run: python geo-monitor/monitor.py
