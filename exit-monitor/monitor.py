@@ -95,7 +95,7 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
     # Znajdź zlecenie otwierające (najnowsze fill dla tego symbolu)
     strategy = "unknown"
     entry_time = None
-    for order in sorted(orders, key=lambda o: o.get("filled_at", ""), reverse=True):
+    for order in sorted(orders, key=lambda o: o.get("filled_at") or "", reverse=True):
         if order.get("symbol") == symbol and order.get("filled_at"):
             client_id = order.get("client_order_id", "")
             # Format: strategy-TICKER-timestamp
