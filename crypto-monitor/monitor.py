@@ -52,6 +52,8 @@ def get_crypto_bars(symbol: str, limit: int = 50) -> list[dict]:
     Pobiera 1h świece dla symbolu crypto.
     Alpaca używa 'BTC/USD' w parametrach jako 'BTCUSD'.
     """
+    # Pobierz 5 dni historii (120h świec 1h = wystarczy na RSI i 20-świecowe max/min)
+    start = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         data = alpaca_data_get(
             "/v1beta3/crypto/us/bars",
@@ -59,6 +61,7 @@ def get_crypto_bars(symbol: str, limit: int = 50) -> list[dict]:
                 "symbols":   symbol,   # BTC/USD — ze ukośnikiem
                 "timeframe": "1Hour",
                 "limit":     limit,
+                "start":     start,
                 "sort":      "asc",
             }
         )
