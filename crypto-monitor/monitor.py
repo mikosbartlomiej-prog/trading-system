@@ -168,7 +168,7 @@ def check_crypto_signal(symbol: str) -> dict | None:
 
     print(
         f"  {symbol}: {current_price:.2f} | high20={high_20:.2f} low20={low_20:.2f} "
-        f"RSI={rsi:.1f if rsi else 'N/A'} vol={current_volume/avg_vol:.1f}x — brak sygnału"
+        f"RSI={f'{rsi:.1f}' if rsi else 'N/A'} vol={current_volume/avg_vol:.1f}x — brak sygnału"
     )
     return None
 
