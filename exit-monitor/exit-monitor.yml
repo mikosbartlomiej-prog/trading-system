@@ -1,0 +1,35 @@
+name: Exit Monitor — Hourly Position Check
+
+on:
+  schedule:
+    # Co godzinę podczas sesji giełdowej (9:30-16:30 ET = 13:30-20:30 UTC)
+    # + godzina przed/po na crypto i pre/after-market pozycje
+    - cron: '30 12-21 * * 1-5'
+    # Crypto: dodatkowo w nocy co 2h (22:00, 00:00, 02:00 UTC)
+    - cron: '0 22,0,2 * * *'
+  # Ręczne uruchomienie (do testów)
+  workflow_dispatch:
+
+jobs:
+  check-positions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r exit-monitor/requirements.txt
+
+      - name: Run exit monitor
+        env:
+          ALPACA_API_KEY:           ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:        ${{ secrets.ALPACA_SECRET_KEY }}
+          CLOUDFLARE_EXIT_WORKER_URL: ${{ secrets.CLOUDFLARE_EXIT_WORKER_URL }}
+        run: python exit-monitor/monitor.py

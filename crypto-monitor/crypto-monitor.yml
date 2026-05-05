@@ -1,0 +1,34 @@
+name: Crypto Monitor — BTC/ETH 24/7
+
+on:
+  schedule:
+    # Co 30 minut — 24/7 (włącznie z weekendami)
+    # GitHub Actions nie obsługuje */30 bezpośrednio dla weekendów — używamy dwóch cron-ów
+    - cron: '0 * * * *'    # co godzinę (pełna godzina)
+    - cron: '30 * * * *'   # co godzinę (połowa godziny)
+  # Ręczne uruchomienie
+  workflow_dispatch:
+
+jobs:
+  scan-crypto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r crypto-monitor/requirements.txt
+
+      - name: Run crypto scan
+        env:
+          ALPACA_API_KEY:           ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:        ${{ secrets.ALPACA_SECRET_KEY }}
+          CLOUDFLARE_CRYPTO_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_WORKER_URL }}
+        run: python crypto-monitor/monitor.py

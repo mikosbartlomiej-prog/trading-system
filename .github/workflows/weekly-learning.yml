@@ -1,0 +1,32 @@
+name: Weekly Learning Loop — Strategy Updater
+
+on:
+  schedule:
+    # Niedziela 20:00 UTC (16:00 ET) — po zakończeniu tygodnia giełdowego
+    - cron: '0 20 * * 0'
+  # Ręczne uruchomienie (do testów)
+  workflow_dispatch:
+
+jobs:
+  analyze-and-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r learning-loop/requirements.txt
+
+      - name: Run weekly trade analysis
+        env:
+          ALPACA_API_KEY:              ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:           ${{ secrets.ALPACA_SECRET_KEY }}
+          CLOUDFLARE_LEARNING_WORKER_URL: ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
+        run: python learning-loop/analyzer.py
