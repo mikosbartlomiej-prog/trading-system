@@ -1,88 +1,54 @@
 # Strategia: Reddit Sentiment Trading
 
 ## Opis
-Strategia oparta na wykrywaniu anomalii sentymentu na Reddit — spike wzmianek
-tickera (3x dzienna średnia z 7 dni) połączony z postem Due Diligence od
-wiarygodnego użytkownika. Subreddity: r/wallstreetbets, r/investing, r/stocks.
+Wykrywanie spike wzmianek (3x 7d avg) + post DD od wiarygodnego usera.
+Subreddity: r/wallstreetbets, r/investing, r/stocks.
+
+**Cel ekspozycji:** max $2,000 w pozycjach reddit jednocześnie
+
+---
 
 ## Warunki wejścia
 
 ### Sygnał SPIKE+DD (BUY momentum)
 Warunki ALL:
-- Wzmianka tickera w ostatnich 24h >= 3x dzienna średnia z ostatnich 7 dni
-- Istnieje post DD (flair lub tytuł zawiera: "dd", "due diligence", "analysis",
-  "deep dive", "research", "thesis") dotyczący tego tickera
-- Autor DD posta spełnia kryteria wiarygodności:
-  - r/wallstreetbets: karma >= 5000, wiek konta >= 180 dni
-  - r/investing, r/stocks: karma >= 1000, wiek konta >= 180 dni
-- Ticker na whitelist (AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA, JPM,
-  V, MA, JNJ, SPY, QQQ, XLE, XLK, GLD, RTX, LMT, NOC, XOM, CVX)
-- VIX < 30 (Reddit hype + wysoka zmienność = zbyt ryzykowne)
+- Spike >= 3x dzienna średnia z 7 dni
+- Post DD od autora: karma >= 5000 (WSB) / 1000 (inne), wiek >= 180 dni
+- Ticker na whitelist
+- VIX < **40** (poprzednio 30)
 - Rynki otwarte
 
 ### Kierunek
-- Sygnał ze spike + DD → zawsze BUY (momentum, nie kontrariańskie)
+- Zawsze BUY (momentum, nie kontrariańskie)
+
+---
 
 ## Parametry zlecenia
-- size_usd: 200 (mniejszy niż momentum/geo — sygnał mniej wiarygodny)
-- stop_loss: -3% (szerszy SL — retail momentum może trwać)
-- take_profit: +5% (R:R = 1.67)
-- order_type: LIMIT
-- time_in_force: DAY
+
+- `size_usd`: **1,000** (poprzednio 200)
+- `stop_loss`: **−4%** (poprzednio −3%)
+- `take_profit`: **+7%** (poprzednio +5%)
+- `order_type`: LIMIT
+- `time_in_force`: DAY
+- R:R = 1.75
+
+---
 
 ## Zasady risk management
-- Maksymalnie 1 pozycja Reddit jednocześnie (nie stackujemy hype'u)
-- Nie otwieramy nowych pozycji gdy dzienna strata > -2%
-- Jeśli VIX > 30 → tylko raport, żadnych zleceń
-- Nie handlujemy tickerami, które nie są na whitelist
-- WSB hype na spółkę obronną (RTX, LMT) → wymagane dodatkowe potwierdzenie
-  z geo-monitora lub momentum systemu
 
-## Walidacja przez risk-officer
-Risk-officer sprawdza:
-1. Ticker na whitelist?
-2. size_usd <= 200?
-3. SL max -3%?
-4. Nie więcej niż 1 otwarta pozycja reddit?
-5. VIX < 30?
-6. Spike ratio >= 3.0?
-7. DD post od zweryfikowanego autora?
-8. Strategia udokumentowana w strategies/reddit-sentiment.md? ✓
+- Maksymalnie **2 pozycje Reddit** jednocześnie (poprzednio 1)
+- Nie otwieramy gdy dzienna strata > −3%
+- VIX > 40 → stop
 
-## Źródła sygnałów
-- GitHub Actions reddit-monitor co 6h (7:00, 13:00, 16:00, 20:00 UTC)
-- Reddit API: r/wallstreetbets, r/investing, r/stocks
-- Tylko hot posty (ostatnie 24h)
-- Ticker extraction: $TICKER format + whitelist matching
+---
 
-## Format alertu (payload JSON)
-```json
-{
-  "type": "reddit_sentiment_alert",
-  "timestamp": "...",
-  "signals": [
-    {
-      "ticker": "NVDA",
-      "subreddit": "wallstreetbets",
-      "mentions_24h": 18,
-      "daily_avg_7d": 4.2,
-      "spike_ratio": 4.3,
-      "signal_type": "SPIKE+DD",
-      "dd_posts": [
-        {
-          "title": "NVDA DD — why this rally has legs",
-          "author": "...",
-          "score": 1240,
-          "url": "https://reddit.com/...",
-          "reason": "karma=12500, age=420d"
-        }
-      ]
-    }
-  ]
-}
-```
+## Tickery (whitelist)
+AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA, JPM, V, MA, JNJ, SPY, QQQ, XLE, XLK, GLD, RTX, LMT, NOC, XOM, CVX
+
+---
 
 ## Historia i wyniki
-| Data       | Ticker | Subreddit       | Spike | Wynik | Notatka                    |
-|------------|--------|-----------------|-------|-------|----------------------------|
-| —          | —      | —               | —     | —     | System w trakcie budowy — czeka na Reddit API |
+
+| Data | Ticker | Subreddit | Spike | Wynik | Notatka |
+|------|--------|-----------|-------|-------|---------|
+| —    | —      | —         | —     | —     | Czeka na Reddit API |

@@ -1,9 +1,10 @@
 # Strategia: Leveraged ETF Trading (3x)
 
 ## Opis
-Handel lewarowanymi ETF-ami (3x amplituda) jako sposób na szybkie,
-duże zyski przy relatywnie prostej logice. Mniejsze pozycje ze względu
-na 3x zmienność. Podążamy za trendem, nigdy przeciwko niemu.
+Handel lewarowanymi ETF-ami (3x amplituda). Cel: szybkie duże ruchy.
+Mniejszy SL tolerance ze względu na decay, ale większe rozmiary pozycji.
+
+**Cel ekspozycji:** max $4,500 w lewarowanych ETF jednocześnie
 
 ---
 
@@ -15,56 +16,43 @@ na 3x zmienność. Podążamy za trendem, nigdy przeciwko niemu.
 | SQQQ   | -3x QQQ (short)   | LONG     | QQQ w downtrend, RSI QQQ < 35         |
 | SPXL   | 3x SPY (S&P 500)  | LONG     | SPY breakout z 20d high               |
 | SPXS   | -3x SPY (short)   | LONG     | SPY poniżej 20d low, RSI < 38         |
-| UPRO   | 3x SPY alternatyw | LONG     | Silny SPY uptrend (backup dla SPXL)   |
-
-**Uwaga:** Zawsze kupujemy (BUY) — nigdy shortujemy lewarowanych ETF
-(podwójny lewar = ekstremalnie ryzykowne). SQQQ/SPXS to gotowe shorty.
+| UPRO   | 3x SPY alternatyw | LONG     | Silny SPY uptrend                     |
 
 ---
 
 ## Warunki wejścia
 
 ### Bullish (TQQQ, SPXL, UPRO)
-- Indeks bazowy (QQQ/SPY) > 20-dniowe max (breakout)
+- Indeks bazowy > 20-dniowe max (breakout)
 - RSI indeksu bazowego: 50–68
-- Wolumen TQQQ/SPXL > 1.3x średnia 10d (wystarczy mniejszy próg)
-- VIX < 25 (lewarowane ETF wymagają spokojnego rynku)
+- VIX < **35** (poprzednio 25 — teraz agresywniej)
 
 ### Bearish (SQQQ, SPXS)
-- Indeks bazowy poniżej 20-dniowego min (breakdown)
+- Indeks bazowy poniżej 20-dniowego min
 - RSI indeksu bazowego < 38
-- VIX < 40 (poniżej paniki — przy VIX > 40 rynek może odwrócić się błyskawicznie)
+- VIX < 40
 
 ---
 
 ## Parametry zlecenia
 
-- `size_usd`: 300 (mniejszy niż zwykłe akcje — 3x volatility)
-- `stop_loss`: −4% od ceny wejścia (lewarowane mogą się szybko odwrócić)
-- `take_profit`: +8% od ceny wejścia (R:R = 2.0)
+- `size_usd`: **1,500** (poprzednio 300)
+- `stop_loss`: −4% od ceny wejścia
+- `take_profit`: **+12%** od ceny wejścia (poprzednio +8%)
 - `order_type`: LIMIT
 - `time_in_force`: DAY
-- Maksymalny czas trzymania: 2 dni (lewarowane tracą na decay przy bocznym rynku)
+- R:R = 3.0
+- Maksymalny czas trzymania: 2 dni
 
 ---
 
 ## Zasady risk management
 
-- Maksymalnie 2 pozycje lewarowane ETF jednocześnie
-- Nigdy TQQQ + SQQQ jednocześnie (hedge = brak sensu)
+- Maksymalnie **3 pozycje** lewarowane jednocześnie
+- Nigdy TQQQ + SQQQ jednocześnie
 - Nigdy SPXL + SPXS jednocześnie
-- Wymagany VIX < 25 dla bullish, < 40 dla bearish
-- Jeśli ETF trzymany > 48h bez ruchu → zamknij (decay kosztuje)
-- Nie łączymy z pozycją short na tym samym indeksie (QQQ short + SQQQ = duplikacja)
-
----
-
-## Monitoring exit (specjalny)
-
-Exit monitor co godzinę sprawdza:
-- Zysk > +5% → rozważ częściowe zamknięcie (trailing stop)
-- Strata > −3% → zamknij (szybciej niż normalny SL — 3x decay)
-- ETF trzymany > 2 dni → zamknij niezależnie od P&L
+- ETF trzymany > 48h bez ruchu → zamknij (decay)
+- VIX > 35 dla bullish, > 40 dla bearish → stop
 
 ---
 
@@ -72,4 +60,4 @@ Exit monitor co godzinę sprawdza:
 
 | Data | Ticker | Kierunek | Entry | Exit | P&L% | Sygnał | Notatka |
 |------|--------|----------|-------|------|------|--------|---------|
-| —    | —      | —        | —     | —    | —    | —      | Strategia aktywowana 05.05.2026 |
+| —    | —      | —        | —     | —    | —    | —      | Parametry zaktualizowane 05.05.2026 |

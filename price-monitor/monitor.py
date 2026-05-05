@@ -28,10 +28,10 @@ TICKERS_SHORT = ["AAPL", "MSFT", "GOOGL", "NVDA", "META", "TSLA", "AMZN"]
 # Lewarowane ETF — trackujemy osobno
 TICKERS_LEVERAGED = ["TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO"]
 
-# Rozmiary pozycji
-SIZE_LONG      = 600   # USD — long momentum
-SIZE_SHORT     = 400   # USD — short (mniejszy bo wyzsze ryzyko)
-SIZE_LEVERAGED = 300   # USD — lewarowane ETF (mniejszy ze wzgledu na 3x)
+# Rozmiary pozycji — AGGRESSIVE
+SIZE_LONG      = 3000  # USD — long momentum
+SIZE_SHORT     = 2000  # USD — short
+SIZE_LEVERAGED = 1500  # USD — lewarowane ETF
 
 # ─── Finnhub API ─────────────────────────────────────────────────────────────
 

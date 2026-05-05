@@ -19,11 +19,18 @@ CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_CRYPTO_WORKER_URL", "")
 
 CRYPTO_SYMBOLS = ["BTC/USD", "ETH/USD"]
 
-# Rozmiary pozycji (weekendy = połowa)
-SIZE_LONG_WEEKDAY  = 250
-SIZE_SHORT_WEEKDAY = 200
-SIZE_LONG_WEEKEND  = 125
-SIZE_SHORT_WEEKEND = 100
+# Rozmiary pozycji — AGGRESSIVE + limit dolarowy zamiast liczbowego
+SIZE_BTC_LONG_WEEKDAY  = 2000
+SIZE_BTC_SHORT_WEEKDAY = 1500
+SIZE_ETH_LONG_WEEKDAY  = 1000
+SIZE_ETH_SHORT_WEEKDAY = 800
+SIZE_BTC_LONG_WEEKEND  = 1000
+SIZE_BTC_SHORT_WEEKEND = 750
+SIZE_ETH_LONG_WEEKEND  = 500
+SIZE_ETH_SHORT_WEEKEND = 400
+
+# Limit dolarowy całkowitej ekspozycji crypto
+CRYPTO_MAX_EXPOSURE_USD = 8000
 
 # Progi sygnałów
 RSI_LONG_MIN  = 45
@@ -125,15 +132,20 @@ def check_crypto_signal(symbol: str) -> dict | None:
     rsi = calculate_rsi(closes)
 
     weekend = is_weekend()
-    size_long  = SIZE_LONG_WEEKEND  if weekend else SIZE_LONG_WEEKDAY
-    size_short = SIZE_SHORT_WEEKEND if weekend else SIZE_SHORT_WEEKDAY
+    is_btc = "BTC" in symbol
+    if is_btc:
+        size_long  = SIZE_BTC_LONG_WEEKEND  if weekend else SIZE_BTC_LONG_WEEKDAY
+        size_short = SIZE_BTC_SHORT_WEEKEND if weekend else SIZE_BTC_SHORT_WEEKDAY
+    else:
+        size_long  = SIZE_ETH_LONG_WEEKEND  if weekend else SIZE_ETH_LONG_WEEKDAY
+        size_short = SIZE_ETH_SHORT_WEEKEND if weekend else SIZE_ETH_SHORT_WEEKDAY
 
     # LONG: breakout z 20-świecowego max
     if (current_price > high_20
             and current_volume > avg_vol * 2.0
             and rsi is not None and RSI_LONG_MIN <= rsi <= RSI_LONG_MAX):
-        stop_loss   = round(current_price * 0.96, 2)   # -4%
-        take_profit = round(current_price * 1.08, 2)   # +8%
+        stop_loss   = round(current_price * 0.95, 2)   # -5%
+        take_profit = round(current_price * 1.12, 2)   # +12%
         print(f"  LONG {symbol}: {current_price:.2f} > high20={high_20:.2f}, RSI={rsi:.1f}, vol={current_volume/avg_vol:.1f}x")
         return {
             "symbol":      symbol,
@@ -151,8 +163,8 @@ def check_crypto_signal(symbol: str) -> dict | None:
     if (current_price < low_20
             and current_volume > avg_vol * 1.5
             and rsi is not None and rsi < RSI_SHORT_MAX):
-        stop_loss   = round(current_price * 1.04, 2)   # +4% (short SL powyżej)
-        take_profit = round(current_price * 0.92, 2)   # -8% (short TP poniżej)
+        stop_loss   = round(current_price * 1.05, 2)   # +5% (short SL powyżej)
+        take_profit = round(current_price * 0.88, 2)   # -12% (short TP poniżej)
         print(f"  SHORT {symbol}: {current_price:.2f} < low20={low_20:.2f}, RSI={rsi:.1f}, vol={current_volume/avg_vol:.1f}x")
         return {
             "symbol":      symbol,

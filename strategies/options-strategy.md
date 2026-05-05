@@ -1,92 +1,61 @@
 # Strategia: Options Trading (Calls & Puts)
 
 ## Opis
-Handel opcjami jako lewarowaną ekspozycją — kupujemy calls (zakład na wzrost)
-i puts (zakład na spadek). Maksymalna strata = zapłacona premia.
-Nie wystawiamy nagich opcji (unlimited risk).
+Kupno calls (wzrost) i puts (spadek). Max strata = zapłacona premia.
+Nie wystawiamy nagich opcji.
+
+**Cel ekspozycji:** max $1,500 w opcjach jednocześnie
 
 ---
 
-## Instrument
-
-Alpaca obsługuje opcje na akcje amerykańskie.
-Zawsze kupujemy opcje (long calls / long puts) — nigdy nie wystawiamy.
-
----
-
-## SYGNAŁ CALL (zakład na wzrost)
+## SYGNAŁ CALL
 
 ### Kiedy kupować call
 - Aktywny sygnał momentum LONG na danym tickerze
 - LUB: geo-alert ESKALACJA dla sektora obronnego/energetycznego
-- IV (implied volatility) < 35% — tania premia (nie kupujemy przed earnings!)
-- RSI 45–65 (momentum w toku, jest dokąd rosnąć)
-- 10+ dni do wygaśnięcia opcji (nie handlujemy 0–3 DTE)
+- IV < 35% (tania premia)
+- RSI 45–65
+- 10+ dni do wygaśnięcia
 
 ### Parametry call
-- `strike`: ATM lub 1 strike OTM (nie dalej niż 3% OTM)
-- `expiry`: 14–21 DTE (balans między kosztem a czasem)
-- `size_usd`: 150 (max premia jaką płacimy za 1 kontrakt)
-- `max_contracts`: 1–2 (nie więcej)
-- TP: +80% od ceny premii (2x premia)
-- SL: −50% od ceny premii (nie czekamy na zero)
-
-### Tickery do opcji (CALL)
-AAPL, MSFT, NVDA, GOOGL, META, SPY, QQQ
+- `strike`: ATM lub 1 strike OTM (max 3% OTM)
+- `expiry`: 14–21 DTE
+- `size_usd`: **500** (poprzednio 150)
+- `max_contracts`: 1–2
+- TP: +80% od premii
+- SL: −50% od premii
 
 ---
 
-## SYGNAŁ PUT (zakład na spadek)
+## SYGNAŁ PUT
 
 ### Kiedy kupować put
-- Aktywny sygnał SHORT (RSI > 72, overbought) na danym tickerze
-- LUB: geo-alert DEESKALACJA (QQQ/SPY się cofnie przy euforii)
-- LUB: Reddit extreme hype na tickerze (FOMO = bliska korekta)
-- IV < 45% (puts bywają droższe gdy rynek spada)
-- RSI > 68 lub < 32 (skrajne warunki)
+- Aktywny sygnał SHORT (RSI > 72)
+- LUB: Reddit extreme hype (FOMO = korekta blisko)
+- IV < 45%
 
 ### Parametry put
-- `strike`: ATM lub 1 strike OTM (nie dalej niż 3% OTM)
+- `strike`: ATM lub 1 strike OTM
 - `expiry`: 14–21 DTE
-- `size_usd`: 150
+- `size_usd`: **500** (poprzednio 150)
 - `max_contracts`: 1–2
-- TP: +80% od ceny premii
-- SL: −50% od ceny premii
-
-### Tickery do opcji (PUT)
-AAPL, MSFT, NVDA, TSLA, META, SPY, QQQ
+- TP: +80% od premii
+- SL: −50% od premii
 
 ---
 
 ## Czego UNIKAĆ
-
-- Nigdy nie kupuj opcji dzień przed earnings (IV crush = strata gwarantowana)
-- Nigdy nie kupuj opcji gdy IV > 60% (zbyt drogo)
-- Nigdy 0–3 DTE (gambling, nie trading)
-- Nigdy OTM > 5% od ceny spot
-- Nigdy bez aktywnego sygnału z innego systemu (nie spekulujemy "na czuja")
+- Nigdy dzień przed/po earnings
+- Nigdy IV > 60%
+- Nigdy 0–3 DTE
+- Nigdy OTM > 5% od spot
 
 ---
 
 ## Zasady risk management
-
-- Maksymalnie 2 otwarte pozycje opcyjne jednocześnie
-- Łączny koszt premii nie może przekroczyć $300 w danym dniu
-- SL automatyczny: jeśli opcja traci 50% wartości → zamknij
-- TP automatyczny: jeśli opcja zyska 80% wartości → zamknij połowę
-- Nie trzymamy opcji do wygaśnięcia (roll lub zamknięcie 5 dni przed)
-
----
-
-## Walidacja przez risk-officer
-
-1. Ticker na whitelist opcyjnej?
-2. size_usd <= 150 na kontrakt?
-3. Expiry 14–21 DTE?
-4. Strike ATM lub max 3% OTM?
-5. IV < 45%?
-6. Nie dzień przed/po earnings?
-7. Mniej niż 2 aktywne pozycje opcyjne?
+- Maksymalnie **3 otwarte pozycje** opcyjne
+- Łączny koszt premii max $1,000 w ciągu dnia
+- Nie trzymamy opcji do wygaśnięcia
 
 ---
 
@@ -94,4 +63,4 @@ AAPL, MSFT, NVDA, TSLA, META, SPY, QQQ
 
 | Data | Ticker | Typ | Strike | Expiry | Premia | Wynik | Sygnał | Notatka |
 |------|--------|-----|--------|--------|--------|-------|--------|---------|
-| —    | —      | —   | —      | —      | —      | —     | —      | Strategia aktywowana 05.05.2026 |
+| —    | —      | —   | —      | —      | —      | —     | —      | Parametry zaktualizowane 05.05.2026 |
