@@ -52,21 +52,21 @@ def get_crypto_bars(symbol: str, limit: int = 50) -> list[dict]:
     Pobiera 1h świece dla symbolu crypto.
     Alpaca używa 'BTC/USD' w parametrach jako 'BTCUSD'.
     """
-    alpaca_symbol = symbol.replace("/", "")  # BTC/USD → BTCUSD
     try:
         data = alpaca_data_get(
-            f"/v1beta3/crypto/us/bars",
+            "/v1beta3/crypto/us/bars",
             {
-                "symbols":   alpaca_symbol,
+                "symbols":   symbol,   # BTC/USD — ze ukośnikiem
                 "timeframe": "1Hour",
                 "limit":     limit,
                 "sort":      "asc",
             }
         )
-        # Alpaca może zwrócić symbol z lub bez ukośnika
+        # Klucz w odpowiedzi może być "BTC/USD" lub "BTCUSD"
+        alpaca_symbol_noslash = symbol.replace("/", "")
         bars_data = (
-            data.get("bars", {}).get(alpaca_symbol, [])
-            or data.get("bars", {}).get(symbol, [])
+            data.get("bars", {}).get(symbol, [])
+            or data.get("bars", {}).get(alpaca_symbol_noslash, [])
         )
         return bars_data
     except Exception as e:
