@@ -58,12 +58,16 @@ def get_crypto_bars(symbol: str, limit: int = 50) -> list[dict]:
             f"/v1beta3/crypto/us/bars",
             {
                 "symbols":   alpaca_symbol,
-                "timeframe": "1H",
+                "timeframe": "1Hour",
                 "limit":     limit,
                 "sort":      "asc",
             }
         )
-        bars_data = data.get("bars", {}).get(alpaca_symbol, [])
+        # Alpaca może zwrócić symbol z lub bez ukośnika
+        bars_data = (
+            data.get("bars", {}).get(alpaca_symbol, [])
+            or data.get("bars", {}).get(symbol, [])
+        )
         return bars_data
     except Exception as e:
         print(f"  {symbol} błąd pobierania bars: {e}")
