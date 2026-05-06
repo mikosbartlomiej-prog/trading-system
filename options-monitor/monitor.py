@@ -198,11 +198,15 @@ def pick_best_contract(contracts: list[dict], spot: float, max_premium: float):
     return contract, premium
 
 
-def place_options_bracket(contract_symbol: str, qty: int, premium: float,
-                           tp_mult: float, sl_mult: float) -> dict | None:
-    """Place a buy_to_open bracket order on the contract via Alpaca REST."""
-    tp_limit = round(premium * tp_mult, 2)
-    sl_stop  = round(premium * sl_mult, 2)
+def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | None:
+    """
+    Place a SIMPLE limit buy_to_open order via Alpaca REST.
+
+    Note: Alpaca paper does NOT support `order_class=bracket` for options
+    (returns 422 'complex orders not supported for options trading').
+    TP/SL must be placed as separate orders after the fill — handled by a
+    follow-up exit step (or manually by the user via the dashboard).
+    """
     payload = {
         "symbol":        contract_symbol,
         "qty":           str(qty),
@@ -210,9 +214,6 @@ def place_options_bracket(contract_symbol: str, qty: int, premium: float,
         "type":          "limit",
         "limit_price":   str(round(premium, 2)),
         "time_in_force": "day",
-        "order_class":   "bracket",
-        "take_profit":   {"limit_price": str(tp_limit)},
-        "stop_loss":     {"stop_price":  str(sl_stop)},
     }
     try:
         r = requests.post(
@@ -318,15 +319,16 @@ def execute_proposal(proposal: dict) -> tuple[str, dict | None]:
     print(f"  {sym}: wybrany {contract_symbol} strike={contract['strike_price']} "
           f"expiry={contract['expiration_date']} premium=${premium:.2f}")
 
-    order = place_options_bracket(
+    order = place_options_buy(
         contract_symbol = contract_symbol,
         qty             = qty,
         premium         = premium,
-        tp_mult         = TP_PREMIUM_MULT,
-        sl_mult         = SL_PREMIUM_MULT,
     )
     if order:
         print(f"  Order placed: id={order.get('id')} status={order.get('status')}")
+        # Stash intended TP/SL on the order dict so the email shows them
+        order["_tp_target"] = round(premium * TP_PREMIUM_MULT, 2)
+        order["_sl_target"] = round(premium * SL_PREMIUM_MULT, 2)
         return "executed", order
     return "rejected", None
 
@@ -397,12 +399,8 @@ def run_scan():
                 sent += 1
                 qty   = float(order.get("qty", 1))
                 price = float(order.get("limit_price") or proposal["spot"])
-                tp = sl = 0.0
-                for leg in order.get("legs", []) or []:
-                    if leg.get("side") == "sell" and leg.get("type") == "limit":
-                        tp = float(leg.get("limit_price") or 0)
-                    elif leg.get("side") == "sell" and leg.get("type") == "stop":
-                        sl = float(leg.get("stop_price") or 0)
+                tp    = float(order.get("_tp_target", 0))
+                sl    = float(order.get("_sl_target", 0))
                 notify_order_executed(
                     symbol   = order.get("symbol", proposal["symbol"]),
                     side     = proposal["action"],
