@@ -30,6 +30,8 @@ jobs:
           PYTHONIOENCODING:      utf-8
           LC_ALL:                C
           LANG:                  C
+          ALPACA_API_KEY:        ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:     ${{ secrets.ALPACA_SECRET_KEY }}
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
           GMAIL_USER:            ${{ secrets.GMAIL_USER }}
