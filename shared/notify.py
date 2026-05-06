@@ -1,6 +1,6 @@
 """
-Shared email notification module — używany przez wszystkie monitory.
-Wysyła email przez Gmail SMTP gdy wykryto sygnał lub wykonano zlecenie.
+Shared email notification module — uzywany przez wszystkie monitory.
+Wysyla email przez Gmail SMTP gdy wykryto sygnal lub wykonano zlecenie.
 """
 
 import os
@@ -10,22 +10,29 @@ from datetime import datetime, timezone
 
 GMAIL_USER         = os.environ.get("GMAIL_USER", "")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER)  # domyślnie do siebie
+NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER)
 
 
 def _clean(text: str) -> str:
-    """Sanitize text for safe email transmission — replace non-breaking spaces etc."""
-    return text.replace('\xa0', ' ').replace(' ', ' ')
+    """Strip all non-ASCII so SMTP and stdout never choke on emoji/dashes/nbsp."""
+    return (
+        text
+        .replace('\xa0', ' ')    # non-breaking space -> regular space
+        .replace(' ', ' ')  # narrow no-break space -> regular space
+        .replace('—', '-')  # em dash -> hyphen
+        .replace('–', '-')  # en dash -> hyphen
+        .encode('ascii', 'ignore')
+        .decode('ascii')
+    )
 
 
 def send_email(subject: str, body: str, html: bool = False) -> bool:
     """
-    Wysyła email przez Gmail SMTP.
-    Używa EmailMessage (nowoczesne API) — poprawnie obsługuje UTF-8 w temacie i treści.
-    Zwraca True jeśli sukces.
+    Wysyla email przez Gmail SMTP.
+    Zwraca True jesli sukces.
     """
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
-        print("  Email: brak GMAIL_USER lub GMAIL_APP_PASSWORD — pomijam")
+        print("  Email: brak GMAIL_USER lub GMAIL_APP_PASSWORD - pomijam")
         return False
 
     try:
@@ -36,28 +43,23 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
         msg["Subject"] = subject
         msg["From"]    = GMAIL_USER
         msg["To"]      = NOTIFY_TO
-
-        if html:
-            msg.set_content(body, subtype="html", charset="utf-8")
-        else:
-            msg.set_content(body, charset="utf-8")
+        msg.set_content(body, charset="utf-8")
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
             smtp.send_message(msg)
 
-        print(f"  Email wysłany: {subject}")
+        print(f"  Email wyslany: {subject}")
         return True
 
     except Exception as e:
-        print(f"  Email błąd: {e}")
+        print(f"  Email blad: {e}")
         return False
 
 
 def notify_signal(signal: dict, alert_sent: bool) -> bool:
     """
     Powiadomienie o wykrytym sygnale tradingowym.
-    signal: dict z polami symbol, action, strategy, size_usd, score, headline itd.
     """
     symbol   = signal.get("symbol", "?")
     action   = signal.get("action", "?")
@@ -68,76 +70,73 @@ def notify_signal(signal: dict, alert_sent: bool) -> bool:
     source   = signal.get("source", "")
     now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-    emoji = "🟢" if action in ("BUY", "BUY_TO_OPEN") else "🔴"
-    status = "✅ Alert wysłany do Alpaca" if alert_sent else "⚠️ Alert NIE wysłany (błąd)"
+    arrow  = "BUY" if action in ("BUY", "BUY_TO_OPEN") else "SELL"
+    status = "Alert sent to Alpaca" if alert_sent else "Alert NOT sent (error)"
 
-    subject = f"{emoji} [{strategy}] {action} {symbol} — ${size_usd:,}"
+    subject = f"[{arrow}] [{strategy}] {action} {symbol} - ${size_usd:,.0f}".replace('\xa0', ',')
 
-    body = f"""
-Trading Signal Detected
-{'='*40}
-Time:     {now}
-Symbol:   {symbol}
-Action:   {action}
-Strategy: {strategy}
-Size:     ${size_usd:,}
-{'Price:    $' + str(price) if isinstance(price, (int, float)) else ''}
-{'Score:    ' + str(signal.get('score', '')) if signal.get('score') else ''}
-{'Source:   ' + source if source else ''}
-{'Headline: ' + str(headline)[:120] if headline else ''}
-
-Status: {status}
-{'='*40}
-Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview
-""".strip()
+    body = (
+        f"Trading Signal Detected\n"
+        f"{'='*40}\n"
+        f"Time:     {now}\n"
+        f"Symbol:   {symbol}\n"
+        f"Action:   {action}\n"
+        f"Strategy: {strategy}\n"
+        f"Size:     ${size_usd:,.0f}\n"
+        + (f"Price:    ${price}\n" if isinstance(price, (int, float)) else "")
+        + (f"Score:    {signal.get('score', '')}\n" if signal.get('score') else "")
+        + (f"Source:   {source}\n" if source else "")
+        + (f"Headline: {str(headline)[:120]}\n" if headline else "")
+        + f"\nStatus: {status}\n"
+        f"{'='*40}\n"
+        f"Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview"
+    )
 
     return send_email(subject, body)
 
 
 def notify_exit(symbol: str, action: str, reason: str, pl_pct: float = None) -> bool:
     """
-    Powiadomienie o zamknięciu pozycji przez exit monitor.
+    Powiadomienie o zamknieciu pozycji przez exit monitor.
     """
     now   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    emoji = "🔴" if "CLOSE" in action else "📊"
     pl_str = f" | P&L: {pl_pct:+.1f}%" if pl_pct is not None else ""
 
-    subject = f"{emoji} EXIT {symbol} — {reason}{pl_str}"
-    body = f"""
-Exit Monitor — Position Closed
-{'='*40}
-Time:   {now}
-Symbol: {symbol}
-Action: {action}
-Reason: {reason}
-{'P&L:    ' + f'{pl_pct:+.1f}%' if pl_pct is not None else ''}
-{'='*40}
-Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview
-""".strip()
+    subject = f"[EXIT] {symbol} - {reason}{pl_str}"
+    body = (
+        f"Exit Monitor - Position Closed\n"
+        f"{'='*40}\n"
+        f"Time:   {now}\n"
+        f"Symbol: {symbol}\n"
+        f"Action: {action}\n"
+        f"Reason: {reason}\n"
+        + (f"P&L:    {pl_pct:+.1f}%\n" if pl_pct is not None else "")
+        + f"{'='*40}\n"
+        f"Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview"
+    )
 
     return send_email(subject, body)
 
 
 def notify_summary(monitor: str, signals_found: int, alerts_sent: int) -> bool:
     """
-    Krótkie podsumowanie po każdym runie monitora.
-    Wysyłaj tylko gdy są sygnały (nie przy każdym pustym runie).
+    Krotkie podsumowanie po kazdym runie monitora.
+    Wysylaj tylko gdy sa sygnaly.
     """
     if signals_found == 0:
-        return False  # nie spamuj gdy brak sygnałów
+        return False
 
     now   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    emoji = "📊"
-    subject = f"{emoji} [{monitor}] {signals_found} sygnał(ów), {alerts_sent} wysłanych"
-    body = f"""
-Monitor Run Summary
-{'='*40}
-Monitor:       {monitor}
-Time:          {now}
-Signals found: {signals_found}
-Alerts sent:   {alerts_sent}
-{'='*40}
-Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview
-""".strip()
+    subject = f"[{monitor}] {signals_found} sygnal(ow), {alerts_sent} wyslanych"
+    body = (
+        f"Monitor Run Summary\n"
+        f"{'='*40}\n"
+        f"Monitor:       {monitor}\n"
+        f"Time:          {now}\n"
+        f"Signals found: {signals_found}\n"
+        f"Alerts sent:   {alerts_sent}\n"
+        f"{'='*40}\n"
+        f"Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview"
+    )
 
     return send_email(subject, body)
