@@ -92,7 +92,7 @@ def notify_signal(signal: dict, alert_sent: bool) -> bool:
     source   = signal.get("source", "")
     now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-    arrow  = "BUY" if action in ("BUY", "BUY_TO_OPEN") else "SELL"
+    arrow  = "BUY" if action.upper().startswith("BUY") else "SELL"
     status = "Alert sent to Alpaca" if alert_sent else "Alert NOT sent (error)"
 
     subject = f"[{arrow}] [{strategy}] {action} {symbol} - {_usd(size_usd)}"
