@@ -13,6 +13,14 @@ import feedparser
 from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
 
+# Email notifications (optional)
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+    from notify import notify_signal, notify_summary
+except ImportError:
+    def notify_signal(*a, **k): pass
+    def notify_summary(*a, **k): pass
+
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
 CLOUDFLARE_DEFENSE_WORKER_URL = os.environ.get("CLOUDFLARE_DEFENSE_WORKER_URL", "")
@@ -583,15 +591,17 @@ def run_scan():
         )
         print(f"      Headline: {signal['headline']}")
         print(f"      Keywords: {signal['keywords']}")
-        if send_alert(signal):
+        sent = send_alert(signal)
+        if sent:
             alerts_sent += 1
-        # Przerwa między alertami żeby nie przekroczyć rate limitu Routiny
+        notify_signal(signal, sent)
         if alerts_sent < MAX_ALERTS_PER_RUN:
             time.sleep(8)
 
     if len(signals) > MAX_ALERTS_PER_RUN:
         print(f"\n  Pominięto {len(signals) - MAX_ALERTS_PER_RUN} sygnałów (rate limit guard)")
 
+    notify_summary("Defense Monitor", len(signals), alerts_sent)
     print(f"\n  Wysłano alertów: {alerts_sent}")
     print(f"[{now_str}] === DEFENSE MONITOR ZAKOŃCZONY ===\n")
 

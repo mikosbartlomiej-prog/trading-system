@@ -9,6 +9,13 @@ import sys
 import requests
 from datetime import datetime, timezone, timedelta
 
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+    from notify import notify_signal, notify_summary
+except ImportError:
+    def notify_signal(*a, **k): pass
+    def notify_summary(*a, **k): pass
+
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
 ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
@@ -220,9 +227,12 @@ def run_scan():
         signal = check_crypto_signal(symbol)
         if signal:
             print(f"  >>> SYGNAŁ: {signal['action']} {symbol}!")
-            send_alert(signal)
-            alerts_sent += 1
+            sent = send_alert(signal)
+            if sent:
+                alerts_sent += 1
+            notify_signal(signal, sent)
 
+    notify_summary("Crypto Monitor", alerts_sent, alerts_sent)
     print(f"  Wysłano alertów: {alerts_sent}")
 
 
