@@ -21,10 +21,12 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard
+    from market_data import get_daily_bars
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
+    def get_daily_bars(symbol, days=35): return None
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -73,17 +75,7 @@ def finnhub_get(endpoint: str, params: dict) -> dict | None:
 
 
 def get_candles(ticker: str, days: int = 35) -> dict | None:
-    now = int(datetime.now().timestamp())
-    frm = int((datetime.now() - timedelta(days=days + 5)).timestamp())
-    data = finnhub_get("/stock/candle", {
-        "symbol":     ticker,
-        "resolution": "D",
-        "from":       frm,
-        "to":         now,
-    })
-    if not data or data.get("s") != "ok" or not data.get("c"):
-        return None
-    return data
+    return get_daily_bars(ticker, days=days)
 
 
 def calculate_rsi(closes: list[float], period: int = 14) -> float | None:

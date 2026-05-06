@@ -16,11 +16,13 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position
+    from market_data import get_daily_bars
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
     def has_open_position(_): return False
+    def get_daily_bars(symbol, days=35): return None
 
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
 
@@ -58,28 +60,8 @@ def finnhub_get(endpoint, params):
 
 
 def get_candles(ticker, days=35):
-    """Pobiera dane OHLCV za ostatnie N dni"""
-    now = int(datetime.now().timestamp())
-    from_ts = int((datetime.now() - timedelta(days=days + 5)).timestamp())
-
-    data = finnhub_get("/stock/candle", {
-        "symbol": ticker,
-        "resolution": "D",
-        "from": from_ts,
-        "to": now,
-    })
-
-    if data.get("s") != "ok" or not data.get("c"):
-        return None
-
-    return {
-        "close":  data["c"],
-        "high":   data["h"],
-        "low":    data["l"],
-        "open":   data["o"],
-        "volume": data["v"],
-        "time":   data["t"],
-    }
+    """Pobiera dane OHLCV za ostatnie N dni z Alpaca daily bars"""
+    return get_daily_bars(ticker, days=days)
 
 
 # ─── Wskazniki techniczne ────────────────────────────────────────────────────
