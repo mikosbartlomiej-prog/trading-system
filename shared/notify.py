@@ -5,8 +5,7 @@ Wysyła email przez Gmail SMTP gdy wykryto sygnał lub wykonano zlecenie.
 
 import os
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from email.message import EmailMessage
 from datetime import datetime, timezone
 
 GMAIL_USER         = os.environ.get("GMAIL_USER", "")
@@ -15,14 +14,14 @@ NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER)  # domyślnie do
 
 
 def _clean(text: str) -> str:
-    """Replace non-breaking spaces and other chars that break ASCII SMTP encoding.
-    Root cause: Python's :, formatter uses \\xa0 as thousands separator on some locales."""
-    return text.replace('\xa0', ' ')
+    """Sanitize text for safe email transmission — replace non-breaking spaces etc."""
+    return text.replace('\xa0', ' ').replace(' ', ' ')
 
 
 def send_email(subject: str, body: str, html: bool = False) -> bool:
     """
     Wysyła email przez Gmail SMTP.
+    Używa EmailMessage (nowoczesne API) — poprawnie obsługuje UTF-8 w temacie i treści.
     Zwraca True jeśli sukces.
     """
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
@@ -33,15 +32,15 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
         subject = _clean(subject)
         body    = _clean(body)
 
-        msg = MIMEMultipart("alternative")
+        msg = EmailMessage()
         msg["Subject"] = subject
         msg["From"]    = GMAIL_USER
         msg["To"]      = NOTIFY_TO
 
         if html:
-            msg.attach(MIMEText(body, "html", "utf-8"))
+            msg.set_content(body, subtype="html", charset="utf-8")
         else:
-            msg.attach(MIMEText(body, "plain", "utf-8"))
+            msg.set_content(body, charset="utf-8")
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
