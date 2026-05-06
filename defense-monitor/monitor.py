@@ -7,6 +7,7 @@ Generuje sygnały LONG/SHORT dla akcji sektora obronnego.
 import os
 import sys
 import json
+import time
 import requests
 import feedparser
 from datetime import datetime, timezone, timedelta
@@ -555,9 +556,14 @@ def run_scan():
     signals = analyze_items(all_items)
     print(f"\n  Sygnałów wygenerowanych: {len(signals)}")
 
-    # 5. Wysyłanie alertów
+    # 5. Wysyłanie alertów — max 2 na run, 8s przerwy między nimi
+    MAX_ALERTS_PER_RUN = 2
     alerts_sent = 0
-    for signal in signals:
+
+    # Sortuj: wyższy score najpierw
+    signals.sort(key=lambda s: s["score"], reverse=True)
+
+    for signal in signals[:MAX_ALERTS_PER_RUN]:
         direction = signal["action"]
         print(
             f"\n  >>> SYGNAŁ: {direction} {signal['symbol']} "
@@ -567,6 +573,12 @@ def run_scan():
         print(f"      Keywords: {signal['keywords']}")
         if send_alert(signal):
             alerts_sent += 1
+        # Przerwa między alertami żeby nie przekroczyć rate limitu Routiny
+        if alerts_sent < MAX_ALERTS_PER_RUN:
+            time.sleep(8)
+
+    if len(signals) > MAX_ALERTS_PER_RUN:
+        print(f"\n  Pominięto {len(signals) - MAX_ALERTS_PER_RUN} sygnałów (rate limit guard)")
 
     print(f"\n  Wysłano alertów: {alerts_sent}")
     print(f"[{now_str}] === DEFENSE MONITOR ZAKOŃCZONY ===\n")
