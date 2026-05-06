@@ -1,0 +1,39 @@
+name: Options Monitor — CALL/PUT proposals
+
+on:
+  schedule:
+    # Co 10 minut podczas sesji giełdowej (9:30-16:00 ET = 13:30-20:00 UTC)
+    # Poniedziałek-Piątek
+    - cron: '*/10 13-20 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  scan-options:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r options-monitor/requirements.txt
+
+      - name: Run options monitor
+        env:
+          PYTHONIOENCODING:               utf-8
+          LC_ALL:                         C
+          LANG:                           C
+          ALPACA_API_KEY:                 ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:              ${{ secrets.ALPACA_SECRET_KEY }}
+          FINNHUB_API_KEY:                ${{ secrets.FINNHUB_API_KEY }}
+          CLOUDFLARE_OPTIONS_WORKER_URL:  ${{ secrets.CLOUDFLARE_OPTIONS_WORKER_URL }}
+          GMAIL_USER:                     ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:             ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:                   ${{ secrets.NOTIFY_EMAIL }}
+        run: python options-monitor/monitor.py
