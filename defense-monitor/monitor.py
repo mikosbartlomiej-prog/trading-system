@@ -141,50 +141,99 @@ RSS_FEEDS = {
     "AP Defense":       "https://feeds.apnews.com/rss/apf-topnews",
 }
 
-DOD_CONTRACTS_URL = "https://www.defense.gov/News/Contracts/"
+DOD_CONTRACTS_URL  = "https://www.defense.gov/News/Contracts/"
+DOD_RSS_URL        = "https://www.defense.gov/DesktopModules/ArticleCS/Feed.ashx?ContentType=1&Site=945&max=20"
+USASPENDING_URL    = "https://api.usaspending.gov/api/v2/search/spending_by_award/"
 
 # ─── Parsowanie DoD ──────────────────────────────────────────────────────────
 
-class DoDParser(HTMLParser):
-    """Prosta ekstrakcja tekstów kontraktów z defense.gov"""
-    def __init__(self):
-        super().__init__()
-        self.texts = []
-        self._capture = False
-
-    def handle_starttag(self, tag, attrs):
-        attrs_dict = dict(attrs)
-        cls = attrs_dict.get("class", "")
-        if tag in ("p", "li") or "contract" in cls.lower():
-            self._capture = True
-
-    def handle_endtag(self, tag):
-        if tag in ("p", "li"):
-            self._capture = False
-
-    def handle_data(self, data):
-        if self._capture and data.strip():
-            self.texts.append(data.strip())
-
-
 def scrape_dod_contracts() -> list[str]:
-    """Pobiera listę kontraktów z DoD z dzisiaj"""
+    """
+    Próbuje pobrać kontrakty DoD — kilka metod:
+    1. RSS feed DoD (nie wymaga przeglądarki)
+    2. Defense.gov z pełnymi nagłówkami
+    3. USASpending API (publiczne, bez blokowania)
+    """
+    texts = []
+
+    # Metoda 1: DoD RSS
     try:
-        resp = requests.get(DOD_CONTRACTS_URL, timeout=15,
-                            headers={"User-Agent": "Mozilla/5.0"})
-        resp.raise_for_status()
-        parser = DoDParser()
-        parser.feed(resp.text)
-        # Bierz tylko ostatnie 60 kontraktów (dzisiaj)
-        return parser.texts[:200]
+        feed = feedparser.parse(DOD_RSS_URL)
+        if feed.entries:
+            for entry in feed.entries[:30]:
+                t = f"{entry.get('title', '')} {entry.get('summary', '')}"
+                if t.strip():
+                    texts.append(t.strip())
+            print(f"  DoD RSS: {len(texts)} wpisów")
+            return texts
     except Exception as e:
-        print(f"  DoD scrape błąd: {e}")
-        return []
+        print(f"  DoD RSS błąd: {e}")
+
+    # Metoda 2: defense.gov z pełnymi nagłówkami przeglądarki
+    try:
+        headers = {
+            "User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer":         "https://www.google.com/",
+        }
+        resp = requests.get(DOD_CONTRACTS_URL, timeout=15, headers=headers)
+        if resp.status_code == 200:
+            # Prosta ekstrakcja tekstu z paragrafów
+            import re
+            paras = re.findall(r'<p[^>]*>(.*?)</p>', resp.text, re.DOTALL)
+            for p in paras[:100]:
+                clean = re.sub(r'<[^>]+>', '', p).strip()
+                if len(clean) > 40:
+                    texts.append(clean)
+            print(f"  DoD HTML: {len(texts)} paragrafów")
+            if texts:
+                return texts
+        else:
+            print(f"  DoD HTML: HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"  DoD HTML błąd: {e}")
+
+    # Metoda 3: USASpending.gov — publiczne API kontraktów DoD
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+        payload = {
+            "filters": {
+                "award_type_codes": ["A", "B", "C", "D"],  # contracts
+                "agencies": [{"type": "awarding", "tier": "toptier", "name": "Department of Defense"}],
+                "time_period": [{"start_date": week_ago, "end_date": today}],
+                "award_amounts": [{"lower_bound": 10000000}],  # min $10M
+            },
+            "fields": ["Recipient Name", "Award Amount", "Description", "Awarding Agency"],
+            "page": 1,
+            "limit": 25,
+            "sort": "Award Amount",
+            "order": "desc",
+        }
+        resp = requests.post(USASPENDING_URL, json=payload, timeout=20)
+        if resp.status_code == 200:
+            data = resp.json()
+            for award in data.get("results", []):
+                recipient = award.get("Recipient Name", "")
+                amount    = award.get("Award Amount", 0)
+                desc      = award.get("Description", "")
+                if recipient and amount:
+                    texts.append(
+                        f"contract awarded {recipient} ${amount:,.0f} {desc}"
+                    )
+            print(f"  USASpending: {len(texts)} kontraktów (min $10M)")
+            return texts
+    except Exception as e:
+        print(f"  USASpending błąd: {e}")
+
+    print("  DoD: brak danych ze wszystkich źródeł")
+    return []
 
 
 # ─── Pobieranie RSS ───────────────────────────────────────────────────────────
 
-def fetch_rss_entries(max_age_hours: int = 2) -> list[dict]:
+def fetch_rss_entries(max_age_hours: int = 6) -> list[dict]:
     """Pobiera wpisy RSS nie starsze niż max_age_hours"""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
     entries = []
@@ -215,13 +264,31 @@ def fetch_rss_entries(max_age_hours: int = 2) -> list[dict]:
         except Exception as e:
             print(f"  RSS {source} błąd: {e}")
 
-    print(f"  RSS: {len(entries)} wpisów z ostatnich {max_age_hours}h")
+    print(f"  RSS: {len(entries)} wpisów z ostatnich {max_age_hours}h (łącznie bez filtra: sprawdzone)")
+    # Jeśli 0 po filtrowaniu — spróbuj bez limitu dat (weź najnowsze 5 z każdego feed'a)
+    if not entries:
+        print("  RSS: brak wpisów z datą — biorę najnowsze bez filtra dat")
+        for source, url in RSS_FEEDS.items():
+            try:
+                feed = feedparser.parse(url)
+                for entry in feed.entries[:5]:
+                    text = f"{entry.get('title', '')} {entry.get('summary', '')}"
+                    entries.append({
+                        "source": source,
+                        "title":  entry.get("title", ""),
+                        "text":   text.lower(),
+                        "url":    entry.get("link", ""),
+                        "pub":    None,
+                    })
+            except Exception:
+                pass
+        print(f"  RSS (bez filtra): {len(entries)} wpisów")
     return entries
 
 
 # ─── NewsAPI ─────────────────────────────────────────────────────────────────
 
-def fetch_newsapi_articles(max_age_hours: int = 2) -> list[dict]:
+def fetch_newsapi_articles(max_age_hours: int = 24) -> list[dict]:
     """Pobiera artykuły z NewsAPI"""
     if not NEWSAPI_KEY:
         print("  NewsAPI: brak klucza NEWSAPI_KEY")
