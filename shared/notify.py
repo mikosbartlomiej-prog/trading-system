@@ -82,7 +82,15 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
 
 
 def notify_signal(signal: dict, alert_sent: bool) -> bool:
-    """Notification about a detected trading signal."""
+    """Notification about a detected trading signal.
+
+    Options proposals (signal['option_type'] set) get a richer subject and
+    body that doubles as an actionable approval request — Claude Routines
+    have no native email tool, so the monitor itself is the approval channel.
+    """
+    if signal.get("option_type"):
+        return _notify_options_proposal(signal, alert_sent)
+
     symbol   = signal.get("symbol", "?")
     action   = signal.get("action", "?")
     strategy = signal.get("strategy", "?")
@@ -114,6 +122,62 @@ def notify_signal(signal: dict, alert_sent: bool) -> bool:
         f"Alpaca Paper: https://app.alpaca.markets/paper/dashboard/overview"
     )
 
+    return send_email(subject, body)
+
+
+def _notify_options_proposal(signal: dict, alert_sent: bool) -> bool:
+    symbol     = signal.get("symbol", "?")
+    action     = signal.get("action", "?")
+    opt_type   = signal.get("option_type", "?").upper()
+    spot       = signal.get("spot", 0)
+    strike_t   = signal.get("strike_target", 0)
+    strike_min = signal.get("strike_min", 0)
+    strike_max = signal.get("strike_max", 0)
+    expiry_min = signal.get("expiry_min", "")
+    expiry_max = signal.get("expiry_max", "")
+    iv_max     = signal.get("iv_max_pct", 0)
+    size_usd   = signal.get("size_usd", 0)
+    max_ctr    = signal.get("max_contracts", 1)
+    rsi        = signal.get("rsi", 0)
+    tp_mult    = signal.get("tp_premium_mult", 1.8)
+    sl_mult    = signal.get("sl_premium_mult", 0.5)
+    now        = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    routine_status = "delivered to routine" if alert_sent else "routine delivery FAILED"
+    subject = f"[OPTIONS APPROVAL NEEDED] {opt_type} {symbol} ~${strike_t} ({expiry_min}..{expiry_max})"
+
+    body = (
+        f"Options Proposal - APPROVAL REQUIRED\n"
+        f"{'='*48}\n"
+        f"Time:        {now}\n"
+        f"Symbol:      {symbol}\n"
+        f"Type:        {opt_type}\n"
+        f"Action:      {action}\n"
+        f"Spot:        ${spot}\n"
+        f"Strike:      ~${strike_t}  (range ${strike_min} - ${strike_max})\n"
+        f"Expiry:      {expiry_min}  to  {expiry_max}\n"
+        f"IV cap:      <= {iv_max}%\n"
+        f"Budget:      {_usd(size_usd)}  (max {max_ctr} contract(s))\n"
+        f"TP:          +{int((tp_mult - 1) * 100)}% premium\n"
+        f"SL:          -{int((1 - sl_mult) * 100)}% premium\n"
+        f"RSI signal:  {rsi}\n"
+        f"\n"
+        f"To EXECUTE this trade (manual, iron-rule):\n"
+        f"  1. Open https://app.alpaca.markets/paper/dashboard/options\n"
+        f"  2. Search {symbol} option chain\n"
+        f"  3. Filter: type={opt_type}, expiry between {expiry_min} and {expiry_max}\n"
+        f"  4. Pick a strike near ${strike_t} with IV <= {iv_max}%\n"
+        f"  5. Buy 1 contract as a bracket order:\n"
+        f"       TP limit  = entry premium * {tp_mult}\n"
+        f"       SL stop   = entry premium * {sl_mult}\n"
+        f"  6. Total cost <= {_usd(size_usd)}\n"
+        f"\n"
+        f"To REJECT: simply ignore this email. If conditions persist, a\n"
+        f"new proposal will arrive on the next 10-minute cron.\n"
+        f"\n"
+        f"Routine: {routine_status}.\n"
+        f"{'='*48}\n"
+    )
     return send_email(subject, body)
 
 

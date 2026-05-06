@@ -46,6 +46,7 @@ TICKERS = [
 SIZE_USD                 = 500     # USD per signal
 MAX_CONTRACTS_PER_SIGNAL = 2
 MAX_OPEN_OPTIONS         = 3       # global cap across all underlyings
+MAX_PROPOSALS_PER_RUN    = 1       # per-run cap — Anthropic Routines rate-limit safety
 DTE_MIN                  = 14
 DTE_MAX                  = 21
 IV_MAX_CALL_PCT          = 35.0
@@ -229,15 +230,23 @@ def run_scan():
         time.sleep(0.5)
 
     print(f"  Znalezione propozycje: {len(proposals)}")
+    # Sortuj: najpierw najwyzsze RSI (calls "blizej granicy" 65, puts "powyzej" 72)
+    proposals.sort(key=lambda p: p["rsi"], reverse=True)
+    cap = min(slots_left, MAX_PROPOSALS_PER_RUN)
     sent = 0
-    for proposal in proposals[:slots_left]:
+    for i, proposal in enumerate(proposals[:cap]):
         ok = send_proposal(proposal)
         if ok:
             sent += 1
         notify_signal(proposal, ok)
+        if i + 1 < cap:
+            time.sleep(5)   # soften rate limit on Anthropic Routines endpoint
+
+    if len(proposals) > cap:
+        print(f"  Pominieto {len(proposals) - cap} propozycji (cap={cap}/run)")
 
     notify_summary("Options Monitor", len(proposals), sent)
-    print(f"[{now}] Wysłano: {sent}/{len(proposals)}\n")
+    print(f"[{now}] Wyslano: {sent}/{cap} (znaleziono {len(proposals)})\n")
 
 
 if __name__ == "__main__":
