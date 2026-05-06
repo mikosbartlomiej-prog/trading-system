@@ -52,6 +52,7 @@ Any code there is a stale copy — the real files are in `~/Documents/Git/tradin
 | `CLOUDFLARE_CRYPTO_WORKER_URL` | https://crypto-proxy.mikosbartlomiej.workers.dev |
 | `CLOUDFLARE_LEARNING_WORKER_URL` | https://learning-loop-proxy.mikosbartlomiej.workers.dev |
 | `CLOUDFLARE_DEFENSE_WORKER_URL` | https://defense-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_OPTIONS_WORKER_URL` | https://options-proxy.mikosbartlomiej.workers.dev (legacy — bypassed by AUTO_EXECUTE) |
 | `REDDIT_CLIENT_ID` | Reddit app client_id (pending API approval) |
 | `REDDIT_CLIENT_SECRET` | Reddit app client_secret (pending API approval) |
 
@@ -71,6 +72,7 @@ Each monitor sends signals to a Cloudflare Worker, which triggers a Claude Routi
 | crypto-proxy | https://crypto-proxy.mikosbartlomiej.workers.dev | trig_01Y1QB5MCF1jtrGS51QixSrR | ✅ |
 | learning-loop-proxy | https://learning-loop-proxy.mikosbartlomiej.workers.dev | trig_0175V2oDoLMn9y75HoDx8NGd | ✅ |
 | defense-proxy | https://defense-proxy.mikosbartlomiej.workers.dev | (set up but defense-monitor now sends email directly too) | ✅ |
+| options-proxy | https://options-proxy.mikosbartlomiej.workers.dev | trig_... (Options Handler routine) | ⚠️ deprecated — Anthropic Routines kept 429-ing; options-monitor now bypasses via AUTO_EXECUTE_OPTIONS=true and calls Alpaca REST directly |
 | reddit-proxy | https://reddit-proxy.mikosbartlomiej.workers.dev | (pending Reddit API approval) | ⏳ |
 
 **Cloudflare Worker code (same for all workers):**
@@ -113,6 +115,8 @@ All monitors run via GitHub Actions in the trading-system repo.
 | crypto-monitor | `0 * * * *` + `30 * * * *` (24/7) | ✅ | ✅ integrated | ✅ |
 | price-monitor | `*/5 13-20 * * 1-5` | ✅ | ✅ integrated 2026-05-06 (notify_signal + notify_summary) | ✅ |
 | exit-monitor | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | ✅ | ✅ integrated 2026-05-06 (notify_exit + notify_summary) | ✅ |
+| options-monitor | `*/10 13-20 * * 1-5` | ✅ LIVE 2026-05-06 (first AMZN PUT fill confirmed) | ✅ [EXECUTED] / [OPTIONS APPROVAL NEEDED] | ⚠️ deprecated routine path; AUTO_EXECUTE_OPTIONS=true bypasses |
+| options-exit-monitor | `*/5 13-20 * * 1-5` | ✅ LIVE 2026-05-06 | ✅ notify_exit per close | n/a (direct Alpaca REST) |
 | geo-monitor | `*/15 13-21 * * 1-5` | ✅ (not recently verified) | ❌ not integrated | ✅ |
 | weekly-learning | `0 20 * * 0` (Sunday 20:00 UTC) | ✅ | ❌ not integrated | ✅ |
 | keep-alive | `*/10 * * * *` | ✅ | ❌ (not needed) | pings Render |
@@ -151,13 +155,14 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 ---
 
-## OPEN POSITIONS (as of 2026-05-06 18:14 UTC)
+## OPEN POSITIONS (as of 2026-05-06 19:33 UTC, end of session)
 
-| Symbol | Side | Qty | Entry | P&L |
-|--------|------|-----|-------|-----|
-| GLD | LONG | 3 | $418.81 | +$33.63 (+2.68%) |
-| RTX | LONG | 1 | $172.60 | +$3.56 (+2.06%) |
-| XLE | LONG | 5 | $58.96 | -$9.74 (-3.30%) |
+| Symbol | Type | Side | Qty | Entry | P&L (last seen) |
+|--------|------|------|-----|-------|-----------------|
+| GLD | stock | LONG | 3 | $418.81 | +$33.63 (+2.68%) |
+| RTX | stock | LONG | 1 | $172.60 | +$3.56 (+2.06%) |
+| XLE | stock | LONG | 5 | $58.96 | -$9.74 (-3.30%) |
+| AMZN260520P00270000 | option PUT | LONG | 1 | $3.65 | -17.8% — first paper-options trade, monitored by options-exit-monitor (TP=$6.57, SL=$1.82) |
 
 ---
 
@@ -177,72 +182,76 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
    - Added `.gitignore` (covers `__pycache__/`, `.venv/`, `.DS_Store`, `.env*`, etc.)
    - Untracked all `__pycache__/*.pyc` files (build artifacts that should never be in git)
    - Deleted stale duplicate workflow files: `crypto-monitor/crypto-monitor.yml`, `exit-monitor/exit-monitor.yml`, `learning-loop/weekly-learning.yml` (canonical copies live in `.github/workflows/` — only those are picked up by GitHub Actions)
+   - Consolidated 39 unique session reports/journals from 31 stale `claude/*` branches into `briefs/`, `exit-reports/`, `geo-reports/`, `journal/` on main (commit 979b45f); old branches still exist on origin (proxy 403 blocked deletion — user can delete via GitHub UI, all unique content already on main)
+7. ✅ **Master Plan #4 — VIX guard for entry monitors** (2026-05-06)
+   - `shared/risk_guards.py::vix_guard()` returns `(status, multiplier)`
+   - VIX > 45 -> HALT (early return + 0-signal summary email)
+   - VIX > 35 -> CAUTION (signal["size_usd"] *= 0.5)
+   - else / Finnhub failure -> OK (fail-open so a Finnhub outage cannot silently halt all trading)
+   - Wired into price/crypto/defense/geo monitors. Exit-monitor intentionally skipped (closing during a crash is desirable)
+   - All 4 entry-monitor workflows now expose FINNHUB_API_KEY
+   - Production note (2026-05-06): Finnhub free-tier `/quote?symbol=^VIX` returns empty data, so vix_guard currently fail-opens. Trading continues normally; the circuit breaker is dormant until a more reliable VIX source is wired (VIXY ETF via Alpaca proxy is the planned follow-up)
+8. ✅ **Master Plan #5 — Duplicate position guard** (2026-05-06)
+   - `shared/risk_guards.py::has_open_position(symbol)` queries Alpaca `/v2/positions/{symbol}` (URL-encoded so `BTC/USD` works)
+   - Returns True only on HTTP 200; 404 / network errors / missing creds fail OPEN
+   - Wired into price/crypto/defense monitors — checked BEFORE every alert dispatch; skip if True (logs `pominięty (otwarta pozycja)`)
+   - Geo-monitor skipped — it forwards raw news to a routine that decides the ticker, so symbol-level dedup isn't visible at this layer
+   - Workflows: ALPACA_API_KEY + ALPACA_SECRET_KEY added to price-monitor.yml + defense-monitor.yml (crypto already had them)
+9. ✅ **Master Plan #3 — Options monitor (entry + exit auto-execute)** (2026-05-06)
+   - `options-monitor/monitor.py`: detects momentum setups on whitelist (AAPL, MSFT, GOOGL, NVDA, META, AMZN, TSLA, SPY, QQQ, JPM, RTX, LMT)
+     - RSI 45-65 -> CALL proposal, RSI > 72 -> PUT proposal
+     - Guards: VIX, earnings ±1d skip, MAX_OPEN_OPTIONS=3 global cap, MAX_PROPOSALS_PER_RUN=1
+   - **AUTO_EXECUTE_OPTIONS=true (default)** path: monitor resolves contract via Alpaca `/v2/options/contracts` (free, no paid sub needed) → picks closest-to-ATM with positive close_price ≤ size_usd/100 → posts simple LIMIT BUY via `/v2/orders` (no `order_class=bracket` because Alpaca paper rejects complex orders for options)
+   - Iterates entire RSI-sorted proposal list until `sent==cap`; "no_contract" silently skipped, "rejected" emailed via [OPTIONS APPROVAL NEEDED] fallback
+   - **First real paper-options trade confirmed 2026-05-06 19:18 UTC: AMZN260520P00270000 BUY_TO_OPEN_PUT @ $3.65** (visible in Alpaca dashboard)
+   - `options-exit-monitor/monitor.py`: polls every 5 min during session, evaluates each open us_option position against entry-derived TP=*1.80 / SL=*0.50, posts SELL-to-close LIMIT when threshold hit, de-dupes via `/v2/orders?status=open&symbols=...`
+   - Iron rule for options relaxed to AUTO-EXECUTE on paper (per-run + global caps + email audit trail enforce safety)
+   - Tests: 7 scenarios for options-monitor (CALL/PUT/neutral/earnings/cap/HALT/CAUTION + iteration past too-expensive proposals + auto-execute path); 5 scenarios for options-exit-monitor (TP/SL/HOLD/dedup/empty)
+   - Smoke tests confirmed end-to-end: workflow trigger -> Alpaca chain fetch -> order placed -> [EXECUTED] email -> options-exit-monitor finds the AMZN position and reports HOLD with TP=$6.57, SL=$1.82
+10. ✅ **Migrated Finnhub `/stock/candle` to Alpaca daily bars** (2026-05-06)
+    - Finnhub free tier started returning HTTP 403 on `/stock/candle` mid-2024 (endpoint moved to paid plan)
+    - Symptom: options-monitor saw 12 consecutive 403s; price-monitor was silently producing 0 signals (zero-signals path swallowed the failure)
+    - New: `shared/market_data.py::get_daily_bars(symbol, days)` hits Alpaca `/v2/stocks/{symbol}/bars` (free IEX feed, same paper keys we use)
+    - Returns identical dict shape so downstream RSI/ATR/volume code stays the same
+    - Migrated: options-monitor + price-monitor
 
-### Pending — THE MASTER 5-POINT PLAN
+### Master 5-Point Plan — closed out 2026-05-06
 
-**#2 — Email notifications from Claude Routines — DONE ✅** (see Done section above)
+| # | Description | Status |
+|---|-------------|--------|
+| #2 | Email notifications from monitors via Gmail SMTP | ✅ LIVE — see Done #5 |
+| #3 | Options monitor (entry + auto exit on paper) | ✅ LIVE — see Done #9; first AMZN PUT trade confirmed |
+| #4 | VIX guard for entry monitors | ✅ LIVE (fail-open in prod — see Done #7 production note) |
+| #5 | Duplicate position guard | ✅ LIVE — see Done #8 |
+| #1 | Live Portfolio Dashboard | ⏳ moved to **Backlog** below — needs MCP connector fix or alternative architecture |
 
-**#3 — Options monitor — CODE DONE ✅, deployment PENDING** (2026-05-06)
-- New: `options-monitor/monitor.py` + `requirements.txt`
-- Detects momentum setups on a curated whitelist (AAPL, MSFT, GOOGL, NVDA,
-  META, AMZN, TSLA, SPY, QQQ, JPM, RTX, LMT):
-  - RSI 45-65 -> CALL proposal (BUY_TO_OPEN_CALL)
-  - RSI > 72  -> PUT proposal  (BUY_TO_OPEN_PUT)
-- Emits a *proposal* payload (the routine resolves the actual contract via
-  Alpaca MCP and asks the user for explicit approval before placing the
-  order — iron rule "Options require explicit user approval each time")
-- Guards: VIX guard (HALT/CAUTION/OK), earnings calendar (±1d -> skip),
-  global cap of MAX_OPEN_OPTIONS=3 across all underlyings
-- Strategy params (strategies/options-strategy.md):
-  size_usd $500, max_contracts 1-2 per signal, DTE 14-21,
-  strike ATM ±3%, IV<35% (call) / IV<45% (put),
-  TP +80% premium, SL -50% premium
-- Integration tests passed (7 scenarios: CALL/PUT/neutral/earnings/cap/HALT/CAUTION)
-- USER STILL NEEDS:
-  1. Add `.github/workflows/options-monitor.yml` via GitHub UI (template ready)
-  2. Create Cloudflare Worker `options-proxy` + add `CLOUDFLARE_OPTIONS_WORKER_URL` secret
-  3. Create Claude Routine `Options Handler` (system prompt template ready)
+### Backlog (no committed timeline)
 
-**#5 — Duplicate position guard — DONE ✅** (2026-05-06)
-- `shared/risk_guards.py::has_open_position(symbol)` queries Alpaca
-  `/v2/positions/{symbol}` (URL-encoded so `BTC/USD` works)
-- Returns True only on HTTP 200; 404 / network errors / missing creds fail OPEN
-  (a single Alpaca outage cannot silently block all signals)
-- Wired into: price-monitor, crypto-monitor, defense-monitor
-  - Each monitor: when a signal fires, check `has_open_position(symbol)`
-    BEFORE sending the alert; skip if True (logs `pominięty (otwarta pozycja)`)
-- Geo-monitor INTENTIONALLY skipped — sends raw news to a routine that
-  decides the ticker, so dedup at this layer wouldn't see the symbol
-- Workflow note: ALPACA_API_KEY + ALPACA_SECRET_KEY must be present in
-  price-monitor.yml and defense-monitor.yml env blocks (crypto already
-  has them); without the keys the guard fails open and is a no-op
+- **Live Portfolio Dashboard** (master plan #1)
+  - Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
+  - Two viable paths:
+    1. Fix Alpaca MCP connector auth (`mcp__alpaca__` returns 401, UUID connector works in chat but NOT in artifacts)
+    2. Build a static HTML dashboard (Cloudflare Pages or GitHub Pages) that calls Alpaca via a new Worker proxy — fully my work, no MCP dependency
+  - Current workaround: static `docs/dashboard-snapshot.html`, refresh on demand
+  - Owner: TBD — pick path before scheduling
 
-**#4 — VIX guard for all entry monitors — DONE ✅** (2026-05-06)
-- `shared/risk_guards.py` exposes `vix_guard()` returning `(status, multiplier)`:
-  - VIX > 45 -> `("HALT", 0.0)` -> monitor returns early, sends 0-signal summary
-  - VIX > 35 -> `("CAUTION", 0.5)` -> monitor multiplies `signal["size_usd"]` by 0.5
-  - otherwise -> `("OK", 1.0)` -> normal sizing
-- Fail-open: if Finnhub unreachable / `FINNHUB_API_KEY` unset, returns OK (a Finnhub
-  outage cannot silently halt all trading)
-- Wired into: price-monitor, crypto-monitor, defense-monitor, geo-monitor
-- Exit-monitor INTENTIONALLY skipped — closing positions during a crash is desirable
-- All 4 workflows now expose `FINNHUB_API_KEY` (added to crypto + defense)
-- VIX source: Finnhub `/quote?symbol=^VIX`
-- Integration tests passed (HALT/CAUTION/OK paths verified across 3 monitors)
-
-**#1 — Live Portfolio Dashboard** (~20 min, highest ROI for daily use)
-- Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
-- Uses Alpaca MCP directly via Cowork artifact
-- Problem: UUID connector (`mcp__aaf463f1-cb15-4654-9680-1f0b41af56f5__`) works in Cowork chat
-  but NOT inside artifacts. Stable `mcp__alpaca__` returns 401.
-- Current workaround: static dashboard.html in ~/Downloads/investing/dashboard.html, refresh on demand
-- Real fix needed: either fix stable connector auth, or find another approach
-
-### Other pending
 - **Reddit monitor** — waiting for Reddit API email approval
-  - Resume guide: docs/RESUME-REDDIT.md
+  - Resume guide: `docs/RESUME-REDDIT.md`
   - When email arrives: create app at reddit.com/prefs/apps → type: script
-  - Add secrets: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, CLOUDFLARE_REDDIT_WORKER_URL
+  - Add secrets: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `CLOUDFLARE_REDDIT_WORKER_URL`
+
+- **VIX guard pivot to a working source** (follow-up to Done #7 production note)
+  - Symptom: Finnhub free `/quote?symbol=^VIX` returns empty; vix_guard always fail-opens in prod
+  - Candidates: VIXY ETF via Alpaca bars (proxy with rough scaling), Yahoo Finance public quote (brittle), FRED VIXCLS series (free key)
+  - ETA when prioritised: ~15 min to wire one source + test
+
+- **Backtest harness** for the momentum-long / overbought-short strategies on 6+ months of data
+  - Currently trading on live signals only; no validation that the rules actually have edge
+  - Would need historical bars (Alpaca offers free historical IEX), simple replay of `check_long_signal` / `check_short_signal` and tracking simulated P&L
+
+- **Risk officer agent gate** (`.claude/agents/risk-officer.md`) — exists but not wired into monitor flow
+  - CLAUDE.md "Mandatory workflow for every order" still expects this gate; today's monitors bypass it (alerts go straight to routine / Alpaca)
+  - Either delete the rule or wire the agent in
 
 ---
 
@@ -340,8 +349,87 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-06 | Master Plan #3 hardened: Finnhub /stock/candle migrated to Alpaca daily bars (shared/market_data.py) — Finnhub free tier started returning 403 in 2024, also fixed silent zero-signals in price-monitor. notify.py now renders an actionable "[OPTIONS APPROVAL NEEDED]" email body for options proposals (subject + 6-step Alpaca runbook). MAX_PROPOSALS_PER_RUN=1 added to options-monitor to soften Anthropic Routines rate limit. Iron rule for options relaxed to AUTO-EXECUTE on paper (routine system prompt updated to skip approval step; email is audit trail). |
 | 2026-05-06 | Master Plan #3 pivot to monitor-side execute: Anthropic Routines kept returning HTTP 429 (rate limit) so the routine path proved unreliable. options-monitor now resolves the contract via Alpaca `/v2/options/contracts` (free, basic close_price/strike/expiry) and places a bracket buy_to_open order via `/v2/orders` directly. Picks closest-to-ATM contract whose latest premium fits `size_usd / 100` budget. New env flag `AUTO_EXECUTE_OPTIONS` (default `true`) toggles between auto-execute and legacy routine path. Uses `notify_order_executed` for [EXECUTED] confirmations; failed executions fall back to the [OPTIONS APPROVAL NEEDED] proposal email so the user sees what tried to fire. Tests cover happy path, empty chain, order rejection, and legacy routine path. |
 | 2026-05-06 | Master Plan #3 final: Alpaca paper rejects bracket/OCO/stop on options ("complex orders not supported"). options-monitor switched to simple limit buy; first real paper order (AMZN PUT @ $4.35) confirmed in Alpaca dashboard. New `options-exit-monitor/monitor.py` polls open us_option positions every 5 min during session, evaluates against TP=entry*1.80 / SL=entry*0.50, and posts a SELL-to-close LIMIT when a threshold is hit. De-dup via `/v2/orders?status=open` so a second cron tick doesn't stack a duplicate sell. notify_exit() per close. 5 test scenarios pass (TP / SL / HOLD / already-has-sell / empty positions). User still needs to add `.github/workflows/options-exit-monitor.yml` (template ready). |
+| 2026-05-06 EOD | **End-of-day summary** — 4 of 5 master-plan points landed in production today. Order of work: (1) #2 emails: notify_signal/exit/summary wired into price-monitor + exit-monitor (defense+crypto already done before today). (2) Repo cleanup: .gitignore, untracked __pycache__, removed stale duplicate workflow ymls, consolidated 39 unique session reports/journals from 31 stale `claude/*` branches into main as one commit (979b45f) so the branches are now safe to delete. (3) #4 VIX guard: shared/risk_guards.py::vix_guard wired into price/crypto/defense/geo. Fail-open in prod because Finnhub free /quote?symbol=^VIX is empty — circuit breaker dormant; trading continues normally. (4) #5 dup-position guard: has_open_position() Alpaca check before every alert in price/crypto/defense. Geo skipped (news -> routine resolves ticker). (5) #3 options end-to-end: options-monitor builds proposals (RSI 45-65 CALL / >72 PUT) on a 12-ticker whitelist, originally forwarded to Cloudflare Worker → Claude Routine, but Anthropic Routines kept returning HTTP 429 so we pivoted to monitor-side AUTO_EXECUTE via Alpaca REST. Found Alpaca paper rejects bracket on options, switched to simple limit buy. First real paper-options trade fired at 19:18 UTC: AMZN260520P00270000 PUT entry $3.65. Then built options-exit-monitor that polls every 5 min during session, computes TP=entry*1.80 / SL=entry*0.50, places SELL-to-close LIMIT when threshold crossed (de-dup via /v2/orders?status=open). Net: 6 commits on main today (1db32ae cleanup, 979b45f consolidation, 1f0b581 VIX guard, ddb9f92 dup guard, 88240a8 options entry, 81c2109+b536bf8+25f1328 options auto-execute iterations, 93e16d5 options-exit-monitor). User pushed 7 workflow/secret changes via GitHub UI (proxy OAuth blocked workflow file edits). 4 fresh tests all pass on local mocks; 1 live AMZN PUT trade in Alpaca dashboard. Master 5-point plan now 4/5 with #1 Live Portfolio Dashboard moved to backlog alongside Reddit. |
 
 ---
 
-*Last updated: 2026-05-06 by Claude (Cowork session)*
+## TESTING PLAN — 2026-05-07
+
+End-to-end verification that every cron-driven workflow + every Claude Routine still works after today's changes. Checklist runs roughly 30 min; tick each item before market open (13:30 UTC).
+
+### A. Pre-flight (5 min, before any trigger)
+
+- [ ] **A1.** `git fetch origin && git log --oneline origin/main -5` — confirm latest commit is what we expect (today's last was `93e16d5`; tomorrow may already include the "one more thing" we'll do tonight)
+- [ ] **A2.** GitHub → Settings → Secrets → confirm presence of: `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `FINNHUB_API_KEY`, `NEWSAPI_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `NOTIFY_EMAIL`, all six `CLOUDFLARE_*_WORKER_URL` (incl. options + reddit), and `REDDIT_CLIENT_ID/SECRET`
+- [ ] **A3.** Alpaca dashboard → confirm open positions, including AMZN PUT, match what CLAUDE.md "Open positions" claims; note current premium for the AMZN PUT for the exit-monitor smoke test in section B7
+
+### B. Workflows — manual `Run workflow` smoke tests
+
+Trigger from https://github.com/mikosbartlomiej-prog/trading-system/actions/workflows/<file>.yml → Run workflow → branch `main`. Expected log shape in parentheses.
+
+- [ ] **B1.** `price-monitor.yml` — every 5 min weekday session
+  Expect: VIX guard line; LONG/SHORT/LEVERAGED scans listing each ticker's RSI/breakout/volume; `pominiety (otwarta pozycja)` for tickers in open positions (GLD/RTX/XLE); zero or more `>>> SYGNAL …`; per-signal `Alert wyslany … HTTP 200`; trailing `Sygnaly: N, alerty wyslane: N`
+- [ ] **B2.** `crypto-monitor.yml` — hourly + half-hourly 24/7
+  Expect: VIX guard; per-symbol 1h-bar fetch; one of `>>> SYGNAŁ BUY/SELL BTC/USD` or none; HTTP 200 to crypto worker; trailing alerts count
+- [ ] **B3.** `defense-monitor.yml` — every 30 min 24/7
+  Expect: VIX guard; DoD scrape; RSS feeds; NewsAPI; "Sygnałów wygenerowanych: N"; rate-limit guard `MAX_ALERTS_PER_RUN=1`; if a signal fires, `notify_signal` email + `>>> SYGNAŁ` log
+- [ ] **B4.** `geo-monitor.yml` — every 15 min weekday session
+  Expect: VIX guard; Finnhub news + NewsAPI + RSS pulls; "Znaleziono N istotnych newsów"; if N≥1, alert payload to geopolitical worker
+- [ ] **B5.** `exit-monitor.yml` — hourly during/around session + 22:00/00:00/02:00 UTC
+  Expect: equity + cash; per-position table with P&L%, hold hours, recommendation (HOLD/CONSIDER_TP/CLOSE_DECAY/CLOSE_FLAT/CLOSE_EMERGENCY); `notify_exit` email per non-HOLD; payload to exit worker
+- [ ] **B6.** `options-monitor.yml` — every 10 min weekday session
+  Expect banner `=== OPTIONS MONITOR — AUTO-EXECUTE (Alpaca REST) ===`; "Otwartych opcji: 1/3" (the AMZN PUT counts); per-ticker RSI; iteration past too-expensive tickers (`brak kontraktu w budżecie $5/share`); at most 1 `Order placed` per run; if placed, `[EXECUTED]` email
+- [ ] **B7.** `options-exit-monitor.yml` — every 5 min weekday session
+  Expect: `Otwartych opcji: 1`; `AMZN260520P00270000: in window (pl X.X%, TP=$6.57, SL=$1.82) -> HOLD` (or TP/SL if AMZN moved sharply); zero `SELL placed` unless threshold hit
+- [ ] **B8.** `weekly-learning.yml` — Sun 20:00 UTC; trigger manually to test
+  Expect: pulls journal/trades-*.md; computes weekly P&L; sends to learning worker
+- [ ] **B9.** `keep-alive.yml` — every 10 min; trigger manually
+  Expect: HTTP ping to Render MCP server endpoint; 200 / 405 acceptable
+
+For each workflow: capture exit code (must be 0). If anything 4xx/5xx in HTTP calls, screenshot + paste here for triage.
+
+### C. Claude Routines — verify each receives + processes payloads
+
+After triggering each workflow above, check claude.ai → Routines → click into the corresponding routine and confirm a fresh run is listed with no error in the conversation log.
+
+- [ ] **C1.** Tradingview Handler ← price-monitor
+- [ ] **C2.** Geopolitical Handler ← geo-monitor
+- [ ] **C3.** Crypto Handler ← crypto-monitor
+- [ ] **C4.** Exit Handler ← exit-monitor
+- [ ] **C5.** Learning-loop Handler ← weekly-learning (Sun)
+- [ ] **C6.** Defense Handler ← defense-monitor
+- [ ] **C7.** ~~Options Handler~~ — DEPRECATED, options-monitor bypasses via AUTO_EXECUTE; skip (nothing should arrive here unless `AUTO_EXECUTE_OPTIONS=false` is set)
+
+### D. Email verification (parallel to B)
+
+- [ ] **D1.** Inbox during a real signal cron tick → confirm `[BUY] / [SELL]` subject prefix is correct (BUY for BUY*; SELL for SELL/SELL_SHORT)
+- [ ] **D2.** Confirm body has ASCII-only content (no `\xa0`, no `–`/`—`)
+- [ ] **D3.** Confirm `[EXECUTED]` email after an options entry, body has TP/SL targets even though they're not placed on broker
+- [ ] **D4.** `[OPTIONS APPROVAL NEEDED]` email only appears when Alpaca rejects an order or AUTO_EXECUTE_OPTIONS=false (legacy path)
+- [ ] **D5.** Run summary `[X Monitor] N signal(s), M sent` only sends when N>0 (no spam on quiet runs)
+
+### E. End-to-end real scenarios (passive — observe over the day)
+
+- [ ] **E1.** Stock entry: a real LONG signal fires (e.g. NVDA breakout) → email arrives, dup-guard skips for any held tickers, signal posts to tradingview worker. Routine ideally executes (paper) bracket order.
+- [ ] **E2.** Options entry: options-monitor finds a setup that fits $5/share budget → AMZN-style fill in dashboard, [EXECUTED] email
+- [ ] **E3.** Options exit: AMZN PUT premium crosses TP=$6.57 OR SL=$1.82 → SELL-to-close LIMIT placed, [EXIT] email, no duplicate on next 5-min tick
+- [ ] **E4.** Quiet day: zero workflows produce emails (no false noise)
+
+### F. Failure-mode drills (optional, if time)
+
+- [ ] **F1.** Set `FINNHUB_API_KEY` to garbage in a workflow → confirm vix_guard fails OPEN and trading continues (not silently halts)
+- [ ] **F2.** Temporarily blank `ALPACA_API_KEY` in price-monitor.yml → confirm dup-guard fails OPEN (alerts still fire) but options-monitor `sys.exit(1)`s loudly (AUTO_EXECUTE requires creds)
+- [ ] **F3.** Cloudflare Worker offline (kill the Render deploy briefly) → confirm monitor logs the HTTP error but still emails
+
+### G. Sign-off
+
+- [ ] B1-B9 all green
+- [ ] C1-C7 verified
+- [ ] D1-D5 verified
+- [ ] No P0 issues open
+- [ ] Tag the day's tip: `git tag -a 2026-05-07-tested -m "Daily smoke test PASS"` (then push tag)
+
+---
+
+*Last updated: 2026-05-06 EOD by Claude (Cowork session)*
 *Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*
