@@ -111,8 +111,8 @@ All monitors run via GitHub Actions in the trading-system repo.
 |---------|------|--------|-------------|---------------------|
 | defense-monitor | `0,30 * * * *` (24/7) | ✅ WORKING | ✅ CONFIRMED 2026-05-06 | ✅ |
 | crypto-monitor | `0 * * * *` + `30 * * * *` (24/7) | ✅ | ✅ integrated | ✅ |
-| price-monitor | `*/5 13-20 * * 1-5` | ✅ | ⚠️ env set, monitor.py may not call notify() | ✅ |
-| exit-monitor | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | ✅ | ⚠️ env set, monitor.py may not call notify() | ✅ |
+| price-monitor | `*/5 13-20 * * 1-5` | ✅ | ✅ integrated 2026-05-06 (notify_signal + notify_summary) | ✅ |
+| exit-monitor | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | ✅ | ✅ integrated 2026-05-06 (notify_exit + notify_summary) | ✅ |
 | geo-monitor | `*/15 13-21 * * 1-5` | ✅ (not recently verified) | ❌ not integrated | ✅ |
 | weekly-learning | `0 20 * * 0` (Sunday 20:00 UTC) | ✅ | ❌ not integrated | ✅ |
 | keep-alive | `*/10 * * * *` | ✅ | ❌ (not needed) | pings Render |
@@ -146,8 +146,8 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 **Integration status:**
 - defense-monitor/monitor.py — ✅ calls notify_signal() and notify_summary()
 - crypto-monitor/monitor.py — ✅ integrated
-- price-monitor/monitor.py — ⚠️ needs notify calls added
-- exit-monitor/monitor.py — ⚠️ needs notify calls added
+- price-monitor/monitor.py — ✅ integrated 2026-05-06 (notify_signal per LONG/SHORT/leveraged alert + notify_summary at end)
+- exit-monitor/monitor.py — ✅ integrated 2026-05-06 (notify_exit per flagged position + notify_summary at end)
 
 ---
 
@@ -168,8 +168,19 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 2. ✅ Confirm email works end-to-end — tested 2026-05-06 with defense-monitor
 3. ✅ Fix all workflow files — merged duplicate env blocks, added PYTHONIOENCODING/LC_ALL/LANG
 4. ✅ English email strings throughout notify.py
+5. ✅ **Master Plan #2 — Email notifications integrated in all 4 active monitors** (2026-05-06)
+   - price-monitor: notify_signal() per LONG/SHORT/leveraged alert + notify_summary() at end of run
+   - exit-monitor:  notify_exit() per flagged (non-HOLD) position + notify_summary() at end of run
+   - In-process integration tests passed (mocked Alpaca/Finnhub + spy on notify hooks)
+   - Workflows already exposed GMAIL_USER / GMAIL_APP_PASSWORD / NOTIFY_EMAIL — no workflow change required
+6. ✅ **Repo cleanup** (2026-05-06)
+   - Added `.gitignore` (covers `__pycache__/`, `.venv/`, `.DS_Store`, `.env*`, etc.)
+   - Untracked all `__pycache__/*.pyc` files (build artifacts that should never be in git)
+   - Deleted stale duplicate workflow files: `crypto-monitor/crypto-monitor.yml`, `exit-monitor/exit-monitor.yml`, `learning-loop/weekly-learning.yml` (canonical copies live in `.github/workflows/` — only those are picked up by GitHub Actions)
 
 ### Pending — THE MASTER 5-POINT PLAN
+
+**#2 — Email notifications from Claude Routines — DONE ✅** (see Done section above)
 
 **#1 — Live Portfolio Dashboard** (~20 min, highest ROI for daily use)
 - Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
@@ -178,20 +189,6 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
   but NOT inside artifacts. Stable `mcp__alpaca__` returns 401.
 - Current workaround: static dashboard.html in ~/Downloads/investing/dashboard.html, refresh on demand
 - Real fix needed: either fix stable connector auth, or find another approach
-
-**#2 — Email notifications from Claude Routines** (practically important)
-- Goal: when a Routine executes a trade → send email immediately
-- Already done for monitors (GitHub Actions → shared/notify.py → Gmail SMTP) ✅
-- Still missing: price-monitor/monitor.py and exit-monitor/monitor.py don't call notify() yet
-- Import pattern for any monitor:
-  ```python
-  import sys, os
-  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-  from notify import notify_signal, notify_exit, notify_summary
-  ```
-- Call notify_signal() when BUY/SELL signal sent to Cloudflare
-- Call notify_exit() when exit-monitor closes a position
-- Call notify_summary() at end of each run (only fires if signals > 0)
 
 **#3 — Options monitor** (potentially large gains, Level 3 already enabled)
 - Goal: monitor IV, DTE, and momentum signals — plug into existing signal pipeline
@@ -329,6 +326,7 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-04 | Reddit monitor, geo-monitor, leveraged ETF strategy |
 | 2026-05-05 | Exit monitor, crypto monitor fixes, all Cloudflare workers working |
 | 2026-05-06 | Defense monitor, email notifications — root cause found and fixed |
+| 2026-05-06 | Master Plan #2 done: notify_signal/notify_exit/notify_summary wired into price-monitor + exit-monitor (defense + crypto already done). Repo cleanup: .gitignore added, __pycache__ untracked, stale duplicate workflow ymls removed. |
 
 ---
 
