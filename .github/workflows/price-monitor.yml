@@ -28,13 +28,8 @@ jobs:
       - name: Run price monitor (single check)
         env:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-        env:
-          GMAIL_USER:         ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
-        env:
-          GMAIL_USER:         ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
+          FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
+          GMAIL_USER:            ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:    ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:          ${{ secrets.NOTIFY_EMAIL }}
         run: python price-monitor/monitor.py --once
