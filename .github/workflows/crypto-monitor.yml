@@ -33,6 +33,7 @@ jobs:
           LANG:                         C
           ALPACA_API_KEY:               ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY:            ${{ secrets.ALPACA_SECRET_KEY }}
+          FINNHUB_API_KEY:              ${{ secrets.FINNHUB_API_KEY }}
           CLOUDFLARE_CRYPTO_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_WORKER_URL }}
           GMAIL_USER:                   ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD:           ${{ secrets.GMAIL_APP_PASSWORD }}
