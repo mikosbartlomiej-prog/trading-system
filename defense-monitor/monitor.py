@@ -47,12 +47,13 @@ ALL_TICKERS = TICKERS_BIG5 + TICKERS_MIDCAP + TICKERS_ETF + TICKERS_EUROPEAN
 
 # ─── Parametry pozycji ────────────────────────────────────────────────────────
 
-SIZE_BIG5_LONG     = 2500   # USD
-SIZE_BIG5_SHORT    = 1500   # USD
-SIZE_MIDCAP_LONG   = 1500   # USD
-SIZE_MIDCAP_SHORT  = 1000   # USD
-SIZE_ETF_LONG      = 2000   # USD
-SIZE_EUROPEAN_LONG = 1000   # USD
+# v2.0 risk-on (was 2500/1500/1500/1000/2000/1000)
+SIZE_BIG5_LONG     = 8000   # USD  (~3.2x)
+SIZE_BIG5_SHORT    = 5000   # USD  (~3.3x)
+SIZE_MIDCAP_LONG   = 5000   # USD  (~3.3x)
+SIZE_MIDCAP_SHORT  = 4000   # USD  (4x)
+SIZE_ETF_LONG      = 6000   # USD  (3x)
+SIZE_EUROPEAN_LONG = 4000   # USD  (4x)
 
 STOP_LOSS_PCT   = 0.03   # -3%
 TAKE_PROFIT_PCT = 0.06   # +6%

@@ -1,10 +1,16 @@
-# Strategia: Crypto Trading (BTC, ETH)
+# Strategia: Crypto Trading (BTC, ETH) — v2.0
+
+**Wersja:** 2.0 (2026-05-06 risk-on overhaul) — **4× sizing, weekend halving usunięty**
+**Źródło prawdy:** `docs/STRATEGY.md` §4.4
+
+---
 
 ## Opis
-24/7 handel kryptowalutami przez Alpaca. LIMIT DOLAROWY zamiast
-limitu liczby pozycji — ma sens przy BTC=$78k i ETH=$2.3k.
+24/7 handel BTC/USD i ETH/USD przez Alpaca. Pełne sizing przez 7 dni
+tygodnia (poprzednio weekend halved). Limit dolarowy zamiast limitu
+liczby pozycji — sensowne przy BTC ~$100k i ETH ~$3k.
 
-**Cel ekspozycji:** max **$8,000** w crypto łącznie w każdej chwili
+**Cel ekspozycji:** max **$25,000** w crypto łącznie w każdej chwili (3× wzrost vs v1)
 
 ---
 
@@ -17,58 +23,59 @@ limitu liczby pozycji — ma sens przy BTC=$78k i ETH=$2.3k.
 
 ---
 
-## Rozmiary pozycji
+## Rozmiary pozycji (no weekend discount)
 
-| Instrument | Weekday | Weekend |
-|------------|---------|---------|
-| BTC/USD long | **$2,000** | **$1,000** |
-| BTC/USD short | **$1,500** | **$750** |
-| ETH/USD long | **$1,000** | **$500** |
-| ETH/USD short | **$800** | **$400** |
+| Instrument     | Weekday | Weekend |
+|----------------|---------|---------|
+| BTC/USD long   | **$8,000** | **$8,000** |
+| BTC/USD short  | **$6,000** | **$6,000** |
+| ETH/USD long   | **$4,000** | **$4,000** |
+| ETH/USD short  | **$3,000** | **$3,000** |
 
-**Limit całkowity:** max $8,000 w crypto jednocześnie (8% konta $100k)
-- Jeśli suma otwartych pozycji crypto >= $7,000 → nie otwieraj nowych
+**Limit całkowity:** $25,000 gross (poprzednio $8,000 — wzrost 3×)
+- Jeśli suma otwartych pozycji crypto >= $20,000 → nie otwieraj nowych
 
 ---
 
-## Sygnały wejścia
+## Sygnały wejścia (1-hour timeframe)
 
 ### LONG Crypto (Momentum)
-- Cena > 20-świecowe max (1h timeframe)
-- Wolumen ostatniej świecy > 2x średnia z 10 świec
+- Cena > 20-świecowe max (1h)
+- Wolumen ostatniej świecy > 2× średnia 10 świec
 - RSI(14) na 1h: 45–68
 
 ### SHORT Crypto (Bearish)
-- Cena < 20-świecowe min (1h timeframe)
+- Cena < 20-świecowe min (1h)
 - RSI(14) < 35
-- Wolumen > 1.5x średnia
+- Wolumen > 1.5× średnia
 
 ---
 
 ## Parametry zlecenia
 
-| Parametr    | LONG  | SHORT |
-|-------------|-------|-------|
-| stop_loss   | −5%   | +5%   |
-| take_profit | +12%  | −12%  |
-| order_type  | LIMIT | LIMIT |
-| R:R         | 2.4   | 2.4   |
+| Parametr    | LONG    | SHORT   |
+|-------------|---------|---------|
+| stop_loss   | **−7%** | **+7%** (poprzednio ±5%) |
+| take_profit | **+20%**| **−20%** (poprzednio ±12%) |
+| order_type  | LIMIT   | LIMIT   |
+| R:R         | 2.86    | 2.86    |
 
 ---
 
 ## Exit Monitor (specjalny dla crypto)
 
-Co 30 minut:
-- Zysk > +6% → ustaw trailing stop 2%
-- Strata > −4% → zamknij wcześniej
-- Pozycja > 12h z P&L < 2% → zamknij (brak momentum)
+Co 30 minut, plus exit-monitor co godzinę:
+- Zysk > +10% → ustaw trailing stop 4%
+- Strata > -5% → consider close (ale przed SL -7%)
+- Pozycja > **48h** z P&L < 5% → CLOSE_DECAY (poprzednio 12h)
 
 ---
 
 ## Korelacja z innymi systemami
 
-- Geo-alert HIGH (risk-off) → zamknij otwarte crypto long pozycje
-- SPY spada > 3% w ciągu dnia → nie otwieraj nowych crypto longs
+- Geo-alert HIGH (risk-off) → zamknij otwarte crypto LONG
+- SPY spada > 4% w ciągu dnia → nie otwieraj nowych crypto longs (krach risk-off zwykle dotyka też BTC)
+- VIX > 60 → HALT (jak wszystko inne)
 
 ---
 
@@ -76,4 +83,4 @@ Co 30 minut:
 
 | Data | Symbol | Kierunek | Entry | Exit | P&L% | Sygnał | Notatka |
 |------|--------|----------|-------|------|------|--------|---------|
-| —    | —      | —        | —     | —    | —    | —      | Parametry zaktualizowane 05.05.2026 — limit dolarowy |
+| —    | —      | —        | —     | —    | —    | —      | v2.0 aktywne 2026-05-06 EOD |

@@ -1,12 +1,17 @@
-# Strategia: Defense Market Trading
+# Strategia: Defense Market Trading — v2.0
+
+**Wersja:** 2.0 (2026-05-06 risk-on overhaul) — **3× sizing, większy bucket geo**
+**Źródło prawdy:** `docs/STRATEGY.md` §4.5
+
+---
 
 ## Opis
-Strategia oparta na analizie newsów z rynku zbrojeniowego:
-kontrakty DoD, budżet militarny, eskalacja/deeskalacja konfliktów,
-nowe programy zbrojeniowe, NATO.
+Strategia oparta na analizie newsów z rynku zbrojeniowego: kontrakty DoD,
+budżet militarny, eskalacja/deeskalacja konfliktów, programy zbrojeniowe,
+NATO.
 
 **Częstotliwość skanowania:** co 30 minut, 24/7
-**Cel ekspozycji:** max $6,000 w pozycjach defense jednocześnie
+**Cel ekspozycji:** max **$25,000 gross** w defense+geo jednocześnie (4× v1)
 
 ---
 
@@ -23,108 +28,92 @@ nowe programy zbrojeniowe, NATO.
 
 ## Tickery
 
-### US Big 5 (LONG + SHORT)
-| Ticker | Spółka                   |
-|--------|--------------------------|
-| LMT    | Lockheed Martin          |
-| RTX    | Raytheon Technologies    |
-| NOC    | Northrop Grumman         |
-| GD     | General Dynamics         |
-| BA     | Boeing                   |
+### US Big-5 (LONG + SHORT)
+LMT, RTX, NOC, GD, BA
 
 ### US Mid-cap (LONG + SHORT)
-| Ticker | Spółka                   |
-|--------|--------------------------|
-| KTOS   | Kratos Defense           |
-| PLTR   | Palantir Technologies    |
-| AXON   | Axon Enterprise          |
-| LDOS   | Leidos Holdings          |
-| SAIC   | Science Applications Int |
-| CACI   | CACI International       |
+KTOS, PLTR, AXON, LDOS, SAIC, CACI
 
-### ETFs (tylko LONG)
-| Ticker | Opis                     |
-|--------|--------------------------|
-| ITA    | iShares U.S. Aerospace   |
-| XAR    | SPDR Aerospace & Defense |
-| DFEN   | Direxion 3x Defense Bull |
+### Defense ETFs (tylko LONG)
+ITA, XAR, DFEN
 
 ### European ADRs (tylko LONG)
-| Ticker | Spółka                   |
-|--------|--------------------------|
-| BAESY  | BAE Systems              |
-| EADSY  | Airbus                   |
+BAESY, EADSY
+
+### Geo basket (energy + safe-haven)
+XLE, XOM, GLD, CVX
 
 ---
 
 ## Warunki wejścia
 
 ### LONG (score >= 2 słów kluczowych, LONG dominuje nad SHORT)
-Słowa kluczowe LONG:
-- contract awarded, contract award, awarded contract
-- billion/million contract, awarded $
+- contract awarded, billion contract, awarded $
 - indefinite delivery, idiq, government contract
-- defense budget increase, increased military spending
-- supplemental funding, ndaa, defense appropriations
-- nato expansion, nato spending, 2% gdp, rearmament
-- new weapons program, next-generation, hypersonic
-- drone program, missile defense, space force
+- defense budget increase, ndaa, supplemental funding
+- nato expansion, 2% gdp, rearmament
+- new weapons program, hypersonic, drone program
 - f-35, f-47, b-21, ngad
-- military escalation, heightened tensions, military buildup
-- arms shipment, weapons delivery
+- military escalation, military buildup
 
-### SHORT (score >= 2, SHORT dominuje nad LONG) — tylko Big5 + Mid-cap
-Słowa kluczowe SHORT:
-- ceasefire, peace deal, peace agreement, armistice
-- negotiations, diplomatic solution, peace talks
-- withdraw troops, troop withdrawal, end of conflict, war ends
-- defense budget cut, military spending cut, reduced defense
-- doge, budget reduction
-- contract cancelled, program cancelled, program terminated
-- failed test, test failure, scrapped
-- cost overrun, investigation, fraud
-- arms embargo, weapons ban
+### SHORT (score >= 2, SHORT dominuje) — tylko Big5 + Mid-cap
+- ceasefire, peace deal, peace agreement
+- diplomatic solution, negotiations
+- troop withdrawal, end of conflict
+- defense budget cut, doge cuts, reduced defense
+- contract cancelled, program terminated, scrapped
+- failed test, cost overrun, fraud
+- arms embargo
 
 ---
 
 ## Parametry zleceń
 
-### US Big 5
+### US Big-5
 | Typ        | size_usd | stop_loss | take_profit |
 |------------|----------|-----------|-------------|
-| LONG (BUY) | $2,500   | −3%       | +6%         |
-| SHORT      | $1,500   | +3%       | −6%         |
+| LONG (BUY) | **$8,000** | **−5%**   | **+12%**    |
+| SHORT      | **$5,000** | **+5%**   | **−12%**    |
 
 ### US Mid-cap
 | Typ        | size_usd | stop_loss | take_profit |
 |------------|----------|-----------|-------------|
-| LONG (BUY) | $1,500   | −3%       | +6%         |
-| SHORT      | $1,000   | +3%       | −6%         |
+| LONG (BUY) | **$5,000** | **−5%**   | **+12%**    |
+| SHORT      | **$4,000** | **+5%**   | **−12%**    |
 
-### ETFs (tylko LONG)
+### Defense ETFs (tylko LONG)
 | Typ  | size_usd | stop_loss | take_profit |
 |------|----------|-----------|-------------|
-| LONG | $2,000   | −3%       | +6%         |
+| LONG | **$6,000** | **−5%**   | **+12%**    |
 
 ### European ADRs (tylko LONG)
 | Typ  | size_usd | stop_loss | take_profit |
 |------|----------|-----------|-------------|
-| LONG | $1,000   | −3%       | +6%         |
+| LONG | **$4,000** | **−5%**   | **+12%**    |
+
+### Geo basket (energy + GLD)
+| Ticker | Direction | size_usd | SL | TP |
+|--------|-----------|----------|-----|-----|
+| XLE    | LONG/SHORT | **$6,000** | ±5% | ±12% |
+| XOM    | LONG/SHORT | **$6,000** | ±5% | ±12% |
+| GLD    | LONG only  | **$6,000** | -5% | +12% |
+| CVX    | LONG/SHORT | **$6,000** | ±5% | ±12% |
 
 - `order_type`: LIMIT
 - `time_in_force`: DAY
-- R:R = 2.0
+- R:R = 2.4
 
 ---
 
 ## Zasady risk management
 
-- Max **4 pozycje defense** jednocześnie (1 Big5 + 1 Mid-cap + 1 ETF + 1 European)
+- Max **6 pozycji defense + geo combined** jednocześnie (poprzednio 4 + 3 = 7 — teraz combined 6)
 - Nie shortujemy ETF ani European ADR
-- Nie otwieramy gdy dzienna strata > −4%
-- Nie otwieramy kilku tickerów z tego samego kontrahentu za jednym razem
+- Daily P&L stop: -12% → no new entries
+- VIX HALT > 60
 - Scoring musi być >= 2 dla LONG, >= 2 dla SHORT
-- News musi pochodzić z ostatniej 1 godziny
+- News musi pochodzić z ostatniej **60 minut**
+- Nie otwieramy kilku tickerów z tego samego kontrahentu w jednej sesji
 
 ---
 
@@ -132,4 +121,4 @@ Słowa kluczowe SHORT:
 
 | Data | Ticker | Kierunek | Score | Wynik | Źródło | Notatka |
 |------|--------|----------|-------|-------|--------|---------|
-| —    | —      | —        | —     | —     | —      | Czeka na pierwsze uruchomienie |
+| —    | —      | —        | —     | —     | —      | v2.0 aktywne 2026-05-06 EOD |

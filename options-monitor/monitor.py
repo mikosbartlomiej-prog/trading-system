@@ -54,21 +54,22 @@ TICKERS = [
 ]
 
 # Strategy parameters (strategies/options-strategy.md)
-SIZE_USD                 = 500     # USD per signal
-MAX_CONTRACTS_PER_SIGNAL = 2
-MAX_OPEN_OPTIONS         = 3       # global cap across all underlyings
-MAX_PROPOSALS_PER_RUN    = 1       # per-run cap (also rate-limit safety in routine path)
-DTE_MIN                  = 14
-DTE_MAX                  = 21
-IV_MAX_CALL_PCT          = 35.0
-IV_MAX_PUT_PCT           = 45.0
+# v2.0 risk-on (was 500 / 2 / 3 / 1 / 14-21 / 35 / 45 / 1.80 / 0.50 / 3.0)
+SIZE_USD                 = 2500    # USD per signal (5× v1)
+MAX_CONTRACTS_PER_SIGNAL = 5       # was 2
+MAX_OPEN_OPTIONS         = 10      # was 3 (3.3×)
+MAX_PROPOSALS_PER_RUN    = 3       # was 1 (rate-limit no longer a problem in AUTO_EXECUTE)
+DTE_MIN                  = 7       # was 14
+DTE_MAX                  = 30      # was 21 (wider window)
+IV_MAX_CALL_PCT          = 55.0    # was 35
+IV_MAX_PUT_PCT           = 65.0    # was 45
 RSI_CALL_MIN             = 45
 RSI_CALL_MAX             = 65
 RSI_PUT_MIN              = 72
-TP_PREMIUM_MULT          = 1.80    # +80%
-SL_PREMIUM_MULT          = 0.50    # -50%
-STRIKE_OTM_MAX_PCT       = 3.0     # ATM ±3%
-EARNINGS_BUFFER_DAYS     = 1       # avoid options ±1 day around earnings
+TP_PREMIUM_MULT          = 2.20    # +120% (was +80%)
+SL_PREMIUM_MULT          = 0.35    # -65%  (was -50%)
+STRIKE_OTM_MAX_PCT       = 7.0     # ATM ±7% (was ±3%)
+EARNINGS_BUFFER_DAYS     = 1       # iron rule, unchanged
 
 
 def alpaca_headers() -> dict:

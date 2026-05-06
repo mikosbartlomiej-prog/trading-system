@@ -30,17 +30,18 @@ CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_CRYPTO_WORKER_URL", "")
 CRYPTO_SYMBOLS = ["BTC/USD", "ETH/USD"]
 
 # Rozmiary pozycji — AGGRESSIVE + limit dolarowy zamiast liczbowego
-SIZE_BTC_LONG_WEEKDAY  = 2000
-SIZE_BTC_SHORT_WEEKDAY = 1500
-SIZE_ETH_LONG_WEEKDAY  = 1000
-SIZE_ETH_SHORT_WEEKDAY = 800
-SIZE_BTC_LONG_WEEKEND  = 1000
-SIZE_BTC_SHORT_WEEKEND = 750
-SIZE_ETH_LONG_WEEKEND  = 500
-SIZE_ETH_SHORT_WEEKEND = 400
+# v2.0 risk-on: weekend halving REMOVED — same sizing 24/7
+SIZE_BTC_LONG_WEEKDAY  = 8000
+SIZE_BTC_SHORT_WEEKDAY = 6000
+SIZE_ETH_LONG_WEEKDAY  = 4000
+SIZE_ETH_SHORT_WEEKDAY = 3000
+SIZE_BTC_LONG_WEEKEND  = 8000   # was 1000 (50% halving) — now full
+SIZE_BTC_SHORT_WEEKEND = 6000   # was 750
+SIZE_ETH_LONG_WEEKEND  = 4000   # was 500
+SIZE_ETH_SHORT_WEEKEND = 3000   # was 400
 
 # Limit dolarowy całkowitej ekspozycji crypto
-CRYPTO_MAX_EXPOSURE_USD = 8000
+CRYPTO_MAX_EXPOSURE_USD = 25000   # v2.0: was 8000 (3x increase)
 
 # Progi sygnałów
 RSI_LONG_MIN  = 45
@@ -154,8 +155,8 @@ def check_crypto_signal(symbol: str) -> dict | None:
     if (current_price > high_20
             and current_volume > avg_vol * 2.0
             and rsi is not None and RSI_LONG_MIN <= rsi <= RSI_LONG_MAX):
-        stop_loss   = round(current_price * 0.95, 2)   # -5%
-        take_profit = round(current_price * 1.12, 2)   # +12%
+        stop_loss   = round(current_price * 0.93, 2)   # v2.0: -7% (was -5%)
+        take_profit = round(current_price * 1.20, 2)   # v2.0: +20% (was +12%)
         print(f"  LONG {symbol}: {current_price:.2f} > high20={high_20:.2f}, RSI={rsi:.1f}, vol={current_volume/avg_vol:.1f}x")
         return {
             "symbol":      symbol,
@@ -173,8 +174,8 @@ def check_crypto_signal(symbol: str) -> dict | None:
     if (current_price < low_20
             and current_volume > avg_vol * 1.5
             and rsi is not None and rsi < RSI_SHORT_MAX):
-        stop_loss   = round(current_price * 1.05, 2)   # +5% (short SL powyżej)
-        take_profit = round(current_price * 0.88, 2)   # -12% (short TP poniżej)
+        stop_loss   = round(current_price * 1.07, 2)   # v2.0: +7% short SL (was +5%)
+        take_profit = round(current_price * 0.80, 2)   # v2.0: -20% short TP (was -12%)
         print(f"  SHORT {symbol}: {current_price:.2f} < low20={low_20:.2f}, RSI={rsi:.1f}, vol={current_volume/avg_vol:.1f}x")
         return {
             "symbol":      symbol,

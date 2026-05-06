@@ -33,17 +33,24 @@ CLOUDFLARE_WORKER_URL = os.environ.get(
 
 FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 
-# Tickery do monitorowania (long + short candidates)
-TICKERS_LONG  = ["AAPL", "MSFT", "GOOGL", "NVDA", "SPY", "META", "AMZN"]
+# Tickery do monitorowania (long + short candidates) — v2.0 risk-on
+TICKERS_LONG  = ["AAPL", "MSFT", "GOOGL", "NVDA", "META", "AMZN", "TSLA",
+                 "SPY", "QQQ",
+                 "COIN", "MSTR", "ARM", "SMCI"]
 TICKERS_SHORT = ["AAPL", "MSFT", "GOOGL", "NVDA", "META", "TSLA", "AMZN"]
 
-# Lewarowane ETF — trackujemy osobno
-TICKERS_LEVERAGED = ["TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO"]
+# Lewarowane ETF — v2.0 rozszerzona lista (3x SPY/QQQ/SOX/XLF/IWM, both directions)
+TICKERS_LEVERAGED = ["TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO", "SPXU",
+                     "SOXL", "SOXS", "FAS", "FAZ", "TNA", "TZA"]
 
-# Rozmiary pozycji — AGGRESSIVE
-SIZE_LONG      = 3000  # USD — long momentum
-SIZE_SHORT     = 2000  # USD — short
-SIZE_LEVERAGED = 1500  # USD — lewarowane ETF
+# Rozmiary pozycji — v2.0 RISK-ON (was: 3000/2000/1500)
+SIZE_LONG      = 10000  # USD — long momentum
+SIZE_SHORT     = 8000   # USD — short
+SIZE_LEVERAGED = 6000   # USD — lewarowane ETF
+
+# ATR multipliers — v2.0 looser to let positions breathe
+ATR_SL_MULT = 2.0   # was 1.5
+ATR_TP_MULT = 4.0   # was 2.5
 
 # ─── Finnhub API ─────────────────────────────────────────────────────────────
 
@@ -137,8 +144,8 @@ def check_long_signal(ticker):
 
         if price_breakout and volume_ok and rsi_ok:
             atr_val     = atr or current_price * 0.02
-            stop_loss   = round(current_price - 1.5 * atr_val, 2)
-            take_profit = round(current_price + 2.5 * atr_val, 2)
+            stop_loss   = round(current_price - ATR_SL_MULT * atr_val, 2)
+            take_profit = round(current_price + ATR_TP_MULT * atr_val, 2)
             size        = SIZE_LEVERAGED if ticker in TICKERS_LEVERAGED else SIZE_LONG
             return {
                 "symbol":      ticker,
@@ -204,8 +211,8 @@ def check_short_signal(ticker):
         conditions_met = sum([rsi_overbought, near_resistance, volume_fading, bearish_candle])
         if rsi_overbought and conditions_met >= 3:
             atr_val     = atr or current_price * 0.02
-            stop_loss   = round(current_price + 1.5 * atr_val, 2)   # SL powyzej ceny (short)
-            take_profit = round(current_price - 2.5 * atr_val, 2)   # TP ponizej ceny (short)
+            stop_loss   = round(current_price + ATR_SL_MULT * atr_val, 2)   # SL powyzej ceny (short)
+            take_profit = round(current_price - ATR_TP_MULT * atr_val, 2)   # TP ponizej ceny (short)
             return {
                 "symbol":      ticker,
                 "action":      "SELL_SHORT",

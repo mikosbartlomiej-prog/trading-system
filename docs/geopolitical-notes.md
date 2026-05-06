@@ -1,6 +1,11 @@
-# Strategia: Geopolitical Event Trading
+# Strategia: Geopolitical Event Trading — DEPRECATED NOTES
 
-## Opis
+> **NOTE 2026-05-06:** This file is kept for historical context only.
+> Current source of truth is `strategies/geopolitical.md` (v2.0 parameters)
+> and `docs/STRATEGY.md` §4.5. Numbers below reflect v1.0 (pre-2026-05-06)
+> and are intentionally preserved unchanged.
+
+## Opis (v1.0 historical)
 Strategia oparta na eskalacji/deeskalacji konfliktów geopolitycznych,
 szczególnie konfliktu USA-Iran-Izrael na Bliskim Wschodzie oraz
 decyzjach administracji Trumpa (sankcje, taryfy, rozkazy wykonawcze).

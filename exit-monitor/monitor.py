@@ -26,13 +26,16 @@ ALPACA_BASE_URL   = "https://paper-api.alpaca.markets"   # paper trading
 CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_EXIT_WORKER_URL", "")
 
 # Progi dla exit decyzji — Claude Routine dostanie te dane i podejmie decyzję
+# v2.0 risk-on — looser thresholds, more patience, harder catastrophic stop
 EXIT_THRESHOLDS = {
-    "quick_profit_pct":    3.0,    # > 3% zysku w < 4h → rozważ wcześniejszy TP
-    "time_decay_hours":    6,      # po 6h bez ruchu (|P&L| < 1%) → zamknij
-    "flat_pnl_pct":        1.0,    # próg "brak ruchu" w %
-    "leveraged_decay_hours": 48,   # lewarowane ETF: zamknij po 48h
-    "crypto_decay_hours":   12,    # crypto: zamknij po 12h bez +3%
-    "emergency_loss_pct":  -5.0,   # strata > 5% → zawsze zamknij (ponad SL)
+    "quick_profit_pct":      10.0,   # v2: was 3.0 — let winners run more
+    "quick_profit_window_h":  6,     # v2: window for "quick" extended from 4h to 6h
+    "time_decay_hours":       24,    # v2: was 6 — more patience for thesis to play out
+    "flat_pnl_pct":           3.0,   # v2: was 1.0 — wider "flat" definition
+    "leveraged_decay_hours":  96,    # v2: was 48 — 3× ETFs allowed to run
+    "crypto_decay_hours":     48,    # v2: was 12 — give crypto room
+    "crypto_decay_min_pl":    5.0,   # v2: was 3 — min profit to keep holding past decay
+    "emergency_loss_pct":    -12.0,  # v2: was -5 — daily catastrophic, NOT per-trade SL
 }
 
 # ─── Alpaca REST API ──────────────────────────────────────────────────────────
@@ -128,7 +131,7 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
         recommendation = "CLOSE_EMERGENCY"
         reasons.append(f"strata {unrealized_plpc:.1f}% przekracza próg awaryjny")
 
-    elif unrealized_plpc >= EXIT_THRESHOLDS["quick_profit_pct"] and hold_hours < 4:
+    elif unrealized_plpc >= EXIT_THRESHOLDS["quick_profit_pct"] and hold_hours < EXIT_THRESHOLDS["quick_profit_window_h"]:
         recommendation = "CONSIDER_TP"
         reasons.append(f"szybki zysk {unrealized_plpc:.1f}% w {hold_hours:.1f}h")
 
@@ -136,7 +139,7 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
         recommendation = "CLOSE_DECAY"
         reasons.append(f"lewarowane ETF trzymane {hold_hours:.1f}h (próg: {EXIT_THRESHOLDS['leveraged_decay_hours']}h)")
 
-    elif symbol in ("BTC/USD", "ETH/USD") and hold_hours >= EXIT_THRESHOLDS["crypto_decay_hours"] and unrealized_plpc < 3.0:
+    elif symbol in ("BTC/USD", "ETH/USD") and hold_hours >= EXIT_THRESHOLDS["crypto_decay_hours"] and unrealized_plpc < EXIT_THRESHOLDS["crypto_decay_min_pl"]:
         recommendation = "CLOSE_DECAY"
         reasons.append(f"crypto trzymane {hold_hours:.1f}h bez ≥3% zysku")
 

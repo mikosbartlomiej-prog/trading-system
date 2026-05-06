@@ -20,7 +20,12 @@ Oblicz dla każdej pozycji:
 - % portfela
 - unrealized P&L w USD i %
 
-Oblicz flagę koncentracji: czy jakaś pozycja przekracza 15% equity?
+Oblicz flagi koncentracji (v2.0 risk-on):
+- Single ticker > 40% equity → flag `concentration_per_ticker`
+- Single trade size > 20% equity → flag `oversized_trade`
+- Daily P&L < -12% → flag `daily_circuit_breaker`
+- Weekly P&L < -25% → flag `weekly_circuit_breaker`
+- Cash > 5% (idle capital) → flag `idle_cash` (informational)
 
 ## Format wyjścia
 

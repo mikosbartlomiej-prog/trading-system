@@ -1,0 +1,490 @@
+# Trading System — Risk & Strategy Document
+
+**Version:** 2.0 (aggressive risk-on, supersedes everything in CLAUDE.md prior to 2026-05-06)
+**Effective from:** 2026-05-06 EOD
+**Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
+**Author:** mikosbartlomiej-prog + Claude (Cowork)
+
+This is the canonical source of truth for risk and strategy parameters.
+Every monitor, every strategies/*.md file, every agent prompt, and every
+iron rule in CLAUDE.md must agree with the numbers here. If a number
+appears in code that contradicts this document, **the document wins** —
+update the code.
+
+---
+
+## 1. Investment Philosophy
+
+### 1.1 Mission
+
+Generate the highest possible compounded return on the paper account
+over short horizons (intraday → 30 days). The system is **risk-on by
+default**: it embraces volatility, runs concentrated positions, and
+prefers many fast trades over a few cautious ones.
+
+### 1.2 Posture
+
+| Dimension | Value |
+|---|---|
+| Risk appetite | **Aggressive** — accept high single-day variance for higher expected return |
+| Time horizon | Intraday → 30 days |
+| Capital usage | **All capital available**; no cash reserve, margin actively used |
+| Position concentration | **High** — up to 40% of equity in one ticker, up to 80% notional in options |
+| Trade frequency | **High** — 5-min cron ticks, multiple entries per day |
+| Bias | Long-biased on momentum, short on overbought reversals, both directions in crypto |
+
+### 1.3 Hard constraints (the only things we will NOT compromise)
+
+1. Paper account only — no live trading, ever
+2. Every entry has a stop-loss (no naked positions left without an exit)
+3. Whitelist enforcement — never trade outside `.claude/rules/tickers-whitelist.md`
+4. Earnings ±1d skip on options (single biggest IV-crush risk we cannot model)
+5. Daily catastrophic-loss circuit breaker stops new entries (see §3)
+
+Everything else is up for renegotiation as the strategy evolves.
+
+---
+
+## 2. Capital Structure
+
+### 2.1 Account snapshot
+
+| Item | Value |
+|---|---|
+| Equity | $100,032 (as of 2026-05-06) |
+| Cash | full equity available |
+| Buying power | ~$200,000 (Reg-T intraday) |
+| Settled day-trade buying power | up to 4× equity |
+| Shorting | enabled (`no_shorting=false`) |
+| Options level | 3 (all single-leg long/short permitted) |
+
+### 2.2 Capital rules
+
+- **Cash reserve:** 0% (was 5%). Every dollar can be deployed.
+- **Margin usage:** target 1.5×–2.5× gross exposure (not maxed at 4× — leave headroom for adverse moves)
+- **Per-ticker cap:** 40% of equity (was 15%) — single name can hold up to $40k notional
+- **Per-trade cap:** 20% of equity (was 5%) — single signal can size up to $20k
+
+### 2.3 Soft asset-class allocations (gross, % of equity)
+
+These are guidelines used by exit-monitor and the risk-officer agent to
+flag concentration. Going over is allowed if a setup is exceptional, but
+the agent will warn.
+
+| Asset class | Soft cap | Notes |
+|---|---|---|
+| US momentum stocks (long + short) | 60% | $60k gross |
+| Leveraged ETFs (3×) | 25% | $25k — decay risk caps the cap |
+| Crypto (BTC + ETH) | 25% | $25k — 24/7, can be large since liquid |
+| Defense / geopolitical / sector ETFs | 35% | $35k |
+| Options (premium paid) | 25% | $25k — notional exposure can be 100%+ via leverage |
+| Reddit sentiment (when active) | 10% | $10k |
+
+The total can exceed 100% (margin) up to ~250% in aggressive periods.
+
+---
+
+## 3. Risk Budget
+
+### 3.1 Drawdown circuit breakers
+
+| Trigger | Action |
+|---|---|
+| Single trade SL hit | Position closes (per-strategy SL price), system continues |
+| **Daily P&L ≤ -12%** | New entries blocked till next day; exits keep working |
+| **Weekly P&L ≤ -25%** | All monitors paused (workflows disabled); manual review required before resuming |
+| **Monthly P&L ≤ -40%** | Full stop. Strategy review and parameter reset before any new trade |
+| VIX > 60 | New entries blocked (only-catastrophic-volatility halt) |
+
+Old breakers that are **REMOVED**:
+- ~~Daily -3% stop~~ → relaxed to -12%
+- ~~No trading when VIX > 35~~ → relaxed to VIX > 60
+- ~~5% per-trade cap~~ → relaxed to 20%
+- ~~5% cash floor~~ → 0%
+- ~~15% per-ticker cap~~ → 40%
+
+### 3.2 Per-strategy stop-loss (mandatory, every entry)
+
+Stop-losses are MANDATORY but **looser** than before — we want positions
+to breathe. They are placed as the SL leg of bracket orders for stocks
+(Alpaca supports brackets on stocks) and emulated by the
+options-exit-monitor for options.
+
+| Asset class | Stop-loss rule |
+|---|---|
+| US stocks (long & short) | entry ± 2.0 × ATR(14) |
+| Leveraged ETFs | entry × (1 ∓ 5%) |
+| Crypto | entry × (1 ∓ 7%) |
+| Defense / geo / sector | entry × (1 ∓ 5%) |
+| Options | premium × 0.35 (-65%) |
+| Reddit sentiment | entry × (1 - 6%) |
+
+### 3.3 VIX policy
+
+| VIX level | Old policy | **New policy** |
+|---|---|---|
+| < 30 | OK | OK |
+| 30-35 | OK | OK |
+| 35-45 | CAUTION (50% sizing) | **OK (full sizing)** |
+| 45-60 | HALT | **OK (full sizing)** |
+| > 60 | HALT | **HALT (catastrophic only)** |
+
+The VIX guard in `shared/risk_guards.py::vix_guard()` is rewritten to
+return HALT only above 60 and OK otherwise. CAUTION mode is removed.
+
+---
+
+## 4. Asset Class Strategies
+
+Numbers in this section are the canonical sizing/threshold values. Code
+constants in monitors must equal these.
+
+### 4.1 US Equities — Momentum LONG
+
+**Strategy file:** `strategies/aggressive-momentum.md`
+**Monitor:** `price-monitor` (cron `*/5 13-20 * * 1-5`)
+
+| Parameter | Value |
+|---|---|
+| Tickers | AAPL, MSFT, GOOGL, NVDA, META, AMZN, TSLA, SPY, QQQ |
+| Entry condition | Close > 20-day high AND RSI(14) ∈ [50, 70] AND volume > 1.5× 20-day avg |
+| Size per signal | **$10,000** |
+| Stop-loss | entry - 2.0 × ATR(14) |
+| Take-profit | entry + 4.0 × ATR(14) |
+| R:R | ~2.0 |
+| Order type | LIMIT, DAY |
+| Max concurrent long positions | 6 |
+
+### 4.2 US Equities — Overbought Reversal SHORT
+
+**Strategy file:** `strategies/aggressive-momentum.md` (same file, SHORT section)
+
+| Parameter | Value |
+|---|---|
+| Tickers | AAPL, MSFT, GOOGL, NVDA, META, TSLA, AMZN |
+| Entry condition | RSI(14) > 72 AND 2/3 of (price within 2% of 20-d high, volume < 0.8× avg, close < prev open) |
+| Size per signal | **$8,000** |
+| Stop-loss | entry + 2.0 × ATR(14) |
+| Take-profit | entry - 4.0 × ATR(14) |
+| R:R | ~2.0 |
+| Max concurrent short positions | 4 |
+
+### 4.3 Leveraged ETFs (3×)
+
+**Strategy file:** `strategies/leveraged-etf.md`
+**Monitor:** `price-monitor` (LEVERAGED block) — same cron
+
+| Parameter | Value |
+|---|---|
+| Tickers | TQQQ, SQQQ, SPXL, SPXS, UPRO, SPXU, SOXL, SOXS, FAS, FAZ, TNA, TZA |
+| Entry condition (bull) | Underlying breakout + RSI 50-68 |
+| Entry condition (bear) | Underlying breakdown + RSI < 38 |
+| Size per signal | **$6,000** |
+| Stop-loss | -5% |
+| Take-profit | +18% |
+| R:R | 3.6 |
+| Max hold | 96 hours |
+| Max concurrent | 4 |
+
+### 4.4 Crypto (BTC, ETH)
+
+**Strategy file:** `strategies/crypto-strategy.md`
+**Monitor:** `crypto-monitor` (cron `0,30 * * * *`, 24/7)
+
+| Parameter | BTC LONG | BTC SHORT | ETH LONG | ETH SHORT |
+|---|---|---|---|---|
+| Size weekday | **$8,000** | **$6,000** | **$4,000** | **$3,000** |
+| Size weekend | **$8,000** | **$6,000** | **$4,000** | **$3,000** |
+| Stop-loss | -7% | +7% | -7% | +7% |
+| Take-profit | +20% | -20% | +20% | -20% |
+| R:R | ~2.9 | ~2.9 | ~2.9 | ~2.9 |
+| Max simultaneous exposure (USD across BTC+ETH) | $25,000 |
+| Entry LONG | 1h close > 20-bar high + RSI 45-68 + volume 2× avg |
+| Entry SHORT | 1h close < 20-bar low + RSI < 35 + volume 1.5× avg |
+
+The previous "weekend halving" rule is REMOVED. Volume in crypto is high
+enough on weekends that the discount is unnecessary.
+
+### 4.5 Defense / Geopolitical Events
+
+**Strategy files:** `strategies/defense-market.md` + `strategies/geopolitical.md`
+**Monitors:** `defense-monitor` (`0,30 * * * *`), `geo-monitor` (`*/15 13-21 * * 1-5`)
+
+| Bucket | Tickers | Size LONG | Size SHORT |
+|---|---|---|---|
+| Big-5 defense | LMT, RTX, NOC, GD, BA | **$8,000** | **$5,000** |
+| Mid-cap defense | KTOS, PLTR, AXON, LDOS, SAIC, CACI | **$5,000** | **$4,000** |
+| Defense ETF | ITA, XAR, DFEN | **$6,000** | n/a (long only) |
+| European ADR | BAESY, EADSY | **$4,000** | n/a |
+| Geo basket (energy/gold) | XLE, XOM, GLD, CVX | **$6,000** | **$4,000** |
+
+| Common parameter | Value |
+|---|---|
+| Stop-loss | -5% |
+| Take-profit | +12% |
+| R:R | 2.4 |
+| Max defense + geo combined positions | 6 |
+| News recency required | last 60 min |
+| Scoring threshold for entry | ≥ 2 keywords matched |
+
+### 4.6 Options (auto-execute on paper)
+
+**Strategy file:** `strategies/options-strategy.md`
+**Monitor (entry):** `options-monitor` (cron `*/10 13-20 * * 1-5`)
+**Monitor (exit):** `options-exit-monitor` (cron `*/5 13-20 * * 1-5`)
+
+| Parameter | Value |
+|---|---|
+| Underlying whitelist | AAPL, MSFT, GOOGL, NVDA, META, AMZN, TSLA, SPY, QQQ, JPM, RTX, LMT |
+| Trigger CALL | RSI ∈ [45, 65] |
+| Trigger PUT | RSI > 72 |
+| Earnings filter | skip if earnings ±1 day |
+| DTE window | **7-30 days** |
+| Strike window | ATM ± **7%** |
+| IV cap (call) | < **55%** |
+| IV cap (put) | < **65%** |
+| Premium budget | **$2,500** per signal (= $25/share for 1 contract) |
+| Contracts per signal | up to **5** (default 1 in current implementation) |
+| Take-profit | premium × **2.20** (+120%) |
+| Stop-loss | premium × **0.35** (-65%) |
+| Max open options total | **10** |
+| Max proposals dispatched per cron run | **3** |
+| Order type | simple LIMIT BUY (Alpaca paper rejects bracket on options) |
+| Exit emulation | options-exit-monitor polls every 5 min during session |
+
+### 4.7 Reddit Sentiment (paused — pending API approval)
+
+**Strategy file:** `strategies/reddit-sentiment.md`
+
+| Parameter | Value |
+|---|---|
+| Trigger | mention spike ≥ 3× 7-day avg + DD post (karma ≥ 5k WSB / 1k other, account ≥ 180d) |
+| Direction | always BUY (momentum, not contrarian) |
+| Size | **$5,000** |
+| Stop-loss | -6% |
+| Take-profit | +14% |
+| Max concurrent | 4 |
+
+---
+
+## 5. Exit Logic
+
+### 5.1 exit-monitor (stocks, ETFs, crypto)
+
+**File:** `exit-monitor/monitor.py`
+**Cron:** `30 12-21 * * 1-5` + `0 22,0,2 * * *`
+
+| Threshold | Old | **New** | Rule |
+|---|---|---|---|
+| `emergency_loss_pct` | -5% | **-12%** | If P&L ≤ this → CLOSE_EMERGENCY (overrides SL slippage) |
+| `quick_profit_pct` (within 6h) | +3% | **+10%** | If P&L ≥ this in <6h → CONSIDER_TP (early profit) |
+| `time_decay_hours` | 6 | **24** | If \|P&L\| < flat threshold after this many hours → CLOSE_FLAT |
+| `flat_pnl_pct` | 1% | **3%** | "Flat" definition |
+| `leveraged_decay_hours` | 48 | **96** | Leveraged ETF closed after this even if profitable |
+| `crypto_decay_hours` | 12 | **48** | Crypto closed after this if P&L < 5% |
+
+Decisions:
+- `CLOSE_EMERGENCY` → CONSIDER closing immediately (manual or via routine)
+- `CONSIDER_TP` → flag for early take-profit
+- `CLOSE_DECAY` → close due to time-based decay
+- `CLOSE_FLAT` → close due to flat P&L over time
+- `HOLD` → no action
+
+The exit-monitor reports decisions via email (`notify_exit`) and forwards
+the full position table to a Claude routine for any final discretionary
+overlay.
+
+### 5.2 options-exit-monitor (options TP/SL)
+
+**File:** `options-exit-monitor/monitor.py`
+**Cron:** `*/5 13-20 * * 1-5`
+
+Polling-based emulation of bracket orders (Alpaca paper rejects complex
+order classes for options). For each open `us_option` position:
+
+```
+TP_threshold = avg_entry_price × 2.20    # +120%
+SL_threshold = avg_entry_price × 0.35    # -65%
+current = current_price (from /v2/positions)
+
+if current >= TP_threshold:
+    place SELL limit @ TP_threshold
+elif current <= SL_threshold:
+    place SELL limit @ current_price (best available exit)
+else:
+    HOLD
+```
+
+De-dup: skip if `/v2/orders?status=open&symbols={contract}` already
+shows a SELL order, so the next 5-min tick doesn't stack a duplicate.
+
+---
+
+## 6. Monitoring & Cadence
+
+### 6.1 GitHub Actions workflows
+
+| Workflow | Cron (UTC) | Asset class | Notes |
+|---|---|---|---|
+| `price-monitor.yml` | `*/5 13-20 * * 1-5` | US stocks momentum + leveraged | session only |
+| `crypto-monitor.yml` | `0,30 * * * *` | BTC, ETH | 24/7 |
+| `defense-monitor.yml` | `0,30 * * * *` | defense names | 24/7 (DoD posts ~17 ET) |
+| `geo-monitor.yml` | `*/15 13-21 * * 1-5` | geopolitical news | session-wide |
+| `exit-monitor.yml` | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | all stocks/crypto positions | hourly + nightly |
+| `options-monitor.yml` | `*/10 13-20 * * 1-5` | options entries | session only |
+| `options-exit-monitor.yml` | `*/5 13-20 * * 1-5` | options exits | session only |
+| `weekly-learning.yml` | `0 20 * * 0` | retrospective | Sunday 20:00 |
+| `keep-alive.yml` | `*/10 * * * *` | Render MCP ping | always |
+| (paused) `reddit-monitor.yml` | `0 7,13,16,20 * * 1-5` | sentiment | waiting for API approval |
+
+### 6.2 Email notifications (`shared/notify.py`)
+
+- `notify_signal` — every detected signal (BUY/SELL with metadata)
+- `notify_exit` — every flagged exit decision
+- `notify_order_executed` — every executed bracket / options buy
+- `notify_summary` — end-of-run digest (only when ≥1 signal)
+
+All emails go via Gmail SMTP (port 465 SSL) to `NOTIFY_EMAIL`. Body is
+ASCII-only (Polish accents stripped to avoid SMTP encoding issues).
+
+---
+
+## 7. Failure Modes & Recovery
+
+| Failure | Detection | Behaviour | Recovery |
+|---|---|---|---|
+| Alpaca API outage | HTTP 5xx / timeout | dup-position guard fail-OPEN, exits retry next cron | next cron tick |
+| Finnhub `^VIX` empty | `c == 0` | vix_guard returns OK (fail-open) | follow-up: switch to VIXY proxy |
+| Finnhub `/stock/candle` 403 | 403 status | already migrated to Alpaca bars | no action (fixed) |
+| Cloudflare Worker 5xx | HTTP error | monitor logs and continues; email still sent | Worker dashboard |
+| Anthropic Routine 429 | 429 in proxy response | options-monitor bypasses via AUTO_EXECUTE | no action (mitigated) |
+| Gmail SMTP down | login fail | monitor prints error, continues without email | check app password |
+| GitHub Actions outage | job not running | manual `Run workflow` or wait | rare; usually < 1h |
+| Render MCP server cold | first MCP call slow | keep-alive cron pings every 10 min | already mitigated |
+
+---
+
+## 8. Drawdown Plan
+
+### 8.1 -12% intraday (daily catastrophic stop)
+
+- exit-monitor and options-exit-monitor continue (we still want to
+  manage existing positions)
+- All ENTRY monitors should self-disable for the rest of the day
+- Implementation: `shared/risk_guards.py::daily_drawdown_guard()`
+  (to be added in a follow-up; for now, manual workflow disable)
+- Email to user: subject `[CIRCUIT BREAKER] Daily drawdown -12% hit`
+
+### 8.2 -25% weekly
+
+- All workflows manually disabled in GitHub Actions UI
+- 24-hour cool-off
+- Manual review of every loss; tighten any obvious offenders
+- Resume only after explicit go-ahead
+
+### 8.3 -40% monthly
+
+- Full system stop
+- Strategy reset: re-evaluate every parameter in this document
+- Consider rolling back to a prior commit known-good
+
+---
+
+## 9. Performance Targets (paper)
+
+| Horizon | Target | Tolerance |
+|---|---|---|
+| Daily | positive expectancy | -12% catastrophic |
+| Weekly | +5% to +10% | -25% |
+| Monthly | +25% to +50% | -40% |
+| Quarterly | +75% to +150% | -50% |
+
+Targets are aspirational. The success metric isn't hitting them — it's
+producing a positive Sharpe ratio (return/volatility) over a quarter.
+
+---
+
+## 10. Whitelist Management
+
+The whitelist is enforced at every entry by the risk-officer agent. New
+tickers can be added only by editing `.claude/rules/tickers-whitelist.md`
+**and** updating this document accordingly. Removing a ticker means all
+existing positions in it must be flat first (or carry a manual exception).
+
+Current whitelist groups (see `.claude/rules/tickers-whitelist.md`):
+
+- Mega-cap US: AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+- Financials: JPM, V, MA, JNJ, BRK.B
+- Broad ETFs: SPY, QQQ, VOO, VTI, IWM, VXUS, VWO
+- Sector ETFs: XLK, XLF, XLE, XLV, XLY
+- Commodities: GLD, SLV
+- Crypto: BTC/USD, ETH/USD
+- Defense Big-5: LMT, RTX, NOC, GD, BA
+- Defense mid-cap: KTOS, PLTR, AXON, LDOS, SAIC, CACI
+- Defense ETF: ITA, XAR, DFEN
+- European ADR: BAESY, EADSY
+- Energy: XOM, CVX
+- **NEW** Leveraged ETF (3×): TQQQ, SQQQ, SPXL, SPXS, UPRO, SPXU, SOXL, SOXS, FAS, FAZ, TNA, TZA
+- **NEW** High-beta single names: COIN, MSTR, ARM, SMCI
+
+Explicitly **not** on the whitelist:
+- Penny stocks
+- Volatility ETPs (VXX, UVXY) — too much decay
+- Small-cap biotech (event risk)
+- Single-stock leveraged ETFs (TSLZ, NVDS, etc.)
+
+---
+
+## 11. Iron Rules Summary (post-2026-05-06)
+
+These are reflected verbatim in `CLAUDE.md`:
+
+```
+### Position sizing
+- Max single trade:     20% of equity (~$20k)
+- Max ticker exposure:  40% of equity (~$40k)
+- Cash reserve:         0% (full deployment)
+- Daily loss STOP:      -12% intraday  -> block new entries
+
+### Asset class soft caps (gross, advisory)
+- Stocks momentum:   60% gross
+- Leveraged ETFs:    25% gross
+- Crypto:            25% gross
+- Defense / geo:     35% gross
+- Options premium:   25% (notional can be much higher)
+- Reddit:            10%
+
+### Order rules
+- LIMIT orders only (never MARKET)
+- Stocks: bracket entry + SL + TP whenever possible
+- Options: simple LIMIT BUY (Alpaca paper limitation)
+- Time-in-force: DAY (unless strategy specifies otherwise)
+- Stop-loss is mandatory on every entry
+
+### Forbidden
+- Live trading (this is paper-only)
+- Trading without a stop-loss
+- Trading off-whitelist
+- Options ±1 day around earnings
+- Trading when VIX > 60 (catastrophic only)
+
+### Daily / weekly / monthly circuit breakers
+- -12% intraday  -> block new entries until next session
+- -25% weekly    -> pause all monitors, manual review
+- -40% monthly   -> full stop, strategy reset
+```
+
+---
+
+## 12. Versioning & Change Log
+
+| Version | Date | Author | Notes |
+|---|---|---|---|
+| 1.0 | 2026-04-29 | initial setup | Conservative starter parameters |
+| 1.1 | 2026-05-04 | aggressive overhaul | 5× sizing, dollar-limit crypto, higher VIX thresholds |
+| **2.0** | **2026-05-06 EOD** | **risk-on full overhaul** | All capital deployed, daily stop -12%, VIX HALT only above 60, options auto-execute on paper, this document created |
+
+---
+
+*Source-of-truth document. If code disagrees with this file, fix the code.*
+*Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*

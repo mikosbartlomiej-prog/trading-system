@@ -255,30 +255,59 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 ---
 
-## IRON RULES — NEVER VIOLATE
+## IRON RULES — v2.0 RISK-ON (2026-05-06 EOD)
+
+**Source of truth:** `docs/STRATEGY.md`. All numbers below mirror it exactly.
 
 ### Position sizing
-- Maximum single trade: 5% of account equity
-- Maximum exposure per ticker: 15% equity
-- Minimum cash: always keep 5% as cash
-- Daily loss limit: if total day loss > 3% equity → STOP, no new positions
+- Max single trade:     **20% of equity** (~$20k)  ← was 5%
+- Max ticker exposure:  **40% of equity** (~$40k)  ← was 15%
+- Cash reserve:         **0%** (full deployment)   ← was 5%
+- Margin usage:         up to ~2.5× gross exposure (Reg-T allows 4×; we leave headroom)
+
+### Asset-class soft caps (gross, advisory)
+- US momentum stocks (long+short): 60% gross
+- Leveraged ETFs (3×):              25% gross
+- Crypto (BTC + ETH):               25% gross
+- Defense / geo / sector ETFs:      35% gross
+- Options premium paid:             25% (notional may be 100%+ via leverage)
+- Reddit sentiment:                 10%
 
 ### Allowed tickers ONLY
-See .claude/rules/tickers-whitelist.md for full list.
-Attempting to trade outside the list = immediate abort.
+See `.claude/rules/tickers-whitelist.md`. Off-whitelist = immediate abort.
+Whitelist now includes 12 leveraged ETFs + 4 high-beta single names
+(COIN, MSTR, ARM, SMCI) added 2026-05-06.
 
 ### Order types
-- Always LIMIT orders (never MARKET)
-- Every entry = bracket order: entry + stop loss + take profit
-- Time in force: DAY (unless strategy specifies otherwise)
+- LIMIT orders only (never MARKET)
+- Stocks: bracket entry + SL + TP wherever supported (Alpaca supports brackets on stocks)
+- Options: simple LIMIT BUY (Alpaca paper rejects bracket on options); TP/SL emulated by `options-exit-monitor`
+- Time-in-force: DAY (unless strategy specifies otherwise)
+- Stop-loss is MANDATORY on every entry
+
+### Circuit breakers
+- **Daily P&L ≤ -12%**   → block new entries till next session (exits keep working)
+- **Weekly P&L ≤ -25%**  → pause all monitors, manual review
+- **Monthly P&L ≤ -40%** → full stop, parameter reset
+- **VIX > 60**           → block new entries (catastrophic-only halt; CAUTION at 35 REMOVED)
 
 ### Forbidden
-- Options — auto-execute on paper, max 3 open positions, $500/contract budget
-  (was: explicit user approval each time — relaxed 2026-05-06; iron-rule
-  preservation still happens via the per-run cap and email audit trail)
-- Margin / leveraging
-- Trading when VIX > 35
-- Trading 30 minutes before/after earnings releases
+- Live trading (paper-only forever)
+- Trading without a stop-loss
+- Trading off-whitelist
+- Options ±1 day around earnings (event risk uncontrollable)
+
+### What changed from v1.0 (and why)
+| Old rule | New rule | Why |
+|---|---|---|
+| Max single trade 5% | Max single trade 20% | All capital available, take real bets |
+| Per-ticker cap 15% | Per-ticker cap 40% | Allow concentrated conviction |
+| Cash floor 5% | 0% | Idle cash earns nothing |
+| Daily stop -3% | Daily stop -12% | Aggressive system needs room to swing |
+| No trading VIX > 35 | No trading VIX > 60 | Volatility is opportunity, not threat |
+| Options $500 budget | Options $2,500 budget | Real options exposure |
+| Max 3 open options | Max 10 open options | Diversify across underlyings |
+| Crypto weekend halving | Same size 24/7 | Liquidity is fine on weekends |
 
 ---
 
@@ -350,6 +379,7 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-06 | Master Plan #3 pivot to monitor-side execute: Anthropic Routines kept returning HTTP 429 (rate limit) so the routine path proved unreliable. options-monitor now resolves the contract via Alpaca `/v2/options/contracts` (free, basic close_price/strike/expiry) and places a bracket buy_to_open order via `/v2/orders` directly. Picks closest-to-ATM contract whose latest premium fits `size_usd / 100` budget. New env flag `AUTO_EXECUTE_OPTIONS` (default `true`) toggles between auto-execute and legacy routine path. Uses `notify_order_executed` for [EXECUTED] confirmations; failed executions fall back to the [OPTIONS APPROVAL NEEDED] proposal email so the user sees what tried to fire. Tests cover happy path, empty chain, order rejection, and legacy routine path. |
 | 2026-05-06 | Master Plan #3 final: Alpaca paper rejects bracket/OCO/stop on options ("complex orders not supported"). options-monitor switched to simple limit buy; first real paper order (AMZN PUT @ $4.35) confirmed in Alpaca dashboard. New `options-exit-monitor/monitor.py` polls open us_option positions every 5 min during session, evaluates against TP=entry*1.80 / SL=entry*0.50, and posts a SELL-to-close LIMIT when a threshold is hit. De-dup via `/v2/orders?status=open` so a second cron tick doesn't stack a duplicate sell. notify_exit() per close. 5 test scenarios pass (TP / SL / HOLD / already-has-sell / empty positions). User still needs to add `.github/workflows/options-exit-monitor.yml` (template ready). |
 | 2026-05-06 EOD | **End-of-day summary** — 4 of 5 master-plan points landed in production today. Order of work: (1) #2 emails: notify_signal/exit/summary wired into price-monitor + exit-monitor (defense+crypto already done before today). (2) Repo cleanup: .gitignore, untracked __pycache__, removed stale duplicate workflow ymls, consolidated 39 unique session reports/journals from 31 stale `claude/*` branches into main as one commit (979b45f) so the branches are now safe to delete. (3) #4 VIX guard: shared/risk_guards.py::vix_guard wired into price/crypto/defense/geo. Fail-open in prod because Finnhub free /quote?symbol=^VIX is empty — circuit breaker dormant; trading continues normally. (4) #5 dup-position guard: has_open_position() Alpaca check before every alert in price/crypto/defense. Geo skipped (news -> routine resolves ticker). (5) #3 options end-to-end: options-monitor builds proposals (RSI 45-65 CALL / >72 PUT) on a 12-ticker whitelist, originally forwarded to Cloudflare Worker → Claude Routine, but Anthropic Routines kept returning HTTP 429 so we pivoted to monitor-side AUTO_EXECUTE via Alpaca REST. Found Alpaca paper rejects bracket on options, switched to simple limit buy. First real paper-options trade fired at 19:18 UTC: AMZN260520P00270000 PUT entry $3.65. Then built options-exit-monitor that polls every 5 min during session, computes TP=entry*1.80 / SL=entry*0.50, places SELL-to-close LIMIT when threshold crossed (de-dup via /v2/orders?status=open). Net: 6 commits on main today (1db32ae cleanup, 979b45f consolidation, 1f0b581 VIX guard, ddb9f92 dup guard, 88240a8 options entry, 81c2109+b536bf8+25f1328 options auto-execute iterations, 93e16d5 options-exit-monitor). User pushed 7 workflow/secret changes via GitHub UI (proxy OAuth blocked workflow file edits). 4 fresh tests all pass on local mocks; 1 live AMZN PUT trade in Alpaca dashboard. Master 5-point plan now 4/5 with #1 Live Portfolio Dashboard moved to backlog alongside Reddit. |
+| 2026-05-06 LATE | **STRATEGY v2.0 — full risk-on overhaul.** New canonical doc: `docs/STRATEGY.md` (12 sections, ~12k words). User direction: "all capital available, take risk, earn fast" — every limit and parameter rewritten. Account-level: per-trade cap 5%→20%, per-ticker 15%→40%, cash floor 5%→0%, daily loss stop -3%→-12%, weekly stop NEW -25%, monthly NEW -40%. VIX policy: HALT 45→60, CAUTION 35 REMOVED entirely. Asset-class sizing all bumped 3-5×: stocks long $3k→$10k, short $2k→$8k, leveraged $1.5k→$6k; crypto BTC $2k→$8k (no weekend halving), ETH $1k→$4k, total cap $8k→$25k; defense Big-5 $2.5k→$8k, ETF $2k→$6k; options $500→$2.5k, max 3→10 open, TP +80%→+120%, SL -50%→-65%, DTE 14-21→7-30, strike ATM±3%→±7%; reddit $1k→$5k. ATR multipliers loosened: SL 1.5→2.0, TP 2.5→4.0. Exit thresholds: emergency -5%→-12%, quick profit +3% in 4h→+10% in 6h, time decay 6h→24h, leveraged 48h→96h, crypto 12h→48h. Whitelist expanded with 12 leveraged ETFs (TQQQ/SQQQ/SPXL/SPXS/UPRO/SPXU/SOXL/SOXS/FAS/FAZ/TNA/TZA) + 4 high-beta names (COIN/MSTR/ARM/SMCI). Risk-officer flipped from default-REJECT to **default-APPROVE** (block only on hard violations). Files updated: docs/STRATEGY.md (NEW), CLAUDE.md, .claude/rules/tickers-whitelist.md, .claude/agents/risk-officer.md, .claude/skills/portfolio-snapshot/SKILL.md, all 8 strategies/*.md, 7 monitors (.py constants), shared/risk_guards.py. All Python files compile, parameter sanity test passes (VIX 50 now OK, 65 HALT; sizing constants verified across 5 monitors). |
 
 ---
 

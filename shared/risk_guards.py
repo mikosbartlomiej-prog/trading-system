@@ -4,9 +4,12 @@ Shared risk guards used by all entry monitors (price, defense, crypto, geo).
 vix_guard() should be called at the start of every monitor run BEFORE any
 alert is dispatched. It fetches the current VIX level and returns:
 
-  ("HALT",    0.0)  when VIX > 45  -> caller must skip the run entirely
-  ("CAUTION", 0.5)  when VIX > 35  -> caller multiplies position sizes by 0.5
-  ("OK",      1.0)  otherwise
+  ("HALT", 0.0)  when VIX > 60  -> caller must skip the run entirely
+  ("OK",   1.0)  otherwise
+
+v2.0 risk-on (2026-05-06): CAUTION mode REMOVED. The system embraces
+volatility now and only halts on catastrophic stress (VIX > 60).
+Old behavior: HALT@45 / CAUTION@35 (50% sizing); see git history.
 
 VIX fetch fails open: if Finnhub is unreachable or FINNHUB_API_KEY is unset,
 the guard returns OK so a Finnhub outage cannot silently kill all trading.
@@ -16,8 +19,10 @@ import os
 import urllib.parse
 import requests
 
-VIX_HALT_THRESHOLD    = 45.0
-VIX_CAUTION_THRESHOLD = 35.0
+# v2.0 risk-on: HALT only at extreme stress; CAUTION removed (no auto de-sizing)
+# (was: HALT 45, CAUTION 35)
+VIX_HALT_THRESHOLD    = 60.0
+VIX_CAUTION_THRESHOLD = 999.0   # effectively disabled — the CAUTION branch never fires
 
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 

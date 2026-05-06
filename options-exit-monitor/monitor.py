@@ -27,8 +27,9 @@ ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
 ALPACA_BASE_URL   = "https://paper-api.alpaca.markets"
 
-TP_PREMIUM_MULT = 1.80   # take profit at +80% premium (matches options-monitor)
-SL_PREMIUM_MULT = 0.50   # stop loss at -50% premium  (matches options-monitor)
+# v2.0 risk-on (matches options-monitor v2.0)
+TP_PREMIUM_MULT = 2.20   # take profit at +120% premium (was +80%)
+SL_PREMIUM_MULT = 0.35   # stop loss at -65% premium    (was -50%)
 
 
 def alpaca_headers() -> dict:

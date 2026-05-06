@@ -1,7 +1,12 @@
 # Whitelist dozwolonych instrumentów
 
-## Akcje US (duże spółki)
+**Wersja: 2.0 (2026-05-06) — risk-on overhaul**
+Źródło prawdy: `docs/STRATEGY.md` §10.
+
+## Akcje US (mega-cap)
 AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+
+## Financials
 JPM, V, MA, JNJ, BRK.B
 
 ## ETF (szeroki rynek)
@@ -16,13 +21,46 @@ GLD, SLV
 ## Krypto (Alpaca)
 BTC/USD, ETH/USD
 
-## Czego tu NIE MA i dlaczego
-- Penny stocks — brak płynności
-- Lewarowane ETF (TQQQ, SOXL) — zbyt ryzykowne
-- Małe biotechs — ryzyko earnings
+## Spółki obronne — Big-5
+RTX, LMT, NOC, GD, BA
 
-## Spółki obronne (geopolitical strategy)
-RTX, LMT, NOC, LHX, GD
+## Spółki obronne — Mid-cap
+KTOS, PLTR, AXON, LDOS, SAIC, CACI
 
-## Energia (geopolitical strategy)
+## Defense ETF
+ITA, XAR, DFEN
+
+## European defense ADR
+BAESY, EADSY
+
+## Energia
 XOM, CVX
+
+## Lewarowane ETF (3×) — RISK-ON, dodane 2026-05-06
+TQQQ, SQQQ, SPXL, SPXS, UPRO, SPXU
+SOXL, SOXS, FAS, FAZ, TNA, TZA
+
+## High-beta single names — dodane 2026-05-06
+COIN  (Coinbase — proxy crypto)
+MSTR  (MicroStrategy — proxy BTC z lewarem)
+ARM   (Arm Holdings — momentum AI/chip)
+SMCI  (Super Micro — high-beta AI)
+
+---
+
+## Czego TU NIE MA i dlaczego
+
+- **Penny stocks** — brak płynności, manipulacja
+- **Volatility ETP** (VXX, UVXY) — decay zjada pozycję
+- **Małe biotechs** — earnings/binarne ryzyko niemierzalne
+- **Single-stock leveraged ETFs** (TSLZ, NVDS, NVDL, etc.) — wąska płynność, gap risk
+- **OTC / dark pool only** — execution issues
+- **SPACs** — pre-merger niemiarodajne fundamenty
+
+## Dodawanie nowego tickera
+
+1. Dodać tu (sekcja odpowiedniej klasy)
+2. Zaktualizować `docs/STRATEGY.md` §10
+3. Zaktualizować właściwy `strategies/*.md` jeśli wymaga sizing-u
+4. Zaktualizować odpowiedni monitor (`TICKERS_*` array)
+5. Commit + push
