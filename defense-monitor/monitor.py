@@ -297,12 +297,8 @@ def fetch_newsapi_articles(max_age_hours: int = 24) -> list[dict]:
     from_time = (datetime.now(timezone.utc) - timedelta(hours=max_age_hours)).strftime(
         "%Y-%m-%dT%H:%M:%S"
     )
-    query = (
-        "Lockheed OR Raytheon OR Northrop OR Boeing OR "
-        '"defense contract" OR NATO OR Pentagon OR "military spending" OR '
-        '"defense budget" OR "weapons program" OR "arms deal" OR '
-        "ceasefire OR peacedeal OR rearmament"
-    )
+    # Prostsze zapytanie — plan darmowy ma ograniczenia złożoności
+    query = "defense contract OR Lockheed OR Raytheon OR Northrop OR NATO OR Pentagon OR ceasefire"
     try:
         resp = requests.get(
             "https://newsapi.org/v2/everything",
@@ -316,8 +312,11 @@ def fetch_newsapi_articles(max_age_hours: int = 24) -> list[dict]:
             },
             timeout=15,
         )
-        resp.raise_for_status()
         data = resp.json()
+        # Loguj status i ewentualny błąd API
+        if resp.status_code != 200 or data.get("status") == "error":
+            print(f"  NewsAPI błąd API: {data.get('code')} — {data.get('message')}")
+            return []
         articles = []
         for a in data.get("articles", []):
             title   = a.get("title") or ""
@@ -331,7 +330,7 @@ def fetch_newsapi_articles(max_age_hours: int = 24) -> list[dict]:
                 "url":    a.get("url", ""),
                 "pub":    a.get("publishedAt"),
             })
-        print(f"  NewsAPI: {len(articles)} artykułów")
+        print(f"  NewsAPI: {len(articles)} artykułów (total results: {data.get('totalResults', '?')})")
         return articles
     except Exception as e:
         print(f"  NewsAPI błąd: {e}")
@@ -395,15 +394,29 @@ def analyze_items(items: list[dict]) -> list[dict]:
     seen_tickers_long  = set()
     seen_tickers_short = set()
 
+    # DoD/USASpending — zweryfikowane źródło kontraktów → niższy próg
+    TRUSTED_SOURCES = {"DoD Contracts", "USASpending"}
+
     for item in items:
         long_score, short_score, keywords = score_text(item["text"])
         tickers = extract_tickers(item["text"])
 
+        is_trusted = item.get("source") in TRUSTED_SOURCES
+        long_threshold  = 1 if is_trusted else 2
+        short_threshold = 2  # zawsze wymagamy 2 dla shortów
+
+        # Debug — pokaż co analizujemy
+        if long_score > 0 or short_score > 0 or tickers:
+            print(
+                f"    [{item['source']}] L={long_score} S={short_score} "
+                f"tickers={tickers} | {item['title'][:60]}"
+            )
+
         if not tickers:
             continue
 
-        # LONG: long_score >= 2 i dominuje nad short
-        if long_score >= 2 and long_score > short_score:
+        # LONG: score >= próg i dominuje nad short
+        if long_score >= long_threshold and long_score >= short_score:
             for ticker in tickers:
                 if ticker in seen_tickers_long:
                     continue
@@ -432,8 +445,8 @@ def analyze_items(items: list[dict]) -> list[dict]:
                 })
                 seen_tickers_long.add(ticker)
 
-        # SHORT: short_score >= 2 i dominuje nad long; tylko BIG5 + MIDCAP
-        elif short_score >= 2 and short_score > long_score:
+        # SHORT: score >= 2 i dominuje nad long; tylko BIG5 + MIDCAP
+        elif short_score >= short_threshold and short_score > long_score:
             for ticker in tickers:
                 if ticker in TICKERS_ETF or ticker in TICKERS_EUROPEAN:
                     continue  # nie shortujemy ETF ani europejskich
