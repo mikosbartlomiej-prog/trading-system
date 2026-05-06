@@ -491,21 +491,33 @@ def analyze_items(items: list[dict]) -> list[dict]:
 
 # ─── Wysyłanie alertów ────────────────────────────────────────────────────────
 
-def send_alert(alert: dict) -> bool:
+def send_alert(alert: dict, retries: int = 2) -> bool:
     if not CLOUDFLARE_DEFENSE_WORKER_URL:
         print(f"  BRAK CLOUDFLARE_DEFENSE_WORKER_URL — sygnał lokalnie: {alert}")
         return False
-    try:
-        resp = requests.post(
-            CLOUDFLARE_DEFENSE_WORKER_URL,
-            json=alert,
-            timeout=30,
-        )
-        print(f"  Alert {alert['action']} {alert['symbol']} (score={alert['score']}): HTTP {resp.status_code}")
-        return resp.status_code == 200
-    except Exception as e:
-        print(f"  Błąd wysyłania alertu: {e}")
-        return False
+    for attempt in range(1, retries + 1):
+        try:
+            resp = requests.post(
+                CLOUDFLARE_DEFENSE_WORKER_URL,
+                json=alert,
+                timeout=60,
+            )
+            print(f"  Alert {alert['action']} {alert['symbol']} (score={alert['score']}): HTTP {resp.status_code}")
+            if resp.status_code == 200:
+                return True
+            if resp.status_code == 429:
+                wait = 30 * attempt  # 30s, potem 60s
+                print(f"  Rate limit (429) — czekam {wait}s przed retry {attempt}/{retries}")
+                time.sleep(wait)
+                continue
+            # Inne błędy — nie retry
+            print(f"  Błąd HTTP {resp.status_code}: {resp.text[:200]}")
+            return False
+        except Exception as e:
+            print(f"  Błąd wysyłania alertu (próba {attempt}): {e}")
+            if attempt < retries:
+                time.sleep(15)
+    return False
 
 
 # ─── Główna funkcja ──────────────────────────────────────────────────────────
@@ -556,8 +568,8 @@ def run_scan():
     signals = analyze_items(all_items)
     print(f"\n  Sygnałów wygenerowanych: {len(signals)}")
 
-    # 5. Wysyłanie alertów — max 2 na run, 8s przerwy między nimi
-    MAX_ALERTS_PER_RUN = 2
+    # 5. Wysyłanie alertów — max 1 na run (rate limit Routiny)
+    MAX_ALERTS_PER_RUN = 1
     alerts_sent = 0
 
     # Sortuj: wyższy score najpierw
