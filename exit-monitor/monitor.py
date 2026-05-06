@@ -10,6 +10,13 @@ import json
 import requests
 from datetime import datetime, timezone, timedelta
 
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+    from notify import notify_exit, notify_summary
+except ImportError:
+    def notify_exit(*a, **k): pass
+    def notify_summary(*a, **k): pass
+
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
 ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
@@ -222,9 +229,12 @@ def run_exit_check():
 
     # Wzbogać pozycje o analizę
     enriched = []
+    flagged  = []
     for pos in positions:
         ep = enrich_position(pos, orders)
         enriched.append(ep)
+        if ep["recommendation"] != "HOLD":
+            flagged.append(ep)
         status_icon = "⚠️" if ep["recommendation"] != "HOLD" else "✅"
         print(
             f"  {status_icon} {ep['symbol']:8s} {ep['side']:5s} "
@@ -233,10 +243,17 @@ def run_exit_check():
             + (f" [{', '.join(ep['reasons'])}]" if ep['reasons'] else "")
         )
 
+    # Email per flagged position (recommendation != HOLD)
+    for ep in flagged:
+        reason = "; ".join(ep["reasons"]) if ep["reasons"] else ep["recommendation"]
+        notify_exit(ep["symbol"], ep["recommendation"], reason, ep["unrealized_plpc"])
+
     # Wyślij do routiny tylko jeśli są pozycje wymagające uwagi
     # (lub zawsze, żeby routine miała pełny obraz)
     print(f"\n  Wysyłam do Claude Routine Exit Handler...")
     send_to_routine(enriched, account)
+
+    notify_summary("Exit Monitor", len(flagged), len(flagged))
 
 
 # ─── Start ───────────────────────────────────────────────────────────────────
