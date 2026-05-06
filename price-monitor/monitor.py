@@ -15,9 +15,11 @@ from datetime import datetime, timedelta
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
+    from risk_guards import vix_guard
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
+    def vix_guard(): return ("OK", 1.0)
 
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
 
@@ -295,6 +297,12 @@ def run_checks():
         return
 
     print(f"\n[{now_str}] === SKANOWANIE LONG + SHORT ===")
+
+    vix_status, size_mult = vix_guard()
+    if vix_status == "HALT":
+        notify_summary("Price Monitor", 0, 0)
+        return
+
     signals_found = 0
     alerts_sent   = 0
 
@@ -304,6 +312,7 @@ def run_checks():
         signal = check_long_signal(ticker)
         if signal:
             print(f"  >>> SYGNAL LONG: {ticker}!")
+            signal["size_usd"] = round(signal["size_usd"] * size_mult)
             signals_found += 1
             sent = send_alert(signal)
             if sent:
@@ -317,6 +326,7 @@ def run_checks():
         signal = check_short_signal(ticker)
         if signal:
             print(f"  >>> SYGNAL SHORT: {ticker}!")
+            signal["size_usd"] = round(signal["size_usd"] * size_mult)
             signals_found += 1
             sent = send_alert(signal)
             if sent:
@@ -330,7 +340,7 @@ def run_checks():
         signal = check_long_signal(ticker)
         if signal:
             signal["strategy"] = "leveraged-etf"
-            signal["size_usd"] = SIZE_LEVERAGED
+            signal["size_usd"] = round(SIZE_LEVERAGED * size_mult)
             print(f"  >>> SYGNAL LEVERAGED: {ticker}!")
             signals_found += 1
             sent = send_alert(signal)

@@ -12,9 +12,11 @@ from datetime import datetime, timezone, timedelta
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
+    from risk_guards import vix_guard
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
+    def vix_guard(): return ("OK", 1.0)
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -222,11 +224,17 @@ def run_scan():
         print("BŁĄD: Brak ALPACA_API_KEY lub ALPACA_SECRET_KEY")
         sys.exit(1)
 
+    vix_status, size_mult = vix_guard()
+    if vix_status == "HALT":
+        notify_summary("Crypto Monitor", 0, 0)
+        return
+
     alerts_sent = 0
     for symbol in CRYPTO_SYMBOLS:
         signal = check_crypto_signal(symbol)
         if signal:
             print(f"  >>> SYGNAŁ: {signal['action']} {symbol}!")
+            signal["size_usd"] = round(signal["size_usd"] * size_mult)
             sent = send_alert(signal)
             if sent:
                 alerts_sent += 1

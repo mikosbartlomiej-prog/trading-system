@@ -17,9 +17,11 @@ from html.parser import HTMLParser
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
+    from risk_guards import vix_guard
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
+    def vix_guard(): return ("OK", 1.0)
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -534,6 +536,11 @@ def run_scan():
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] === DEFENSE MARKET MONITOR ===")
 
+    vix_status, size_mult = vix_guard()
+    if vix_status == "HALT":
+        notify_summary("Defense Monitor", 0, 0)
+        return
+
     all_items = []
 
     # 1. DoD Contracts
@@ -585,6 +592,7 @@ def run_scan():
 
     for signal in signals[:MAX_ALERTS_PER_RUN]:
         direction = signal["action"]
+        signal["size_usd"] = round(signal["size_usd"] * size_mult)
         print(
             f"\n  >>> SYGNAŁ: {direction} {signal['symbol']} "
             f"(score={signal['score']}, source={signal['source']})"

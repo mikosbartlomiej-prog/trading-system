@@ -13,6 +13,12 @@ import requests
 import feedparser
 from datetime import datetime, timezone, timedelta
 
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+    from risk_guards import vix_guard
+except ImportError:
+    def vix_guard(): return ("OK", 1.0)
+
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
 CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_GEO_WORKER_URL", "")
@@ -207,6 +213,10 @@ def send_alert(news_items: list[dict], priority: str) -> bool:
 def run_scan():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] Skanuję newsy geopolityczne...")
+
+    vix_status, _ = vix_guard()
+    if vix_status == "HALT":
+        return
 
     # Zbierz newsy ze wszystkich źródeł
     all_news = []

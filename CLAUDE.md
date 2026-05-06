@@ -182,6 +182,19 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 **#2 — Email notifications from Claude Routines — DONE ✅** (see Done section above)
 
+**#4 — VIX guard for all entry monitors — DONE ✅** (2026-05-06)
+- `shared/risk_guards.py` exposes `vix_guard()` returning `(status, multiplier)`:
+  - VIX > 45 -> `("HALT", 0.0)` -> monitor returns early, sends 0-signal summary
+  - VIX > 35 -> `("CAUTION", 0.5)` -> monitor multiplies `signal["size_usd"]` by 0.5
+  - otherwise -> `("OK", 1.0)` -> normal sizing
+- Fail-open: if Finnhub unreachable / `FINNHUB_API_KEY` unset, returns OK (a Finnhub
+  outage cannot silently halt all trading)
+- Wired into: price-monitor, crypto-monitor, defense-monitor, geo-monitor
+- Exit-monitor INTENTIONALLY skipped — closing positions during a crash is desirable
+- All 4 workflows now expose `FINNHUB_API_KEY` (added to crypto + defense)
+- VIX source: Finnhub `/quote?symbol=^VIX`
+- Integration tests passed (HALT/CAUTION/OK paths verified across 3 monitors)
+
 **#1 — Live Portfolio Dashboard** (~20 min, highest ROI for daily use)
 - Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
 - Uses Alpaca MCP directly via Cowork artifact
@@ -200,23 +213,6 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 - Sizes: $150/contract, max 2 open options positions
 - SL: -50% premium, TP: +80% premium
 - Requires explicit user approval before each options trade (iron rule)
-
-**#4 — VIX guard for all monitors** (risk reduction, crash protection)
-- Goal: halt ALL trading when VIX > 45, reduce size when VIX 35-45
-- Currently: every monitor fires regardless of VIX — dangerous in crash scenarios
-- Add to: price-monitor, defense-monitor, crypto-monitor, geo-monitor
-- Implementation:
-  ```python
-  # At start of each monitor run:
-  vix = get_vix()  # via Finnhub /quote?symbol=VIX or Alpaca
-  if vix > 45:
-      print(f"VIX={vix:.1f} — HALT: no alerts sent")
-      return
-  elif vix > 35:
-      print(f"VIX={vix:.1f} — CAUTION: reducing sizes 50%")
-      SIZE_MULTIPLIER = 0.5
-  ```
-- Finnhub endpoint: `https://finnhub.io/api/v1/quote?symbol=VIX&token={FINNHUB_API_KEY}`
 
 **#5 — Duplicate position guard** (prevents double exposure)
 - Goal: don't re-enter a ticker that already has an open position
@@ -327,6 +323,7 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-05 | Exit monitor, crypto monitor fixes, all Cloudflare workers working |
 | 2026-05-06 | Defense monitor, email notifications — root cause found and fixed |
 | 2026-05-06 | Master Plan #2 done: notify_signal/notify_exit/notify_summary wired into price-monitor + exit-monitor (defense + crypto already done). Repo cleanup: .gitignore added, __pycache__ untracked, stale duplicate workflow ymls removed. |
+| 2026-05-06 | Master Plan #4 done: VIX guard (`shared/risk_guards.py::vix_guard`) wired into all 4 entry monitors (price/crypto/defense/geo). HALT @VIX>45, CAUTION @VIX>35 (50% sizing). Fail-open on Finnhub outage. FINNHUB_API_KEY added to crypto + defense workflows. |
 
 ---
 
