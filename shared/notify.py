@@ -14,6 +14,12 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER)  # domyślnie do siebie
 
 
+def _clean(text: str) -> str:
+    """Replace non-breaking spaces and other chars that break ASCII SMTP encoding.
+    Root cause: Python's :, formatter uses \\xa0 as thousands separator on some locales."""
+    return text.replace('\xa0', ' ')
+
+
 def send_email(subject: str, body: str, html: bool = False) -> bool:
     """
     Wysyła email przez Gmail SMTP.
@@ -24,15 +30,18 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
         return False
 
     try:
+        subject = _clean(subject)
+        body    = _clean(body)
+
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = GMAIL_USER
         msg["To"]      = NOTIFY_TO
 
         if html:
-            msg.attach(MIMEText(body, "html"))
+            msg.attach(MIMEText(body, "html", "utf-8"))
         else:
-            msg.attach(MIMEText(body, "plain"))
+            msg.attach(MIMEText(body, "plain", "utf-8"))
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
             smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
