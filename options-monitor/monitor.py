@@ -281,11 +281,15 @@ def build_proposal(ticker: str) -> dict | None:
     }
 
 
-def execute_proposal(proposal: dict) -> dict | None:
+def execute_proposal(proposal: dict) -> tuple[str, dict | None]:
     """
     Resolve a contract from the proposal window and place a bracket buy_to_open
-    order directly via Alpaca. Returns the Alpaca order JSON on success, None
-    on failure.
+    order via Alpaca REST.
+
+    Returns (status, order):
+      - ("executed", order_dict)  on success
+      - ("no_contract", None)     when chain empty or no fit (silent skip)
+      - ("rejected", None)        when Alpaca rejected the order
     """
     sym         = proposal["symbol"]
     opt_type    = proposal["option_type"]
@@ -295,19 +299,19 @@ def execute_proposal(proposal: dict) -> dict | None:
     expiry_min  = proposal["expiry_min"]
     expiry_max  = proposal["expiry_max"]
     size_usd    = float(proposal["size_usd"])
-    qty         = 1   # conservative — strategy allows 1-2, default 1
+    qty         = 1
     max_premium = size_usd / 100  # 1 contract = 100 shares
 
     contracts = get_option_contracts(sym, opt_type, strike_min, strike_max,
                                      expiry_min, expiry_max)
     if not contracts:
         print(f"  {sym}: brak kontraktów w oknie strike/expiry")
-        return None
+        return "no_contract", None
 
     pick = pick_best_contract(contracts, spot, max_premium)
     if not pick:
         print(f"  {sym}: brak kontraktu w budżecie ${max_premium:.2f}/share")
-        return None
+        return "no_contract", None
 
     contract, premium = pick
     contract_symbol   = contract["symbol"]
@@ -323,7 +327,8 @@ def execute_proposal(proposal: dict) -> dict | None:
     )
     if order:
         print(f"  Order placed: id={order.get('id')} status={order.get('status')}")
-    return order
+        return "executed", order
+    return "rejected", None
 
 
 def send_proposal(proposal: dict) -> bool:
@@ -377,16 +382,21 @@ def run_scan():
 
     print(f"  Znalezione propozycje: {len(proposals)}")
     proposals.sort(key=lambda p: p["rsi"], reverse=True)
-    cap  = min(slots_left, MAX_PROPOSALS_PER_RUN)
-    sent = 0
-    for i, proposal in enumerate(proposals[:cap]):
+    cap        = min(slots_left, MAX_PROPOSALS_PER_RUN)
+    sent       = 0
+    attempts   = 0
+    skipped    = 0
+
+    for proposal in proposals:
+        if sent >= cap:
+            break
+        attempts += 1
         if AUTO_EXECUTE:
-            order = execute_proposal(proposal)
-            if order:
+            status, order = execute_proposal(proposal)
+            if status == "executed":
                 sent += 1
                 qty   = float(order.get("qty", 1))
                 price = float(order.get("limit_price") or proposal["spot"])
-                # legs holds bracket TP/SL
                 tp = sl = 0.0
                 for leg in order.get("legs", []) or []:
                     if leg.get("side") == "sell" and leg.get("type") == "limit":
@@ -404,22 +414,28 @@ def run_scan():
                     strategy = "options-momentum",
                     order_id = order.get("id", ""),
                 )
-            else:
-                # Fall back to the proposal email so the user sees what tried to fire
+            elif status == "rejected":
+                # Alpaca actually saw it and said no — worth notifying
                 notify_signal(proposal, False)
+            else:
+                # "no_contract": silently keep iterating to the next proposal
+                skipped += 1
         else:
             ok = send_proposal(proposal)
             if ok:
                 sent += 1
             notify_signal(proposal, ok)
-        if i + 1 < cap:
-            time.sleep(5)
+        if sent < cap and attempts < len(proposals):
+            time.sleep(2)
 
-    if len(proposals) > cap:
-        print(f"  Pominieto {len(proposals) - cap} propozycji (cap={cap}/run)")
+    not_tried = max(0, len(proposals) - attempts)
+    if skipped:
+        print(f"  Pominieto {skipped} propozycji bez fitting kontraktu")
+    if not_tried:
+        print(f"  Nie tknieto {not_tried} propozycji (cap={cap}/run osiagniety)")
 
     notify_summary("Options Monitor", len(proposals), sent)
-    print(f"[{now}] Wykonano: {sent}/{cap} (znaleziono {len(proposals)})\n")
+    print(f"[{now}] Wykonano: {sent}/{cap} (znaleziono {len(proposals)}, prób {attempts})\n")
 
 
 if __name__ == "__main__":
