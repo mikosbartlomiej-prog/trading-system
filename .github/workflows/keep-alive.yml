@@ -1,0 +1,19 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Co 10 minut — zapobiega zasypianiu Render free tier (zasypia po 15 min)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Render MCP server
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 60 \
+            https://alpaca-mcp-server-fchb.onrender.com)
+          echo "Render ping status: $STATUS"
