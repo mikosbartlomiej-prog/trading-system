@@ -114,6 +114,13 @@ LONG_KEYWORDS = [
     "military escalation", "conflict escalation",
     "heightened tensions", "military buildup",
     "arms shipment", "weapons delivery",
+    # Ogólne terminy obronne (pasują do newsów z Defense One / Breaking Defense)
+    "military", "pentagon", "nato", "air force", "navy", "army",
+    "drone", "drones", "missile", "missiles", "weapon", "weapons",
+    "fighter jet", "bomber", "aircraft", "warship", "satellite",
+    "defense", "defence", "warfare", "combat", "troops", "soldier",
+    "airpower", "autonomous", "munition", "munitions", "radar",
+    "artillery", "submarine", "carrier", "squadron",
 ]
 
 SHORT_KEYWORDS = [
@@ -394,15 +401,19 @@ def analyze_items(items: list[dict]) -> list[dict]:
     seen_tickers_long  = set()
     seen_tickers_short = set()
 
-    # DoD/USASpending — zweryfikowane źródło kontraktów → niższy próg
+    # DoD/USASpending — zweryfikowane źródło kontraktów → próg 1
     TRUSTED_SOURCES = {"DoD Contracts", "USASpending"}
+    # Branżowe media obronne — każdy artykuł jest kontekstem sektorowym → próg 1 jeśli są tickery
+    DEFENSE_MEDIA = {"Defense One", "Breaking Defense"}
 
     for item in items:
         long_score, short_score, keywords = score_text(item["text"])
         tickers = extract_tickers(item["text"])
 
-        is_trusted = item.get("source") in TRUSTED_SOURCES
-        long_threshold  = 1 if is_trusted else 2
+        is_trusted     = item.get("source") in TRUSTED_SOURCES
+        is_defense_media = item.get("source") in DEFENSE_MEDIA
+        # Próg: DoD/USASpending=1, branżowe media obronne=1, inne=3
+        long_threshold  = 1 if (is_trusted or is_defense_media) else 3
         short_threshold = 2  # zawsze wymagamy 2 dla shortów
 
         # Debug — pokaż co analizujemy
@@ -411,6 +422,10 @@ def analyze_items(items: list[dict]) -> list[dict]:
                 f"    [{item['source']}] L={long_score} S={short_score} "
                 f"tickers={tickers} | {item['title'][:60]}"
             )
+
+        # Dla zaufanych źródeł z sygnałem LONG — użyj ETF jako fallback
+        if not tickers and is_trusted and long_score >= 1:
+            tickers = ["ITA", "XAR"]
 
         if not tickers:
             continue
