@@ -264,7 +264,9 @@ Attempting to trade outside the list = immediate abort.
 - Time in force: DAY (unless strategy specifies otherwise)
 
 ### Forbidden
-- Options — require explicit user approval each time
+- Options — auto-execute on paper, max 3 open positions, $500/contract budget
+  (was: explicit user approval each time — relaxed 2026-05-06; iron-rule
+  preservation still happens via the per-run cap and email audit trail)
 - Margin / leveraging
 - Trading when VIX > 35
 - Trading 30 minutes before/after earnings releases
@@ -334,6 +336,8 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-06 | Master Plan #4 done: VIX guard (`shared/risk_guards.py::vix_guard`) wired into all 4 entry monitors (price/crypto/defense/geo). HALT @VIX>45, CAUTION @VIX>35 (50% sizing). Fail-open on Finnhub outage. FINNHUB_API_KEY added to crypto + defense workflows. |
 | 2026-05-06 | Master Plan #5 done: duplicate-position guard (`shared/risk_guards.py::has_open_position`) wired into price/crypto/defense monitors. Hits Alpaca `/v2/positions/{symbol}` (URL-encoded) before each alert; skips signals for tickers already held. Fail-open. ALPACA_API_KEY + ALPACA_SECRET_KEY required in price-monitor.yml + defense-monitor.yml (crypto already had them). |
 | 2026-05-06 | Master Plan #3 code done: `options-monitor/monitor.py` emits CALL/PUT proposals (RSI 45-65 / RSI>72) with VIX guard + earnings guard + global cap of 3 open options. Forwards to a routine that resolves the contract and asks user for approval before trading. Pending: workflow YAML, Cloudflare Worker, Claude Routine setup (all user-side). |
+| 2026-05-06 | Master Plan #3 deployed end-to-end: workflow + Cloudflare Worker `options-proxy` + Claude Routine `Options Handler` live. First smoke test fired 8 candidates -> 3 routine calls (HTTP 200, then HTTP 429 in retest -> Anthropic rate limit). |
+| 2026-05-06 | Master Plan #3 hardened: Finnhub /stock/candle migrated to Alpaca daily bars (shared/market_data.py) — Finnhub free tier started returning 403 in 2024, also fixed silent zero-signals in price-monitor. notify.py now renders an actionable "[OPTIONS APPROVAL NEEDED]" email body for options proposals (subject + 6-step Alpaca runbook). MAX_PROPOSALS_PER_RUN=1 added to options-monitor to soften Anthropic Routines rate limit. Iron rule for options relaxed to AUTO-EXECUTE on paper (routine system prompt updated to skip approval step; email is audit trail). |
 
 ---
 
