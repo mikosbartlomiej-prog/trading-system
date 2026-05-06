@@ -17,11 +17,12 @@ from html.parser import HTMLParser
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
-    from risk_guards import vix_guard
+    from risk_guards import vix_guard, has_open_position
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
+    def has_open_position(_): return False
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -592,6 +593,9 @@ def run_scan():
 
     for signal in signals[:MAX_ALERTS_PER_RUN]:
         direction = signal["action"]
+        if has_open_position(signal["symbol"]):
+            print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} pominięty (otwarta pozycja)")
+            continue
         signal["size_usd"] = round(signal["size_usd"] * size_mult)
         print(
             f"\n  >>> SYGNAŁ: {direction} {signal['symbol']} "

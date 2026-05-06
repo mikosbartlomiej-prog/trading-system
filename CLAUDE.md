@@ -182,6 +182,20 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 **#2 — Email notifications from Claude Routines — DONE ✅** (see Done section above)
 
+**#5 — Duplicate position guard — DONE ✅** (2026-05-06)
+- `shared/risk_guards.py::has_open_position(symbol)` queries Alpaca
+  `/v2/positions/{symbol}` (URL-encoded so `BTC/USD` works)
+- Returns True only on HTTP 200; 404 / network errors / missing creds fail OPEN
+  (a single Alpaca outage cannot silently block all signals)
+- Wired into: price-monitor, crypto-monitor, defense-monitor
+  - Each monitor: when a signal fires, check `has_open_position(symbol)`
+    BEFORE sending the alert; skip if True (logs `pominięty (otwarta pozycja)`)
+- Geo-monitor INTENTIONALLY skipped — sends raw news to a routine that
+  decides the ticker, so dedup at this layer wouldn't see the symbol
+- Workflow note: ALPACA_API_KEY + ALPACA_SECRET_KEY must be present in
+  price-monitor.yml and defense-monitor.yml env blocks (crypto already
+  has them); without the keys the guard fails open and is a no-op
+
 **#4 — VIX guard for all entry monitors — DONE ✅** (2026-05-06)
 - `shared/risk_guards.py` exposes `vix_guard()` returning `(status, multiplier)`:
   - VIX > 45 -> `("HALT", 0.0)` -> monitor returns early, sends 0-signal summary
@@ -213,22 +227,6 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 - Sizes: $150/contract, max 2 open options positions
 - SL: -50% premium, TP: +80% premium
 - Requires explicit user approval before each options trade (iron rule)
-
-**#5 — Duplicate position guard** (prevents double exposure)
-- Goal: don't re-enter a ticker that already has an open position
-- Currently: Routines don't check open positions — can get double signal on e.g. ITA
-  from defense-monitor AND price-monitor simultaneously
-- Implementation in each monitor.py before sending alert:
-  ```python
-  import requests
-  def has_open_position(symbol: str) -> bool:
-      url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
-      headers = {"APCA-API-KEY-ID": ALPACA_API_KEY, "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY}
-      r = requests.get(url, headers=headers)
-      return r.status_code == 200  # 404 = no position, 200 = exists
-  # Before every alert: if has_open_position(symbol): skip
-  ```
-- Requires adding ALPACA_API_KEY + ALPACA_SECRET_KEY to all monitor workflows that don't have them
 
 ### Other pending
 - **Reddit monitor** — waiting for Reddit API email approval
@@ -324,6 +322,7 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-06 | Defense monitor, email notifications — root cause found and fixed |
 | 2026-05-06 | Master Plan #2 done: notify_signal/notify_exit/notify_summary wired into price-monitor + exit-monitor (defense + crypto already done). Repo cleanup: .gitignore added, __pycache__ untracked, stale duplicate workflow ymls removed. |
 | 2026-05-06 | Master Plan #4 done: VIX guard (`shared/risk_guards.py::vix_guard`) wired into all 4 entry monitors (price/crypto/defense/geo). HALT @VIX>45, CAUTION @VIX>35 (50% sizing). Fail-open on Finnhub outage. FINNHUB_API_KEY added to crypto + defense workflows. |
+| 2026-05-06 | Master Plan #5 done: duplicate-position guard (`shared/risk_guards.py::has_open_position`) wired into price/crypto/defense monitors. Hits Alpaca `/v2/positions/{symbol}` (URL-encoded) before each alert; skips signals for tickers already held. Fail-open. ALPACA_API_KEY + ALPACA_SECRET_KEY required in price-monitor.yml + defense-monitor.yml (crypto already had them). |
 
 ---
 
