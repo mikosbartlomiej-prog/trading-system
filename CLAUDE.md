@@ -182,6 +182,27 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 **#2 — Email notifications from Claude Routines — DONE ✅** (see Done section above)
 
+**#3 — Options monitor — CODE DONE ✅, deployment PENDING** (2026-05-06)
+- New: `options-monitor/monitor.py` + `requirements.txt`
+- Detects momentum setups on a curated whitelist (AAPL, MSFT, GOOGL, NVDA,
+  META, AMZN, TSLA, SPY, QQQ, JPM, RTX, LMT):
+  - RSI 45-65 -> CALL proposal (BUY_TO_OPEN_CALL)
+  - RSI > 72  -> PUT proposal  (BUY_TO_OPEN_PUT)
+- Emits a *proposal* payload (the routine resolves the actual contract via
+  Alpaca MCP and asks the user for explicit approval before placing the
+  order — iron rule "Options require explicit user approval each time")
+- Guards: VIX guard (HALT/CAUTION/OK), earnings calendar (±1d -> skip),
+  global cap of MAX_OPEN_OPTIONS=3 across all underlyings
+- Strategy params (strategies/options-strategy.md):
+  size_usd $500, max_contracts 1-2 per signal, DTE 14-21,
+  strike ATM ±3%, IV<35% (call) / IV<45% (put),
+  TP +80% premium, SL -50% premium
+- Integration tests passed (7 scenarios: CALL/PUT/neutral/earnings/cap/HALT/CAUTION)
+- USER STILL NEEDS:
+  1. Add `.github/workflows/options-monitor.yml` via GitHub UI (template ready)
+  2. Create Cloudflare Worker `options-proxy` + add `CLOUDFLARE_OPTIONS_WORKER_URL` secret
+  3. Create Claude Routine `Options Handler` (system prompt template ready)
+
 **#5 — Duplicate position guard — DONE ✅** (2026-05-06)
 - `shared/risk_guards.py::has_open_position(symbol)` queries Alpaca
   `/v2/positions/{symbol}` (URL-encoded so `BTC/USD` works)
@@ -216,17 +237,6 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
   but NOT inside artifacts. Stable `mcp__alpaca__` returns 401.
 - Current workaround: static dashboard.html in ~/Downloads/investing/dashboard.html, refresh on demand
 - Real fix needed: either fix stable connector auth, or find another approach
-
-**#3 — Options monitor** (potentially large gains, Level 3 already enabled)
-- Goal: monitor IV, DTE, and momentum signals — plug into existing signal pipeline
-- Alpaca supports options, Level 3 is active on the account
-- Strategy file exists: strategies/options-strategy.md
-- New file needed: options-monitor/monitor.py
-- New workflow: .github/workflows/options-monitor.yml
-- Signal criteria: high IV, 14-21 DTE, ATM strikes on momentum tickers
-- Sizes: $150/contract, max 2 open options positions
-- SL: -50% premium, TP: +80% premium
-- Requires explicit user approval before each options trade (iron rule)
 
 ### Other pending
 - **Reddit monitor** — waiting for Reddit API email approval
@@ -323,6 +333,7 @@ from notify import notify_signal, notify_exit, notify_summary
 | 2026-05-06 | Master Plan #2 done: notify_signal/notify_exit/notify_summary wired into price-monitor + exit-monitor (defense + crypto already done). Repo cleanup: .gitignore added, __pycache__ untracked, stale duplicate workflow ymls removed. |
 | 2026-05-06 | Master Plan #4 done: VIX guard (`shared/risk_guards.py::vix_guard`) wired into all 4 entry monitors (price/crypto/defense/geo). HALT @VIX>45, CAUTION @VIX>35 (50% sizing). Fail-open on Finnhub outage. FINNHUB_API_KEY added to crypto + defense workflows. |
 | 2026-05-06 | Master Plan #5 done: duplicate-position guard (`shared/risk_guards.py::has_open_position`) wired into price/crypto/defense monitors. Hits Alpaca `/v2/positions/{symbol}` (URL-encoded) before each alert; skips signals for tickers already held. Fail-open. ALPACA_API_KEY + ALPACA_SECRET_KEY required in price-monitor.yml + defense-monitor.yml (crypto already had them). |
+| 2026-05-06 | Master Plan #3 code done: `options-monitor/monitor.py` emits CALL/PUT proposals (RSI 45-65 / RSI>72) with VIX guard + earnings guard + global cap of 3 open options. Forwards to a routine that resolves the contract and asks user for approval before trading. Pending: workflow YAML, Cloudflare Worker, Claude Routine setup (all user-side). |
 
 ---
 
