@@ -26,6 +26,8 @@ jobs:
       - name: Run defense market scan
         env:
           PYTHONIOENCODING:              utf-8
+          LC_ALL:                        C
+          LANG:                          C
           CLOUDFLARE_DEFENSE_WORKER_URL: ${{ secrets.CLOUDFLARE_DEFENSE_WORKER_URL }}
           NEWSAPI_KEY:                   ${{ secrets.NEWSAPI_KEY }}
           GMAIL_USER:                    ${{ secrets.GMAIL_USER }}

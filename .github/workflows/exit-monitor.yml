@@ -29,6 +29,9 @@ jobs:
 
       - name: Run exit monitor
         env:
+          PYTHONIOENCODING:           utf-8
+          LC_ALL:                     C
+          LANG:                       C
           ALPACA_API_KEY:             ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY:          ${{ secrets.ALPACA_SECRET_KEY }}
           CLOUDFLARE_EXIT_WORKER_URL: ${{ secrets.CLOUDFLARE_EXIT_WORKER_URL }}

@@ -27,6 +27,9 @@ jobs:
 
       - name: Run price monitor (single check)
         env:
+          PYTHONIOENCODING:      utf-8
+          LC_ALL:                C
+          LANG:                  C
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
           GMAIL_USER:            ${{ secrets.GMAIL_USER }}
