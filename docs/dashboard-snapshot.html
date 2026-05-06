@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; font-size: 13px; }
+
+.header { background: #1d1d1f; color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 15px; font-weight: 600; }
+.header .meta { font-size: 11px; color: #999; margin-top: 2px; }
+.note { font-size: 11px; background: #fff3cd; border: 1px solid #ffc107; color: #664d03; padding: 8px 20px; text-align: center; }
+
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 20px 0; }
+.kpi { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e5e5e7; }
+.kpi .label { font-size: 11px; color: #86868b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+.kpi .sub   { font-size: 11px; color: #86868b; margin-top: 3px; }
+.green { color: #1a7f37; } .red { color: #c0392b; }
+
+.section { margin: 14px 20px 0; background: #fff; border-radius: 10px; border: 1px solid #e5e5e7; overflow: hidden; }
+.section:last-child { margin-bottom: 20px; }
+.section-header { padding: 11px 16px; border-bottom: 1px solid #f2f2f2; display: flex; align-items: center; justify-content: space-between; }
+.section-header h2 { font-size: 13px; font-weight: 600; }
+.badge { background: #f2f2f7; color: #86868b; border-radius: 10px; padding: 2px 8px; font-size: 11px; }
+
+table { width: 100%; border-collapse: collapse; }
+th { padding: 7px 14px; text-align: left; font-size: 11px; font-weight: 500; color: #86868b; text-transform: uppercase; background: #fafafa; border-bottom: 1px solid #f2f2f2; }
+td { padding: 9px 14px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+.sym { font-weight: 600; font-size: 13px; }
+.pill { border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; }
+.pill-long  { background: #e8f8ed; color: #1a7f37; }
+.chart-wrap { padding: 14px; height: 180px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📊 Alpaca Paper Trading — PA3KNZV29BP5</h1>
+    <div class="meta">Generated: 2026-05-06 18:14 UTC · Ask Claude to refresh for live data</div>
+  </div>
+</div>
+<div class="note">⚡ Static snapshot — ask Claude "refresh dashboard" to update with latest data</div>
+
+<div class="grid">
+  <div class="kpi">
+    <div class="label">Portfolio Equity</div>
+    <div class="value">$100,032.97</div>
+    <div class="sub">Long: $1,751.30</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Today's P&amp;L</div>
+    <div class="value"><span class="green">+$26.36</span></div>
+    <div class="sub"><span class="green">+0.03% vs yesterday</span></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Buying Power</div>
+    <div class="value">$198,314</div>
+    <div class="sub">Cash: $98,281.68</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Open Positions</div>
+    <div class="value">3</div>
+    <div class="sub">Unrealized: <span class="green">+$27.46</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Portfolio Equity — last 10 days</h2></div>
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Open Positions</h2><span class="badge">3</span></div>
+  <table>
+    <thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Current</th><th>Mkt Val</th><th>P&amp;L</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="sym">GLD</span></td>
+        <td><span class="pill pill-long">LONG</span></td>
+        <td>3</td>
+        <td>$418.81</td>
+        <td>$430.02 <small class="green">+2.81%</small></td>
+        <td>$1,290.06</td>
+        <td class="green">+$33.63<br><small>+2.68%</small></td>
+      </tr>
+      <tr>
+        <td><span class="sym">RTX</span></td>
+        <td><span class="pill pill-long">LONG</span></td>
+        <td>1</td>
+        <td>$172.60</td>
+        <td>$176.16 <small class="green">+1.90%</small></td>
+        <td>$176.16</td>
+        <td class="green">+$3.56<br><small>+2.06%</small></td>
+      </tr>
+      <tr>
+        <td><span class="sym">XLE</span></td>
+        <td><span class="pill pill-long">LONG</span></td>
+        <td>5</td>
+        <td>$58.96</td>
+        <td>$57.02 <small class="red">-4.10%</small></td>
+        <td>$285.08</td>
+        <td class="red">-$9.74<br><small>-3.30%</small></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Recent Orders</h2><span class="badge">10</span></div>
+  <table>
+    <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>May 5, 07:58 PM</td><td><span class="sym">XLE</span></td><td><span class="pill" style="background:#fde8e8;color:#c0392b">SELL</span></td><td>5</td><td>$59.48</td><td style="color:#86868b">filled (market close)</td></tr>
+      <tr><td>May 5, 06:11 PM</td><td><span class="sym">GLD</span><span style="font-size:10px;background:#f2f2f7;color:#86868b;border-radius:3px;padding:1px 5px;margin-left:4px">geo</span></td><td><span class="pill pill-long">BUY</span></td><td>3</td><td>$418.81</td><td style="color:#1a7f37;font-weight:600">filled</td></tr>
+      <tr><td>May 5, 04:57 PM</td><td><span class="sym">RTX</span><span style="font-size:10px;background:#f2f2f7;color:#86868b;border-radius:3px;padding:1px 5px;margin-left:4px">geo</span></td><td><span class="pill pill-long">BUY</span></td><td>1</td><td>$172.60</td><td style="color:#1a7f37;font-weight:600">filled</td></tr>
+      <tr><td>May 5, 04:47 PM</td><td><span class="sym">XOM</span></td><td><span class="pill" style="background:#fde8e8;color:#c0392b">SELL</span></td><td>3</td><td>$154.83</td><td style="color:#1a7f37;font-weight:600">filled</td></tr>
+      <tr><td>May 5, 01:33 PM</td><td><span class="sym">XLE</span></td><td><span class="pill pill-long">BUY</span></td><td>5</td><td>$58.96</td><td style="color:#1a7f37;font-weight:600">filled</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const labels = ['Apr 25','Apr 26','Apr 27','Apr 28','Apr 29','May 2','May 3'];
+const data   = [100000, 100000, 100000, 100000, 100000, 100000, 100006.61];
+const isUp   = data[data.length-1] >= data[0];
+
+new Chart(document.getElementById('chart').getContext('2d'), {
+  type: 'line',
+  data: { labels, datasets: [{
+    data, borderColor: isUp ? '#1a7f37' : '#c0392b',
+    backgroundColor: isUp ? 'rgba(26,127,55,0.08)' : 'rgba(192,57,43,0.08)',
+    borderWidth: 2, pointRadius: 3, tension: 0.3, fill: true
+  }]},
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#86868b' } },
+      y: { grid: { color: '#f2f2f7' }, ticks: { font: { size: 10 }, color: '#86868b',
+        callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+    }
+  }
+});
+</script>
+</body>
+</html>

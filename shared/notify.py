@@ -9,9 +9,16 @@ import traceback
 from email.message import EmailMessage
 from datetime import datetime, timezone
 
-GMAIL_USER         = os.environ.get("GMAIL_USER", "")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER)
+GMAIL_USER         = os.environ.get("GMAIL_USER", "").strip()
+# Strip ALL whitespace variants — copy-paste from Google's UI often inserts \xa0 (non-breaking space)
+GMAIL_APP_PASSWORD = (
+    os.environ.get("GMAIL_APP_PASSWORD", "")
+    .replace('\xa0', '')   # non-breaking space
+    .replace(' ', '')  # narrow no-break space (U+202F)
+    .replace(' ', '')      # regular space — Google App Passwords work without spaces
+    .strip()
+)
+NOTIFY_TO          = os.environ.get("NOTIFY_EMAIL", GMAIL_USER).strip()
 
 
 def _clean(text: str) -> str:

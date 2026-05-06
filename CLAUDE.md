@@ -1,39 +1,336 @@
-# Trading System — Konstytucja
+# Trading System — Master Reference for Claude Code
+# READ THIS ENTIRE FILE BEFORE DOING ANYTHING
 
-## Środowisko
-Pracuję na PAPER TRADING (env var ALPACA_PAPER=true).
-NIE wykonuję żadnych operacji na prawdziwym koncie dopóki ALPACA_PAPER=false.
+---
 
-## Żelazne zasady — naruszenie = natychmiastowe zatrzymanie sesji
+## ENVIRONMENT & ACCOUNTS
 
-### Limity wielkości pozycji
-- Maksymalny pojedynczy trade: 5% wartości konta (equity)
-- Maksymalna ekspozycja na jeden ticker: 15% equity
-- Minimum cash: zawsze zostaw 5% konta jako cash
-- Daily loss limit: jeśli łączna strata dnia > 3% equity → STOP, żadnych nowych pozycji
+**Broker:** Alpaca Paper Trading only (PAPER — not live)
+- Account ID: PA3KNZV29BP5
+- Equity: ~$100,032 (as of 2026-05-06)
+- Paper API: https://paper-api.alpaca.markets
+- Dashboard: https://app.alpaca.markets/paper/dashboard/overview
+- Shorting: ENABLED (no_shorting=false)
+- Options: Level 3 (all strategies permitted)
+- Buying power: ~$198,000 (4x margin)
 
-### Dozwolone tickery — TYLKO z tej listy
-Pełna lista: .claude/rules/tickers-whitelist.md
-Próba tradowania poza listą = natychmiastowy abort.
+**MCP Server (Alpaca):**
+- Deployed on Render.com: https://alpaca-mcp-server-fchb.onrender.com/mcp
+- Local repo: ~/Documents/alpaca-mcp-server
+- Render env vars (DIFFERENT names than GitHub Secrets):
+  - `APCA_API_KEY_ID` = Alpaca key
+  - `APCA_API_SECRET_KEY` = Alpaca secret
 
-### Rodzaje zleceń
-- Zawsze LIMIT order (nigdy MARKET)
-- Każde wejście w pozycję = bracket order: entry + stop loss + take profit
-- Time in force: DAY (chyba że strategia mówi inaczej)
+---
 
-### Czego nie wolno
-- Opcje — bez mojej wyraźnej zgody
-- Lewarowanie / margin
-- Handel gdy VIX powyżej 35
-- Handel 30 minut przed i po publikacji wyników finansowych spółki
+## REPOSITORY STRUCTURE
 
-## Obowiązkowy workflow dla każdego zlecenia
-1. Deleguj do sub-agenta risk-officer (.claude/agents/risk-officer.md)
-2. Jeśli APPROVE → wykonaj przez skill place-bracket-order
-3. Jeśli REJECT → zapisz powód, NIE handluj
-4. Zawsze → zapis do journal/trades-YYYY-MM-DD.md
+**One repo for everything:** `~/Documents/Git/trading-system`
+- Remote: git@github.com:mikosbartlomiej-prog/trading-system.git
+- Branch: main
+- Push commands: `cd ~/Documents/Git/trading-system && git add -A && git commit -m "..." && git push`
 
-## Komunikacja
-- Raporty po polsku
-- Każde wykonane/odrzucone zlecenie → Slack #trading (jeśli skonfigurowany)
-- Format raportu: .claude/rules/report-format.md
+**WARNING:** `~/Downloads/investing` is NOT a git repo. It is only the Cowork workspace.
+Any code there is a stale copy — the real files are in `~/Documents/Git/trading-system`.
+
+---
+
+## GITHUB SECRETS (trading-system repo)
+
+| Secret | Value / Purpose |
+|--------|----------------|
+| `ALPACA_API_KEY` | Alpaca paper API Key ID |
+| `ALPACA_SECRET_KEY` | Alpaca paper Secret Key |
+| `GMAIL_USER` | Gmail address for email notifications |
+| `GMAIL_APP_PASSWORD` | Google App Password (16 chars, spaces stripped in code) |
+| `NOTIFY_EMAIL` | mikosbartlomiej@gmail.com |
+| `NEWSAPI_KEY` | NewsAPI.org free tier key |
+| `FINNHUB_API_KEY` | Finnhub API key |
+| `CLOUDFLARE_WORKER_URL` | https://tradingview-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_GEO_WORKER_URL` | https://geopolitical-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_EXIT_WORKER_URL` | https://exit-monitor-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_CRYPTO_WORKER_URL` | https://crypto-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_LEARNING_WORKER_URL` | https://learning-loop-proxy.mikosbartlomiej.workers.dev |
+| `CLOUDFLARE_DEFENSE_WORKER_URL` | https://defense-proxy.mikosbartlomiej.workers.dev |
+| `REDDIT_CLIENT_ID` | Reddit app client_id (pending API approval) |
+| `REDDIT_CLIENT_SECRET` | Reddit app client_secret (pending API approval) |
+
+---
+
+## CLOUDFLARE WORKERS → CLAUDE ROUTINES
+
+Each monitor sends signals to a Cloudflare Worker, which triggers a Claude Routine via API.
+
+**Cloudflare account:** mikosbartlomiej — https://dash.cloudflare.com
+
+| Worker | URL | Claude Routine trigger (trig_...) | Status |
+|--------|-----|-----------------------------------|--------|
+| tradingview-proxy | https://tradingview-proxy.mikosbartlomiej.workers.dev | (from earlier session) | ✅ |
+| geopolitical-proxy | https://geopolitical-proxy.mikosbartlomiej.workers.dev | (from earlier session) | ✅ |
+| exit-monitor-proxy | https://exit-monitor-proxy.mikosbartlomiej.workers.dev | trig_01QL21osTHsnNvpyawXCdkiQ | ✅ |
+| crypto-proxy | https://crypto-proxy.mikosbartlomiej.workers.dev | trig_01Y1QB5MCF1jtrGS51QixSrR | ✅ |
+| learning-loop-proxy | https://learning-loop-proxy.mikosbartlomiej.workers.dev | trig_0175V2oDoLMn9y75HoDx8NGd | ✅ |
+| defense-proxy | https://defense-proxy.mikosbartlomiej.workers.dev | (set up but defense-monitor now sends email directly too) | ✅ |
+| reddit-proxy | https://reddit-proxy.mikosbartlomiej.workers.dev | (pending Reddit API approval) | ⏳ |
+
+**Cloudflare Worker code (same for all workers):**
+```javascript
+export default {
+  async fetch(request, env) {
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
+    }
+    const body = await request.json();
+    const routinePayload = { text: JSON.stringify(body) };
+    const response = await fetch(env.ROUTINE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type":      "application/json",
+        "Authorization":     `Bearer ${env.ANTHROPIC_TOKEN}`,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta":    "experimental-cc-routine-2026-04-01",
+      },
+      body: JSON.stringify(routinePayload),
+    });
+    return new Response(await response.text(), {
+      status: response.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+};
+```
+Worker secrets per worker: `ROUTINE_ENDPOINT` (trig_... URL) and `ANTHROPIC_TOKEN` (from claude.ai routine's "Call via API" section).
+
+---
+
+## MONITORS — STATUS & SCHEDULE
+
+All monitors run via GitHub Actions in the trading-system repo.
+
+| Monitor | Cron | Status | Sends email | Sends to Cloudflare |
+|---------|------|--------|-------------|---------------------|
+| defense-monitor | `0,30 * * * *` (24/7) | ✅ WORKING | ✅ CONFIRMED 2026-05-06 | ✅ |
+| crypto-monitor | `0 * * * *` + `30 * * * *` (24/7) | ✅ | ✅ integrated | ✅ |
+| price-monitor | `*/5 13-20 * * 1-5` | ✅ | ⚠️ env set, monitor.py may not call notify() | ✅ |
+| exit-monitor | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | ✅ | ⚠️ env set, monitor.py may not call notify() | ✅ |
+| geo-monitor | `*/15 13-21 * * 1-5` | ✅ (not recently verified) | ❌ not integrated | ✅ |
+| weekly-learning | `0 20 * * 0` (Sunday 20:00 UTC) | ✅ | ❌ not integrated | ✅ |
+| keep-alive | `*/10 * * * *` | ✅ | ❌ (not needed) | pings Render |
+| reddit-monitor | `0 7,13,16,20 * * 1-5` | ⏳ waiting for Reddit API approval | ❌ | ⏳ |
+
+**All workflow env blocks must include:**
+```yaml
+PYTHONIOENCODING: utf-8
+LC_ALL: C
+LANG: C
+```
+
+---
+
+## EMAIL NOTIFICATIONS — shared/notify.py
+
+**Status: WORKING ✅** (confirmed 2026-05-06, defense-monitor sent two emails successfully)
+
+**Root cause of the long-running \xa0 crash (SOLVED):**
+The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from copy-pasting Google's App Password UI (which formats as "xxxx xxxx xxxx xxxx" with non-breaking spaces). smtplib encodes SMTP AUTH as ASCII — crashed at position 31 (first space in the password).
+
+**Fix in notify.py:** GMAIL_APP_PASSWORD is stripped of all whitespace variants at load time.
+
+**Key functions:**
+- `send_email(subject, body)` — sends via Gmail SMTP SSL port 465
+- `notify_signal(signal_dict, alert_sent)` — trading signal email
+- `notify_exit(symbol, action, reason, pl_pct)` — position closed email
+- `notify_order_executed(symbol, side, qty, price, size_usd, sl, tp, strategy, order_id)` — bracket order confirmation
+- `notify_summary(monitor, signals_found, alerts_sent)` — run summary (only if signals > 0)
+
+**Integration status:**
+- defense-monitor/monitor.py — ✅ calls notify_signal() and notify_summary()
+- crypto-monitor/monitor.py — ✅ integrated
+- price-monitor/monitor.py — ⚠️ needs notify calls added
+- exit-monitor/monitor.py — ⚠️ needs notify calls added
+
+---
+
+## OPEN POSITIONS (as of 2026-05-06 18:14 UTC)
+
+| Symbol | Side | Qty | Entry | P&L |
+|--------|------|-----|-------|-----|
+| GLD | LONG | 3 | $418.81 | +$33.63 (+2.68%) |
+| RTX | LONG | 1 | $172.60 | +$3.56 (+2.06%) |
+| XLE | LONG | 5 | $58.96 | -$9.74 (-3.30%) |
+
+---
+
+## TODO LIST (in priority order)
+
+### Done ✅
+1. ✅ Fix email \xa0 encoding crash — root cause was non-breaking space in GMAIL_APP_PASSWORD secret
+2. ✅ Confirm email works end-to-end — tested 2026-05-06 with defense-monitor
+3. ✅ Fix all workflow files — merged duplicate env blocks, added PYTHONIOENCODING/LC_ALL/LANG
+4. ✅ English email strings throughout notify.py
+
+### Pending — THE MASTER 5-POINT PLAN
+
+**#1 — Live Portfolio Dashboard** (~20 min, highest ROI for daily use)
+- Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
+- Uses Alpaca MCP directly via Cowork artifact
+- Problem: UUID connector (`mcp__aaf463f1-cb15-4654-9680-1f0b41af56f5__`) works in Cowork chat
+  but NOT inside artifacts. Stable `mcp__alpaca__` returns 401.
+- Current workaround: static dashboard.html in ~/Downloads/investing/dashboard.html, refresh on demand
+- Real fix needed: either fix stable connector auth, or find another approach
+
+**#2 — Email notifications from Claude Routines** (practically important)
+- Goal: when a Routine executes a trade → send email immediately
+- Already done for monitors (GitHub Actions → shared/notify.py → Gmail SMTP) ✅
+- Still missing: price-monitor/monitor.py and exit-monitor/monitor.py don't call notify() yet
+- Import pattern for any monitor:
+  ```python
+  import sys, os
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+  from notify import notify_signal, notify_exit, notify_summary
+  ```
+- Call notify_signal() when BUY/SELL signal sent to Cloudflare
+- Call notify_exit() when exit-monitor closes a position
+- Call notify_summary() at end of each run (only fires if signals > 0)
+
+**#3 — Options monitor** (potentially large gains, Level 3 already enabled)
+- Goal: monitor IV, DTE, and momentum signals — plug into existing signal pipeline
+- Alpaca supports options, Level 3 is active on the account
+- Strategy file exists: strategies/options-strategy.md
+- New file needed: options-monitor/monitor.py
+- New workflow: .github/workflows/options-monitor.yml
+- Signal criteria: high IV, 14-21 DTE, ATM strikes on momentum tickers
+- Sizes: $150/contract, max 2 open options positions
+- SL: -50% premium, TP: +80% premium
+- Requires explicit user approval before each options trade (iron rule)
+
+**#4 — VIX guard for all monitors** (risk reduction, crash protection)
+- Goal: halt ALL trading when VIX > 45, reduce size when VIX 35-45
+- Currently: every monitor fires regardless of VIX — dangerous in crash scenarios
+- Add to: price-monitor, defense-monitor, crypto-monitor, geo-monitor
+- Implementation:
+  ```python
+  # At start of each monitor run:
+  vix = get_vix()  # via Finnhub /quote?symbol=VIX or Alpaca
+  if vix > 45:
+      print(f"VIX={vix:.1f} — HALT: no alerts sent")
+      return
+  elif vix > 35:
+      print(f"VIX={vix:.1f} — CAUTION: reducing sizes 50%")
+      SIZE_MULTIPLIER = 0.5
+  ```
+- Finnhub endpoint: `https://finnhub.io/api/v1/quote?symbol=VIX&token={FINNHUB_API_KEY}`
+
+**#5 — Duplicate position guard** (prevents double exposure)
+- Goal: don't re-enter a ticker that already has an open position
+- Currently: Routines don't check open positions — can get double signal on e.g. ITA
+  from defense-monitor AND price-monitor simultaneously
+- Implementation in each monitor.py before sending alert:
+  ```python
+  import requests
+  def has_open_position(symbol: str) -> bool:
+      url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
+      headers = {"APCA-API-KEY-ID": ALPACA_API_KEY, "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY}
+      r = requests.get(url, headers=headers)
+      return r.status_code == 200  # 404 = no position, 200 = exists
+  # Before every alert: if has_open_position(symbol): skip
+  ```
+- Requires adding ALPACA_API_KEY + ALPACA_SECRET_KEY to all monitor workflows that don't have them
+
+### Other pending
+- **Reddit monitor** — waiting for Reddit API email approval
+  - Resume guide: docs/RESUME-REDDIT.md
+  - When email arrives: create app at reddit.com/prefs/apps → type: script
+  - Add secrets: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, CLOUDFLARE_REDDIT_WORKER_URL
+
+---
+
+## IRON RULES — NEVER VIOLATE
+
+### Position sizing
+- Maximum single trade: 5% of account equity
+- Maximum exposure per ticker: 15% equity
+- Minimum cash: always keep 5% as cash
+- Daily loss limit: if total day loss > 3% equity → STOP, no new positions
+
+### Allowed tickers ONLY
+See .claude/rules/tickers-whitelist.md for full list.
+Attempting to trade outside the list = immediate abort.
+
+### Order types
+- Always LIMIT orders (never MARKET)
+- Every entry = bracket order: entry + stop loss + take profit
+- Time in force: DAY (unless strategy specifies otherwise)
+
+### Forbidden
+- Options — require explicit user approval each time
+- Margin / leveraging
+- Trading when VIX > 35
+- Trading 30 minutes before/after earnings releases
+
+---
+
+## MANDATORY WORKFLOW FOR EVERY ORDER
+
+1. Delegate to sub-agent risk-officer (.claude/agents/risk-officer.md)
+2. If APPROVE → execute via skill place-bracket-order
+3. If REJECT → log reason, do NOT trade
+4. Always → write to journal/trades-YYYY-MM-DD.md
+
+---
+
+## COMMUNICATION FORMAT
+
+- Reports in Polish (but email content in English)
+- Every executed/rejected order → Slack #trading (if configured)
+- Report format: .claude/rules/report-format.md
+
+---
+
+## KEY TECHNICAL DETAILS
+
+### crypto-monitor API quirks
+- Alpaca crypto symbol format: `BTC/USD` (with slash, NOT `BTCUSD`)
+- Timeframe: `1Hour` (NOT `1H` — causes 400 error)
+- Always include `start=5 days ago` in request (default returns only ~17 bars)
+
+### exit-monitor API calls
+- Uses Alpaca REST directly (not MCP) with ALPACA_API_KEY / ALPACA_SECRET_KEY
+- Auth headers: `APCA-API-KEY-ID` and `APCA-API-SECRET-KEY`
+- Base URL: https://paper-api.alpaca.markets
+- Endpoints: /v2/positions, /v2/account, /v2/orders
+
+### Monitor signal flow
+```
+GitHub Actions cron
+  → monitor.py runs
+    → detects signal
+    → HTTP POST to Cloudflare Worker URL
+      → Worker adds auth headers
+        → POST to Claude Routine (trig_... endpoint)
+          → Routine executes trade via Alpaca MCP
+    → sends email via shared/notify.py → Gmail SMTP
+```
+
+### Shared notify.py import pattern
+```python
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+from notify import notify_signal, notify_exit, notify_summary
+```
+
+---
+
+## SESSION HISTORY QUICK REFERENCE
+
+| Date | What happened |
+|------|--------------|
+| 2026-04-29 | Initial setup: Alpaca account, MCP server on Render, first routines |
+| 2026-05-04 | Reddit monitor, geo-monitor, leveraged ETF strategy |
+| 2026-05-05 | Exit monitor, crypto monitor fixes, all Cloudflare workers working |
+| 2026-05-06 | Defense monitor, email notifications — root cause found and fixed |
+
+---
+
+*Last updated: 2026-05-06 by Claude (Cowork session)*
+*Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*
