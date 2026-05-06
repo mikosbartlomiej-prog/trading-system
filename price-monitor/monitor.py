@@ -12,6 +12,13 @@ import schedule
 import pytz
 from datetime import datetime, timedelta
 
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+    from notify import notify_signal, notify_summary
+except ImportError:
+    def notify_signal(*a, **k): pass
+    def notify_summary(*a, **k): pass
+
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
 
 CLOUDFLARE_WORKER_URL = os.environ.get(
@@ -288,7 +295,8 @@ def run_checks():
         return
 
     print(f"\n[{now_str}] === SKANOWANIE LONG + SHORT ===")
-    alerts_sent = 0
+    signals_found = 0
+    alerts_sent   = 0
 
     # LONG signals
     print(f"\n[LONG] Sprawdzam {', '.join(TICKERS_LONG)}")
@@ -296,8 +304,11 @@ def run_checks():
         signal = check_long_signal(ticker)
         if signal:
             print(f"  >>> SYGNAL LONG: {ticker}!")
-            send_alert(signal)
-            alerts_sent += 1
+            signals_found += 1
+            sent = send_alert(signal)
+            if sent:
+                alerts_sent += 1
+            notify_signal(signal, sent)
         time.sleep(0.5)
 
     # SHORT signals
@@ -306,8 +317,11 @@ def run_checks():
         signal = check_short_signal(ticker)
         if signal:
             print(f"  >>> SYGNAL SHORT: {ticker}!")
-            send_alert(signal)
-            alerts_sent += 1
+            signals_found += 1
+            sent = send_alert(signal)
+            if sent:
+                alerts_sent += 1
+            notify_signal(signal, sent)
         time.sleep(0.5)
 
     # Lewarowane ETF
@@ -318,11 +332,15 @@ def run_checks():
             signal["strategy"] = "leveraged-etf"
             signal["size_usd"] = SIZE_LEVERAGED
             print(f"  >>> SYGNAL LEVERAGED: {ticker}!")
-            send_alert(signal)
-            alerts_sent += 1
+            signals_found += 1
+            sent = send_alert(signal)
+            if sent:
+                alerts_sent += 1
+            notify_signal(signal, sent)
         time.sleep(0.5)
 
-    print(f"\n[{now_str}] Alerty wyslane: {alerts_sent}. Nastepne sprawdzenie za 5 minut.\n")
+    notify_summary("Price Monitor", signals_found, alerts_sent)
+    print(f"\n[{now_str}] Sygnaly: {signals_found}, alerty wyslane: {alerts_sent}. Nastepne sprawdzenie za 5 minut.\n")
 
 
 # ─── Start ───────────────────────────────────────────────────────────────────
