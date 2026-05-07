@@ -3,6 +3,10 @@
 The OAuth proxy used by Claude Code can't push files under `.github/workflows/`
 without `workflow` scope, so these YAMLs live here as paste-ready templates.
 
+**Latest version (poll-based architecture, v2.3.2):** the workflows now (a) pull
+any commits the routine pushed during the analyzer step and (b) push to the
+current branch instead of hardcoded `main`, so feature-branch testing works.
+
 Deploy via GitHub UI:
 
 ## 1. Update existing `daily-learning.yml`

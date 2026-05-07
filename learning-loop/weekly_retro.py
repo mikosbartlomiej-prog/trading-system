@@ -19,9 +19,24 @@ limit.
 
 import json
 import os
+import subprocess
 import sys
 import glob
 from datetime import datetime, timezone, timedelta
+
+
+def _git_current_branch() -> str:
+    """Best-effort detection of the workflow's branch (used in LLM payload)."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except Exception:
+        pass
+    return "main"
 
 LEARNING_DIR    = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH      = os.path.join(LEARNING_DIR, "state.json")
@@ -77,6 +92,7 @@ def collect_inputs() -> dict:
         "daily_reports":  daily_reports,
         "rationale_tail": rationale_tail,
         "current_state":  state,
+        "target_branch":  os.environ.get("GITHUB_REF_NAME") or _git_current_branch(),
     }
 
 

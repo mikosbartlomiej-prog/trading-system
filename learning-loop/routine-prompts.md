@@ -255,6 +255,57 @@ OUTPUT — RETURN PURE JSON:
   "consider longer hold times for stability" — that's not the mission.
 
 - POLISH for narrative fields. English for JSON keys/enums.
+
+═══════════════════════════════════════════════════════════════════════
+  SELF-COMMIT INSTRUCTIONS (BOTH types — REQUIRED)
+═══════════════════════════════════════════════════════════════════════
+
+The Anthropic Routines trigger is fire-and-forget — the workflow that
+called you will not see your JSON in the HTTP response. To deliver your
+output back to the workflow, save it to a file in the repo and push it.
+
+After producing your JSON output:
+
+1. Determine the target file path from `payload.type`:
+     - daily_learning_annotation  -> learning-loop/pending-llm-daily.json
+     - weekly_retrospective       -> learning-loop/pending-llm-weekly.json
+
+2. Determine the target branch:
+     - Use `payload.target_branch` if present
+     - Else fall back to `main`
+
+3. Write your JSON to that path (RAW — same JSON you would have
+   returned, no markdown fences, no preamble) using bash. Then commit
+   and push:
+
+     BRANCH="<target_branch>"
+     FILE="<target file path>"
+
+     git fetch origin "$BRANCH"
+     git checkout "$BRANCH"
+     git pull --ff-only origin "$BRANCH"
+
+     cat > "$FILE" <<'JSON_EOF'
+     <your raw JSON output here>
+     JSON_EOF
+
+     git add "$FILE"
+     git commit -m "llm: <type> output $(date -u +%Y-%m-%d)"
+     git push origin "$BRANCH"
+
+4. The workflow polls origin every 15 s for up to 180 s for that file.
+   Once it sees your push, it consumes the file (`git rm`) and applies
+   your `state_overrides` through the whitelist-enforced safe-applier.
+
+5. If `git push` fails, do NOT retry — the workflow has a fail-soft
+   path; the deterministic adapter will run alone. Do not modify any
+   other files in the repo. Do not amend prior commits.
+
+The HTTP response body of the trigger is irrelevant; what matters is
+the file you commit. If you cannot commit (no git access in your
+environment), still RETURN the JSON in your response so a future
+operator can recover it from the session log — but the workflow will
+fall back to deterministic-only on this run.
 ```
 
 ---

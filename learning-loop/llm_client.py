@@ -1,37 +1,102 @@
 """
 LLM client for learning loop.
 
-Calls the existing CLOUDFLARE_LEARNING_WORKER_URL (which forwards to a
-Claude routine on claude.ai) and parses the JSON response. The routine's
-system prompt is configured to dispatch on `payload["type"]`:
+Architecture (poll-based, free-tier-compatible):
 
-  - "daily_learning_annotation" -> {narrative, state_overrides, new_heuristic_proposals}
-  - "weekly_retrospective"      -> {summary, key_insights, what_worked, what_didnt, recommendations}
+The Anthropic Routines trigger endpoint is fire-and-forget — the POST
+returns immediately with a `routine_fire` receipt and a session_id. The
+actual model output is produced asynchronously inside the routine
+session on claude.ai. Since Claude Code routines have repo write
+access, we route the output back via git:
 
-Fail-soft contract: if USE_LLM_LEARNING=false OR worker URL missing OR
-HTTP error OR JSON parse failure -> returns None and the caller's
-deterministic baseline still produces a valid output. The LLM step is
-strictly *additive* — it never blocks or corrupts the deterministic
-adapter's work.
+  1. analyzer / weekly_retro POST the payload to the Cloudflare Worker
+     (which forwards to the routine trigger). Receipt comes back in
+     <1s; this confirms the routine started.
+  2. The routine, after producing its JSON, saves it to
+     `learning-loop/pending-llm-{daily|weekly}.json` and runs
+     `git add && git commit && git push` to the target branch.
+  3. We poll `git fetch + git pull --ff-only` every 15 s for up to
+     180 s, looking for the pending file. When found, we read it,
+     `git rm` it (so the next workflow commit cleans up), and return
+     the parsed dict.
 
-Budget awareness: at 1 call/day (daily annotator) + 1 call/week (weekly
-retro), this layer adds ~1.14 routine calls/day. Well within the 15/day
-Anthropic Routines limit even if other monitors regress to routine path.
+Fail-soft contract: USE_LLM_LEARNING=false / no Worker URL / HTTP
+error / poll timeout / JSON parse failure → returns None and the
+deterministic baseline alone produces a complete, valid output.
+
+Budget: 1 routine call/day (daily) + 1 call/week (weekly retro). Well
+within the 15/day Anthropic Routines limit even if other monitors
+regress to routine path.
 """
 
 import json
 import os
+import subprocess
+import time
 import requests
 
-USE_LLM        = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true"
-WORKER_URL     = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
-TIMEOUT_SEC    = 90       # routine cold-start can take 30-60s
+USE_LLM            = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true"
+WORKER_URL         = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
+TRIGGER_TIMEOUT_S  = 30        # POST is fire-and-forget; receipt comes back <1s
+POLL_INTERVAL_S    = 15        # how often we git fetch + check for pending file
+POLL_MAX_S         = 180       # max wait for routine to push its JSON
+GIT_OP_TIMEOUT_S   = 30
+
+LEARNING_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT    = os.path.abspath(os.path.join(LEARNING_DIR, ".."))
+
+
+def _pending_path(payload_type: str) -> str:
+    """Return the file path the routine is contracted to write."""
+    name = "pending-llm-weekly.json" if payload_type == "weekly_retrospective" else "pending-llm-daily.json"
+    return os.path.join(LEARNING_DIR, name)
+
+
+def _git(args: list[str], check: bool = False, timeout: int = GIT_OP_TIMEOUT_S) -> tuple[int, str, str]:
+    """Run `git` in REPO_ROOT and return (rc, stdout, stderr). Quiet on failure."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", REPO_ROOT, *args],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except Exception as e:
+        return 1, "", str(e)
+    if check and r.returncode != 0:
+        raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
+    return r.returncode, r.stdout, r.stderr
+
+
+def _current_branch() -> str:
+    rc, out, _ = _git(["rev-parse", "--abbrev-ref", "HEAD"])
+    return out.strip() if rc == 0 and out.strip() else "main"
+
+
+def _git_pull(branch: str) -> bool:
+    """Fetch + fast-forward pull. Quiet on failure."""
+    rc, _, err = _git(["fetch", "origin", branch])
+    if rc != 0:
+        # Fetch can fail in test envs — not fatal
+        return False
+    rc, _, err = _git(["pull", "--ff-only", "origin", branch])
+    if rc != 0:
+        # Already up to date is fine (rc 0); only log unexpected
+        if "already up to date" not in err.lower():
+            return False
+    return True
 
 
 def call_routine(payload: dict) -> dict | None:
     """
-    Forward `payload` to the learning routine via Cloudflare Worker.
-    Expect a JSON response. Returns parsed dict or None on any failure.
+    Trigger the learning routine and wait for its JSON output to appear
+    as a committed file in the repo.
+
+    The routine system prompt (`routine-prompts.md`) instructs the LLM
+    to save its JSON to `learning-loop/pending-llm-{daily|weekly}.json`
+    and `git push` to `payload.target_branch`. We poll for that file
+    here and consume it (`git rm`) so the workflow's final commit
+    cleans up automatically.
+
+    Returns parsed dict on success, None on any failure (fail-soft).
     """
     if not USE_LLM:
         print("  LLM: USE_LLM_LEARNING=false, skipping")
@@ -40,42 +105,80 @@ def call_routine(payload: dict) -> dict | None:
         print("  LLM: CLOUDFLARE_LEARNING_WORKER_URL not set, skipping")
         return None
 
+    payload_type = payload.get("type", "daily_learning_annotation")
+    pending_path = _pending_path(payload_type)
+    branch       = payload.get("target_branch") or _current_branch()
+
+    # git author identity — needed if analyzer pulls / commits before workflow's
+    # final step sets it. Idempotent; failures are non-fatal.
+    _git(["config", "user.name",  "github-actions[bot]"])
+    _git(["config", "user.email", "github-actions[bot]@users.noreply.github.com"])
+
+    # Clear any stale pending file from a prior run that wasn't consumed.
+    if os.path.exists(pending_path):
+        print(f"  LLM: removing stale {os.path.basename(pending_path)} before new run")
+        try:
+            _git(["rm", "-f", "--ignore-unmatch", os.path.relpath(pending_path, REPO_ROOT)])
+            if os.path.exists(pending_path):
+                os.remove(pending_path)
+        except Exception:
+            pass
+
+    # 1) Fire trigger
     try:
-        r = requests.post(WORKER_URL, json=payload, timeout=TIMEOUT_SEC)
+        r = requests.post(WORKER_URL, json=payload, timeout=TRIGGER_TIMEOUT_S)
     except Exception as e:
-        print(f"  LLM call exception: {e}")
+        print(f"  LLM trigger exception: {e}")
         return None
 
     if r.status_code != 200:
-        print(f"  LLM call: HTTP {r.status_code} -> skipping")
+        print(f"  LLM trigger: HTTP {r.status_code} -> skipping")
         if r.status_code == 429:
             print("    (Anthropic Routines daily limit hit. Deterministic baseline still active.)")
         return None
 
-    body = r.text or ""
-    # Routine should return raw JSON; handle a few legitimate variations:
-    # 1. Pure JSON
-    # 2. JSON wrapped in markdown fences ```json ... ```
-    # 3. JSON with leading/trailing whitespace
-    body = body.strip()
-    if body.startswith("```"):
-        # Strip code fences
-        body = body.lstrip("`")
-        if body.lower().startswith("json"):
-            body = body[4:]
-        body = body.strip().rstrip("`").strip()
+    receipt_preview = (r.text or "").strip()[:200]
+    print(f"  LLM trigger fired (receipt: {receipt_preview})")
+    print(f"  Polling origin/{branch} for {os.path.basename(pending_path)} (max {POLL_MAX_S}s)...")
 
-    try:
-        data = json.loads(body)
-        if not isinstance(data, dict):
-            print(f"  LLM response not a dict: {type(data).__name__}")
+    # 2) Poll for the routine's commit
+    start = time.monotonic()
+    while True:
+        time.sleep(POLL_INTERVAL_S)
+        elapsed = time.monotonic() - start
+        if elapsed > POLL_MAX_S:
+            print(f"  LLM: timeout after {elapsed:.0f}s — falling back to deterministic")
             return None
-        return data
-    except json.JSONDecodeError as e:
-        # Routine probably returned natural-language reply. Capture as
-        # narrative so user still sees something useful.
-        print(f"  LLM response not JSON ({e}); treating whole body as narrative")
-        return {"narrative": body[:2000], "state_overrides": {}, "new_heuristic_proposals": []}
+
+        _git_pull(branch)
+
+        if os.path.exists(pending_path):
+            print(f"  LLM: found {os.path.basename(pending_path)} after {elapsed:.0f}s")
+            try:
+                with open(pending_path) as f:
+                    data = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"  LLM: pending file unreadable ({e}) — falling back to deterministic")
+                return None
+
+            if not isinstance(data, dict):
+                print(f"  LLM: pending file not a dict ({type(data).__name__}) — falling back")
+                return None
+
+            # Remove the file from working tree; stage the deletion so the
+            # workflow's final commit cleans it up. The workflow also runs
+            # `git add -u learning-loop/` as a safety net, so even if git rm
+            # below fails (e.g. file untracked locally for some reason), the
+            # deletion still lands in the final commit.
+            try:
+                os.remove(pending_path)
+            except FileNotFoundError:
+                pass
+            _git(["rm", "-f", "--ignore-unmatch", os.path.relpath(pending_path, REPO_ROOT)])
+            print(f"  LLM: consumed + removed {os.path.basename(pending_path)}")
+            return data
+
+        print(f"  LLM: not yet ({elapsed:.0f}s / {POLL_MAX_S}s)")
 
 
 # ─── Safe override application ───────────────────────────────────────────────

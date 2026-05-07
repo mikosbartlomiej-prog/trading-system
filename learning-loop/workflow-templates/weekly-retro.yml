@@ -48,15 +48,20 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          # Pull any commits the routine pushed during this run.
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           git add learning-loop/weekly-retros/ learning-loop/state.json \
                   learning-loop/rationale.md
           # LLM-only artifact — may not exist on a fail-soft week; ignore failure
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          # Stage any deletions of pending-llm-*.json (consumed by weekly_retro)
+          git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No retro changes to commit (workflow ran but produced no diff)."
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: weekly retro ${DATE}"
-            git push origin main
-            echo "Pushed weekly retro for week ending ${DATE}."
+            git push origin "$BRANCH"
+            echo "Pushed weekly retro for week ending ${DATE} to ${BRANCH}."
           fi
