@@ -285,6 +285,64 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     real VIX feed is still useful for logging/analytics. Candidates: VIXY ETF
     via Alpaca bars (rough proxy), Yahoo Finance public quote, FRED VIXCLS
 
+- **X / Twitter integration** — `twitter-monitor` (added 2026-05-06, **HIGH priority**)
+  - Type: new entry-signal monitor (sibling of `reddit-monitor` and `geo-monitor`)
+  - **Why:** Twitter/X is the lowest-latency news source for the kinds of events this system already
+    trades — geopolitical decisions, defense contracts, CEO product/earnings hints, market sentiment.
+    News reaches X minutes (sometimes hours) before NewsAPI / Reuters / RSS pick it up. Adding it
+    closes the biggest current latency gap in the geo/defense pipeline.
+  - **Curated source accounts (initial cut, expand over time):**
+    - Politics & geo: @realDonaldTrump (or current handle), @POTUS, @SecDef, @StateDept, @WhiteHouse, @IDF, @IRGCofficial
+    - Markets / macro: @zerohedge, @business (Bloomberg), @CNBC, @WSJmarkets, @FT, @Reuters
+    - Single-ticker insider: @elonmusk (TSLA), @tim_cook (AAPL), @sundarpichai (GOOGL), @satyanadella (MSFT)
+    - Financial influencers (high-conviction calls): TBD — start from a 10-15 hand-picked list, not
+      indiscriminate following
+    - Government feeds: @CongressionalRpt, @USTreasury, @SECgov, @federalreserve
+  - **Signal patterns to detect:**
+    - Direct policy / sanction / military action announcements (geo escalation/deescalation)
+    - Earnings or product leaks from official corp accounts
+    - Pelosi/Congressional trade-disclosure tweets (insider sentiment)
+    - Sentiment spike (mention surge ≥ 5× rolling avg on a single ticker — analog of Reddit spike)
+    - Account-credibility-weighted news vs unverified rumours
+  - **Technical paths (decide before starting):**
+    1. **X API v2 Basic** ($100/mo) — official, ~10k tweets/month read, full-archive search; clean
+       but adds cost
+    2. **X API v2 Pro** ($5,000/mo) — out of budget for paper account
+    3. **3rd-party data brokers** (e.g. Datavid, Tweepy via reseller) — variable cost, TOS risk
+    4. **Bluesky AT-Protocol** as alternative — free, growing political/finance coverage, lower
+       reach but no cost; could be MVP target while X budget is decided
+    5. **Public RSS bridges / Nitter mirrors** — fragile, unofficial, won't survive long-term
+  - **MVP scope (proposal):**
+    - Path 4 (Bluesky) for free PoC; demonstrate the pipeline works
+    - Path 1 (X API Basic, $100/mo) once user approves the cost — likely worth it because of
+      latency edge on geo/defense
+    - Single Cloudflare Worker `twitter-proxy` (consistent with existing pattern) → new routine
+      `Twitter Handler` or routed into existing geo/defense routines based on content classification
+    - GitHub Actions cron `*/5` during session, `*/15` after-hours
+    - Per-account whitelist + per-keyword filter inside the monitor
+  - **Hard dependency on Event Probability Layer:**
+    Twitter is by far the noisiest signal source. Without the credibility / probability-shift /
+    contrarian-reaction scoring, raw Twitter alerts would generate too many false positives
+    (especially political tweets). Build the event probability layer FIRST or in parallel; do
+    not wire `twitter-monitor` directly into Alpaca execution before it.
+  - **New secrets needed (whichever path):**
+    - `TWITTER_BEARER_TOKEN` (for X API v2) OR `BLUESKY_HANDLE` + `BLUESKY_APP_PASSWORD`
+    - `CLOUDFLARE_TWITTER_WORKER_URL` (new Worker)
+  - **Strategy / sizing:** TBD — likely re-uses geopolitical and reddit-sentiment sizing
+    ($5k-$6k per signal) under v2.0 risk-on rules. Iron rule: every Twitter-triggered trade
+    must have stop-loss like every other entry.
+  - **Acceptance criteria (MVP):**
+    - Curated account list lives in `.claude/rules/twitter-accounts.md`
+    - Monitor pulls latest tweets per account, deduplicates, filters by keyword bank
+    - Each detected signal carries: tweet author, author credibility score, tweet text,
+      timestamp, classified intent (geo / earnings / sentiment / other)
+    - Forward to Worker → routine OR direct to email if event-probability-layer is wired
+    - Tested live on at least one real high-impact tweet event before going to auto-execute
+  - **Risk note:** X TOS technically forbids automated access without API. Path 1 (paid API) is
+    the only TOS-safe production path. Anything else is a research-grade hack.
+  - **ETA when prioritised:** 1 session for Bluesky PoC (Path 4); +1 session to wire X API once
+    paid plan is bought
+
 - **Event Probability & Contrarian Reaction Layer** — `event_probability_reaction_layer` (added 2026-05-06, **HIGH priority**)
   - Type: Strategy Intelligence Layer (not another news monitor — interpretation layer between signal and decision)
   - **Problem:** current event-driven strategies (geo, defense, reddit) trust the headline too directly.
