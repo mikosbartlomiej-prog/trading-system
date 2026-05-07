@@ -40,6 +40,7 @@ try:
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
     from event_scoring import score_and_decide
+    from market_data import compute_reaction_metrics
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -47,6 +48,7 @@ except ImportError:
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub"}
+    def compute_reaction_metrics(_s): return None
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -318,13 +320,32 @@ def run_scan():
     candidates = candidates[:MAX_POSTS_PER_RUN]
     print(f"  Kandydatów po keyword-filter: {len(candidates)}")
 
+    # Real bar-data: per-ticker for ticker:SYM categories, SPY proxy otherwise
+    spy_metrics = compute_reaction_metrics("SPY")
+    if spy_metrics:
+        print(f"  Market reaction (SPY): move={spy_metrics['price_move_atr']}×ATR "
+              f"vol={spy_metrics['volume_ratio']}× gap={spy_metrics['gap_pct']}%")
+
     sent = 0
     for c in candidates:
+        cat = c["category"]
+        if cat.startswith("ticker:"):
+            sym = cat.split(":", 1)[1]
+            metrics = compute_reaction_metrics(sym) or spy_metrics
+        else:
+            metrics = spy_metrics
+        if metrics:
+            pma, vr, gap = metrics["price_move_atr"], metrics["volume_ratio"], metrics["gap_pct"]
+        else:
+            pma, vr, gap = 0.5, 1.0, 0.0
+        c["reaction_metrics"] = metrics
+
         scoring = score_and_decide(
             source_type    = category_to_source_type(c["category"]),
             event_type     = category_to_event_type(c["category"], c["matched_kw"]),
-            price_move_atr = 0.5,    # MVP placeholder, same as other event sources
-            volume_ratio   = 1.0,
+            price_move_atr = pma,
+            volume_ratio   = vr,
+            gap_pct        = gap,
             magnitude      = magnitude_from_matches(c["matched_kw"]),
         )
         c["scoring"] = scoring

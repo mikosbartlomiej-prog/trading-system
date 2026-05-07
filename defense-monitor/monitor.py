@@ -19,6 +19,7 @@ try:
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
     from event_scoring import score_and_decide
+    from market_data import compute_reaction_metrics
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -28,6 +29,7 @@ except ImportError:
     def get_account_status(): return None
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
+    def compute_reaction_metrics(_s): return None
 
 
 # ─── Event-probability mapping (for scoring layer) ───────────────────────────
@@ -70,19 +72,28 @@ def apply_event_scoring(signals: list[dict]) -> list[dict]:
       IGNORE_EVENT / WAIT   -> drop with log (noise filter)
       CONTRARIAN_CANDIDATE  -> drop with log + email warning (manual review)
 
-    Returns the filtered list. The dropped CONTRARIAN/IGNORE/WAIT are
-    summarised in the run log; full record lives in journal once wired.
+    Now uses real bar-data via compute_reaction_metrics(symbol) so
+    CONTRARIAN_CANDIDATE actually fires on stop-hunt patterns. Falls back
+    to placeholder values when Alpaca bars are unavailable.
     """
     kept = []
     for s in signals:
+        symbol  = s.get("symbol", "")
+        metrics = compute_reaction_metrics(symbol) if symbol else None
+        if metrics:
+            pma, vr, gap = metrics["price_move_atr"], metrics["volume_ratio"], metrics["gap_pct"]
+        else:
+            pma, vr, gap = 0.5, 1.0, 0.0   # fallback when bars unavailable
         scoring = score_and_decide(
             source_type     = _map_event_source_type(s.get("source", "")),
             event_type      = _map_event_type(s.get("source", ""), s.get("score", 0)),
-            price_move_atr  = 0.5,   # MVP placeholder — TODO fetch real bar data per symbol
-            volume_ratio    = 1.0,
+            price_move_atr  = pma,
+            volume_ratio    = vr,
+            gap_pct         = gap,
             magnitude       = _map_magnitude(s.get("score", 0)),
         )
-        s["scoring"] = scoring
+        s["scoring"]          = scoring
+        s["reaction_metrics"] = metrics
         stance = scoring["stance"]
         if stance == "FOLLOW_REACTION":
             kept.append(s)

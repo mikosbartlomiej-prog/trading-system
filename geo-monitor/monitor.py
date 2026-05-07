@@ -17,11 +17,13 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
     from event_scoring import score_and_decide
+    from market_data import compute_reaction_metrics
 except ImportError:
     def vix_guard(): return ("OK", 1.0)
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
+    def compute_reaction_metrics(_s): return None
 
 
 GEO_SOURCE_TYPE_MAP = {
@@ -52,18 +54,34 @@ def attach_event_scoring(news_items: list[dict]) -> list[dict]:
     Filters out IGNORE_EVENT and WAIT_FOR_CONFIRMATION; keeps
     FOLLOW_REACTION and CONTRARIAN_CANDIDATE (the routine decides what
     to do with contrarian items).
+
+    Geo-monitor doesn't carry a single ticker (news -> routine resolves
+    target), so we use SPY as a market-wide reaction proxy. For genuine
+    geo escalation, SPY tends to react via risk-off across the index;
+    individual defense/energy names move even more, but SPY is the most
+    stable single-symbol proxy we have.
     """
+    spy_metrics = compute_reaction_metrics("SPY")
+    if spy_metrics:
+        pma, vr, gap = spy_metrics["price_move_atr"], spy_metrics["volume_ratio"], spy_metrics["gap_pct"]
+        print(f"  Market reaction (SPY): move={pma}×ATR vol={vr}× gap={gap}%")
+    else:
+        pma, vr, gap = 0.5, 1.0, 0.0
+        print("  Market reaction: SPY bars unavailable -> using placeholders")
+
     kept = []
     for item in news_items:
         src_type = GEO_SOURCE_TYPE_MAP.get(item.get("source", ""), "major_outlet")
         scoring = score_and_decide(
             source_type    = src_type,
             event_type     = _geo_event_type(item.get("score", 0)),
-            price_move_atr = 0.5,   # MVP placeholder
-            volume_ratio   = 1.0,
+            price_move_atr = pma,
+            volume_ratio   = vr,
+            gap_pct        = gap,
             magnitude      = _geo_magnitude(item.get("score", 0)),
         )
-        item["scoring"] = scoring
+        item["scoring"]          = scoring
+        item["reaction_metrics"] = spy_metrics
         if scoring["stance"] in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE"):
             kept.append(item)
         else:
