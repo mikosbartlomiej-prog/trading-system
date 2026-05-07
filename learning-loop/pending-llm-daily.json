@@ -1,0 +1,17 @@
+{
+  "narrative": "Pierwszy dzień śledzenia — analyzer.py nie dopasował żadnego zlecenia do strategii (cumulative_trades=0, by_strategy pusty). Dzienny P&L -$163.57 (-0.16%) to poziom szumu, nie problem. Krytyczny sygnał: exit-emergency-googl ma fill_rate=0 — emergency exit który się nie wypełnił to luka w risk management; w prawdziwej panice siedzimy z pełną stratą. Dodatkowo exit-tp-qqq699 nie wypełniony przez całą sesję — TP zbyt daleki od ceny lub QQQ nie dobił do poziomu.",
+  "regime_assessment": "unclear",
+  "edge_assessment": "Za mało danych — dzień 1 bez atrybutu strategii, zero obserwacji per-strategy win rate lub P&L. Jedyne obserwowalne: 83% fill rate (15/18), ale 2 z 3 niesprawnych zleceń to egzity (jeden emergency). Żadnej krawędzi nie można ocenić; wróć po min. 5 dniach z danymi.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    "Emergency exit orders (exit-emergency-*) muszą używać MARKET order — limit na emergency exit = ryzyko braku wypełnienia w panice. Fix: w exit-monitor i options-exit-monitor ustaw type=market dla zleceń oznaczonych jako emergency (rationale: exit-emergency-googl fill_rate=0 w tej sesji).",
+    "TP orders niefilled przez całą sesję (exit-tp-qqq699) wskazują na zbyt agresywny TP względem bieżącej ceny — rozważ trailing stop dla pozycji trzymanych >12h zamiast statycznego TP (testable: porównaj hold_time vs TP-hit-rate po 10 dniach danych).",
+    "analyzer.py musi mapować client_order_id do nazwy strategii — bez tej atrybucji cumulative_trades=0 i LLM nie może ocenić krawędzi. Sprawdź schemat nazewnictwa: czy monitor ustawia client_order_id z prefiksem strategii przy zleceniu bracket? Jeśli nie — dodaj (priorytet: bloker dla całego learning loop)."
+  ],
+  "confidence": "low"
+}
