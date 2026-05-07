@@ -1,0 +1,62 @@
+name: Weekly Retrospective — Senior PM strategist review
+
+on:
+  schedule:
+    # Sunday 22:00 UTC (~24h after final daily-learning of the week, after
+    # all weekend Saturday + Sunday daily commits have landed). One LLM call
+    # per week; cost-neutral within the 15/day Anthropic Routines budget.
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+
+# Required so the job can commit + push the new retro file + any state
+# overrides applied by the strategist (state.json / rationale.md).
+permissions:
+  contents: write
+
+jobs:
+  weekly-retrospective:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r learning-loop/requirements.txt
+
+      - name: Run weekly retrospective
+        env:
+          PYTHONIOENCODING:                utf-8
+          LC_ALL:                          C
+          LANG:                            C
+          # Same routine endpoint as daily; routine system prompt
+          # type-dispatches on payload.type == "weekly_retrospective".
+          CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
+          USE_LLM_LEARNING:                'true'
+        run: python learning-loop/weekly_retro.py
+
+      - name: Commit and push retro
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add learning-loop/weekly-retros/ learning-loop/state.json \
+                  learning-loop/rationale.md
+          # LLM-only artifact — may not exist on a fail-soft week; ignore failure
+          git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No retro changes to commit (workflow ran but produced no diff)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "learning: weekly retro ${DATE}"
+            git push origin main
+            echo "Pushed weekly retro for week ending ${DATE}."
+          fi
