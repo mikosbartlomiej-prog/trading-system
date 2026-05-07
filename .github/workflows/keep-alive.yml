@@ -9,11 +9,15 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Ping Render MCP server
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 60 \
-            https://alpaca-mcp-server-fchb.onrender.com)
-          echo "Render ping status: $STATUS"
+          # Render free tier cold-start can take 30-90s. We don't care if curl
+          # times out — sending the request is enough to trigger wake-up.
+          # `|| true` keeps the step green so we don't get false-failure noise.
+          curl -s -o /dev/null \
+               -w "Render ping status: %{http_code} (time: %{time_total}s)\n" \
+               --max-time 90 \
+               https://alpaca-mcp-server-fchb.onrender.com \
+               || echo "Render ping: curl exit non-zero (likely cold-start timeout, that's fine)"
