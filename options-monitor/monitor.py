@@ -31,12 +31,14 @@ try:
     from notify import notify_signal, notify_summary, notify_order_executed
     from risk_guards import vix_guard
     from market_data import get_daily_bars
+    from learning_state import load_strategy_state
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def notify_order_executed(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
     def get_daily_bars(symbol, days=35): return None
+    def load_strategy_state(_): return {}
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -362,10 +364,27 @@ def run_scan():
         print("BŁĄD: AUTO_EXECUTE wymaga ALPACA_API_KEY + ALPACA_SECRET_KEY")
         sys.exit(1)
 
+    # Learning loop adaptations (read learning-loop/state.json)
+    learning = load_strategy_state("options-momentum")
+    if not learning.get("enabled", True):
+        paused = learning.get("paused_until", "?")
+        print(f"  Learning loop: options-momentum DISABLED (paused_until={paused})")
+        print(f"  Rationale: {learning.get('rationale', '')}")
+        notify_summary("Options Monitor", 0, 0)
+        return
+    learning_mult = float(learning.get("size_multiplier", 1.0))
+    learning_bias = learning.get("side_bias")  # "long" | "short" | None
+    if learning and (abs(learning_mult - 1.0) > 0.01 or learning_bias):
+        print(f"  Learning loop: size_multiplier={learning_mult:.2f}, side_bias={learning_bias or 'none'}")
+        print(f"  Rationale: {learning.get('rationale', '')}")
+
     vix_status, size_mult = vix_guard()
     if vix_status == "HALT":
         notify_summary("Options Monitor", 0, 0)
         return
+
+    # Combine VIX size_mult with learning size_multiplier
+    combined_size_mult = size_mult * learning_mult
 
     open_count = count_open_options()
     if open_count >= MAX_OPEN_OPTIONS:
@@ -376,12 +395,23 @@ def run_scan():
     print(f"  Otwartych opcji: {open_count}/{MAX_OPEN_OPTIONS} (slotów: {slots_left})")
 
     proposals = []
+    skipped_by_bias = 0
     for ticker in TICKERS:
         proposal = build_proposal(ticker)
         if proposal:
-            proposal["size_usd"] = round(proposal["size_usd"] * size_mult)
+            # Learning side_bias filter: skip CALL when bias=short, skip PUT when bias=long
+            if learning_bias == "short" and proposal.get("option_type") == "call":
+                skipped_by_bias += 1
+                continue
+            if learning_bias == "long" and proposal.get("option_type") == "put":
+                skipped_by_bias += 1
+                continue
+            proposal["size_usd"] = round(proposal["size_usd"] * combined_size_mult)
             proposals.append(proposal)
         time.sleep(0.5)
+
+    if skipped_by_bias:
+        print(f"  Learning side_bias '{learning_bias}': pominieto {skipped_by_bias} propozycji o przeciwnym kierunku")
 
     print(f"  Znalezione propozycje: {len(proposals)}")
     proposals.sort(key=lambda p: p["rsi"], reverse=True)

@@ -1,7 +1,7 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 2.2 (routine bypass — direct Alpaca REST execution; supersedes 2.1)
-**Effective from:** 2026-05-07 EOD
+**Version:** 2.3 (daily adaptive learning loop with permanent memory; supersedes 2.2)
+**Effective from:** 2026-05-07 LATE
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -421,6 +421,59 @@ old Cloudflare Worker → routine path for that monitor. Useful for:
 
 ---
 
+## 5.6 Daily Learning Loop (v2.3 — adaptive parameters)
+
+**Decision (2026-05-07):** the system reads its own Alpaca order history
+once per day, computes per-strategy performance, and updates parameters
+(`size_multiplier`, `enabled`, `side_bias`) committed to
+`learning-loop/state.json` via a daily git push. Monitors read this state
+at the start of every cron run and apply the adapted values.
+
+**One goal:** consistently earn more. Adaptation tunes HOW; the goal is fixed.
+
+| Mechanism | File |
+|---|---|
+| Daily analyzer (reads Alpaca, reconstructs trades, computes stats) | `learning-loop/analyzer.py` |
+| Adapter (pure function: old_state + today_stats -> new_state) | `learning-loop/adapter.py` |
+| Current adapted parameters (committed) | `learning-loop/state.json` |
+| Append-only narrative of every change ever made | `learning-loop/rationale.md` |
+| Daily reports | `learning-loop/history/YYYY-MM-DD.md` |
+| Cron | `*/0 21 * * *` (daily at 21:00 UTC, 1h after market close) |
+| Read API for monitors | `shared/learning_state.py::load_strategy_state(name)` |
+
+### Heuristics (v1.0)
+
+| Trigger | Action |
+|---|---|
+| lifetime trades < 10 | hold (insufficient sample) |
+| 7d win_rate < 35% (≥5 trades) | size_multiplier *= 0.8 |
+| 7d win_rate > 60% (≥5 trades) | size_multiplier *= 1.10 |
+| 7d P&L < -2% equity | size_multiplier *= 0.7 |
+| 7d P&L > +3% equity | size_multiplier *= 1.05 |
+| 5 consecutive losses | enabled = false (3-day pause, auto-resume) |
+| Lifetime ROI < -10% | enabled = false (manual review required) |
+| Options long P&L < 0 + short P&L > \|long\| | side_bias = "short" (PUT-only) |
+| Options short P&L < 0 + long P&L > \|short\| | side_bias = "long" (CALL-only) |
+
+Bounds: `0.30 ≤ size_multiplier ≤ 2.00`. Pause auto-resumes after 3 days.
+
+### Persistence
+
+git history IS the audit log. `git log -- learning-loop/state.json`
+shows every adaptation ever made; `git diff` between commits shows
+precisely what changed. `rationale.md` is append-only — old entries
+preserved indefinitely so future inspection works without git.
+
+### Wired today
+
+- ✅ options-monitor: reads `options-momentum` state, applies
+  size_multiplier, applies side_bias (skip CALL when bias=short).
+- ⏳ Phase 2: price/crypto/defense/twitter monitors. Each is 5 lines.
+
+Full details: `strategies/learning-loop.md`.
+
+---
+
 ## 6. Monitoring & Cadence
 
 ### 6.1 GitHub Actions workflows
@@ -435,7 +488,7 @@ old Cloudflare Worker → routine path for that monitor. Useful for:
 | `options-monitor.yml` | `*/10 13-20 * * 1-5` | options entries | session only |
 | `options-exit-monitor.yml` | `*/5 13-20 * * 1-5` | options exits | session only |
 | `twitter-monitor.yml` | `*/5 13-20 * * 1-5` + `*/15 * * * *` | Bluesky social-graph news | session + 24/7 |
-| `weekly-learning.yml` | `0 20 * * 0` | retrospective | Sunday 20:00 |
+| `daily-learning.yml` | `0 21 * * *` | adaptive parameters tuning | daily after market close |
 | `keep-alive.yml` | `*/10 * * * *` | Render MCP ping | always |
 | (paused) `reddit-monitor.yml` | `0 7,13,16,20 * * 1-5` | sentiment | waiting for API approval |
 
@@ -587,6 +640,7 @@ These are reflected verbatim in `CLAUDE.md`:
 | **2.0** | **2026-05-06 EOD** | **risk-on full overhaul** | All capital deployed, daily stop -12%, VIX HALT only above 60, options auto-execute on paper, this document created |
 | **2.1** | **2026-05-07** | **safety nets enforced + new signal sources** | Drawdown circuit-breaker (-12% daily) wired in code; per-ticker concentration cap (40%) enforced; event-probability layer (4 scores -> FOLLOW/IGNORE/CONTRARIAN/WAIT) with real Alpaca bar-data; twitter-monitor MVP via Bluesky AT-Protocol; live portfolio dashboard (single Cloudflare Worker) |
 | **2.2** | **2026-05-07 EOD** | **routine bypass — direct Alpaca REST execution** | Hit 15-call/day Routines limit; refactored price/crypto/defense/twitter monitors to AUTO_EXECUTE via `shared/alpaca_orders.py`. Twitter Pattern A-D encoded as deterministic Python classifier; Pattern E ambiguous → email-only manual review. Routine reserved for weekly-learning + opt-in via `USE_ROUTINE=true` env. Realistic budget now ~1-3 calls/day vs 15+ before. |
+| **2.3** | **2026-05-07 LATE** | **daily learning loop with permanent memory** | Replaced weekly-learning with daily cron. New `learning-loop/`: analyzer + adapter + state.json + rationale.md + per-day history. Daily-learning workflow commits state back to repo via `GITHUB_TOKEN` (permissions: contents:write); git history is audit log. Heuristics (v1.0): cool-down on losing strategies, warm-up on winners, pause after 5 consec losses, side-bias for options based on long-vs-short P&L split. options-monitor wired to read state.json (size_multiplier + side_bias enforced). Other monitors wire in Phase 2. Routines no longer used here either (the LLM-on-routine path was the original analyzer's intent — replaced with deterministic heuristics + git-as-state-store). |
 
 ---
 
