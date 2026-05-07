@@ -313,6 +313,47 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     them: *"Trailing stop decision data is ready — want to review the
     10-day TP hit rates?"*
 
+- **🔔 Auto-implementation of LLM lessons learned — DISCUSS NEXT SESSION** (added 2026-05-07 LATE-NIGHT)
+  - **Problem statement:** the learning loop's LLM produces high-quality
+    actionable proposals daily (today's run alone caught a real bug —
+    `_is_close()` always False — and proposed 3 testable heuristics).
+    Right now those proposals land in `learning-loop/heuristic_proposals.md`
+    as a tickbox queue, and a human (me + Claude in a session) has to:
+      1. Read the proposal
+      2. Decide if it's worth implementing
+      3. Write the code
+      4. Test it
+      5. Commit + tick the box
+    This is the bottleneck — the LLM thinks faster than we ship.
+  - **Open question:** can/should the system auto-implement (some)
+    lessons learned without human-in-the-loop? Possible mechanisms to
+    discuss next session:
+    - **A. Auto-promote heuristics to adapter.py** — for proposals that
+      match a known pattern (e.g. "pause strategy X if 3 daily losses
+      with hold<1h"), generate the deterministic rule code and add to
+      `adapter.py` automatically. Risk: LLM hallucinates a rule that
+      breaks the adapter.
+    - **B. Auto-update backlog only** — LLM proposals automatically
+      become structured backlog entries in CLAUDE.md (with priority,
+      effort estimate, revisit date). Human still implements but
+      backlog is always fresh. Lower risk than A.
+    - **C. PR-based auto-implementation** — routine generates a PR
+      with the implementation; human just reviews + merges. Combines
+      LLM speed with human gate. Needs routine to have GitHub PR
+      creation capability (it already has push access — proven this
+      session).
+    - **D. Tiered approach** — auto-apply for whitelisted-low-risk
+      changes (e.g. tweaking thresholds in state.json — already
+      whitelisted), require human review for code changes (adapter.py,
+      monitors).
+  - **What we know works (this session's evidence):** the routine has
+    bash + git + workflow-scope write access and successfully
+    self-commits its analysis to the repo. So the *infrastructure*
+    for auto-implementation exists — we just need a design that
+    doesn't break things.
+  - **Decision required next session:** pick A / B / C / D (or hybrid),
+    define scope, build PoC.
+
 - ~~**Live Portfolio Dashboard**~~ ✅ **DONE 2026-05-07** (master plan #1 — last item closed)
   - Path 2 chosen: single self-contained Cloudflare Worker (`dashboard/worker.js`)
     serving both the HTML page (`GET /`) and the read-only Alpaca snapshot API
