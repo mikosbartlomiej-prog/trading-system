@@ -2,9 +2,14 @@ name: Weekly Retrospective — Senior PM strategist review
 
 on:
   schedule:
+    # Sunday 22:00 UTC (~24h after final daily-learning of the week, after
+    # all weekend Saturday + Sunday daily commits have landed). One LLM call
+    # per week; cost-neutral within the 15/day Anthropic Routines budget.
     - cron: '0 22 * * 0'
   workflow_dispatch:
 
+# Required so the job can commit + push the new retro file + any state
+# overrides applied by the strategist (state.json / rationale.md).
 permissions:
   contents: write
 
@@ -33,6 +38,8 @@ jobs:
           PYTHONIOENCODING:                utf-8
           LC_ALL:                          C
           LANG:                            C
+          # Same routine endpoint as daily; routine system prompt
+          # type-dispatches on payload.type == "weekly_retrospective".
           CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
           USE_LLM_LEARNING:                'true'
         run: python learning-loop/weekly_retro.py
@@ -41,13 +48,20 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          # Pull any commits the routine pushed during this run.
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           git add learning-loop/weekly-retros/ learning-loop/state.json \
                   learning-loop/rationale.md
+          # LLM-only artifact — may not exist on a fail-soft week; ignore failure
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          # Stage any deletions of pending-llm-*.json (consumed by weekly_retro)
+          git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
-            echo "No retro changes to commit."
+            echo "No retro changes to commit (workflow ran but produced no diff)."
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: weekly retro ${DATE}"
-            git push origin main
+            git push origin "$BRANCH"
+            echo "Pushed weekly retro for week ending ${DATE} to ${BRANCH}."
           fi
