@@ -118,6 +118,7 @@ All monitors run via GitHub Actions in the trading-system repo.
 | options-monitor | `*/10 13-20 * * 1-5` | ✅ LIVE 2026-05-06 (first AMZN PUT fill confirmed) | ✅ [EXECUTED] / [OPTIONS APPROVAL NEEDED] | ⚠️ deprecated routine path; AUTO_EXECUTE_OPTIONS=true bypasses |
 | options-exit-monitor | `*/5 13-20 * * 1-5` | ✅ LIVE 2026-05-06 | ✅ notify_exit per close | n/a (direct Alpaca REST) |
 | geo-monitor | `*/15 13-21 * * 1-5` | ✅ (not recently verified) | ❌ not integrated | ✅ |
+| twitter-monitor | `*/5 13-20 * * 1-5` + `*/15 * * * *` | ✅ LIVE 2026-05-07 (Bluesky AT-Protocol) | ✅ notify_signal + summary | ✅ Cloudflare Worker `twitter-proxy` |
 | weekly-learning | `0 20 * * 0` (Sunday 20:00 UTC) | ✅ | ❌ not integrated | ✅ |
 | keep-alive | `*/10 * * * *` | ✅ | ❌ (not needed) | pings Render |
 | reddit-monitor | `0 7,13,16,20 * * 1-5` | ⏳ waiting for Reddit API approval | ❌ | ⏳ |

@@ -1,7 +1,7 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 2.0 (aggressive risk-on, supersedes everything in CLAUDE.md prior to 2026-05-06)
-**Effective from:** 2026-05-06 EOD
+**Version:** 2.1 (safety nets enforced + Twitter/Bluesky source live; supersedes 2.0)
+**Effective from:** 2026-05-07
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -265,6 +265,38 @@ enough on weekends that the discount is unnecessary.
 | Take-profit | +14% |
 | Max concurrent | 4 |
 
+### 4.8 Twitter / Social-Graph News (Bluesky MVP)
+
+**Strategy file:** `strategies/twitter-news.md`
+**Monitor:** `twitter-monitor` (cron `*/5 13-20 * * 1-5` + `*/15 * * * *` 24/7)
+**Routine:** `Twitter Handler` (claude.ai)
+**Data source MVP:** Bluesky AT-Protocol (free, TOS-safe). X API v2 Basic ($100/mo) is the future upgrade path; same monitor swaps via `SocialClient` abstraction.
+
+5 interpretation patterns (routine classifies each post into one):
+
+| Pattern | Trigger | Direction | Tickers | Size | SL / TP |
+|---|---|---|---|---|---|
+| **A** TICKER_DIRECT | category=`ticker:SYM` (CEO post about own company) | BUY/SELL by tone | TSLA, AAPL, GOOGL, MSFT | **$5,000** | -6% / +14% |
+| **B** GEO_ESCALATION | category=`gov_us`/`mil_il` + escalation keywords | BUY | RTX/LMT/NOC ($8k); ITA/XAR/DFEN ($6k); XLE/XOM/CVX/GLD ($6k) | per ticker | -5% / +12% |
+| **C** GEO_DEESCALATION | category=`gov_us`/`mil_il` + deescalation keywords | BUY SPY/QQQ; SELL XLE/GLD | SPY, QQQ, XLE, GLD | **$6,000** | -5% / +12% |
+| **D** MACRO_DATA | category=`macro` + economic keywords (cpi, fomc, earnings beat/miss) | BUY/SELL by signal | SPY, QQQ, GLD, named ticker | **$6,000** | -5% / +12% |
+| **E** WIRE_BREAKING | category=`wire` + breaking keywords | route to A/B/C/D by content | per pattern | per pattern | per pattern |
+
+Hard caps:
+- Cap per single post: **2 positions**
+- Combined defense+geo+twitter cap: **6 open positions**
+- Per-ticker cap: 40% equity (enforced by `concentration_ok`)
+- Drawdown HALT at -12% daily, VIX HALT > 60
+
+Event-probability gating:
+- Monitor filters every post through `shared/event_scoring.py` BEFORE
+  forwarding to routine
+- Only `FOLLOW_REACTION` is dispatched
+- `CONTRARIAN_CANDIDATE` → email-only flag (manual review; no auto-trade)
+- `IGNORE_EVENT` / `WAIT_FOR_CONFIRMATION` → dropped silently
+
+Curated whitelist: `.claude/rules/twitter-accounts.md` (19 accounts in v1.0).
+
 ---
 
 ## 5. Exit Logic
@@ -333,6 +365,7 @@ shows a SELL order, so the next 5-min tick doesn't stack a duplicate.
 | `exit-monitor.yml` | `30 12-21 * * 1-5` + `0 22,0,2 * * *` | all stocks/crypto positions | hourly + nightly |
 | `options-monitor.yml` | `*/10 13-20 * * 1-5` | options entries | session only |
 | `options-exit-monitor.yml` | `*/5 13-20 * * 1-5` | options exits | session only |
+| `twitter-monitor.yml` | `*/5 13-20 * * 1-5` + `*/15 * * * *` | Bluesky social-graph news | session + 24/7 |
 | `weekly-learning.yml` | `0 20 * * 0` | retrospective | Sunday 20:00 |
 | `keep-alive.yml` | `*/10 * * * *` | Render MCP ping | always |
 | (paused) `reddit-monitor.yml` | `0 7,13,16,20 * * 1-5` | sentiment | waiting for API approval |
@@ -483,6 +516,7 @@ These are reflected verbatim in `CLAUDE.md`:
 | 1.0 | 2026-04-29 | initial setup | Conservative starter parameters |
 | 1.1 | 2026-05-04 | aggressive overhaul | 5× sizing, dollar-limit crypto, higher VIX thresholds |
 | **2.0** | **2026-05-06 EOD** | **risk-on full overhaul** | All capital deployed, daily stop -12%, VIX HALT only above 60, options auto-execute on paper, this document created |
+| **2.1** | **2026-05-07** | **safety nets enforced + new signal sources** | Drawdown circuit-breaker (-12% daily) wired in code; per-ticker concentration cap (40%) enforced; event-probability layer (4 scores -> FOLLOW/IGNORE/CONTRARIAN/WAIT) with real Alpaca bar-data; twitter-monitor MVP via Bluesky AT-Protocol; live portfolio dashboard (single Cloudflare Worker) |
 
 ---
 
