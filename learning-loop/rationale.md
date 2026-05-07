@@ -11,3 +11,5 @@
 ---
 
 *No entries yet — daily-learning workflow has not yet run.*
+- 2026-05-07 · no parameter changes (all strategies within thresholds)
+
