@@ -1,0 +1,53 @@
+name: Weekly Retrospective — Senior PM strategist review
+
+on:
+  schedule:
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  weekly-retrospective:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r learning-loop/requirements.txt
+
+      - name: Run weekly retrospective
+        env:
+          PYTHONIOENCODING:                utf-8
+          LC_ALL:                          C
+          LANG:                            C
+          CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
+          USE_LLM_LEARNING:                'true'
+        run: python learning-loop/weekly_retro.py
+
+      - name: Commit and push retro
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add learning-loop/weekly-retros/ learning-loop/state.json \
+                  learning-loop/rationale.md
+          git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No retro changes to commit."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "learning: weekly retro ${DATE}"
+            git push origin main
+          fi
