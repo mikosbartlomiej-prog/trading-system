@@ -1,7 +1,7 @@
-# Learning Loop — Daily Adaptation v1.0
+# Learning Loop — Daily + Weekly Adaptation v1.1 (LLM-augmented)
 
-**Wersja:** 1.0 (2026-05-07)
-**Status:** LIVE (po deploy `daily-learning.yml` user-side)
+**Wersja:** 1.1 (2026-05-07 — LLM augmentation layer added on top of v1.0 deterministic adapter)
+**Status:** LIVE (po deploy `daily-learning.yml` + `weekly-retro.yml` user-side)
 **Źródło prawdy:** `docs/STRATEGY.md` §5.6
 **Implementacja:** `learning-loop/`
 
@@ -13,12 +13,33 @@ Jeden cel: **zawsze zarobić więcej.** System adaptuje swoje parametry na
 podstawie własnych wyników, nie cudzych benchmarków. Goal się nie zmienia —
 tylko sposób jego osiągania.
 
-Adaptacja działa w pętli sprzężenia zwrotnego:
+Adaptacja działa w dwuwarstwowej pętli sprzężenia zwrotnego:
 
 ```
-Alpaca trades  →  daily analyzer  →  state.json + rationale.md  →  monitors  →  Alpaca trades
-                  (21:00 UTC)         (committed via git)            (read at startup)
+Alpaca trades  →  daily analyzer  →  deterministic adapter  →  LLM (Senior PM) override
+                  (21:00 UTC)         (heuristics)              (whitelist-enforced)
+                                                                       │
+                                                                       ▼
+                                                    state.json + rationale.md
+                                                    (committed via git → audit log)
+                                                                       │
+                                                                       ▼
+                                                       monitors read at startup
+                                                                       │
+                                                                       ▼
+                                                          new Alpaca trades
+
+Sunday 22:00 UTC → weekly_retro.py → 7-day strategist review (P&L story, scorecard,
+                                     allocation rebalance, structural mistakes, next-week experiments)
 ```
+
+Dwie warstwy decyzyjne:
+1. **Deterministic adapter** — zawsze działa (heurystyki w `adapter.py`). Idiotoodporna baseline.
+2. **LLM strategist (Senior PM persona)** — *dodatkowa* warstwa nakładana na propozycje adaptera.
+   Może je zatwierdzić, zmienić, albo zaproponować nowe. Wszystkie zmiany przechodzą przez
+   `safe_apply_overrides()` (whitelist enforcement → halucynacje LLM nie psują state).
+   **Fail-soft:** gdy LLM niedostępny (HTTP 429 / brak Worker URL / `USE_LLM_LEARNING=false`),
+   deterministic adapter pracuje sam — system nigdy nie zatrzymuje się przez problem z LLM.
 
 Każda zmiana parametru jest:
 - **Mierzalna** — oparta o konkretne thresholdy (win_rate, P&L %, consecutive losses)
@@ -65,25 +86,124 @@ Heurystyki w `learning-loop/adapter.py` (v1.0):
 
 Granice: `0.30 ≤ size_multiplier ≤ 2.00`. Pause auto-resumuje po 3 dniach.
 
-### 5. Zapisuje stan
-- `state.json` — bieżące adapted parameters (machine-readable)
-- `rationale.md` — append narrative o ZMIANACH (only when something changed)
-- `history/YYYY-MM-DD.md` — pełny dzienny report
+### 5. LLM strategist annotation (Senior PM persona) — NEW v1.1
+Po deterministic adapter, ale PRZED zapisem `state.json`, analyzer wysyła payload do
+istniejącego Cloudflare Workera `learning-loop-proxy` → routine `Learning Loop Strategist`
+(claude.ai). Routine type-dispatchuje na `payload.type == "daily_learning_annotation"`.
 
-### 6. Commit + push do main
+**Co LLM dostaje** (`payload`):
+- `today_stats` — pełne statystyki dnia (per-strategy, per-asset-class, per-source, fill-rate)
+- `proposed_state` — to, co adapter już proponuje (pre-LLM)
+- `deterministic_rationale` — bullet list zmian z heurystyk
+- `recent_rationale_tail` — ostatnie 20 wpisów z `rationale.md` dla kontekstu
+
+**Co LLM zwraca** (pure JSON — patrz `learning-loop/routine-prompts.md`):
+```jsonc
+{
+  "narrative": "2-4 zdania w stylu PM, konkrety + liczby",
+  "regime_assessment": "trending_up|trending_down|choppy|risk_on|risk_off|unclear",
+  "edge_assessment": "gdzie mamy edge, gdzie tracimy",
+  "state_overrides": {
+    "strategies": {
+      "<name>": {"size_multiplier": 0.4, "side_bias": "short", "rationale": "..."}
+    },
+    "global_overrides": {"options_side_bias": "short"}
+  },
+  "new_heuristic_proposals": ["Pause strategy X if 3 daily losses with hold<1h"],
+  "confidence": "high|medium|low"
+}
+```
+
+**Co system robi z odpowiedzią:**
+- `safe_apply_overrides()` filtruje przez whitelist — tylko `size_multiplier` (clamp 0.30-2.00),
+  `enabled` (bool), `side_bias` (`long|short|null`), `rationale`, `paused_until`, `llm_note`.
+  Wszystko poza whitelist jest **silently dropped** + zapisane w applied log.
+- LLM `narrative` + `edge_assessment` → wstawione na początku `rationale.md` z prefiksem
+  `LLM[confidence] regime=<x>:`
+- `new_heuristic_proposals` → appended do `learning-loop/heuristic_proposals.md`
+  (tickbox queue dla ręcznej oceny / wpisania do `adapter.py`)
+
+**Fail-soft:** gdy LLM zwróci 429 / non-JSON / brak Worker URL / `USE_LLM_LEARNING=false` →
+analyzer drukuje `"LLM unavailable (skipped) — deterministic adapter only"` i kontynuuje. Stan
+deterministic-only nigdy nie jest blokowany przez LLM.
+
+### 6. Zapisuje stan
+- `state.json` — bieżące adapted parameters (machine-readable, post-LLM-overrides)
+- `rationale.md` — append narrative (LLM headline + deterministic deltas)
+- `history/YYYY-MM-DD.md` — pełny dzienny report
+- `heuristic_proposals.md` — kolejka idei od LLM (open/closed checkboxes)
+
+### 7. Commit + push do main
 Workflow `daily-learning.yml`:
 ```yaml
 - run: |
     git config user.name  "github-actions[bot]"
     git config user.email "github-actions[bot]@users.noreply.github.com"
     git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
+    git add learning-loop/heuristic_proposals.md 2>/dev/null || true
     if ! git diff --cached --quiet; then
       git commit -m "learning: daily update YYYY-MM-DD"
       git push origin main
     fi
 ```
 
-`GITHUB_TOKEN` z `permissions: contents: write` na poziomie workflow.
+`GITHUB_TOKEN` z `permissions: contents: write` na poziomie workflow. Workflow
+exposes `CLOUDFLARE_LEARNING_WORKER_URL` + `USE_LLM_LEARNING=true` so the LLM
+augmentation step works.
+
+---
+
+## Weekly retrospective (Sunday 22:00 UTC) — NEW v1.1
+
+Drugi cron, ten sam routine (type-dispatch). Workflow `weekly-retro.yml` →
+`learning-loop/weekly_retro.py`.
+
+### Co LLM dostaje (`payload`)
+- `daily_reports` — full markdown z ostatnich 7 plików `history/*.md`
+- `rationale_tail` — ostatnie 50 wpisów z `rationale.md`
+- `current_state` — pełny `state.json`
+
+### Co LLM zwraca (pure JSON — type=`weekly_retrospective`)
+```jsonc
+{
+  "week_pl_story": "3-4 zdania makro + jak strategie złapały / przegapiły",
+  "market_regime": "trending_up|trending_down|choppy|risk_on|risk_off|transitional",
+  "strategy_scorecard": [
+    {"name": "...", "rank": 1, "pnl_usd": 234.50, "verdict": "keep|cut|boost"}
+  ],
+  "allocation_recommendation": {
+    "stocks_pct": 50, "leveraged_etf_pct": 15, "crypto_pct": 10,
+    "options_pct": 10, "defense_geo_pct": 10, "twitter_pct": 5,
+    "rationale": "..."
+  },
+  "best_sources":  [{"source": "...", "win_rate": 0.7, "pnl": 123.0}],
+  "worst_sources": [{"source": "...", "win_rate": 0.2, "pnl": -88.0}],
+  "structural_mistakes": [{"description": "...", "lost_usd": 200, "remediation": "..."}],
+  "experiments_next_week": [{"hypothesis": "...", "metric": "...", "revert_if": "..."}],
+  "state_overrides": {"strategies": {...}, "global_overrides": {...}},
+  "confidence": "high|medium|low"
+}
+```
+
+### Output artifacts
+- `learning-loop/weekly-retros/<week_end>.md` — full retro markdown (formatted)
+- `state.json` — strategist może wymusić cięcia/wzrosty
+- `rationale.md` — headline z prefiksem `WEEKLY[confidence] regime=<x>`
+- `heuristic_proposals.md` — `WEEKLY EXP:` items od strategist
+
+### Budget
+- Daily annotator: 1 routine call/day
+- Weekly retro: 1 routine call/week (Sunday)
+- **Total: ~1.14 routine calls/day vs 15/day Anthropic limit → ~13.86 w rezerwie**
+
+Inne monitory (price/crypto/defense/twitter/exit) zostały przerzucone na
+deterministic Alpaca REST execution w v2.2 właśnie po to, żeby learning loop
+miał gwarantowaną przepustowość routine'ów. Jest priorytetem strategicznym.
+
+### Fail-soft (weekly)
+Gdy LLM niedostępny w niedzielę, `weekly_retro.py` zapisuje minimalny
+markdown ze stanu lokalnego (per-strategia statystyki z ostatniego
+state.json). Plik nigdy nie jest pusty.
 
 ---
 
@@ -199,12 +319,14 @@ Phase 2 (next session): wire remaining monitors. Each is a 5-line addition.
 
 ## Phase 2 (kolejna sesja) — co dalej
 
+- [x] LLM augmentation (Senior PM persona) — daily + weekly ✅ v1.1 (2026-05-07)
 - [ ] Wire price-monitor / crypto-monitor / defense-monitor / twitter-monitor do read state
 - [ ] Per-source attribution (which Bluesky account → trade outcome)
 - [ ] Per-news-event attribution (defense DoD scrape vs RSS feed efficacy)
 - [ ] More heuristics: ATR-relative size, max drawdown circuit, regime detection
 - [ ] Rolling window option (configurable: 7d / 14d / 30d)
 - [ ] Email summary: daily learning report sent to user
+- [ ] Auto-promotion: heurystyki z `heuristic_proposals.md` z high success-track wstawione do `adapter.py`
 
 ---
 
