@@ -643,6 +643,58 @@ After triggering each workflow above, check claude.ai → Routines → click int
 
 ---
 
-*Last updated: 2026-05-07 AM — safety nets enforced, event-probability layer + Bluesky monitor MVP in main. Source of truth: `docs/STRATEGY.md`*
+| 2026-05-07 PRE-MARKET | **End of pre-market session — full system ready.** All 5 master-plan items LIVE (Dashboard `6ffad12` + JS fix `866d16b`, Email `2cf5498`/`89a0ce3`, Options `81c2109+...`, VIX `1f0b581`, Dup `ddb9f92`). All HIGH-priority backlog items LIVE: Safety net combo `7be41f6`, Event Probability MVP `0964354` + real bar-data `d327687`, Twitter Bluesky MVP `d869318` + 4-tier policy override `a923df6` + workflow `396dad3`. Plus Twitter strategy docs `d991e73`. User-side: Bluesky account + app password + 3 GH secrets + Cloudflare Worker `twitter-proxy` + Routine `Twitter Handler` + Cloudflare Worker `dashboard-proxy` — all deployed and verified live. Final smoke test 12:23 UTC: 68 kont załadowanych, 0 kandydatów (cisza), pipeline OK. Dashboard działa po fixie JS. Net commits today: 10 mine + 1 user (workflow YAML). System siedzi cicho i czeka na market open 13:30 UTC. |
+
+---
+
+## NEXT-SESSION PLAYBOOK (gdy rynek otwarty / po otwarciu)
+
+Pierwsze 30 min po 13:30 UTC — co obserwować:
+
+### Co odpali się automatycznie po otwarciu
+
+| Cron | Workflow | Co zobaczysz |
+|---|---|---|
+| 13:30 UTC | price-monitor (`*/5`) | RSI scan 14 LONG + 7 SHORT + 12 LEVERAGED tickerów, SPY metrics dla event-layer |
+| 13:30 UTC | options-monitor (`*/10`) | RSI scan 12 underlyings, AMZN PUT counts (1/10) |
+| 13:30 UTC | options-exit-monitor (`*/5`) | AMZN PUT P&L vs TP $6.57 / SL $1.82 |
+| 13:30 UTC | exit-monitor (`30 12-21`) | wszystkie pozycje (GLD/RTX/XLE/AMZN PUT) z recommendation |
+| 13:30 UTC | crypto-monitor (`0,30`) | BTC/ETH 1h-bar scan |
+| 13:30 UTC | defense-monitor (`0,30`) | DoD scrape + RSS + NewsAPI + event-scoring filter |
+| 13:30 UTC | geo-monitor (`*/15`) | Finnhub news + NewsAPI + RSS + SPY reaction proxy |
+| 13:30 UTC | twitter-monitor (`*/5` + `*/15`) | 68 Bluesky accounts scan |
+
+### Maile których możesz się spodziewać
+
+- `[BUY] [strategy] BUY {ticker} - $size` — realny trade signal (price/crypto/defense)
+- `[OPTIONS APPROVAL NEEDED]` lub `[EXECUTED] {OCC}` — options-monitor
+- `[EXIT] {symbol} - SELL_TO_CLOSE_TP/SL` — gdy AMZN PUT przekroczy próg
+- `[twitter-news]` lub `[twitter-news-priority-override]` — Bluesky FOLLOW lub T1-T3 review-only
+- `[Monitor Name] N signal(s), M sent` — summary, tylko gdy N > 0
+
+### Gdzie patrzeć gdy coś idzie nie tak
+
+| Symptom | Diagnoza | Gdzie sprawdzić |
+|---|---|---|
+| Brak maili od godziny | Workflow nie odpala albo workflow logi pokazują błąd | https://github.com/mikosbartlomiej-prog/trading-system/actions |
+| Mail mówi `Drawdown HALT -X%` | Daily P&L < -12% — circuit breaker zadziałał | Alpaca dashboard equity vs last_equity |
+| Mail mówi `concentration X% > 40%` | Per-ticker cap zadziałał | Dashboard → positions table → "% Equity" kolumna |
+| Routine 429 (options) | Anthropic rate limit | options-monitor już używa AUTO_EXECUTE bypass; nic do zrobienia |
+| Dashboard pusty / "loading…" | Browser cache lub stary JS | Hard refresh (Ctrl+Shift+R) lub re-deploy worker |
+| Bluesky `502 Bad Gateway` | Przejściowy server-side | Niegroźne; pojedynczy konto pominięte tej runy |
+
+### Backlog na kolejną sesję
+
+| Priority | Item | Effort |
+|---|---|---|
+| MED | Risk-officer agent gate wiring | ~1h |
+| MED | Weekly-learning loop verification | ~30 min |
+| LOW | Reddit monitor (API approval pending) | gdy email |
+| LOW | VIX-source pivot | ~15 min |
+| LOW | Backtest harness | duży |
+
+---
+
+*Last updated: 2026-05-07 PRE-MARKET CLOSE — all systems armed and idle. Source of truth: `docs/STRATEGY.md` (v2.1)*
 *Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*
-*Next session: deploy twitter-monitor user-side (Bluesky secrets + Worker + workflow), or hook real bar data into event_scoring for full CONTRARIAN detection.*
+*Next session trigger: review market-open behavior; if all green → tag `2026-05-07-stable` and pick next backlog item.*
