@@ -17,6 +17,7 @@ try:
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
     from market_data import get_daily_bars
+    from alpaca_orders import execute_stock_signal
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -26,6 +27,11 @@ except ImportError:
     def get_account_status(): return None
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
     def get_daily_bars(symbol, days=35): return None
+    def execute_stock_signal(_s): return None
+
+# Default execution path: AUTO_EXECUTE via Alpaca REST (no routine).
+# Set USE_ROUTINE=true to fall back to the legacy Cloudflare Worker -> routine path.
+USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
 
@@ -256,14 +262,26 @@ def check_leveraged_signals():
 # ─── Wysylanie alertu ────────────────────────────────────────────────────────
 
 def send_alert(alert):
-    """Wysyla alert do Cloudflare Worker"""
+    """
+    Default: AUTO_EXECUTE via Alpaca REST (places bracket order directly).
+    USE_ROUTINE=true -> legacy Cloudflare Worker -> routine path.
+    """
+    if not USE_ROUTINE:
+        order = execute_stock_signal(alert)
+        if order:
+            print(f"  Order {alert['action']} {alert['symbol']}: id={order.get('id')} qty={order.get('qty')} @ ${order.get('limit_price')}")
+            return True
+        print(f"  Order {alert['action']} {alert['symbol']}: REJECTED (Alpaca)")
+        return False
+
+    # Legacy routine path (opt-in)
     try:
         response = requests.post(
             CLOUDFLARE_WORKER_URL,
             json=alert,
             timeout=30,
         )
-        print(f"  Alert wyslany {alert['action']} {alert['symbol']}: HTTP {response.status_code}")
+        print(f"  Routine forward {alert['action']} {alert['symbol']}: HTTP {response.status_code}")
         return response.status_code == 200
     except Exception as e:
         print(f"  BLAD wysylania alertu: {e}")

@@ -41,6 +41,7 @@ try:
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
     from event_scoring import score_and_decide
     from market_data import compute_reaction_metrics
+    from alpaca_orders import execute_stock_signal
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -49,6 +50,12 @@ except ImportError:
     def get_account_status(): return None
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub"}
     def compute_reaction_metrics(_s): return None
+    def execute_stock_signal(_s): return None
+
+# Default: AUTO_EXECUTE Pattern A-D via Alpaca REST. Pattern E (ambiguous wire)
+# falls back to email-only. Set USE_ROUTINE=true to send everything to the
+# legacy worker -> routine path instead.
+USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -296,7 +303,125 @@ def post_created_at(post: dict) -> datetime | None:
         return None
 
 
+# ─── Pattern A-D classifier (deterministic, AUTO_EXECUTE) ───────────────────
+
+# Direction-tone keywords for Pattern A (TICKER_DIRECT)
+_BEARISH_TONE = {
+    "miss", "missed", "guidance cut", "lawsuit", "fraud", "investigation",
+    "resignation", "resigns", "recall", "scandal", "subpoena", "delays",
+}
+_BULLISH_TONE = {
+    "beat", "beats", "exceeds", "raised guidance", "approval", "breakthrough",
+    "expansion", "record", "launch", "milestone",
+}
+
+# Pattern B / C keyword maps
+_ESCALATION_KW = {"sanctions", "executive order", "missile", "strike",
+                   "military", "tariff", "deployment", "casualties", "rocket",
+                   "operation", "intercept", "hostile"}
+_DEESCALATION_KW = {"ceasefire", "peace deal", "treaty", "troop withdrawal",
+                     "armistice", "negotiations", "diplomatic"}
+
+# Pattern D macro direction keywords
+_DOVISH_KW = {"below expectations", "beat expectations", "rate cut",
+               "dovish", "earnings beat", "guidance raised"}
+_HAWKISH_KW = {"above expectations", "missed expectations", "rate hike",
+                "hawkish", "earnings miss", "guidance cut", "recession"}
+
+
+def classify_and_execute(post: dict) -> tuple[str, list[dict]]:
+    """
+    Apply deterministic Pattern A-D classification on a Twitter post.
+    Returns (pattern_label, list_of_orders) where:
+      - pattern_label is "A"|"B"|"C"|"D"|"E"|"NONE"
+      - list_of_orders is non-empty when at least one Alpaca order succeeded
+      Pattern E (ambiguous) returns ("E", []) so caller falls back to
+      email-only (the user reviews manually).
+    """
+    cat        = post["category"]
+    text_lower = (post.get("text") or "").lower()
+    matched    = post.get("matched_kw", [])
+
+    # ── Pattern A: TICKER_DIRECT (CEO/insider account about own company) ──
+    if cat.startswith("ticker:"):
+        sym = cat.split(":", 1)[1]
+        bear = sum(1 for w in _BEARISH_TONE if w in text_lower)
+        bull = sum(1 for w in _BULLISH_TONE if w in text_lower)
+        side = "SELL_SHORT" if bear > bull else "BUY"
+        order = execute_stock_signal({
+            "symbol":   sym,
+            "action":   side,
+            "size_usd": 5000,
+            "sl_pct":   -6.0,
+            "tp_pct":   14.0,
+            "strategy": "twitter-A-direct",
+        })
+        return ("A", [order] if order else [])
+
+    # ── Pattern B: GEO_ESCALATION (gov_us / mil_il + escalation keywords) ──
+    pol_cats = ("gov_us", "mil_il", "high_priority_pol")
+    has_escalation = any(kw in matched for kw in _ESCALATION_KW)
+    if cat in pol_cats and has_escalation:
+        # Top 2 picks: one defense + one energy/safe-haven (caps at 2 per post)
+        targets = [
+            {"symbol": "RTX", "action": "BUY", "size_usd": 8000, "sl_pct": -5.0, "tp_pct": 12.0,
+             "strategy": "twitter-B-escalation-defense"},
+            {"symbol": "XLE", "action": "BUY", "size_usd": 6000, "sl_pct": -5.0, "tp_pct": 12.0,
+             "strategy": "twitter-B-escalation-energy"},
+        ]
+        orders = []
+        for t in targets:
+            o = execute_stock_signal(t)
+            if o:
+                orders.append(o)
+        return ("B", orders)
+
+    # ── Pattern C: GEO_DEESCALATION ──
+    has_deesc = any(kw in matched for kw in _DEESCALATION_KW)
+    if cat in pol_cats and has_deesc:
+        targets = [
+            {"symbol": "SPY", "action": "BUY", "size_usd": 6000, "sl_pct": -5.0, "tp_pct": 12.0,
+             "strategy": "twitter-C-deescalation-spy"},
+            {"symbol": "XLE", "action": "SELL_SHORT", "size_usd": 6000, "sl_pct": -5.0, "tp_pct": 12.0,
+             "strategy": "twitter-C-deescalation-xle"},
+        ]
+        orders = []
+        for t in targets:
+            o = execute_stock_signal(t)
+            if o:
+                orders.append(o)
+        return ("C", orders)
+
+    # ── Pattern D: MACRO_DATA ──
+    if cat == "macro" or (cat == "high_priority_pol" and any(
+            kw in matched for kw in ("rate", "fomc", "cpi", "inflation"))):
+        dovish  = sum(1 for w in _DOVISH_KW  if w in text_lower)
+        hawkish = sum(1 for w in _HAWKISH_KW if w in text_lower)
+        if dovish > hawkish:
+            order = execute_stock_signal({
+                "symbol": "SPY", "action": "BUY", "size_usd": 6000,
+                "sl_pct": -5.0, "tp_pct": 12.0, "strategy": "twitter-D-macro-bull",
+            })
+            return ("D", [order] if order else [])
+        if hawkish > dovish:
+            o1 = execute_stock_signal({
+                "symbol": "GLD", "action": "BUY", "size_usd": 6000,
+                "sl_pct": -5.0, "tp_pct": 12.0, "strategy": "twitter-D-macro-bear-gld",
+            })
+            o2 = execute_stock_signal({
+                "symbol": "SPY", "action": "SELL_SHORT", "size_usd": 6000,
+                "sl_pct": -5.0, "tp_pct": 12.0, "strategy": "twitter-D-macro-bear-spy",
+            })
+            return ("D", [o for o in (o1, o2) if o])
+        # Neither dovish nor hawkish dominant -> not directional, drop
+        return ("D-neutral", [])
+
+    # ── Pattern E: ambiguous wire / unclassifiable -> caller falls back to email-only ──
+    return ("E", [])
+
+
 def send_to_routine(payload: dict) -> bool:
+    """Legacy routine path. Used only when USE_ROUTINE=true."""
     if not CLOUDFLARE_WORKER_URL:
         print("  BRAK CLOUDFLARE_TWITTER_WORKER_URL — pomijam wysyłanie do routiny")
         return False
@@ -426,14 +551,36 @@ def run_scan():
         actionable         = stance in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE")
 
         if actionable:
-            payload = {
-                "type":      "twitter_alert",
-                "timestamp": now.isoformat(),
-                "post":      c,
-                "scoring":   scoring,
-                "priority_override": False,
-            }
-            ok = send_to_routine(payload)
+            # Default: AUTO_EXECUTE Pattern A-D in Python; Pattern E -> email-only.
+            # USE_ROUTINE=true keeps the legacy worker -> routine path.
+            ok = False
+            if not USE_ROUTINE and stance == "FOLLOW_REACTION":
+                pattern, orders = classify_and_execute(c)
+                if orders:
+                    ok = True
+                    sent += 1
+                    print(f"    [pattern-{pattern}] {c['handle']}: {len(orders)} order(s) placed")
+                elif pattern == "E":
+                    print(f"    [pattern-E] ambiguous -> email-only fallback {c['handle']}: {c['text'][:60]}")
+                else:
+                    print(f"    [pattern-{pattern}] no actionable orders ({c['handle']}: {c['text'][:60]})")
+            elif not USE_ROUTINE and stance == "CONTRARIAN_CANDIDATE":
+                # CONTRARIAN: never auto-trade, flag for manual review
+                print(f"    [event-layer] CONTRARIAN flag {c['handle']}: {c['text'][:80]}")
+                ok = False  # will email as proposal so user can act manually
+            else:
+                # Legacy routine path
+                payload = {
+                    "type":      "twitter_alert",
+                    "timestamp": now.isoformat(),
+                    "post":      c,
+                    "scoring":   scoring,
+                    "priority_override": False,
+                }
+                ok = send_to_routine(payload)
+                if ok and stance == "FOLLOW_REACTION":
+                    sent += 1
+
             sig_for_email = {
                 "symbol":   c.get("category", "twitter"),
                 "action":   "BUY",
@@ -443,10 +590,6 @@ def run_scan():
                 "source":   c["handle"],
             }
             notify_signal(sig_for_email, ok)
-            if ok and stance == "FOLLOW_REACTION":
-                sent += 1
-            if stance == "CONTRARIAN_CANDIDATE":
-                print(f"    [event-layer] CONTRARIAN flag {c['handle']}: {c['text'][:80]}")
         elif forward_for_review:
             # Email-only path — preserves routine budget. Subject prefix
             # tells user this is review-only, no trade triggered.

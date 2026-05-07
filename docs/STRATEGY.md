@@ -1,7 +1,7 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 2.1 (safety nets enforced + Twitter/Bluesky source live; supersedes 2.0)
-**Effective from:** 2026-05-07
+**Version:** 2.2 (routine bypass — direct Alpaca REST execution; supersedes 2.1)
+**Effective from:** 2026-05-07 EOD
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -364,6 +364,63 @@ shows a SELL order, so the next 5-min tick doesn't stack a duplicate.
 
 ---
 
+## 5.5 Execution Architecture (v2.2 — direct Alpaca REST)
+
+**Decision (2026-05-07 EOD):** monitors place orders directly via Alpaca
+REST, bypassing the Anthropic Routines path. This was prompted by a
+hard 15-call/day Routines limit; under v2.0 sizing the system would
+hit that ceiling within the first hour of an active session.
+
+The routine path is preserved as opt-in fallback (set env `USE_ROUTINE=true`
+on any monitor) for diagnostics, and remains the only path for
+`weekly-learning` (1 call/week).
+
+| Monitor | Default execution | Logic location |
+|---|---|---|
+| price-monitor | `execute_stock_signal` (bracket) | momentum/ATR rules in monitor |
+| crypto-monitor | `execute_crypto_signal` (simple limit, no bracket) | 1h-bar rules in monitor |
+| defense-monitor | `execute_stock_signal` (sl_pct/tp_pct from current quote) | scoring + ticker map in monitor |
+| options-monitor | already AUTO_EXECUTE (since 2026-05-06) | RSI rules in monitor |
+| options-exit-monitor | direct Alpaca SELL-to-close | TP/SL polling in monitor |
+| **twitter-monitor** | Pattern A-D classifier in Python; Pattern E → email-only | `classify_and_execute()` in monitor |
+| geo-monitor | still uses routine (asset_map mapping kept smart layer) | routine resolves news → ticker |
+| exit-monitor | local thresholds; routine call only when ≥1 flagged | thresholds in monitor |
+| weekly-learning | routine | LLM analysis |
+
+### Twitter Pattern A-D classifier (`classify_and_execute`)
+
+Deterministic decision tree replacing the routine's natural-language
+classification:
+
+| Pattern | Trigger | Direction logic | Output |
+|---|---|---|---|
+| **A** TICKER_DIRECT | `category.startswith("ticker:")` | bull-tone keywords vs bear-tone keywords | BUY/SELL_SHORT named ticker, $5k |
+| **B** GEO_ESCALATION | `pol_cats` + escalation kw (sanctions, missile, strike, tariff…) | always BUY defense+energy | RTX $8k + XLE $6k (cap 2) |
+| **C** GEO_DEESCALATION | `pol_cats` + deesc kw (ceasefire, treaty, withdrawal) | risk-on | BUY SPY $6k + SELL_SHORT XLE $6k |
+| **D** MACRO_DATA | `macro` + economic kw + dovish/hawkish wording sniff | direction by tone | dovish→BUY SPY; hawkish→BUY GLD + SHORT SPY |
+| **E** Ambiguous wire | wire/breaking + no clear signal | n/a | **email-only fallback** (manual review) |
+| Neutral D | `macro` matched but no dovish/hawkish bias | n/a | drop, log only |
+
+CONTRARIAN_CANDIDATE stance from `event_scoring` always falls through
+to email-only flag (no auto-trade) — manual review is the safety
+mechanism for "weak event + violent reaction" stop-hunt patterns.
+
+### Routine budget under v2.2
+
+Realistic typical day: ~1-3 routine calls (weekly-learning Sunday +
+exit-monitor when flagged + geo-monitor on rare news bundle without
+clean ticker). Well within 15/day limit even on noisy days.
+
+### Opt-in fallback
+
+Set `USE_ROUTINE=true` in any monitor's workflow env to revert to the
+old Cloudflare Worker → routine path for that monitor. Useful for:
+- Debugging unexpected order rejections
+- Testing routine prompt changes
+- Manual "let LLM decide" sessions
+
+---
+
 ## 6. Monitoring & Cadence
 
 ### 6.1 GitHub Actions workflows
@@ -529,6 +586,7 @@ These are reflected verbatim in `CLAUDE.md`:
 | 1.1 | 2026-05-04 | aggressive overhaul | 5× sizing, dollar-limit crypto, higher VIX thresholds |
 | **2.0** | **2026-05-06 EOD** | **risk-on full overhaul** | All capital deployed, daily stop -12%, VIX HALT only above 60, options auto-execute on paper, this document created |
 | **2.1** | **2026-05-07** | **safety nets enforced + new signal sources** | Drawdown circuit-breaker (-12% daily) wired in code; per-ticker concentration cap (40%) enforced; event-probability layer (4 scores -> FOLLOW/IGNORE/CONTRARIAN/WAIT) with real Alpaca bar-data; twitter-monitor MVP via Bluesky AT-Protocol; live portfolio dashboard (single Cloudflare Worker) |
+| **2.2** | **2026-05-07 EOD** | **routine bypass — direct Alpaca REST execution** | Hit 15-call/day Routines limit; refactored price/crypto/defense/twitter monitors to AUTO_EXECUTE via `shared/alpaca_orders.py`. Twitter Pattern A-D encoded as deterministic Python classifier; Pattern E ambiguous → email-only manual review. Routine reserved for weekly-learning + opt-in via `USE_ROUTINE=true` env. Realistic budget now ~1-3 calls/day vs 15+ before. |
 
 ---
 

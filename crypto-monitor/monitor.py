@@ -13,6 +13,7 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
+    from alpaca_orders import execute_crypto_signal
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -21,6 +22,10 @@ except ImportError:
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
+    def execute_crypto_signal(_s): return None
+
+# Default: AUTO_EXECUTE via Alpaca REST. USE_ROUTINE=true -> legacy worker path.
+USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -202,6 +207,20 @@ def check_crypto_signal(symbol: str) -> dict | None:
 # ─── Wysyłanie alertu ────────────────────────────────────────────────────────
 
 def send_alert(alert: dict) -> bool:
+    """
+    Default: AUTO_EXECUTE via Alpaca REST (simple limit; Alpaca crypto =
+    no bracket support, exit-monitor handles SL/TP via crypto thresholds).
+    USE_ROUTINE=true -> legacy worker path.
+    """
+    if not USE_ROUTINE:
+        order = execute_crypto_signal(alert)
+        if order:
+            print(f"  Order {alert['action']} {alert['symbol']}: id={order.get('id')} qty={order.get('qty')} @ ${order.get('limit_price')}")
+            return True
+        print(f"  Order {alert['action']} {alert['symbol']}: REJECTED (Alpaca)")
+        return False
+
+    # Legacy routine path (opt-in)
     if not CLOUDFLARE_WORKER_URL:
         print(f"  BRAK CLOUDFLARE_CRYPTO_WORKER_URL — sygnał lokalnie: {alert}")
         return False
@@ -211,7 +230,7 @@ def send_alert(alert: dict) -> bool:
             json=alert,
             timeout=30,
         )
-        print(f"  Alert {alert['action']} {alert['symbol']}: HTTP {resp.status_code}")
+        print(f"  Routine forward {alert['action']} {alert['symbol']}: HTTP {resp.status_code}")
         return resp.status_code == 200
     except Exception as e:
         print(f"  Błąd wysyłania alertu: {e}")

@@ -20,6 +20,7 @@ try:
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
     from event_scoring import score_and_decide
     from market_data import compute_reaction_metrics
+    from alpaca_orders import execute_stock_signal
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -30,6 +31,10 @@ except ImportError:
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
     def compute_reaction_metrics(_s): return None
+    def execute_stock_signal(_s): return None
+
+# Default: AUTO_EXECUTE via Alpaca REST. USE_ROUTINE=true -> legacy worker path.
+USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
 
 # ─── Event-probability mapping (for scoring layer) ───────────────────────────
@@ -585,6 +590,19 @@ def analyze_items(items: list[dict]) -> list[dict]:
 # ─── Wysyłanie alertów ────────────────────────────────────────────────────────
 
 def send_alert(alert: dict, retries: int = 2) -> bool:
+    """
+    Default: AUTO_EXECUTE via Alpaca REST (bracket order, SL/TP from sl_pct/tp_pct).
+    USE_ROUTINE=true -> legacy Cloudflare Worker -> routine path with retry.
+    """
+    if not USE_ROUTINE:
+        order = execute_stock_signal(alert)
+        if order:
+            print(f"  Order {alert['action']} {alert['symbol']} (score={alert['score']}): id={order.get('id')} qty={order.get('qty')} @ ${order.get('limit_price')}")
+            return True
+        print(f"  Order {alert['action']} {alert['symbol']}: REJECTED (Alpaca / quote unavailable)")
+        return False
+
+    # Legacy routine path (opt-in)
     if not CLOUDFLARE_DEFENSE_WORKER_URL:
         print(f"  BRAK CLOUDFLARE_DEFENSE_WORKER_URL — sygnał lokalnie: {alert}")
         return False
@@ -595,7 +613,7 @@ def send_alert(alert: dict, retries: int = 2) -> bool:
                 json=alert,
                 timeout=60,
             )
-            print(f"  Alert {alert['action']} {alert['symbol']} (score={alert['score']}): HTTP {resp.status_code}")
+            print(f"  Routine forward {alert['action']} {alert['symbol']} (score={alert['score']}): HTTP {resp.status_code}")
             if resp.status_code == 200:
                 return True
             if resp.status_code == 429:
@@ -603,7 +621,6 @@ def send_alert(alert: dict, retries: int = 2) -> bool:
                 print(f"  Rate limit (429) — czekam {wait}s przed retry {attempt}/{retries}")
                 time.sleep(wait)
                 continue
-            # Inne błędy — nie retry
             print(f"  Błąd HTTP {resp.status_code}: {resp.text[:200]}")
             return False
         except Exception as e:
