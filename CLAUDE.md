@@ -237,7 +237,25 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     - `BlueskyClient` wraps `com.atproto.server.createSession` (login) + `app.bsky.feed.getAuthorFeed`
     - X API v2 Basic ($100/mo) is the future upgrade path — same monitor will swap data source via a `SocialClient` abstraction
     - Iron rule: monitor never places trades; only emits proposals
-    - User-side deploy still needed: BLUESKY_HANDLE / BLUESKY_APP_PASSWORD secrets, CLOUDFLARE_TWITTER_WORKER_URL, Cloudflare Worker, routine, GitHub Actions workflow YAML
+    - **DEPLOYED 2026-05-07:** Bluesky account, app password, 3 GitHub secrets, Cloudflare Worker, Routine, workflow YAML — all live; first smoke test passed (login OK, 19 accounts loaded, 0 candidates because no recent keyword-matched posts)
+
+14. ✅ **Real bar-data hooked into event_scoring** (2026-05-07)
+    - `shared/market_data.py::compute_reaction_metrics(symbol)` — fetches 25 daily bars, computes ATR(14), today's move in ATR units, volume vs 20d avg, gap %
+    - Per-tick module-level cache so repeated lookups for the same symbol cost 1 Alpaca call
+    - Wired into defense-monitor (per-signal ticker), geo-monitor (SPY proxy), twitter-monitor (per-category: ticker:SYM → that ticker, others → SPY)
+    - All three store raw metrics under `reaction_metrics` for journal/audit
+    - Verified: rumor + 2.55-ATR + 4× volume → CONTRARIAN_CANDIDATE (was IGNORE under MVP placeholder); reuters + same violent move → FOLLOW_REACTION; quiet day + rumor → IGNORE
+    - Closes the MVP gap from yesterday's event-probability layer
+
+15. ✅ **Master Plan #1 — Live Portfolio Dashboard** (2026-05-07)
+    - `dashboard/worker.js` — single self-contained Cloudflare Worker
+    - `GET /` serves dark-mode HTML (vanilla JS, no build, auto-refresh 30 s)
+    - `GET /api/snapshot` returns combined `/v2/account` + `/v2/positions` + `/v2/orders`
+    - HTML displays: equity, daily P&L, cash, buying power, positions table (with concentration colouring at 25%/35%), recent orders
+    - Alpaca keys live in Worker env vars; never reach the browser
+    - `dashboard/SETUP.md` — 5-step deploy guide (~5 min)
+    - Tested with mocked Alpaca: snapshot shape OK, HTML 9.6 KB serving, 404 on unknown paths
+    - Closes the original master 5-point plan (5/5 LIVE)
 
 ### Master 5-Point Plan — closed out 2026-05-06
 
@@ -247,17 +265,23 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 | #3 | Options monitor (entry + auto exit on paper) | ✅ LIVE — see Done #9; first AMZN PUT trade confirmed |
 | #4 | VIX guard for entry monitors | ✅ LIVE (fail-open in prod — see Done #7 production note) |
 | #5 | Duplicate position guard | ✅ LIVE — see Done #8 |
-| #1 | Live Portfolio Dashboard | ⏳ moved to **Backlog** below — needs MCP connector fix or alternative architecture |
+| #1 | Live Portfolio Dashboard | ✅ LIVE 2026-05-07 — see Done #14 (single Cloudflare Worker, vanilla HTML) |
 
 ### Backlog (no committed timeline)
 
-- **Live Portfolio Dashboard** (master plan #1)
-  - Goal: artifact that shows current positions, P&L, latest alerts — open once, refresh anytime
-  - Two viable paths:
-    1. Fix Alpaca MCP connector auth (`mcp__alpaca__` returns 401, UUID connector works in chat but NOT in artifacts)
-    2. Build a static HTML dashboard (Cloudflare Pages or GitHub Pages) that calls Alpaca via a new Worker proxy — fully my work, no MCP dependency
-  - Current workaround: static `docs/dashboard-snapshot.html`, refresh on demand
-  - Owner: TBD — pick path before scheduling
+- ~~**Live Portfolio Dashboard**~~ ✅ **DONE 2026-05-07** (master plan #1 — last item closed)
+  - Path 2 chosen: single self-contained Cloudflare Worker (`dashboard/worker.js`)
+    serving both the HTML page (`GET /`) and the read-only Alpaca snapshot API
+    (`GET /api/snapshot`). Vanilla JS, no build step, auto-refresh every 30 s.
+  - Sections: equity / daily P&L / cash / buying power cards, open-positions
+    table (qty, entry, current, P&L $/%, % equity with concentration colouring),
+    recent-orders table.
+  - User-side: deploy the Worker (paste `dashboard/worker.js` into Cloudflare,
+    set ALPACA_API_KEY + ALPACA_SECRET_KEY env vars, open the workers.dev URL).
+    Full guide: `dashboard/SETUP.md`.
+  - Verified: mocked /api/snapshot returns shape `{account, positions, orders,
+    errors, timestamp}`; `/` returns 9.6 KB HTML; `/nope` returns 404.
+  - Closes the original master 5-point plan — all five items now LIVE.
 
 - **Reddit monitor** — waiting for Reddit API email approval
   - Resume guide: `docs/RESUME-REDDIT.md`
