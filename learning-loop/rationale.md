@@ -16,3 +16,6 @@
 - 2026-05-07 · LLM edge: Za mało danych — dzień 1 bez atrybutu strategii, zero obserwacji per-strategy win rate lub P&L. Jedyne obserwowalne: 83% fill rate (15/18), ale 2 z 3 niesprawnych zleceń to egzity (jeden emergency). Żadnej krawędzi nie można ocenić; wróć po min. 5 dniach z danymi.
 - 2026-05-07 · no parameter changes (all strategies within thresholds)
 
+- 2026-05-07 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-07 · no parameter changes (all strategies within thresholds)
+
