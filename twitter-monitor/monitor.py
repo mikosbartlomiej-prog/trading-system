@@ -412,30 +412,32 @@ def run_scan():
         stance     = scoring["stance"]
         # `priority` already computed above for keyword-bypass / event_type inference
 
-        # Forwarding policy:
-        #   FOLLOW_REACTION       -> always forward (normal path)
-        #   CONTRARIAN_CANDIDATE  -> always forward (manual review needed)
-        #   IGNORE / WAIT         -> forward ONLY for high-priority accounts
-        #                            (Trump admin, conflict leaders, tracked CEOs/traders)
-        # The "should_count" metric tracks how many "actionable" trade
-        # proposals went out (FOLLOW only). Forwarded high-priority IGNORE/WAIT
-        # are visibility-only — routine logs them but typically can't trade.
+        # Forwarding policy (rate-limit-aware as of 2026-05-07):
+        #   FOLLOW_REACTION       -> routine + email          (actionable trade)
+        #   CONTRARIAN_CANDIDATE  -> routine + email          (needs manual review,
+        #                                                      routine logs as flag)
+        #   IGNORE / WAIT + high-priority -> email ONLY       (Trump chitchat etc.;
+        #                                                      visibility for user but
+        #                                                      no point burning a routine
+        #                                                      call — routine has no
+        #                                                      pattern to match)
+        #   IGNORE / WAIT (standard) -> drop                  (noise, no email either)
         forward_for_review = priority and stance in ("IGNORE_EVENT", "WAIT_FOR_CONFIRMATION")
-        should_forward     = stance in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE") or forward_for_review
+        actionable         = stance in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE")
 
-        if should_forward:
+        if actionable:
             payload = {
                 "type":      "twitter_alert",
                 "timestamp": now.isoformat(),
                 "post":      c,
                 "scoring":   scoring,
-                "priority_override": forward_for_review,   # routine sees this flag
+                "priority_override": False,
             }
             ok = send_to_routine(payload)
             sig_for_email = {
                 "symbol":   c.get("category", "twitter"),
-                "action":   "BUY",  # routine resolves direction
-                "strategy": "twitter-news" + ("-priority-override" if forward_for_review else ""),
+                "action":   "BUY",
+                "strategy": "twitter-news",
                 "size_usd": 0,
                 "headline": c["text"][:120],
                 "source":   c["handle"],
@@ -443,10 +445,21 @@ def run_scan():
             notify_signal(sig_for_email, ok)
             if ok and stance == "FOLLOW_REACTION":
                 sent += 1
-            if forward_for_review:
-                print(f"    [event-layer] {stance} (priority-override forwarded) {c['handle']}: {c['text'][:60]}")
-            elif stance == "CONTRARIAN_CANDIDATE":
+            if stance == "CONTRARIAN_CANDIDATE":
                 print(f"    [event-layer] CONTRARIAN flag {c['handle']}: {c['text'][:80]}")
+        elif forward_for_review:
+            # Email-only path — preserves routine budget. Subject prefix
+            # tells user this is review-only, no trade triggered.
+            sig_for_email = {
+                "symbol":   c.get("category", "twitter"),
+                "action":   "BUY",
+                "strategy": "twitter-news-review",   # filter-friendly
+                "size_usd": 0,
+                "headline": c["text"][:120],
+                "source":   c["handle"],
+            }
+            notify_signal(sig_for_email, True)
+            print(f"    [event-layer] {stance} (priority-override, email-only) {c['handle']}: {c['text'][:60]}")
         else:
             print(f"    [event-layer] {stance} {c['handle']}: {c['text'][:60]}")
 

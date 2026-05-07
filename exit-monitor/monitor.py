@@ -251,10 +251,15 @@ def run_exit_check():
         reason = "; ".join(ep["reasons"]) if ep["reasons"] else ep["recommendation"]
         notify_exit(ep["symbol"], ep["recommendation"], reason, ep["unrealized_plpc"])
 
-    # Wyślij do routiny tylko jeśli są pozycje wymagające uwagi
-    # (lub zawsze, żeby routine miała pełny obraz)
-    print(f"\n  Wysyłam do Claude Routine Exit Handler...")
-    send_to_routine(enriched, account)
+    # Routine call only when at least one position is non-HOLD.
+    # Calling routine with all-HOLD positions wastes daily routine budget
+    # (~10 calls/day saved during quiet markets). Email summary still goes
+    # for flagged positions regardless.
+    if flagged:
+        print(f"\n  Wysyłam do Claude Routine Exit Handler ({len(flagged)} flagged)...")
+        send_to_routine(enriched, account)
+    else:
+        print(f"\n  Wszystkie pozycje HOLD — pomijam routine call (oszczędzam budget).")
 
     notify_summary("Exit Monitor", len(flagged), len(flagged))
 
