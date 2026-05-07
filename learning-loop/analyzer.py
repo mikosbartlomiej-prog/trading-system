@@ -17,10 +17,25 @@ LLM scope shrinks to manual chat / opt-in via USE_ROUTINE.
 
 import json
 import os
+import subprocess
 import sys
 import requests
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
+
+
+def _git_current_branch() -> str:
+    """Best-effort detection of the workflow's branch (used in LLM payload)."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except Exception:
+        pass
+    return "main"
 
 ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
@@ -32,7 +47,12 @@ RATIONALE_PATH   = os.path.join(LEARNING_DIR, "rationale.md")
 HISTORY_DIR      = os.path.join(LEARNING_DIR, "history")
 
 sys.path.insert(0, LEARNING_DIR)
-from adapter import adapt   # noqa: E402
+from adapter    import adapt          # noqa: E402
+from llm_client import (              # noqa: E402
+    call_routine, safe_apply_overrides, append_heuristic_proposals,
+)
+
+HEURISTIC_PROPOSALS_PATH = os.path.join(LEARNING_DIR, "heuristic_proposals.md")
 
 
 # ─── Alpaca helpers ──────────────────────────────────────────────────────────
@@ -287,6 +307,17 @@ def save_state(state: dict) -> None:
         f.write("\n")
 
 
+def _tail_rationale(n: int = 20) -> list[str]:
+    """Return last N bullet entries from rationale.md (for LLM context)."""
+    try:
+        with open(RATIONALE_PATH) as f:
+            content = f.read()
+    except FileNotFoundError:
+        return []
+    bullets = [ln.lstrip("- ").strip() for ln in content.splitlines() if ln.startswith("- ")]
+    return bullets[-n:] if len(bullets) > n else bullets
+
+
 def append_rationale(lines: list[str]) -> None:
     if not lines:
         return
@@ -399,15 +430,76 @@ def run():
         "cumulative_pnl_usd": round(sum(t["pnl_usd"] for t in trades), 2),
     }
 
-    # Load prior state, run adapter, save new state
+    # Load prior state, run deterministic adapter
     old_state = load_state()
     new_state, rationale = adapt(old_state, today_stats)
-    save_state(new_state)
-    append_rationale(rationale)
-    write_history_report(date_iso, today_stats, new_state, rationale)
 
-    print("\n  Rationale of today's changes:")
-    for r in rationale:
+    # ── LLM augmentation step (fail-soft) ──────────────────────────────────
+    # The deterministic adapter has produced a baseline new_state + rationale.
+    # We now ask the LLM (Senior PM persona, see routine-prompts.md) to:
+    #   1. Validate / second-guess the adapter's output
+    #   2. Apply selective overrides where the adapter missed something
+    #   3. Write a richer narrative for rationale.md
+    #   4. Suggest new heuristics for future adapter versions
+    #
+    # If the LLM call fails (USE_LLM_LEARNING=false / 429 / no creds /
+    # bad JSON), we keep the deterministic baseline. LLM is strictly
+    # additive — never blocks the loop.
+    print("\n  Calling LLM annotator (Senior PM review)...")
+    llm_payload = {
+        "type":                    "daily_learning_annotation",
+        "today_stats":             today_stats,
+        "proposed_state":          new_state,
+        "deterministic_rationale": rationale,
+        "recent_rationale_tail":   _tail_rationale(20),
+        "target_branch":           os.environ.get("GITHUB_REF_NAME") or _git_current_branch(),
+    }
+    llm_resp = call_routine(llm_payload)
+    llm_narrative_lines: list[str] = []
+
+    if llm_resp:
+        # Apply overrides (whitelist-enforced)
+        overrides = llm_resp.get("state_overrides") or {}
+        new_state, applied = safe_apply_overrides(new_state, overrides)
+        if applied:
+            print("  LLM overrides applied:")
+            for line in applied:
+                print(f"    {line}")
+            llm_narrative_lines.extend(applied)
+
+        # Append narrative
+        narr = llm_resp.get("narrative") or ""
+        regime = llm_resp.get("regime_assessment", "?")
+        edge = llm_resp.get("edge_assessment", "")
+        confidence = llm_resp.get("confidence", "?")
+        if narr:
+            llm_narrative_lines.insert(
+                0,
+                f"{date_iso} · LLM[{confidence}] regime={regime}: {narr.strip()}"
+            )
+        if edge:
+            llm_narrative_lines.append(f"{date_iso} · LLM edge: {edge.strip()}")
+
+        # Queue heuristic proposals
+        proposals = llm_resp.get("new_heuristic_proposals") or []
+        added = append_heuristic_proposals(proposals, HEURISTIC_PROPOSALS_PATH)
+        if added:
+            print(f"  LLM proposed {added} new heuristic(s) -> heuristic_proposals.md")
+
+    else:
+        llm_narrative_lines.append(
+            f"{date_iso} · LLM unavailable (skipped) — deterministic adapter only"
+        )
+
+    # Merge deterministic + LLM rationale into one log entry block
+    full_rationale = llm_narrative_lines + rationale
+
+    save_state(new_state)
+    append_rationale(full_rationale)
+    write_history_report(date_iso, today_stats, new_state, full_rationale)
+
+    print("\n  Rationale combined (LLM + deterministic):")
+    for r in full_rationale:
         print(f"    · {r}")
     print(f"\n  Wrote: state.json, history/{date_iso}.md, rationale.md")
     print(f"  Strategies in state: {len(new_state.get('strategies', {}))}")

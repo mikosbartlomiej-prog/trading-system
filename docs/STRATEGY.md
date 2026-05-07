@@ -421,27 +421,60 @@ old Cloudflare Worker → routine path for that monitor. Useful for:
 
 ---
 
-## 5.6 Daily Learning Loop (v2.3 — adaptive parameters)
+## 5.6 Daily + Weekly Learning Loop (v2.3.1 — LLM-augmented adaptive parameters)
 
 **Decision (2026-05-07):** the system reads its own Alpaca order history
-once per day, computes per-strategy performance, and updates parameters
-(`size_multiplier`, `enabled`, `side_bias`) committed to
-`learning-loop/state.json` via a daily git push. Monitors read this state
-at the start of every cron run and apply the adapted values.
+once per day, computes per-strategy performance, runs a deterministic
+heuristic adapter, then forwards the proposed state + raw stats to a
+**Senior Portfolio Manager LLM persona** (Claude routine on claude.ai)
+which can override / refine the adapter's choices. All overrides are
+whitelist-enforced. Resulting `size_multiplier`, `enabled`, `side_bias`
+land in `learning-loop/state.json` via a daily git push. Monitors read
+this state at the start of every cron run.
+
+**On Sunday 22:00 UTC** a second cron triggers `weekly_retro.py` — the
+same routine, type-dispatched to `weekly_retrospective`. It reviews the
+last 7 days as a full week, ranks strategies, recommends asset-class
+allocation, lists structural mistakes, and proposes 3-5 testable
+experiments for the next week.
 
 **One goal:** consistently earn more. Adaptation tunes HOW; the goal is fixed.
 
+### Two-layer architecture
+
+```
+Alpaca trades  →  deterministic adapter  →  LLM strategist (Senior PM)
+                  (heuristics, always)       (override + narrative + new ideas)
+                                                          │
+                                                          ▼
+                                       safe_apply_overrides() — whitelist enforcement
+                                                          │
+                                                          ▼
+                                       state.json + rationale.md → committed via git
+```
+
+The deterministic adapter is the idiot-proof baseline; the LLM is the
+intelligence layer on top. **Fail-soft contract:** if the LLM is
+unavailable (HTTP 429 / `USE_LLM_LEARNING=false` / no Worker URL), the
+adapter alone produces a complete, valid output — system never blocks.
+
 | Mechanism | File |
 |---|---|
-| Daily analyzer (reads Alpaca, reconstructs trades, computes stats) | `learning-loop/analyzer.py` |
+| Daily analyzer (Alpaca read + stats + adapter + LLM) | `learning-loop/analyzer.py` |
 | Adapter (pure function: old_state + today_stats -> new_state) | `learning-loop/adapter.py` |
+| LLM client + safe override applier + heuristic-proposals queue | `learning-loop/llm_client.py` |
+| **Senior PM system prompt** (master-piece, type-dispatched) | `learning-loop/routine-prompts.md` |
+| Weekly retrospective driver | `learning-loop/weekly_retro.py` |
 | Current adapted parameters (committed) | `learning-loop/state.json` |
 | Append-only narrative of every change ever made | `learning-loop/rationale.md` |
+| LLM-suggested heuristics queue (tickbox) | `learning-loop/heuristic_proposals.md` |
 | Daily reports | `learning-loop/history/YYYY-MM-DD.md` |
-| Cron | `*/0 21 * * *` (daily at 21:00 UTC, 1h after market close) |
+| Weekly retros | `learning-loop/weekly-retros/<week_end>.md` |
+| Daily cron | `0 21 * * *` (1h after US market close) |
+| Weekly cron | `0 22 * * 0` (Sunday 22:00 UTC) |
 | Read API for monitors | `shared/learning_state.py::load_strategy_state(name)` |
 
-### Heuristics (v1.0)
+### Deterministic heuristics (v1.0 — always run first)
 
 | Trigger | Action |
 |---|---|
@@ -457,17 +490,82 @@ at the start of every cron run and apply the adapted values.
 
 Bounds: `0.30 ≤ size_multiplier ≤ 2.00`. Pause auto-resumes after 3 days.
 
+### LLM strategist (Senior PM persona)
+
+**Persona** (full prompt in `learning-loop/routine-prompts.md`): a senior
+portfolio manager with 20+ years of running aggressive short-horizon
+strategies on a $100k paper account with 4× margin. Same mission as
+`docs/STRATEGY.md`: maximise risk-adjusted return on 1-72h horizons,
+"all capital deployed", one success metric — earn more.
+
+**Daily framework (6 ordered passes):**
+1. EDGE — where do we have positive expectancy? where are we paying to play?
+2. POSITION SIZING vs OUTCOME — wins on max sizing or partial?
+3. TIME / REGIME CLUSTERING — losses bunched in which hours / SPY regime?
+4. SIGNAL QUALITY by source — per-strategy AND per-feed win-rate
+5. MACRO CONTEXT — CPI / FOMC / earnings overlay
+6. FILL-RATE pathology — canceled% (limits too tight) vs rejected% (sizing math)
+
+**Adapter interaction:** the LLM does NOT redo the adapter math. Its job is
+to **flag** when the adapter is wrong (e.g. 5 losses with different root
+causes — don't pause, retune; or hot streak from luck — don't increase size).
+
+**Weekly framework (6 ordered passes):**
+1. P&L story — WHY, not WHAT
+2. Strategy scorecard — rank by P&L $, win rate, consistency, hit-to-mean
+3. Asset-class allocation — current vs realised contribution → rebalance
+4. Source quality — Twitter tiers, news feeds, per-feed win rate
+5. Structural mistakes — max 3, ranked by lost dollars + concrete remediation
+6. Next-week experiments — 3-5 with hypothesis, metric, revert-if condition
+
+**Response rules** (both types): pure JSON, no markdown fences, brutal +
+specific + numbers-first. If data is thin, say it ("low confidence — only
+3 trades to date"). User goal is short-horizon profit max with controlled
+variance — anything proposed must serve that.
+
+### Whitelist enforcement (`safe_apply_overrides`)
+
+Only these per-strategy fields can be touched by LLM:
+- `size_multiplier` (clamped to `[0.30, 2.00]`, must parse as float)
+- `enabled` (must be bool)
+- `side_bias` (must be `"long"`, `"short"`, or `null`)
+- `rationale`, `paused_until`, `llm_note` (free text)
+
+Global overrides limited to: `options_side_bias`, `max_open_options`.
+
+Anything else — invalid keys, hallucinated strategy names, type
+mismatches — is **silently dropped** and logged in the applied list.
+Tested with: `delete_everything`, `wormhole`, `"yes please"` (string for
+bool), `99.0` size_multiplier (clamped to 2.0), `fake-strategy-xyz`. All
+rejected/clamped correctly.
+
+### Routine budget
+
+- Daily annotator: 1 routine call/day
+- Weekly retro: 1 routine call/week (Sunday)
+- All other monitors (price/crypto/defense/twitter/exit): direct Alpaca REST
+  via v2.2 routine-bypass (see §5.5)
+- **Total: ~1.14 routine calls/day vs 15/day Anthropic limit → ~13.86 reserve**
+
+The bypass in v2.2 was specifically engineered to free routine budget
+for the learning loop, since adaptive parameter tuning is the system's
+strategic priority.
+
 ### Persistence
 
 git history IS the audit log. `git log -- learning-loop/state.json`
 shows every adaptation ever made; `git diff` between commits shows
 precisely what changed. `rationale.md` is append-only — old entries
-preserved indefinitely so future inspection works without git.
+preserved indefinitely. `heuristic_proposals.md` is the LLM's tickbox
+queue: ideas accumulate; user (or future auto-promotion) ticks each one
+and graduates the rule into `adapter.py`.
 
 ### Wired today
 
 - ✅ options-monitor: reads `options-momentum` state, applies
   size_multiplier, applies side_bias (skip CALL when bias=short).
+- ✅ Daily LLM annotator (Senior PM persona) — v1.1 (2026-05-07)
+- ✅ Weekly retrospective (Sunday cron) — v1.1 (2026-05-07)
 - ⏳ Phase 2: price/crypto/defense/twitter monitors. Each is 5 lines.
 
 Full details: `strategies/learning-loop.md`.
@@ -641,6 +739,7 @@ These are reflected verbatim in `CLAUDE.md`:
 | **2.1** | **2026-05-07** | **safety nets enforced + new signal sources** | Drawdown circuit-breaker (-12% daily) wired in code; per-ticker concentration cap (40%) enforced; event-probability layer (4 scores -> FOLLOW/IGNORE/CONTRARIAN/WAIT) with real Alpaca bar-data; twitter-monitor MVP via Bluesky AT-Protocol; live portfolio dashboard (single Cloudflare Worker) |
 | **2.2** | **2026-05-07 EOD** | **routine bypass — direct Alpaca REST execution** | Hit 15-call/day Routines limit; refactored price/crypto/defense/twitter monitors to AUTO_EXECUTE via `shared/alpaca_orders.py`. Twitter Pattern A-D encoded as deterministic Python classifier; Pattern E ambiguous → email-only manual review. Routine reserved for weekly-learning + opt-in via `USE_ROUTINE=true` env. Realistic budget now ~1-3 calls/day vs 15+ before. |
 | **2.3** | **2026-05-07 LATE** | **daily learning loop with permanent memory** | Replaced weekly-learning with daily cron. New `learning-loop/`: analyzer + adapter + state.json + rationale.md + per-day history. Daily-learning workflow commits state back to repo via `GITHUB_TOKEN` (permissions: contents:write); git history is audit log. Heuristics (v1.0): cool-down on losing strategies, warm-up on winners, pause after 5 consec losses, side-bias for options based on long-vs-short P&L split. options-monitor wired to read state.json (size_multiplier + side_bias enforced). Other monitors wire in Phase 2. Routines no longer used here either (the LLM-on-routine path was the original analyzer's intent — replaced with deterministic heuristics + git-as-state-store). |
+| **2.3.1** | **2026-05-07 NIGHT** | **LLM augmentation on daily + weekly learning loop** | Reversed v2.3's "no LLM in learning" stance — learning is the most important thing in the system, so user demanded LLM be engaged in BOTH daily and weekly cycles with a "master-piece" prompt. Senior Portfolio Manager persona (20+ years, $100k paper, 4× margin, same mission as STRATEGY.md) added to `learning-loop/routine-prompts.md` with type-dispatch on `daily_learning_annotation` vs `weekly_retrospective`. Daily framework: 6-pass review (EDGE → SIZING → TIME-REGIME → SIGNAL QUALITY → MACRO → FILL-RATE). Weekly framework: 6-pass retro (P&L story → scorecard → allocation → sources → mistakes → experiments). New `learning-loop/llm_client.py` handles routine call + JSON parse + fail-soft + whitelist-enforced `safe_apply_overrides` (size_multiplier clamped 0.30-2.00, enabled bool, side_bias enum, hallucinated keys silently dropped). New `learning-loop/weekly_retro.py` (Sunday 22:00 UTC cron) writes full retro to `learning-loop/weekly-retros/<week_end>.md`. New `heuristic_proposals.md` queue for LLM-suggested rules. v2.2 routine-bypass on other monitors gives this layer the routine budget it needs (~1.14 calls/day vs 15/day limit → ~13.86 in reserve). |
 
 ---
 
