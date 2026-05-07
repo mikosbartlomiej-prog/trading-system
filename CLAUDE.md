@@ -285,6 +285,29 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     real VIX feed is still useful for logging/analytics. Candidates: VIXY ETF
     via Alpaca bars (rough proxy), Yahoo Finance public quote, FRED VIXCLS
 
+- **Event Probability & Contrarian Reaction Layer** — `event_probability_reaction_layer` (added 2026-05-06, **HIGH priority**)
+  - Type: Strategy Intelligence Layer (not another news monitor — interpretation layer between signal and decision)
+  - **Problem:** current event-driven strategies (geo, defense, reddit) trust the headline too directly.
+    The market often reacts to news as a pretext for liquidity grabs / stop-hunts / fake-outs, not because
+    it believes the information. Following the first reaction can mean entering with the crowd right when
+    the move reverses.
+  - **Goal:** before sending an event-driven alert, decompose the trigger into 5 scores and pick a stance:
+    1. **Event credibility** — source type (tweet vs. official filing vs. confirmed contract), source track record, corroboration
+    2. **Probability shift** — does this realistically change the odds of a future outcome? (tweet threat = low; signed contract = high)
+    3. **Market reaction** — price move vs ATR, volume vs avg, gap, speed, sector vs single-name divergence
+    4. **Positioning context** — short interest, option chain skew, max-pain proximity, recent stop-runs (data sources TBD)
+    5. **Contrarian trigger** — if credibility low + shift low + reaction high → flag setup as `CONTRARIAN_CANDIDATE` instead of following
+  - **Output stance per event:** one of `FOLLOW_REACTION`, `IGNORE_EVENT`, `CONTRARIAN_CANDIDATE`, `WAIT_FOR_CONFIRMATION`
+  - **Acceptance criteria (MVP):**
+    - No event-driven trade fires solely on detection — each must carry the 5 scores + final decision reason
+    - System can reject a trade when reaction is disproportionate to credibility
+    - Journal/backtest captures which stance worked: follow vs ignore vs contrarian
+    - Exit decisions can incorporate price dynamics, not just static SL/TP
+    - MVP scope: stocks/CFD only (geo + defense monitors). Options layer deferred.
+  - **Out of scope for MVP:** full options-chain analysis, max-pain modelling, automated short-squeeze detection, automated re-entry, options as primary instrument
+  - **Touches:** `defense-monitor`, `geo-monitor` (entry filters), exit-monitor (dynamic exit), new `shared/event_scoring.py`, new journal fields
+  - **ETA when prioritised:** rough estimate 2-3 sessions for MVP on stocks; longer for full options-aware version
+
 ---
 
 ## IRON RULES — v2.0 RISK-ON (2026-05-06 EOD)
