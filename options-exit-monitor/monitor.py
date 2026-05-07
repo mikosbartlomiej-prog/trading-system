@@ -4,8 +4,19 @@ Options Exit Monitor — emulates bracket TP/SL for paper options positions.
 Alpaca paper does not support bracket/OCO/stop order classes for options,
 so this monitor polls every few minutes during market hours, evaluates
 each open options position against the strategy's TP/SL multipliers
-(+80% / -50% of entry premium) and places a SELL-to-close LIMIT order
-when a threshold is hit.
+(+80% / -50% of entry premium) and places a SELL-to-close order when a
+threshold is hit:
+
+  - TP hit  -> LIMIT  (price discipline; we'd rather not fill than fill bad)
+  - SL hit  -> MARKET (emergency exit; guaranteed fill > price discipline)
+
+The MARKET-on-SL choice was raised by the learning-loop LLM after a
+real run where an `exit-emergency-*` order had fill_rate=0 (limit too
+tight in a falling market = stuck holding the loss). MARKET on SL
+trades a few cents of slippage for a guaranteed exit.
+
+`client_order_id` is now tagged with `exit-tp-` or `exit-sl-` so the
+learning-loop analyzer can attribute close orders correctly.
 
 De-dup: skips a position if there is already an open SELL order for the
 same contract symbol (prevents stacking duplicate exits across runs).
@@ -68,16 +79,42 @@ def already_has_open_sell(contract_symbol: str) -> bool:
         return False  # fail open -> may attempt a duplicate; rare
 
 
-def place_sell_to_close(contract_symbol: str, qty: int, limit_price: float) -> dict | None:
-    """Place a simple SELL-to-close LIMIT order on the contract."""
-    payload = {
-        "symbol":        contract_symbol,
-        "qty":           str(int(qty)),
-        "side":          "sell",
-        "type":          "limit",
-        "limit_price":   str(round(limit_price, 2)),
-        "time_in_force": "day",
+def _exit_client_order_id(reason: str, contract_symbol: str) -> str:
+    """
+    Build a learning-loop-friendly client_order_id for a sell-to-close.
+    Format: 'exit-<reason>-<contract>-<HHMMSSmmm>'. The 'exit-' prefix
+    is what learning-loop/analyzer.py::_is_close() looks for.
+    """
+    ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
+    safe = contract_symbol.replace("/", "").replace(" ", "")
+    return f"exit-{reason}-{safe}-{ts}"
+
+
+def place_sell_to_close(contract_symbol: str, qty: int,
+                         decision: str, exit_price: float) -> dict | None:
+    """
+    Place a SELL-to-close on `contract_symbol`.
+
+    decision == "TP" -> LIMIT at `exit_price` (price discipline)
+    decision == "SL" -> MARKET (emergency; guarantee fill in falling tape)
+
+    Tags client_order_id with `exit-tp-` or `exit-sl-` so the analyzer
+    can attribute the close to the right strategy bucket.
+    """
+    reason = decision.lower()  # "tp" or "sl"
+    payload: dict = {
+        "symbol":          contract_symbol,
+        "qty":             str(int(qty)),
+        "side":            "sell",
+        "time_in_force":   "day",
+        "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
+    if decision == "SL":
+        payload["type"] = "market"
+    else:
+        payload["type"]        = "limit"
+        payload["limit_price"] = str(round(exit_price, 2))
+
     try:
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=alpaca_headers(), json=payload, timeout=15)
@@ -151,9 +188,10 @@ def run_exit_check():
             continue
 
         qty   = abs(float(pos["qty"]))
-        order = place_sell_to_close(symbol, qty, exit_price)
+        order = place_sell_to_close(symbol, qty, decision, exit_price)
         if order:
-            print(f"    SELL placed: id={order.get('id')} status={order.get('status')}")
+            order_type = "MARKET" if decision == "SL" else "LIMIT"
+            print(f"    SELL placed ({order_type}): id={order.get('id')} status={order.get('status')}")
             closed += 1
             notify_exit(symbol, f"SELL_TO_CLOSE_{decision}", reason, pl_pct)
         else:

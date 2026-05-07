@@ -120,7 +120,18 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
 def reconstruct_trades(orders: list[dict]) -> list[dict]:
     """
     Pair each open with a corresponding close to compute per-trade P&L.
-    Reuses the logic from the previous weekly analyzer.
+
+    We distinguish opens from closes by `client_order_id` prefix:
+    entries are tagged by the entry monitors with the strategy name
+    (e.g. "momentum-long-AAPL-130000123", "options-momentum-NVDA-..."),
+    closes are tagged by exit-monitor / options-exit-monitor with an
+    "exit-" prefix (e.g. "exit-emergency-googl", "exit-tp-aapl-...").
+
+    Within each symbol, we FIFO-pair opens with closes. The trade's
+    direction comes from the open (long if it was a buy entry, short
+    if it was sell_short). This is more reliable than dispatching on
+    Alpaca side= alone, because Alpaca uses side="buy" both to open a
+    long AND to cover a short.
     """
     by_symbol: dict[str, list[dict]] = defaultdict(list)
     for o in orders:
@@ -138,27 +149,44 @@ def reconstruct_trades(orders: list[dict]) -> list[dict]:
             ts    = o.get("filled_at", "")
             strat = _strategy_from_client_id(o.get("client_order_id", ""), symbol)
 
-            if side == "buy" and not _is_close(o):
-                opens.append({"side": "long", "strategy": strat,
-                              "entry_price": price, "entry_time": ts, "qty": qty})
-            elif side == "sell" and opens:
-                # Close a long
+            if _is_close(o):
+                # Match against the earliest unpaired open for this symbol.
+                # Orphan close (open from before the 24h window) is skipped.
+                if not opens:
+                    continue
                 e = opens.pop(0)
-                trades.append(_make_trade(symbol, "long", e, price, ts))
-            elif side == "sell_short":
-                opens.append({"side": "short", "strategy": strat,
-                              "entry_price": price, "entry_time": ts, "qty": qty})
-            elif side == "buy" and opens and _is_close(o):
-                # Close a short
-                e = opens.pop(0)
-                trades.append(_make_trade(symbol, "short", e, price, ts))
+                trades.append(_make_trade(symbol, e["side"], e, price, ts))
+            else:
+                # Entry order. Direction inferred from Alpaca side:
+                #   buy / buy_to_open       -> long
+                #   sell_short / sell       -> short  (paper Alpaca returns
+                #                              sell when opening a short on a
+                #                              non-held symbol)
+                if side in ("sell_short", "sell"):
+                    direction = "short"
+                else:
+                    direction = "long"
+                opens.append({
+                    "side":        direction,
+                    "strategy":    strat,
+                    "entry_price": price,
+                    "entry_time":  ts,
+                    "qty":         qty,
+                })
     return trades
 
 
 def _is_close(order: dict) -> bool:
-    """Heuristic: 'close' orders typically have order_class set or specific tag.
-    Without explicit info, we match by paired side ordering."""
-    return False  # naive — pairing handled by FIFO above
+    """
+    Detect close orders by `client_order_id` prefix.
+
+    Entry monitors emit ids like "<strategy>-<symbol>-<ts>" where
+    <strategy> is e.g. 'momentum-long', 'options-momentum'. Exit
+    monitors emit ids prefixed with 'exit-' (e.g. 'exit-emergency-*',
+    'exit-tp-*', 'exit-sl-*'). Anything else is treated as an entry.
+    """
+    cid = (order.get("client_order_id") or "").lower()
+    return cid.startswith("exit-")
 
 
 def _make_trade(symbol, direction, entry, exit_price, exit_time) -> dict:
