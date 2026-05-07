@@ -1,0 +1,57 @@
+name: Daily Learning Loop — Strategy Adapter
+
+on:
+  schedule:
+    # Codziennie 21:00 UTC (1h po US market close 20:00 UTC)
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+
+# Wymagane żeby workflow mógł commitować state.json + rationale.md + history/
+permissions:
+  contents: write
+
+jobs:
+  analyze-and-adapt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r learning-loop/requirements.txt
+
+      - name: Run daily learning analyzer
+        env:
+          PYTHONIOENCODING:    utf-8
+          LC_ALL:              C
+          LANG:                C
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+          GMAIL_USER:          ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:  ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:        ${{ secrets.NOTIFY_EMAIL }}
+        run: python learning-loop/analyzer.py
+
+      - name: Commit and push learning state
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
+          if git diff --cached --quiet; then
+            echo "No state changes to commit (no orders this window or no parameter shifts)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "learning: daily update ${DATE}"
+            git push origin main
+            echo "Pushed learning state for ${DATE}."
+          fi
