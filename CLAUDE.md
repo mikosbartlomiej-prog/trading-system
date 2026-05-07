@@ -304,30 +304,37 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     - Pelosi/Congressional trade-disclosure tweets (insider sentiment)
     - Sentiment spike (mention surge ≥ 5× rolling avg on a single ticker — analog of Reddit spike)
     - Account-credibility-weighted news vs unverified rumours
-  - **Technical paths (decide before starting):**
-    1. **X API v2 Basic** ($100/mo) — official, ~10k tweets/month read, full-archive search; clean
-       but adds cost
-    2. **X API v2 Pro** ($5,000/mo) — out of budget for paper account
-    3. **3rd-party data brokers** (e.g. Datavid, Tweepy via reseller) — variable cost, TOS risk
-    4. **Bluesky AT-Protocol** as alternative — free, growing political/finance coverage, lower
-       reach but no cost; could be MVP target while X budget is decided
-    5. **Public RSS bridges / Nitter mirrors** — fragile, unofficial, won't survive long-term
-  - **MVP scope (proposal):**
-    - Path 4 (Bluesky) for free PoC; demonstrate the pipeline works
-    - Path 1 (X API Basic, $100/mo) once user approves the cost — likely worth it because of
-      latency edge on geo/defense
-    - Single Cloudflare Worker `twitter-proxy` (consistent with existing pattern) → new routine
-      `Twitter Handler` or routed into existing geo/defense routines based on content classification
+  - **Decided MVP path: Bluesky AT-Protocol** (free, TOS-safe, 2026-05-06 user-approved)
+    - Public Bluesky API; auth via app password (free); no per-month read cap that matters at our volume
+    - Smaller reach than X today, but financial / geo coverage is growing fast (mid-2025 onwards)
+    - Same data shape as Twitter (post text, author handle, timestamp, repost/like counts) so the
+      monitor we build on Bluesky maps 1:1 onto X API later if we choose to upgrade
+    - Renamed: monitor stays `twitter-monitor` (semantic — "social-graph news monitor"), but data
+      source on day one is `bsky.app`. Inside-the-monitor abstraction: a `SocialClient` interface
+      with two implementations (BlueskyClient, TwitterClient) so the swap is one config flip.
+  - **Future upgrade path (not now):** X API v2 Basic ($100/mo) once Bluesky proves the pipeline
+    edge in production. X has higher reach and faster political content; the cost is justified
+    only after we see signal quality from Bluesky.
+  - **Rejected paths:** X API v2 Pro ($5k/mo) too expensive for paper; 3rd-party brokers carry TOS
+    risk; Nitter mirrors are fragile and unofficial.
+  - **MVP scope:**
+    - One Bluesky firehose subscription per curated handle (Trump, POTUS, SecDef, etc. — see
+      account list above)
+    - Cloudflare Worker `twitter-proxy` (kept the name for consistency) → routine handler
     - GitHub Actions cron `*/5` during session, `*/15` after-hours
     - Per-account whitelist + per-keyword filter inside the monitor
+    - Source-of-truth list at `.claude/rules/twitter-accounts.md` mapping each Twitter handle
+      to its known Bluesky equivalent (some accounts have both, some only one)
   - **Hard dependency on Event Probability Layer:**
     Twitter is by far the noisiest signal source. Without the credibility / probability-shift /
     contrarian-reaction scoring, raw Twitter alerts would generate too many false positives
     (especially political tweets). Build the event probability layer FIRST or in parallel; do
     not wire `twitter-monitor` directly into Alpaca execution before it.
-  - **New secrets needed (whichever path):**
-    - `TWITTER_BEARER_TOKEN` (for X API v2) OR `BLUESKY_HANDLE` + `BLUESKY_APP_PASSWORD`
-    - `CLOUDFLARE_TWITTER_WORKER_URL` (new Worker)
+  - **New secrets needed (Bluesky MVP):**
+    - `BLUESKY_HANDLE` (e.g. `mikosbartlomiej.bsky.social`)
+    - `BLUESKY_APP_PASSWORD` (generated at bsky.app → settings → app passwords)
+    - `CLOUDFLARE_TWITTER_WORKER_URL` (new Worker, name kept for consistency)
+    - Future-proof: `TWITTER_BEARER_TOKEN` slot reserved for the eventual X API upgrade
   - **Strategy / sizing:** TBD — likely re-uses geopolitical and reddit-sentiment sizing
     ($5k-$6k per signal) under v2.0 risk-on rules. Iron rule: every Twitter-triggered trade
     must have stop-loss like every other entry.
@@ -338,10 +345,12 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
       timestamp, classified intent (geo / earnings / sentiment / other)
     - Forward to Worker → routine OR direct to email if event-probability-layer is wired
     - Tested live on at least one real high-impact tweet event before going to auto-execute
-  - **Risk note:** X TOS technically forbids automated access without API. Path 1 (paid API) is
-    the only TOS-safe production path. Anything else is a research-grade hack.
-  - **ETA when prioritised:** 1 session for Bluesky PoC (Path 4); +1 session to wire X API once
-    paid plan is bought
+  - **Risk note:** Bluesky public API is openly TOS-allowed (AT-Protocol is designed for
+    federation and tooling). X TOS forbids automated access without paid API, so the future
+    upgrade requires the $100/mo Basic tier.
+  - **ETA when prioritised:** ~1 session to ship the Bluesky MVP (auth, Worker, routine,
+    whitelist file, first live test); +1 session to add X API as a second SocialClient when
+    user approves the $100/mo cost.
 
 - **Event Probability & Contrarian Reaction Layer** — `event_probability_reaction_layer` (added 2026-05-06, **HIGH priority**)
   - Type: Strategy Intelligence Layer (not another news monitor — interpretation layer between signal and decision)
