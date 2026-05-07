@@ -49,12 +49,20 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          # Pull any commits the routine pushed during this run (it may have
+          # added then we git-rm'd the pending-llm-*.json file).
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
+          # LLM-only artifacts — may not exist on a quiet day; ignore failure
+          git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          # Stage any deletions of pending-llm-*.json (consumed by analyzer)
+          git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No state changes to commit (no orders this window or no parameter shifts)."
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: daily update ${DATE}"
-            git push origin main
-            echo "Pushed learning state for ${DATE}."
+            git push origin "$BRANCH"
+            echo "Pushed learning state for ${DATE} to ${BRANCH}."
           fi
