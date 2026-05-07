@@ -260,7 +260,7 @@ function render(d) {
       + '<div class="sub">' + cashPct.toFixed(1) + "% of equity</div></div>",
     '<div class="card"><div class="label">Buying Power</div>'
       + '<div class="value">' + fmtUSD(a.buying_power) + "</div>"
-      + '<div class="sub">Reg-T intraday</div></div>",
+      + '<div class="sub">Reg-T intraday</div></div>',
   ].join("");
 
   // Positions
