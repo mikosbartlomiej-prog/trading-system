@@ -17,12 +17,15 @@ from html.parser import HTMLParser
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
-    from risk_guards import vix_guard, has_open_position
+    from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
     def has_open_position(_): return False
+    def daily_drawdown_guard(account=None): return ("OK", "stub")
+    def get_account_status(): return None
+    def concentration_ok(_s, _n, equity=None): return (True, 0.0)
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -538,11 +541,19 @@ def run_scan():
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] === DEFENSE MARKET MONITOR ===")
 
+    # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
+    account = get_account_status()
+    dd_status, _ = daily_drawdown_guard(account=account)
+    if dd_status == "HALT":
+        notify_summary("Defense Monitor", 0, 0)
+        return
+
     vix_status, size_mult = vix_guard()
     if vix_status == "HALT":
         notify_summary("Defense Monitor", 0, 0)
         return
 
+    equity = account["equity"] if account else 0
     all_items = []
 
     # 1. DoD Contracts
@@ -597,10 +608,15 @@ def run_scan():
         if has_open_position(signal["symbol"]):
             print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} pominięty (otwarta pozycja)")
             continue
-        signal["size_usd"] = round(signal["size_usd"] * size_mult)
+        new_size = round(signal["size_usd"] * size_mult)
+        ok, combined = concentration_ok(signal["symbol"], new_size, equity=equity)
+        if not ok:
+            print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} pominięty (concentration {combined:.1f}% > 40%)")
+            continue
+        signal["size_usd"] = new_size
         print(
             f"\n  >>> SYGNAŁ: {direction} {signal['symbol']} "
-            f"(score={signal['score']}, source={signal['source']})"
+            f"(score={signal['score']}, source={signal['source']}, concentration={combined:.1f}%)"
         )
         print(f"      Headline: {signal['headline']}")
         print(f"      Keywords: {signal['keywords']}")

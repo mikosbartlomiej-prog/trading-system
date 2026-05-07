@@ -12,12 +12,15 @@ from datetime import datetime, timezone, timedelta
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
-    from risk_guards import vix_guard, has_open_position
+    from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
     def vix_guard(): return ("OK", 1.0)
     def has_open_position(_): return False
+    def daily_drawdown_guard(account=None): return ("OK", "stub")
+    def get_account_status(): return None
+    def concentration_ok(_s, _n, equity=None): return (True, 0.0)
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -226,11 +229,19 @@ def run_scan():
         print("BŁĄD: Brak ALPACA_API_KEY lub ALPACA_SECRET_KEY")
         sys.exit(1)
 
+    # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
+    account = get_account_status()
+    dd_status, _ = daily_drawdown_guard(account=account)
+    if dd_status == "HALT":
+        notify_summary("Crypto Monitor", 0, 0)
+        return
+
     vix_status, size_mult = vix_guard()
     if vix_status == "HALT":
         notify_summary("Crypto Monitor", 0, 0)
         return
 
+    equity = account["equity"] if account else 0
     alerts_sent = 0
     for symbol in CRYPTO_SYMBOLS:
         signal = check_crypto_signal(symbol)
@@ -238,8 +249,13 @@ def run_scan():
             if has_open_position(symbol):
                 print(f"  >>> SYGNAŁ {signal['action']} {symbol} pominięty (otwarta pozycja)")
                 continue
-            print(f"  >>> SYGNAŁ: {signal['action']} {symbol}!")
-            signal["size_usd"] = round(signal["size_usd"] * size_mult)
+            new_size = round(signal["size_usd"] * size_mult)
+            ok, combined = concentration_ok(symbol, new_size, equity=equity)
+            if not ok:
+                print(f"  >>> SYGNAŁ {signal['action']} {symbol} pominięty (concentration {combined:.1f}% > 40%)")
+                continue
+            signal["size_usd"] = new_size
+            print(f"  >>> SYGNAŁ: {signal['action']} {symbol}! (concentration={combined:.1f}%)")
             sent = send_alert(signal)
             if sent:
                 alerts_sent += 1

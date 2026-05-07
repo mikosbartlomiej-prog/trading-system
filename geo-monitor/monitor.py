@@ -15,9 +15,11 @@ from datetime import datetime, timezone, timedelta
 
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-    from risk_guards import vix_guard
+    from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
 except ImportError:
     def vix_guard(): return ("OK", 1.0)
+    def daily_drawdown_guard(account=None): return ("OK", "stub")
+    def get_account_status(): return None
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -213,6 +215,11 @@ def send_alert(news_items: list[dict], priority: str) -> bool:
 def run_scan():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] Skanuję newsy geopolityczne...")
+
+    # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
+    dd_status, _ = daily_drawdown_guard()
+    if dd_status == "HALT":
+        return
 
     vix_status, _ = vix_guard()
     if vix_status == "HALT":
