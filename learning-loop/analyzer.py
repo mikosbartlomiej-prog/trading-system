@@ -316,6 +316,70 @@ def compute_fill_rate(orders: list[dict]) -> dict:
     return out
 
 
+def compute_tp_hit_rate(orders: list[dict]) -> dict:
+    """
+    Per-strategy take-profit hit rate.
+
+    For each TP-exit order (client_order_id prefix `exit-tp-`), attribute
+    it to the entry strategy of the *most recent non-exit order on the
+    same symbol* within the window. Then per strategy:
+
+      tp_placed   — TP exits attempted
+      tp_filled   — TP exits that actually filled (price reached target)
+      tp_unfilled — TP exits canceled/expired/still-open
+      tp_hit_rate — filled / placed
+
+    Answers the LLM's diagnostic question: "when we placed a TP, how
+    often did the market actually deliver?" A persistent low hit-rate
+    means the static TP target is too aggressive vs realised price moves
+    and the strategy should switch to trailing-stop or tighter target.
+
+    NB: this metric only sees TP exits emitted with the `exit-tp-` prefix
+    (today: options-exit-monitor). Stock/crypto exits routed through the
+    Exit Handler routine are not yet tagged this way; they'll start
+    contributing once that routine is updated. Until then, expect this
+    dict to be sparse for the first ~week of data.
+    """
+    # symbol -> entry strategy of latest non-exit fill in window
+    entry_strategy_by_symbol: dict[str, str] = {}
+    for o in sorted(orders, key=lambda x: x.get("filled_at") or x.get("submitted_at") or ""):
+        cid = (o.get("client_order_id") or "").lower()
+        if cid.startswith("exit-"):
+            continue
+        sym = o.get("symbol", "")
+        if not sym:
+            continue
+        entry_strategy_by_symbol[sym] = _strategy_from_client_id(
+            o.get("client_order_id", ""), sym,
+        )
+
+    by_strat: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"placed": 0, "filled": 0, "unfilled": 0}
+    )
+    for o in orders:
+        cid = (o.get("client_order_id") or "").lower()
+        if not cid.startswith("exit-tp-"):
+            continue
+        sym = o.get("symbol", "")
+        strat = entry_strategy_by_symbol.get(sym, "unknown")
+        by_strat[strat]["placed"] += 1
+        if o.get("status") == "filled":
+            by_strat[strat]["filled"] += 1
+        else:
+            by_strat[strat]["unfilled"] += 1
+
+    out = {}
+    for strat, counts in by_strat.items():
+        placed = counts["placed"]
+        out[strat] = {
+            "tp_placed":   placed,
+            "tp_filled":   counts["filled"],
+            "tp_unfilled": counts["unfilled"],
+            "tp_hit_rate": round(counts["filled"] / placed, 3) if placed else 0.0,
+        }
+    return out
+
+
 # ─── State I/O ───────────────────────────────────────────────────────────────
 
 def load_state() -> dict:
@@ -412,6 +476,23 @@ def write_history_report(date_iso: str, today_stats: dict,
                      f"${s.get('pnl_usd_7d', 0):,.2f} |")
     lines.append("")
 
+    # Take-profit hit rate (10-day data collect for trailing-stop decision)
+    tp_hr = today_stats.get("tp_hit_rate", {})
+    if tp_hr:
+        lines.append("## TP hit rate (per strategy, 24h window)")
+        lines.append("")
+        lines.append("> Tracking how often static take-profit targets actually filled.")
+        lines.append("> If hit_rate stays low (< 30%) after 10 days, switch to trailing stop.")
+        lines.append("")
+        lines.append("| Strategy | TP placed | Filled | Unfilled | Hit rate |")
+        lines.append("|---|---|---|---|---|")
+        for strat, s in tp_hr.items():
+            lines.append(
+                f"| {strat} | {s['tp_placed']} | {s['tp_filled']} | "
+                f"{s['tp_unfilled']} | {s['tp_hit_rate']*100:.0f}% |"
+            )
+        lines.append("")
+
     with open(path, "w") as f:
         f.write("\n".join(lines))
 
@@ -454,6 +535,7 @@ def run():
         "by_asset_class":    compute_asset_stats(trades),
         "by_source":         {},   # placeholder for future per-source attribution
         "fill_rate":         compute_fill_rate(orders),
+        "tp_hit_rate":       compute_tp_hit_rate(orders),  # 10-day data-collect for trailing-stop decision
         "cumulative_trades": len(trades),
         "cumulative_pnl_usd": round(sum(t["pnl_usd"] for t in trades), 2),
     }

@@ -270,6 +270,49 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
 
 ### Backlog (no committed timeline)
 
+- **🔔 Trailing Stop Decision — REVIEW AROUND 2026-05-17** (LLM proposal #2 from 2026-05-07 daily annotation)
+  - **Why it's here:** in the first LLM-augmented daily run, the strategist
+    flagged that an `exit-tp-qqq699` order sat unfilled all session — TP
+    target too far from where price actually moved. LLM proposed: switch
+    static TP to a trailing stop for positions held >12h.
+  - **What we DID this session (2026-05-07):** added `compute_tp_hit_rate()`
+    in `learning-loop/analyzer.py` — daily metric of `tp_filled / tp_placed`
+    per strategy, surfaced in `learning-loop/history/<date>.md` under
+    "TP hit rate". Data starts accumulating from the next daily-learning run.
+  - **What we DID NOT do (deferred):** actual trailing-stop implementation.
+    Reason: LLM itself said *"testable: porównaj hold_time vs TP-hit-rate
+    po 10 dniach danych"* — first collect data, then design with evidence.
+  - **When to revisit:** ~10 trading days after 2026-05-07, i.e. **around
+    2026-05-17 / 2026-05-21**. Checklist:
+    1. Open `learning-loop/history/` and look at last 10 reports' "TP hit
+       rate" tables. Aggregate per strategy: total `tp_placed`, total
+       `tp_filled`, weighted hit rate.
+    2. **If hit rate ≥ 50% across all strategies** → static TP is fine,
+       close this item.
+    3. **If hit rate < 30% for a specific strategy** → that strategy needs
+       trailing stop. Implementation plan:
+       - Track `peak_price_since_entry` per open position (state in
+         `learning-loop/state.json` under `open_positions[]`)
+       - In exit-monitor / options-exit-monitor: if hold_hours > 12 AND
+         current_price < peak * (1 - trail_pct), cancel existing TP, place
+         MARKET sell-to-close
+       - `trail_pct` per asset class: TBD from data (likely 3% stocks,
+         5% crypto, 8% options)
+       - Update `client_order_id` to `exit-trail-<symbol>-<ts>` so future
+         analyzer runs can attribute trailing exits separately
+       - Estimated effort: 2-3h
+    4. **If hit rate is mid-range (30-50%)** → discuss with user; might be
+       per-strategy decision or wait for more data.
+  - **Related files:** `learning-loop/analyzer.py::compute_tp_hit_rate`,
+    `learning-loop/heuristic_proposals.md` (look for "trailing stop" entry
+    from 2026-05-07), `options-exit-monitor/monitor.py` (where trailing
+    would live for options), `exit-monitor/monitor.py` (for stocks/crypto
+    — exit-monitor currently sends to routine, may need to bypass like
+    v2.2 routine-bypass for entries).
+  - **Reminder:** if user opens this CLAUDE.md after 2026-05-17, prompt
+    them: *"Trailing stop decision data is ready — want to review the
+    10-day TP hit rates?"*
+
 - ~~**Live Portfolio Dashboard**~~ ✅ **DONE 2026-05-07** (master plan #1 — last item closed)
   - Path 2 chosen: single self-contained Cloudflare Worker (`dashboard/worker.js`)
     serving both the HTML page (`GET /`) and the read-only Alpaca snapshot API
@@ -646,6 +689,7 @@ After triggering each workflow above, check claude.ai → Routines → click int
 | 2026-05-07 LATE | **STRATEGY v2.3 — daily learning loop with permanent memory.** New `learning-loop/`: `analyzer.py` (reads 24h Alpaca orders, reconstructs trades, computes per-strategy stats), `adapter.py` (heuristic adaptations: cool-down losing strategies, warm-up winners, pause after 5 consec losses, side-bias for options based on long-vs-short P&L split), `state.json` (committed via daily git push — git is audit log), `rationale.md` (append-only narrative — never deleted, "wieczność" per user request), `history/YYYY-MM-DD.md` per-day reports. Daily cron at 21:00 UTC. New `shared/learning_state.py` lets monitors read adapted params at startup. options-monitor wired (size_multiplier + side_bias). Other monitors wire in Phase 2 (5 lines each). Tests verified all heuristic paths: warm-up at 83% win-rate, cool-down at 33%, pause at 5+ consec losses, hold for insufficient sample, empty-state first-run. New `strategies/learning-loop.md` doc. STRATEGY.md §5.6 added. v2.2 -> v2.3. User-side deploy: replace `weekly-learning.yml` -> `daily-learning.yml` (template ready) which includes `permissions: contents: write` + `git push` step. |
 | 2026-05-07 EOD | **STRATEGY v2.2 — routine bypass.** Hit Anthropic 15-call/day limit; refactored to direct Alpaca REST execution everywhere. New: `shared/alpaca_orders.py` (commit `76716e8`) — `place_stock_bracket` / `place_crypto_order` / `execute_stock_signal` / `execute_crypto_signal`. Converted: price-monitor, crypto-monitor, defense-monitor, twitter-monitor (with Pattern A-D classifier `classify_and_execute` in Python; Pattern E ambiguous → email-only). All have `USE_ROUTINE=true` opt-in fallback. Routine budget now: ~1-3 calls/day (weekly-learning + rare exits + rare geo). Tests verified: Pattern A bull/bear-tone direction, Pattern B sanctions→RTX+XLE, Pattern C ceasefire→SPY+SHORT XLE, Pattern D dovish CPI→BUY SPY, Pattern E ambiguous→email-only. All Python files compile. Documentation: docs/STRATEGY.md §5.5 Execution Architecture added; v2.2 in change log. |
 | 2026-05-07 PRE-MARKET | **End of pre-market session — full system ready.** All 5 master-plan items LIVE (Dashboard `6ffad12` + JS fix `866d16b`, Email `2cf5498`/`89a0ce3`, Options `81c2109+...`, VIX `1f0b581`, Dup `ddb9f92`). All HIGH-priority backlog items LIVE: Safety net combo `7be41f6`, Event Probability MVP `0964354` + real bar-data `d327687`, Twitter Bluesky MVP `d869318` + 4-tier policy override `a923df6` + workflow `396dad3`. Plus Twitter strategy docs `d991e73`. User-side: Bluesky account + app password + 3 GH secrets + Cloudflare Worker `twitter-proxy` + Routine `Twitter Handler` + Cloudflare Worker `dashboard-proxy` — all deployed and verified live. Final smoke test 12:23 UTC: 68 kont załadowanych, 0 kandydatów (cisza), pipeline OK. Dashboard działa po fixie JS. Net commits today: 10 mine + 1 user (workflow YAML). System siedzi cicho i czeka na market open 13:30 UTC. |
+| 2026-05-07 LATE-NIGHT | **First LLM-augmented run + 3 LLM-proposed bug fixes landed on main.** Triggered manual `daily-learning.yml` from `claude/review-plan-status-Gwtxp` (commit `4d4b056`); routine took 139 s to think + push `pending-llm-daily.json` (architecture: poll-based, free, no Anthropic API key). End-to-end pipeline confirmed: LLM trigger → routine self-commits JSON → analyzer pulls + consumes + applies overrides + writes state. Senior PM persona delivered Polish narrative + 3 testable heuristic proposals to `heuristic_proposals.md`. **Most valuable finding:** LLM diagnosed real bug deterministic adapter would never see — `analyzer.py::_is_close()` always returned False, so `Reconstructed trades: 0` despite 18 orders in window (close orders were misidentified as opens). Fixed `_is_close` to detect `exit-*` prefix; `reconstruct_trades` now FIFO-pairs by client_order_id semantics not naive Alpaca side. Plus `options-exit-monitor` switched SL→MARKET (TP stays LIMIT), tagged with `exit-tp-*` / `exit-sl-*` prefixes for analyzer attribution. Plus `compute_tp_hit_rate()` metric (per strategy: tp_placed / tp_filled / hit_rate%) added to daily history report — 10-day data-collection for trailing-stop decision (LLM proposal #2 deferred until 2026-05-17 review per LLM's own "testable po 10 dniach" advice). Backlog entry added with revisit checklist. **Commits:** `9c8cea6` (LLM augmentation), `21bf59b` (workflow templates), `4d4b056` (poll-based routine response), `5cee369` (merge to main with -X theirs), `c4bc437` (close-detection + emergency MARKET fix), plus this commit (tp_hit_rate + backlog). |
 | 2026-05-07 NIGHT | **STRATEGY v2.3.1 — LLM augmentation on learning loop (daily + weekly).** User direction: "learning loop jest najwazniesze... Prompt dla LLMa w tym procesie musi byc jak master piece. Musi odgrywac role top inwestora i prosesjonalnego tradera ktory ma takie same goale jak strategia czyli szybki zysk, krotki czas." Reversed v2.3's "deterministic only" choice — LLM is now engaged in BOTH cycles. **Senior PM persona** (20+ years, $100k paper, 4× margin, mission == STRATEGY.md) lives in `learning-loop/routine-prompts.md` with type-dispatch on `daily_learning_annotation` vs `weekly_retrospective`. Daily framework: 6-pass (EDGE → SIZING → TIME-REGIME → SIGNAL QUALITY → MACRO → FILL-RATE). Weekly: 6-pass (P&L story → scorecard → allocation → sources → mistakes → experiments). New: `learning-loop/llm_client.py` (routine call + JSON parse + fail-soft + whitelist-enforced `safe_apply_overrides` clamping size_multiplier 0.30-2.00, enforcing enabled-bool, side_bias enum, dropping hallucinated keys silently); `learning-loop/weekly_retro.py` (Sunday 22:00 UTC, writes `weekly-retros/<week_end>.md` + applies state overrides + appends experiments to `heuristic_proposals.md`); `learning-loop/heuristic_proposals.md` (LLM-suggested rules tickbox queue). Modified: `analyzer.py` (LLM step after deterministic adapter, before state.json write); `daily-learning.yml` (env: `CLOUDFLARE_LEARNING_WORKER_URL` + `USE_LLM_LEARNING=true`). New `weekly-retro.yml` workflow. STRATEGY.md §5.6 rewritten (two-layer architecture diagram + persona + whitelist details + budget). strategies/learning-loop.md → v1.1. **Test pass:** TEST A (LLM 429 → fail-soft → deterministic +10% warm-up still applied), TEST B (non-JSON → narrative fallback), TEST C (USE_LLM_LEARNING=false → opt-out works), TEST D (hallucinations: `delete_everything`, `wormhole`, `"yes please"` for bool, 99.0 size_multiplier clamp to 2.0, `fake-strategy-xyz` → all rejected/clamped). **Routine budget:** ~1.14 calls/day vs 15/day limit (v2.2 bypass on other monitors freed budget for this). User-side deploy: paste new master-piece system prompt into existing learning-loop routine on claude.ai (rename to "Learning Loop Strategist"); deploy `weekly-retro.yml` via GitHub UI. Branch: `claude/review-plan-status-Gwtxp`. |
 
 ---
@@ -698,6 +742,6 @@ Pierwsze 30 min po 13:30 UTC — co obserwować:
 
 ---
 
-*Last updated: 2026-05-07 NIGHT — LLM augmentation layer on learning loop landed. Source of truth: `docs/STRATEGY.md` (v2.3.1)*
+*Last updated: 2026-05-07 LATE-NIGHT — first LLM-augmented production run; 3 LLM-proposed bug fixes (close-detection, emergency MARKET, tp_hit_rate metric) landed on main. Trailing-stop decision deferred to ~2026-05-17 with 10-day data collection. Source of truth: `docs/STRATEGY.md` (v2.3.1).*
 *Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*
 *Next session trigger: review market-open behavior; if all green → tag `2026-05-07-stable` and pick next backlog item.*
