@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": null,
-  "days_tracked": 0,
+  "last_updated": "2026-05-07T20:59:44.646837+00:00",
+  "days_tracked": 1,
   "cumulative": {
     "total_trades": 0,
-    "total_pnl_usd": 0.0,
-    "starting_equity": null
+    "total_pnl_usd": 0,
+    "starting_equity": 100031.25
   },
   "strategies": {},
   "asset_classes": {},
