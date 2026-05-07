@@ -295,7 +295,19 @@ Event-probability gating:
 - `CONTRARIAN_CANDIDATE` → email-only flag (manual review; no auto-trade)
 - `IGNORE_EVENT` / `WAIT_FOR_CONFIRMATION` → dropped silently
 
-Curated whitelist: `.claude/rules/twitter-accounts.md` (19 accounts in v1.0).
+Curated whitelist: `.claude/rules/twitter-accounts.md` (v2.0 — ~50+ accounts in 4 tiers).
+
+**4-tier policy override (v2.0, 2026-05-07):**
+
+| Tier | Examples | Source-type | Cred | Keyword bypass | FOLLOW-only bypass |
+|---|---|---|---|---|---|
+| **T1** Trump admin | @POTUS, @VP, Cabinet, @PressSec, @federalreserve | `official_government` | 80 | ✅ | ✅ |
+| **T1.5** Conflict leaders | Israel/Iran/Russia/Ukraine/NATO/China official | `official_government` | 80 | ✅ | ✅ |
+| **T2** Tech CEOs | @elonmusk, @tim_cook, @sundarpichai, @JensenHuang, @saylor, ... | `tracked_corp_ceo` | 75 | ✅ | ✅ |
+| **T2.5** Defense corps | @LockheedMartin, @RaytheonTech, @PalantirTech, ... | `tracked_corp_ceo` | 75 | ✅ | ✅ |
+| **T3** Tracked anon | @aleabitoreddit + similar (manual curation, see strategy doc for criteria) | `tracked_anon_trader` | 55 | ✅ | ✅ |
+
+For T1/T1.5/T2/T2.5/T3, **every post becomes a candidate (no keyword filter)** and **every stance is forwarded to routine + email** (not just FOLLOW). The routine receives `priority_override=true` in the payload and may choose to: (a) match pattern A-E and trade, or (b) log "no actionable pattern" with an email so the user sees the tweet anyway. This implements the policy "treat these tweets seriously even when they don't match the strategy."
 
 ---
 

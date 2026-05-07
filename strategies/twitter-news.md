@@ -1,10 +1,10 @@
-# Strategia: Twitter / Social-Graph News (Bluesky MVP) — v1.0
+# Strategia: Twitter / Social-Graph News (Bluesky MVP) — v2.0
 
-**Wersja:** 1.0 (2026-05-07)
+**Wersja:** 2.0 (2026-05-07 — 4-tier rozszerzenie z policy override)
 **Źródło prawdy:** `docs/STRATEGY.md` §4.8
 **Monitor:** `twitter-monitor` (data source: Bluesky AT-Protocol; X API jako future upgrade)
 **Routine:** `Twitter Handler` (claude.ai)
-**Status:** LIVE — pierwszy smoke test 2026-05-07 (login OK, 19 kont załadowanych, czeka na keyword-matched post)
+**Status:** LIVE — pierwszy smoke test 2026-05-07 (login OK, 19 kont załadowanych); 2.0 rozszerzenie do 4 tiers ~50+ kont
 
 ---
 
@@ -213,16 +213,61 @@ przejrzystości:
 
 ---
 
-## Curated accounts
+## Curated accounts (4-tier system, v2.0)
 
-Pełna lista: `.claude/rules/twitter-accounts.md` (v1.0 ma 19 kont).
+Pełna lista: `.claude/rules/twitter-accounts.md` (v2.0 ma ~50+ kont w 4 tier'ach).
 
-Kategorie:
-- 5 × `gov_us` (POTUS, WhiteHouse, StateDept, SecDef, IDF)
-- 7 × `macro` (zerohedge, business, CNBC, WSJ, FT, Reuters, AP)
-- 4 × `ticker:*` (Musk/Cook/Pichai/Nadella)
-- 4 × `gov_us` government feeds (CongressionalRpt, Treasury, SEC, Fed)
-- (placeholder) influencerzy finansowi — empty for v1.0 by design
+| Tier | Co | Source-type → cred | Bypass keyword | Bypass FOLLOW-only |
+|---|---|---|---|---|
+| **T1** Trump administration | POTUS, VP, Cabinet, WH, Press, Fed, Treasury, Congressional | `official_government` (80) | ✅ | ✅ |
+| **T1.5** Conflict leaders | Israel (PM, IDF, MFA), Iran (Khamenei, IRGC), Russia (Kremlin, MFA), Ukraine (Zelensky, Defence), NATO, China (selectively) | `official_government` (80) | ✅ | ✅ |
+| **T2** Tech CEOs | Musk/Cook/Pichai/Nadella/Jassy/Zuck/Huang/Armstrong/Saylor/Haas/Liang | `tracked_corp_ceo` (75) | ✅ | ✅ |
+| **T2.5** Defense corporations | LMT/RTX/NOC/GD/BA/Kratos/PLTR/AXON/LDOS/SAIC/CACI/BAE/Airbus | `tracked_corp_ceo` (75) | ✅ | ✅ |
+| **T3** Tracked anon traders | @aleabitoreddit, @unusual_whales + similar (kryteria poniżej) | `tracked_anon_trader` (55) | ✅ | ✅ |
+| `gov_us`, `mil_il` (standard) | non-tier-1 government feeds | `tweet_verified_pol` (45) | ❌ | ❌ |
+| `macro`, `wire` (standard) | mainstream financial outlets | `major_outlet` / `reuters_ap` | ❌ | ❌ |
+
+### Policy override — kluczowe rozszerzenie v2.0
+
+Posty z tier'ów high-priority (T1 / T1.5 / T2 / T2.5 / T3) są traktowane
+**z dwoma bypass'ami:**
+
+1. **Bypass keyword filter** — każdy post jest kandydatem (nawet "good morning")
+2. **Bypass FOLLOW-only forward** — IGNORE_EVENT i WAIT_FOR_CONFIRMATION
+   też idą do routine + email. Tylko brak credibility / brak reaction
+   nie wyrzuca posta z pipeline'u dla tych kont.
+
+W payloadzie do routiny dodawane jest pole `priority_override: true` żeby
+routine wiedziała, że to post obowiązkowo do obejrzenia (nawet jeśli
+scoring stance to IGNORE/WAIT). Routine może wtedy:
+- Dopasować pattern A-E i wystawić trade jak normalnie
+- Albo zalogować "no actionable pattern, post archived for manual review" i wysłać email
+
+**Cel polityki:** użytkownik chce widzieć każdy tweet Trumpa, każdy
+oficjalny komunikat z Iranu/Izraela, każdy post Muska — nawet jeśli
+treść nie spełnia wzorców A-E. Email jest archiwum dla manualnego review;
+trade jest opcjonalny i dzieje się tylko gdy pattern faktycznie pasuje.
+
+### Subject linii email
+
+| Stance | Strategy field | Subject line example |
+|---|---|---|
+| FOLLOW_REACTION (any tier) | `twitter-news` | `[BUY] [twitter-news] BUY ticker:TSLA - $0` |
+| CONTRARIAN_CANDIDATE (any) | `twitter-news` (z `priority_override` flagą jeśli high-priority) | jak wyżej z `priority_override` w body |
+| IGNORE/WAIT + high-priority | `twitter-news-priority-override` | `[BUY] [twitter-news-priority-override] BUY high_priority_pol - $0` |
+| IGNORE/WAIT + standard | (drop, nic nie idzie) | (brak emaila) |
+
+Filtr pod "twitter-news-priority-override" w mailu Cię informuje że to
+*post-do-obejrzenia*, nie *trade-proposal*.
+
+### Kryteria dodawania konta T3 (anon traders)
+
+Lista celowo krótka, dodawana manualnie:
+- Min. 6 miesięcy publicznej historii
+- Min. 5 konkretnych calls (entry + exit + ticker), nie kilkudniowe spekulacje
+- Win rate > 50% na publicznych calls
+- Brak shilling kursów / pakietów / sygnałów płatnych
+- Brak rage-baiting / wojen z innymi traderami
 
 Wiele kont nie ma jeszcze Bluesky presence → monitor zaloguje "feed empty"
 i pojedzie dalej bez błędu. X API upgrade ($100/mo) odblokuje pełną listę.

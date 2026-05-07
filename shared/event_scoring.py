@@ -58,16 +58,18 @@ FOLLOW_FLOOR = 55
 # ─── Source defaults (override per call when needed) ──────────────────────────
 
 SOURCE_CREDIBILITY = {
-    "filing":              90,
-    "contract_award":      85,
-    "official_government": 80,
-    "reuters_ap":          70,
-    "major_outlet":        60,
-    "niche_outlet":        50,
-    "tweet_verified_corp": 50,
-    "tweet_verified_pol":  45,
-    "tweet_anon":          25,
-    "rumor":               15,
+    "filing":               90,
+    "contract_award":       85,
+    "official_government":  80,
+    "tracked_corp_ceo":     75,   # T2: tech/defense CEO we explicitly track
+    "reuters_ap":           70,
+    "major_outlet":         60,
+    "tracked_anon_trader":  55,   # T3: anon traders w/ track record (e.g. @aleabitoreddit)
+    "niche_outlet":         50,
+    "tweet_verified_corp":  50,
+    "tweet_verified_pol":   45,
+    "tweet_anon":           25,
+    "rumor":                15,
 }
 
 EVENT_TYPE_PROB_SHIFT = {

@@ -122,12 +122,26 @@ KEYWORD_FILTERS = {
     "wire": ["breaking", "exclusive", "just in", "confirmed"],
 }
 
+# Categories that BYPASS the keyword filter (every post is a candidate) AND
+# bypass the FOLLOW-only forward policy (IGNORE/WAIT/CONTRARIAN are still
+# forwarded to routine + emailed for visibility). These are accounts the
+# user explicitly cares about regardless of strategy fit.
+HIGH_PRIORITY_CATEGORIES = {
+    "high_priority_pol",      # Trump admin + conflict leaders
+    "high_priority_corp",     # Defense corporate accounts (LMT, RTX, ...)
+    "tracked_anon_trader",    # @aleabitoreddit, similar
+}
+
+
+def is_high_priority(category: str) -> bool:
+    return category in HIGH_PRIORITY_CATEGORIES or category.startswith("ticker:")
+
 
 def passes_keyword_filter(text: str, category: str) -> tuple[bool, list[str]]:
     """Return (matched, list_of_matched_keywords)."""
-    if category.startswith("ticker:"):
-        # CEO accounts: every post is a candidate (low-volume by design)
-        return True, ["<ticker-ceo>"]
+    if is_high_priority(category):
+        # High-priority accounts: every post is a candidate.
+        return True, ["<high-priority-bypass>"]
     keywords = KEYWORD_FILTERS.get(category, [])
     if not keywords:
         return False, []
@@ -190,8 +204,16 @@ class BlueskyClient:
 # ─── Pipeline ────────────────────────────────────────────────────────────────
 
 def category_to_source_type(cat: str) -> str:
-    if cat.startswith("ticker:"):
-        return "tweet_verified_corp"
+    # T2 / T2.5 — tracked corporate CEOs (tech + defense)
+    if cat.startswith("ticker:") or cat == "high_priority_corp":
+        return "tracked_corp_ceo"
+    # T1 / T1.5 — Trump admin + conflict leaders
+    if cat == "high_priority_pol":
+        return "official_government"
+    # T3 — tracked anon traders w/ track record
+    if cat == "tracked_anon_trader":
+        return "tracked_anon_trader"
+    # Standard tiers (no override)
     if cat in ("gov_us", "mil_il"):
         return "tweet_verified_pol"
     if cat == "macro":
@@ -217,10 +239,38 @@ def category_to_event_type(cat: str, matched: list[str]) -> str:
     return "policy_announced"
 
 
-def magnitude_from_matches(matched: list[str]) -> str:
-    if len(matched) >= 3:
+def real_keywords_from_text(text: str) -> list[str]:
+    """
+    Scan post text against ALL keyword sets (gov_us + mil_il + macro + wire).
+    Used for event_type / magnitude inference on high-priority posts where
+    the keyword filter was bypassed and matched_kw is just the synthetic
+    "<high-priority-bypass>" marker.
+    """
+    t = (text or "").lower()
+    found: list[str] = []
+    for kw_list in KEYWORD_FILTERS.values():
+        for kw in kw_list:
+            if kw in t and kw not in found:
+                found.append(kw)
+    return found
+
+
+def magnitude_from_matches(matched: list[str], is_priority: bool = False) -> str:
+    """
+    Map matched-keyword count to magnitude bucket.
+
+    For high-priority posts (Trump admin / conflict leaders / tracked CEOs /
+    tracked anon traders), 2+ real keyword hits already justify "large" —
+    the source has elevated credibility on top, so shift bump is warranted
+    to reach FOLLOW threshold sooner.
+    """
+    real = [m for m in matched if not m.startswith("<")]
+    n = len(real)
+    if is_priority and n >= 2:
         return "large"
-    if len(matched) >= 1:
+    if n >= 3:
+        return "large"
+    if n >= 1:
         return "normal"
     return "small"
 
@@ -340,37 +390,63 @@ def run_scan():
             pma, vr, gap = 0.5, 1.0, 0.0
         c["reaction_metrics"] = metrics
 
+        # For high-priority bypass categories, matched_kw is just the
+        # synthetic "<high-priority-bypass>" marker — we still want event
+        # classification + magnitude based on REAL keywords in the post text.
+        priority = is_high_priority(c["category"])
+        if priority:
+            real_kw = real_keywords_from_text(c["text"])
+            effective_kw = real_kw if real_kw else c["matched_kw"]
+        else:
+            effective_kw = c["matched_kw"]
+
         scoring = score_and_decide(
             source_type    = category_to_source_type(c["category"]),
-            event_type     = category_to_event_type(c["category"], c["matched_kw"]),
+            event_type     = category_to_event_type(c["category"], effective_kw),
             price_move_atr = pma,
             volume_ratio   = vr,
             gap_pct        = gap,
-            magnitude      = magnitude_from_matches(c["matched_kw"]),
+            magnitude      = magnitude_from_matches(effective_kw, is_priority=priority),
         )
         c["scoring"] = scoring
-        stance = scoring["stance"]
-        if stance == "FOLLOW_REACTION":
+        stance     = scoring["stance"]
+        # `priority` already computed above for keyword-bypass / event_type inference
+
+        # Forwarding policy:
+        #   FOLLOW_REACTION       -> always forward (normal path)
+        #   CONTRARIAN_CANDIDATE  -> always forward (manual review needed)
+        #   IGNORE / WAIT         -> forward ONLY for high-priority accounts
+        #                            (Trump admin, conflict leaders, tracked CEOs/traders)
+        # The "should_count" metric tracks how many "actionable" trade
+        # proposals went out (FOLLOW only). Forwarded high-priority IGNORE/WAIT
+        # are visibility-only — routine logs them but typically can't trade.
+        forward_for_review = priority and stance in ("IGNORE_EVENT", "WAIT_FOR_CONFIRMATION")
+        should_forward     = stance in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE") or forward_for_review
+
+        if should_forward:
             payload = {
                 "type":      "twitter_alert",
                 "timestamp": now.isoformat(),
                 "post":      c,
                 "scoring":   scoring,
+                "priority_override": forward_for_review,   # routine sees this flag
             }
             ok = send_to_routine(payload)
             sig_for_email = {
                 "symbol":   c.get("category", "twitter"),
                 "action":   "BUY",  # routine resolves direction
-                "strategy": "twitter-news",
+                "strategy": "twitter-news" + ("-priority-override" if forward_for_review else ""),
                 "size_usd": 0,
                 "headline": c["text"][:120],
                 "source":   c["handle"],
             }
             notify_signal(sig_for_email, ok)
-            if ok:
+            if ok and stance == "FOLLOW_REACTION":
                 sent += 1
-        elif stance == "CONTRARIAN_CANDIDATE":
-            print(f"    [event-layer] CONTRARIAN flag {c['handle']}: {c['text'][:80]}")
+            if forward_for_review:
+                print(f"    [event-layer] {stance} (priority-override forwarded) {c['handle']}: {c['text'][:60]}")
+            elif stance == "CONTRARIAN_CANDIDATE":
+                print(f"    [event-layer] CONTRARIAN flag {c['handle']}: {c['text'][:80]}")
         else:
             print(f"    [event-layer] {stance} {c['handle']}: {c['text'][:60]}")
 
