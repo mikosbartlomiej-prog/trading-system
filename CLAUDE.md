@@ -215,6 +215,30 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     - Returns identical dict shape so downstream RSI/ATR/volume code stays the same
     - Migrated: options-monitor + price-monitor
 
+11. ✅ **Account-level safety nets enforced in code** (2026-05-07)
+    - `shared/risk_guards.py::get_account_status()` — single Alpaca call returning equity / last_equity / daily_pl_pct / buying_power
+    - `daily_drawdown_guard(account=None)` — HALT new entries if daily P&L ≤ -12% (matches STRATEGY v2.0 §3.1)
+    - `position_pct(symbol, equity=None)` — % of equity in a given symbol; URL-encoded for crypto
+    - `concentration_ok(symbol, new_size_usd, equity=None)` — `(True/False, combined_pct)` where False means combined > 40% per-ticker cap
+    - Wired into price-monitor, crypto-monitor, defense-monitor, geo-monitor — drawdown HALT before VIX, concentration check before each alert
+    - All guards fail OPEN — Alpaca outage cannot silently block all entries
+
+12. ✅ **Event Probability & Contrarian Reaction Layer (MVP)** (2026-05-07)
+    - New: `shared/event_scoring.py` — heuristic scoring layer
+    - 4 score functions: `event_credibility(source_type, ...)`, `probability_shift(event_type, magnitude)`, `market_reaction(price_move_atr, volume_ratio, gap_pct)`, `decide_stance(...)`
+    - Stance: `FOLLOW_REACTION` | `IGNORE_EVENT` | `CONTRARIAN_CANDIDATE` | `WAIT_FOR_CONFIRMATION`
+    - Wired into defense-monitor (`apply_event_scoring`) and geo-monitor (`attach_event_scoring`); IGNORE/WAIT dropped, CONTRARIAN flagged but not auto-traded
+    - MVP placeholder: `price_move_atr=0.5, volume_ratio=1.0` (real per-ticker bar data deferred — needs `shared/market_data.py` hook in defense/geo signal paths)
+
+13. ✅ **twitter-monitor MVP (Bluesky AT-Protocol)** (2026-05-07)
+    - New: `twitter-monitor/monitor.py` — pure-stdlib + requests Bluesky client (no atproto SDK dep)
+    - Curated whitelist: `.claude/rules/twitter-accounts.md` (19 accounts across gov_us / mil_il / macro / wire / ticker:* categories with per-category keyword filter)
+    - Pipeline: drawdown_guard → vix_guard → load_accounts → getAuthorFeed → keyword filter → event_scoring → routine forward + email
+    - `BlueskyClient` wraps `com.atproto.server.createSession` (login) + `app.bsky.feed.getAuthorFeed`
+    - X API v2 Basic ($100/mo) is the future upgrade path — same monitor will swap data source via a `SocialClient` abstraction
+    - Iron rule: monitor never places trades; only emits proposals
+    - User-side deploy still needed: BLUESKY_HANDLE / BLUESKY_APP_PASSWORD secrets, CLOUDFLARE_TWITTER_WORKER_URL, Cloudflare Worker, routine, GitHub Actions workflow YAML
+
 ### Master 5-Point Plan — closed out 2026-05-06
 
 | # | Description | Status |
@@ -266,18 +290,24 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     5. If any step fails, decide: fix the analyzer, deprecate the workflow, or
        redesign the retrospective format
 
-- **Drawdown circuit-breaker enforcement** (added 2026-05-06 EOD)
-  - STRATEGY v2.0 defines -12% intraday / -25% weekly / -40% monthly stops
-  - Currently only documented + checked by risk-officer (which is not wired in)
-  - Need: `shared/risk_guards.py::daily_drawdown_guard()` reading
-    `(equity - last_equity) / last_equity` from `/v2/account` and returning
-    HALT / OK; wire into every entry monitor before VIX guard
+- ~~**Drawdown circuit-breaker enforcement**~~ ✅ **DONE 2026-05-07**
+  - `shared/risk_guards.py::daily_drawdown_guard(account=None)` returns
+    `("HALT", reason)` when daily_pl_pct ≤ -12%, else `("OK", reason)`.
+    Reads `/v2/account` via new `get_account_status()`. Fail-open on
+    Alpaca outage. Wired into all 4 entry monitors BEFORE the VIX guard.
+  - Weekly -25% / Monthly -40% stops still TODO (need rolling P&L
+    tracking outside what `/v2/account` exposes directly).
 
-- **Per-ticker concentration cap enforcement** (added 2026-05-06 EOD)
-  - STRATEGY v2.0 says max 40% equity per ticker; currently only the
-    duplicate-position guard runs (binary held/not held)
-  - Need: extend `has_open_position` → `position_pct(symbol)`; if combined
-    `position_pct + new_size_pct > 40` → block entry
+- ~~**Per-ticker concentration cap enforcement**~~ ✅ **DONE 2026-05-07**
+  - `shared/risk_guards.py::position_pct(symbol, equity=None)` returns
+    `market_value / equity * 100` for an existing position (URL-encoded
+    so `BTC/USD` works).
+  - `shared/risk_guards.py::concentration_ok(symbol, new_size_usd, equity=None)`
+    returns `(True, combined_pct)` iff `position_pct + new_pct <= 40%`.
+  - Wired into price-monitor (LONG/SHORT/LEVERAGED), crypto-monitor,
+    defense-monitor — every signal checks combined concentration before
+    sending the alert; over-cap signals are skipped with log line
+    `pominiety (concentration X.X% > 40%)`.
 
 - **VIX-source pivot** (added 2026-05-06 EOD)
   - Same concept as before: Finnhub free `^VIX` returns empty so vix_guard fails
@@ -285,7 +315,7 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     real VIX feed is still useful for logging/analytics. Candidates: VIXY ETF
     via Alpaca bars (rough proxy), Yahoo Finance public quote, FRED VIXCLS
 
-- **X / Twitter integration** — `twitter-monitor` (added 2026-05-06, **HIGH priority**)
+- **X / Twitter integration** — `twitter-monitor` ✅ **MVP DONE 2026-05-07** (Bluesky path)
   - Type: new entry-signal monitor (sibling of `reddit-monitor` and `geo-monitor`)
   - **Why:** Twitter/X is the lowest-latency news source for the kinds of events this system already
     trades — geopolitical decisions, defense contracts, CEO product/earnings hints, market sentiment.
@@ -352,7 +382,7 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     whitelist file, first live test); +1 session to add X API as a second SocialClient when
     user approves the $100/mo cost.
 
-- **Event Probability & Contrarian Reaction Layer** — `event_probability_reaction_layer` (added 2026-05-06, **HIGH priority**)
+- **Event Probability & Contrarian Reaction Layer** — `event_probability_reaction_layer` ✅ **MVP DONE 2026-05-07** (heuristic scoring; per-ticker bar-data integration deferred)
   - Type: Strategy Intelligence Layer (not another news monitor — interpretation layer between signal and decision)
   - **Problem:** current event-driven strategies (geo, defense, reddit) trust the headline too directly.
     The market often reacts to news as a pretext for liquidity grabs / stop-hunts / fake-outs, not because
@@ -584,6 +614,10 @@ After triggering each workflow above, check claude.ai → Routines → click int
 
 ---
 
-*Last updated: 2026-05-06 CLOSE — STRATEGY v2.0 risk-on live. Source of truth: `docs/STRATEGY.md`*
+| 2026-05-07 AM | **Safety net combo + Event-probability MVP + Bluesky monitor** — three features shipped end-to-end in one session. Order: (1) `shared/risk_guards.py` extended with `get_account_status` / `daily_drawdown_guard` / `position_pct` / `concentration_ok`; wired into price/crypto/defense/geo monitors so STRATEGY v2.0's "-12% daily stop / 40% per-ticker cap" promises are now actually enforced (commit 7be41f6). (2) `shared/event_scoring.py` — 4-score interpretation layer (credibility / probability-shift / market-reaction / stance) with `FOLLOW / IGNORE / CONTRARIAN / WAIT` outputs; wired into defense-monitor (filters IGNORE/WAIT/CONTRARIAN, keeps FOLLOW) and geo-monitor (keeps FOLLOW + CONTRARIAN, drops weak signals); MVP placeholder for market_reaction since neither monitor fetches per-ticker bars yet (commit 0964354). (3) `twitter-monitor/monitor.py` — Bluesky AT-Protocol client (no SDK dep, login + getAuthorFeed via stdlib HTTP); curated whitelist `.claude/rules/twitter-accounts.md` with 19 accounts across 8 categories, per-category keyword filter, full pipeline through event_scoring → Cloudflare Worker → email; X API path deferred until $100/mo cost approved (commit d869318). All 13 Python files compile; safety-net + scoring + Bluesky end-to-end mocked tests all green. Backlog updated: drawdown enforcement / concentration cap / event-probability layer / Twitter integration moved to Done. Net 4 commits today (7be41f6, 0964354, d869318, plus this CLAUDE.md update). User-side deploy still required for twitter-monitor (Bluesky account + secrets + Worker + routine + workflow YAML — same pattern as options-monitor in last session). |
+
+---
+
+*Last updated: 2026-05-07 AM — safety nets enforced, event-probability layer + Bluesky monitor MVP in main. Source of truth: `docs/STRATEGY.md`*
 *Repo: git@github.com:mikosbartlomiej-prog/trading-system.git*
-*Next session: 2026-05-07 — execute TESTING PLAN above before market open.*
+*Next session: deploy twitter-monitor user-side (Bluesky secrets + Worker + workflow), or hook real bar data into event_scoring for full CONTRARIAN detection.*
