@@ -18,6 +18,7 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
+    from event_scoring import score_and_decide
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -26,6 +27,72 @@ except ImportError:
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
+    def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
+
+
+# ─── Event-probability mapping (for scoring layer) ───────────────────────────
+
+DEFENSE_SOURCE_TYPE_MAP = {
+    "DoD Contracts":    "contract_award",
+    "USASpending":      "contract_award",
+    "Defense One":      "niche_outlet",
+    "Breaking Defense": "niche_outlet",
+    "Reuters":          "reuters_ap",
+    "AP":               "reuters_ap",
+    "AP News":          "reuters_ap",
+}
+
+
+def _map_event_source_type(source: str) -> str:
+    return DEFENSE_SOURCE_TYPE_MAP.get(source, "major_outlet")
+
+
+def _map_event_type(source: str, score: int) -> str:
+    if source in ("DoD Contracts", "USASpending"):
+        return "signed_contract"
+    if score >= 3:
+        return "policy_announced"
+    return "threat_or_warning"
+
+
+def _map_magnitude(score: int) -> str:
+    if score >= 4:
+        return "large"
+    if score >= 2:
+        return "normal"
+    return "small"
+
+
+def apply_event_scoring(signals: list[dict]) -> list[dict]:
+    """
+    For each candidate signal, attach event-probability scoring and filter:
+      FOLLOW_REACTION       -> keep, send through
+      IGNORE_EVENT / WAIT   -> drop with log (noise filter)
+      CONTRARIAN_CANDIDATE  -> drop with log + email warning (manual review)
+
+    Returns the filtered list. The dropped CONTRARIAN/IGNORE/WAIT are
+    summarised in the run log; full record lives in journal once wired.
+    """
+    kept = []
+    for s in signals:
+        scoring = score_and_decide(
+            source_type     = _map_event_source_type(s.get("source", "")),
+            event_type      = _map_event_type(s.get("source", ""), s.get("score", 0)),
+            price_move_atr  = 0.5,   # MVP placeholder — TODO fetch real bar data per symbol
+            volume_ratio    = 1.0,
+            magnitude       = _map_magnitude(s.get("score", 0)),
+        )
+        s["scoring"] = scoring
+        stance = scoring["stance"]
+        if stance == "FOLLOW_REACTION":
+            kept.append(s)
+        elif stance == "CONTRARIAN_CANDIDATE":
+            print(f"    [event-layer] {s['symbol']} {s['action']} -> CONTRARIAN_CANDIDATE, "
+                  f"holding back: {scoring['rationale']}")
+        else:
+            print(f"    [event-layer] {s['symbol']} {s['action']} -> {stance}, "
+                  f"dropped: {scoring['rationale']}")
+    return kept
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -593,8 +660,12 @@ def run_scan():
     print(f"\n  Łącznie itemów do analizy: {len(all_items)}")
 
     # 4. Analiza i scoring
-    signals = analyze_items(all_items)
-    print(f"\n  Sygnałów wygenerowanych: {len(signals)}")
+    raw_signals = analyze_items(all_items)
+    print(f"\n  Sygnałów wstępnych: {len(raw_signals)}")
+
+    # 4b. Event-probability layer — filtruje IGNORE/WAIT, wstrzymuje CONTRARIAN
+    signals = apply_event_scoring(raw_signals)
+    print(f"  Sygnałów po event-scoring: {len(signals)} (dropped {len(raw_signals) - len(signals)})")
 
     # 5. Wysyłanie alertów — max 1 na run (rate limit Routiny)
     MAX_ALERTS_PER_RUN = 1

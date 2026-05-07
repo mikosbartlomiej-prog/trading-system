@@ -16,10 +16,59 @@ from datetime import datetime, timezone, timedelta
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
+    from event_scoring import score_and_decide
 except ImportError:
     def vix_guard(): return ("OK", 1.0)
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
+    def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
+
+
+GEO_SOURCE_TYPE_MAP = {
+    "Finnhub":  "major_outlet",
+    "NewsAPI":  "major_outlet",
+    "Reuters":  "reuters_ap",
+    "AP News":  "reuters_ap",
+}
+
+
+def _geo_event_type(score: int) -> str:
+    if score >= 4:
+        return "policy_announced"
+    return "threat_or_warning"
+
+
+def _geo_magnitude(score: int) -> str:
+    if score >= 5:
+        return "large"
+    if score >= 3:
+        return "normal"
+    return "small"
+
+
+def attach_event_scoring(news_items: list[dict]) -> list[dict]:
+    """
+    For each news item, attach event-probability scoring under `scoring`.
+    Filters out IGNORE_EVENT and WAIT_FOR_CONFIRMATION; keeps
+    FOLLOW_REACTION and CONTRARIAN_CANDIDATE (the routine decides what
+    to do with contrarian items).
+    """
+    kept = []
+    for item in news_items:
+        src_type = GEO_SOURCE_TYPE_MAP.get(item.get("source", ""), "major_outlet")
+        scoring = score_and_decide(
+            source_type    = src_type,
+            event_type     = _geo_event_type(item.get("score", 0)),
+            price_move_atr = 0.5,   # MVP placeholder
+            volume_ratio   = 1.0,
+            magnitude      = _geo_magnitude(item.get("score", 0)),
+        )
+        item["scoring"] = scoring
+        if scoring["stance"] in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE"):
+            kept.append(item)
+        else:
+            print(f"    [event-layer] dropped {item.get('title','')[:60]}: {scoring['stance']}")
+    return kept
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -256,8 +305,12 @@ def run_scan():
 
     print(f"  Znaleziono {len(relevant)} istotnych newsów")
 
+    # Event-probability layer — filtruje słabe credibility / brak reakcji
+    relevant = attach_event_scoring(relevant)
+    print(f"  Po event-scoring: {len(relevant)} newsów")
+
     if not relevant:
-        print("  Brak istotnych newsów — koniec skanowania")
+        print("  Brak istotnych newsów po event-scoring — koniec skanowania")
         return
 
     # Określ ogólny priorytet
