@@ -1,0 +1,65 @@
+name: Backtest — momentum strategies
+
+# Manual-only workflow. Pick a strategy + ticker basket + window;
+# results land in the run log and as a downloadable artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: 'Strategy to backtest'
+        type: choice
+        required: true
+        default: 'momentum-long'
+        options:
+          - momentum-long
+          - overbought-short
+      tickers:
+        description: 'Space-separated whitelist tickers'
+        type: string
+        required: true
+        default: 'AAPL MSFT NVDA META AMZN GOOGL TSLA SPY QQQ'
+      days:
+        description: 'Calendar days of history to replay'
+        type: string
+        required: true
+        default: '180'
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run backtest
+        env:
+          PYTHONIOENCODING:    utf-8
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+          # Backtest doesn't place real orders; bypass the officer to
+          # avoid noise from concentration / drawdown checks (we're
+          # simulating not trading).
+          USE_RISK_OFFICER:    'false'
+        run: |
+          python -m backtest.run \
+            --strategy "${{ github.event.inputs.strategy }}" \
+            --tickers ${{ github.event.inputs.tickers }} \
+            --days "${{ github.event.inputs.days }}"
+
+      - name: Upload ledger as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-ledger
+          path: backtest/results/
+          retention-days: 30
