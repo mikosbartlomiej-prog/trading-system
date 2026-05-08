@@ -372,6 +372,45 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
   - When email arrives: create app at reddit.com/prefs/apps → type: script
   - Add secrets: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `CLOUDFLARE_REDDIT_WORKER_URL`
 
+- **🔔 AAPL concentration review — REVIEW BY 2026-05-18** (added 2026-05-08, post-backtest)
+  - **Why it's here:** across 5 backtests today, **AAPL is the only ticker with confirmed edge** for momentum-long. 7 trades / 71% WR / +$3,379 cumulative across strict-180d (2 trades / 50% / +$441) + strict-365d (5 trades / 80% / +$2,938). Other 8 mega-cap tickers either don't fire (GOOGL, TSLA: 0 trades on 365 d) or fire and lose (MSFT, NVDA, META each had 1 losing trade on 365 d).
+  - **Decision deferred until:** weekly retro Sunday 2026-05-10 22:00 UTC OR 2026-05-17 (next weekly retro). LLM Senior PM persona will see the new daily history files (with tp_hit_rate metric for AAPL specifically) and may organically propose the same insight.
+  - **What to do when revisiting:**
+    1. Aggregate `learning-loop/history/*.md` for last 7 days — count trades per ticker
+    2. If AAPL >= 2 trades and WR >= 60% in production data → boost via `state.json::strategies.momentum-long-aapl` size_multiplier 1.0 → 1.3 (or use a per-ticker multiplier scheme — TBD)
+    3. If other mega-cap tickers continue 0-1 trades → consider trimming TICKERS_LONG to AAPL + SPY only (the 2 confirmed winners across all backtests)
+    4. **DO NOT trim tickers without LLM concurrence in weekly retro** — backtest sample is still <20 trades/ticker and confidence intervals are huge
+  - **Risk if we act now:** concentrated bet on AAPL = high sensitivity to single-name risk. Mitigation: keep size_multiplier change small (1.0 → 1.2 max) until 30+ live trades confirm.
+  - **Related files:** `learning-loop/state.json` (strategies bucket), `price-monitor/monitor.py::TICKERS_LONG`, `backtest/results/momentum-long-20260508-*.json` (4 ledgers — strict 180d, loose 180d, strict 365d, high-beta 180d).
+  - **Reminder:** if user opens CLAUDE.md after 2026-05-18 OR says "AAPL focus" / "concentrate on winners" → flag this entry and pull the latest history aggregates.
+
+- **🔔 Momentum confirmation filter — INVESTIGATE 2026-06-01 OR after 30 live trades** (added 2026-05-08, backtest evidence)
+  - **Why it's here:** disabled MSTR + SMCI today because backtest showed strategy gets gap-down-trapped on high-beta single names (4 trades / 0% WR / -$4,473 combined). The strict filter (breakout + volume + RSI 50-70) detects "appears to be breaking out" but can't distinguish a sustained breakout from a one-day spike that gaps down.
+  - **Hypothesis:** require **3 consecutive up days BEFORE the breakout day** as a pre-filter. Idea: a real momentum breakout has been "winding up" for several days; a one-day spike doesn't. Filter would reject MSTR/SMCI-style setups while keeping AAPL/AMZN-style sustained moves.
+  - **Why deferred:** (a) need ~30 live trades or another month of backtest data to validate; (b) implementing requires extending `backtest/strategies.py` with a third variant `momentum_long_confirmed_signal_at` + re-running on full basket + comparing to baseline; (c) we already have 2 🔔 reminders in flight (trailing-stop ~2026-05-17, AAPL concentration ~2026-05-18) and don't want to spread review attention.
+  - **When to revisit:**
+    - **Trigger 1 (calendar):** 2026-06-01 — even if no clear signal, sweep all 3 backlog reminders together
+    - **Trigger 2 (data):** 30 live momentum-long trades in `learning-loop/history/*.md` aggregate, OR LLM Senior PM proposes momentum confirmation in any weekly retro
+    - **Trigger 3 (re-enable MSTR/SMCI):** if user says "let me put MSTR back" → BLOCK this until momentum-confirmation filter is implemented + green-tested
+  - **Implementation sketch (when prioritized):**
+    1. Add `momentum_long_confirmed_signal_at(idx, bars)` in `backtest/strategies.py` — same as strict but also requires `closes[-4] < closes[-3] < closes[-2] < closes[-1]` (3 up days into the breakout)
+    2. Add `momentum-long-confirmed` to `SIGNALS` dict in `backtest/run.py` and to the workflow YAML dropdown
+    3. Run on (a) high-beta basket — should drop MSTR/SMCI fires to ~0; (b) mega-cap basket — should keep AAPL fires
+    4. If results are good (high-beta loss < $1k, mega-cap WR ≥ 50%) → promote to live monitor
+    5. Re-enable MSTR + SMCI in `state.json` simultaneously with promotion
+  - **Estimated effort:** 30 min code + 2 backtest runs + interpretation. Total ~1h.
+  - **Related files:** `backtest/strategies.py`, `backtest/run.py`, `learning-loop/state.json::tickers`, `price-monitor/monitor.py::check_long_signal`.
+
+- **🔔 High-beta re-enable review — when momentum-confirmation lands OR by 2026-06-01** (added 2026-05-08)
+  - **Tickers paused (state.json::tickers):** `MSTR`, `SMCI` — backtest evidence: 4 trades / 0% WR / -$4,473 combined ($-11.18% avg/trade) on high-beta basket 180d.
+  - **Re-enable conditions (ALL must hold):**
+    1. Momentum-confirmation filter implemented and green-tested (see backlog above)
+    2. Backtest re-run on high-beta basket shows WR ≥ 40% AND total P&L > 0
+    3. (Optional) BTC volatility regime is sideways/uptrend — for MSTR specifically
+  - **What we DID today:** added `tickers` section to `state.json` with `paused_until=null` (NO auto-resume by adapter), `rationale` referring to backtest results JSON, `evidence` filename pinned, `review_after: 2026-06-01`.
+  - **What we DID NOT do:** disable COIN (0 trades — neutral), ARM/KTOS (1 winning trade each — too few data points). They stay enabled.
+  - **Reminder:** if user says "re-enable MSTR" or "re-enable SMCI" → BLOCK until momentum-confirm filter is in. The lesson cost ~$4.5k of paper-money in backtest; live we'd have lost the same.
+
 - **🔔 overbought-short refactor — needs market-regime filter** (added 2026-05-08, backtest evidence)
   - **Why disabled:** backtest 6mo (180 days) on 9 mega-cap basket showed 11% win rate, -$2,065 P&L over 9 trades. Strategy shorted into 8/9 trend continuations because the bull market made every "RSI > 72 + 2-of-3 weakening" look like a fade-the-rip setup. It IS — but only in trending-down or choppy regimes.
   - **Pre-emptive disable:** `learning-loop/state.json` overbought-short.enabled=false (do NOT auto-resume — paused_until=null). `price-monitor` honors this via `load_strategy_state` + early-return; banner logs the skip per cron.

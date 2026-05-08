@@ -27,6 +27,22 @@
   },
   "asset_classes": {},
   "sources": {},
+  "tickers": {
+    "MSTR": {
+      "enabled": false,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
+    },
+    "SMCI": {
+      "enabled": false,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
+    }
+  },
   "next_actions": [],
   "global_overrides": {
     "options_side_bias": null,

@@ -61,3 +61,38 @@ def size_multiplier(strategy_name: str) -> float:
 def side_bias(strategy_name: str) -> str | None:
     """Convenience: returns 'long' / 'short' / None."""
     return load_strategy_state(strategy_name).get("side_bias")
+
+
+# ─── Per-ticker state (orthogonal to per-strategy) ───────────────────────────
+#
+# Some tickers should be paused regardless of which strategy is firing —
+# e.g. when a backtest demonstrates the strategy is structurally trapped
+# on that ticker (high-beta gap risk, broken momentum, etc.). This is
+# orthogonal to per-strategy disable: a strategy stays on globally but
+# skips specific symbols.
+
+def load_ticker_state(ticker: str) -> dict:
+    """
+    Returns the per-ticker override dict from state.json:
+      {
+        "enabled":      bool,           # default True if missing
+        "rationale":    "...",          # why disabled
+        "paused_until": "YYYY-MM-DD" or None,  # null = manual re-enable only
+        "evidence":     "...",          # backtest reference, etc.
+      }
+    or {} if no override exists.
+    """
+    return _read_state().get("tickers", {}).get(ticker, {})
+
+
+def is_ticker_enabled(ticker: str) -> bool:
+    """Convenience: True (default) when ticker is enabled or no override exists."""
+    return load_ticker_state(ticker).get("enabled", True)
+
+
+def disabled_tickers() -> list[str]:
+    """List of tickers explicitly disabled via state.json. Used for banner-log."""
+    return [
+        t for t, info in (_read_state().get("tickers") or {}).items()
+        if info and not info.get("enabled", True)
+    ]

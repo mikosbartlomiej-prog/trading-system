@@ -18,7 +18,7 @@ try:
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
     from market_data import get_daily_bars
     from alpaca_orders import execute_stock_signal
-    from learning_state import load_strategy_state
+    from learning_state import load_strategy_state, is_ticker_enabled, disabled_tickers
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -30,6 +30,8 @@ except ImportError:
     def get_daily_bars(symbol, days=35): return None
     def execute_stock_signal(_s): return None
     def load_strategy_state(_): return {}
+    def is_ticker_enabled(_): return True
+    def disabled_tickers(): return []
 
 # Default execution path: AUTO_EXECUTE via Alpaca REST (no routine).
 # Set USE_ROUTINE=true to fall back to the legacy Cloudflare Worker -> routine path.
@@ -124,7 +126,15 @@ def check_long_signal(ticker):
     1. Cena > 20-dniowe max (breakout)
     2. Wolumen > 1.5x srednia 20d (potwierdzenie)
     3. RSI 50-70 (momentum, nie wykupiony)
+
+    Honors per-ticker disable in learning-loop/state.json. Tickers
+    disabled by backtest evidence (e.g. MSTR/SMCI as of 2026-05-08
+    after high-beta basket showed 0% WR / -$4.5k over 4 trades) early-
+    return None — banner-log per scan in run_scan() makes the skip
+    visible without per-ticker spam.
     """
+    if not is_ticker_enabled(ticker):
+        return None
     try:
         candles = get_candles(ticker, days=35)
         if not candles or len(candles["close"]) < 22:
@@ -337,9 +347,13 @@ def run_checks():
     signals_found = 0
     alerts_sent   = 0
 
-    # LONG signals
-    print(f"\n[LONG] Sprawdzam {', '.join(TICKERS_LONG)}")
-    for ticker in TICKERS_LONG:
+    # LONG signals — filter out tickers disabled in learning-loop state.json
+    paused_long = [t for t in TICKERS_LONG if not is_ticker_enabled(t)]
+    active_long = [t for t in TICKERS_LONG if is_ticker_enabled(t)]
+    if paused_long:
+        print(f"\n[LONG] Pominiete (paused via learning-loop state): {', '.join(paused_long)}")
+    print(f"[LONG] Sprawdzam {', '.join(active_long)}")
+    for ticker in active_long:
         signal = check_long_signal(ticker)
         if signal:
             if has_open_position(ticker):
