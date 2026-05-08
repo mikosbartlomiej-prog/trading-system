@@ -372,6 +372,18 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
   - When email arrives: create app at reddit.com/prefs/apps → type: script
   - Add secrets: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `CLOUDFLARE_REDDIT_WORKER_URL`
 
+- **🔔 overbought-short refactor — needs market-regime filter** (added 2026-05-08, backtest evidence)
+  - **Why disabled:** backtest 6mo (180 days) on 9 mega-cap basket showed 11% win rate, -$2,065 P&L over 9 trades. Strategy shorted into 8/9 trend continuations because the bull market made every "RSI > 72 + 2-of-3 weakening" look like a fade-the-rip setup. It IS — but only in trending-down or choppy regimes.
+  - **Pre-emptive disable:** `learning-loop/state.json` overbought-short.enabled=false (do NOT auto-resume — paused_until=null). `price-monitor` honors this via `load_strategy_state` + early-return; banner logs the skip per cron.
+  - **What to refactor before re-enabling:**
+    1. **Market-regime gate**: only fire if SPY < 50d MA OR SPY 5d return < -2% OR ADX > 25 + downtrend (i.e. don't short in uptrend)
+    2. **Confirm with momentum**: require RSI > 72 AND price already broke 5d low (reversal in motion, not just exhaustion)
+    3. **Tighter SL**: 1.5×ATR not 2.0×ATR (shorts in uptrend need fast cuts)
+    4. **Backtest before re-enable**: re-run `backtest.run --strategy overbought-short` after each refactor; only re-enable if 6mo win rate ≥ 40% and total P&L > 0
+  - **When to revisit:** when market regime turns (SPY < 200d MA) — short side becomes interesting again. Or when we have ADX/regime-detector implemented (separate backlog item, not yet started).
+  - **Affected files:** `price-monitor/monitor.py::check_short_signal`, `backtest/strategies.py::overbought_short_signal_at`, `learning-loop/state.json`.
+  - **Reminder:** if user says "short side", "regime filter", or "we're in a downtrend" — surface this item.
+
 - ~~**VIX guard pivot to a working source**~~ ✅ **DONE 2026-05-08** (Yahoo Finance fallback)
   - `shared/risk_guards.py::get_vix` now chains Finnhub → Yahoo `/v8/finance/chart/^VIX` (no key, public). When Finnhub returns 0 (free-tier behaviour mid-2024+), Yahoo kicks in. If both fail, fail-open as before.
 

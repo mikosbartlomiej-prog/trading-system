@@ -8,7 +8,23 @@
     "total_pnl_usd": 0,
     "starting_equity": 100031.25
   },
-  "strategies": {},
+  "strategies": {
+    "overbought-short": {
+      "size_multiplier": 1.0,
+      "enabled": false,
+      "side_bias": null,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0.0,
+      "pnl_usd_7d": 0.0,
+      "consecutive_losses": 0,
+      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering"
+    }
+  },
   "asset_classes": {},
   "sources": {},
   "next_actions": [],

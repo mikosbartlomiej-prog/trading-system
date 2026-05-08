@@ -18,6 +18,7 @@ try:
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
     from market_data import get_daily_bars
     from alpaca_orders import execute_stock_signal
+    from learning_state import load_strategy_state
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -28,6 +29,7 @@ except ImportError:
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
     def get_daily_bars(symbol, days=35): return None
     def execute_stock_signal(_s): return None
+    def load_strategy_state(_): return {}
 
 # Default execution path: AUTO_EXECUTE via Alpaca REST (no routine).
 # Set USE_ROUTINE=true to fall back to the legacy Cloudflare Worker -> routine path.
@@ -183,7 +185,17 @@ def check_short_signal(ticker):
     2. Cena blisko 20-dniowego max (resistance zone)
     3. Wolumen maleje < 0.8x srednia (zanikajacy impet)
     4. Cena < wczorajszego otwarcia (bearish intraday)
+
+    Honors learning-loop state.json: if `enabled=False` the strategy is
+    paused (set by 2026-05-08 backtest evidence — 11% WR / -$2,065 over
+    9 trades on 6mo mega-cap basket. Re-enable manually after refactor
+    to add a market-regime filter; do not let adapter auto-resume).
     """
+    state = load_strategy_state("overbought-short")
+    if not state.get("enabled", True):
+        # Quiet skip — log once at module level (see run_scan banner) so
+        # we don't spam every cron tick with the same message.
+        return None
     try:
         candles = get_candles(ticker, days=35)
         if not candles or len(candles["close"]) < 22:
@@ -347,9 +359,15 @@ def run_checks():
             notify_signal(signal, sent)
         time.sleep(0.5)
 
-    # SHORT signals
-    print(f"\n[SHORT] Sprawdzam {', '.join(TICKERS_SHORT)}")
-    for ticker in TICKERS_SHORT:
+    # SHORT signals — honors learning-loop state.json overbought-short.enabled
+    short_state = load_strategy_state("overbought-short")
+    short_enabled = short_state.get("enabled", True)
+    if not short_enabled:
+        print(f"\n[SHORT] overbought-short paused via learning-loop state — "
+              f"skipping ({short_state.get('rationale', 'no reason logged')})")
+    else:
+        print(f"\n[SHORT] Sprawdzam {', '.join(TICKERS_SHORT)}")
+    for ticker in (TICKERS_SHORT if short_enabled else []):
         signal = check_short_signal(ticker)
         if signal:
             if has_open_position(ticker):
