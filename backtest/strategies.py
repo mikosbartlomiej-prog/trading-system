@@ -17,7 +17,7 @@ multipliers from STRATEGY.md §4.1-4.2).
 from typing import Optional
 
 
-# Tunables — must match price-monitor / STRATEGY.md
+# Tunables — STRICT variant must match price-monitor / STRATEGY.md
 ATR_SL_MULT      = 2.0
 ATR_TP_MULT      = 4.0
 RSI_LONG_MIN     = 50
@@ -26,6 +26,15 @@ RSI_SHORT_MIN    = 72
 VOLUME_MULT_LONG = 1.5
 VOLUME_MULT_SHORT_MAX = 0.8
 LOOKBACK_DAYS    = 20
+
+# LOOSE variant — research/backtest only, not wired into live monitor.
+# Hypothesis: relaxing RSI band to 45-75 + volume to 1.2× increases
+# trade frequency without killing win rate. Validated empirically vs
+# the strict baseline (3 trades / 67% WR / +$1,595 over 180 d on 9
+# mega-cap basket — see backtest results 2026-05-08).
+LOOSE_RSI_LONG_MIN     = 45
+LOOSE_RSI_LONG_MAX     = 75
+LOOSE_VOLUME_MULT_LONG = 1.2
 
 
 def _rsi(closes: list[float], period: int = 14) -> Optional[float]:
@@ -57,15 +66,10 @@ def _atr(highs: list[float], lows: list[float], closes: list[float],
     return sum(trs[-period:]) / period
 
 
-def momentum_long_signal_at(idx: int, bars: dict) -> Optional[dict]:
-    """
-    Returns a long entry proposal if all three conditions hold at bar `idx`:
-      1. close > 20-day high (breakout)
-      2. volume > 1.5 x 20-day avg volume
-      3. RSI(14) in [50, 70]
-
-    Otherwise None.
-    """
+def _momentum_long_signal_with_params(idx: int, bars: dict,
+                                        rsi_min: float, rsi_max: float,
+                                        vol_mult: float) -> Optional[dict]:
+    """Internal — parametric momentum-long. Used by strict + loose variants."""
     if idx < 22:                              # need 20-day window + RSI
         return None
     closes  = bars["close"][:idx + 1]
@@ -82,9 +86,9 @@ def momentum_long_signal_at(idx: int, bars: dict) -> Optional[dict]:
 
     if cur <= high_20:
         return None
-    if cur_vol <= avg_vol * VOLUME_MULT_LONG:
+    if cur_vol <= avg_vol * vol_mult:
         return None
-    if rsi is None or not (RSI_LONG_MIN <= rsi <= RSI_LONG_MAX):
+    if rsi is None or not (rsi_min <= rsi <= rsi_max):
         return None
 
     return {
@@ -96,6 +100,35 @@ def momentum_long_signal_at(idx: int, bars: dict) -> Optional[dict]:
         "rsi":         round(rsi, 1),
         "atr":         round(atr, 2),
     }
+
+
+def momentum_long_signal_at(idx: int, bars: dict) -> Optional[dict]:
+    """
+    STRICT momentum-long (matches live `price-monitor/monitor.py`):
+      1. close > 20-day high (breakout)
+      2. volume > 1.5 x 20-day avg volume
+      3. RSI(14) in [50, 70]
+    """
+    return _momentum_long_signal_with_params(
+        idx, bars,
+        rsi_min=RSI_LONG_MIN, rsi_max=RSI_LONG_MAX,
+        vol_mult=VOLUME_MULT_LONG,
+    )
+
+
+def momentum_long_loose_signal_at(idx: int, bars: dict) -> Optional[dict]:
+    """
+    LOOSE momentum-long — backtest-only variant for filter sensitivity
+    research. Same shape as strict but with relaxed thresholds:
+      - RSI band 45-75 (was 50-70)
+      - volume 1.2× avg (was 1.5×)
+    Use to test whether the strict filter is over-restrictive.
+    """
+    return _momentum_long_signal_with_params(
+        idx, bars,
+        rsi_min=LOOSE_RSI_LONG_MIN, rsi_max=LOOSE_RSI_LONG_MAX,
+        vol_mult=LOOSE_VOLUME_MULT_LONG,
+    )
 
 
 def overbought_short_signal_at(idx: int, bars: dict) -> Optional[dict]:

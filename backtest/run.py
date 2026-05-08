@@ -23,13 +23,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from data import fetch_daily_bars, date_range_days_ago
-from strategies import momentum_long_signal_at, overbought_short_signal_at
+from strategies import (
+    momentum_long_signal_at,
+    momentum_long_loose_signal_at,
+    overbought_short_signal_at,
+)
 from replay import replay
 
 
 SIGNALS = {
-    "momentum-long":     momentum_long_signal_at,
-    "overbought-short":  overbought_short_signal_at,
+    "momentum-long":        momentum_long_signal_at,
+    "momentum-long-loose":  momentum_long_loose_signal_at,
+    "overbought-short":     overbought_short_signal_at,
 }
 
 
