@@ -210,13 +210,22 @@ def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | 
     TP/SL must be placed as separate orders after the fill — handled by a
     follow-up exit step (or manually by the user via the dashboard).
     """
+    # Tag with strategy-prefixed client_order_id so the learning-loop
+    # analyzer can attribute fills to "options-momentum" instead of
+    # falling back on Alpaca's UUID auto-generation. Format mirrors
+    # shared/alpaca_orders.py::_client_order_id.
+    ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
+    safe_sym = contract_symbol.replace("/", "").replace(" ", "")
+    client_order_id = f"options-momentum-{safe_sym}-{ts}"
+
     payload = {
-        "symbol":        contract_symbol,
-        "qty":           str(qty),
-        "side":          "buy",
-        "type":          "limit",
-        "limit_price":   str(round(premium, 2)),
-        "time_in_force": "day",
+        "symbol":          contract_symbol,
+        "qty":             str(qty),
+        "side":            "buy",
+        "type":            "limit",
+        "limit_price":     str(round(premium, 2)),
+        "time_in_force":   "day",
+        "client_order_id": client_order_id,
     }
     try:
         r = requests.post(

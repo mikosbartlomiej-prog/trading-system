@@ -39,7 +39,11 @@ USE_LLM            = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true
 WORKER_URL         = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
 TRIGGER_TIMEOUT_S  = 30        # POST is fire-and-forget; receipt comes back <1s
 POLL_INTERVAL_S    = 15        # how often we git fetch + check for pending file
-POLL_MAX_S         = 180       # max wait for routine to push its JSON
+# Max wait for routine to push its JSON. Yesterday's manual test took 139 s;
+# nightly cron timed out at 188 s. Routine cold-start + queue delay vary by
+# load on claude.ai — bump to 5 min to give comfortable headroom. Workflow
+# has timeout-minutes: 10 so we still leave ~5 min for git ops.
+POLL_MAX_S         = 300
 GIT_OP_TIMEOUT_S   = 30
 
 LEARNING_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -137,8 +141,20 @@ def call_routine(payload: dict) -> dict | None:
             print("    (Anthropic Routines daily limit hit. Deterministic baseline still active.)")
         return None
 
-    receipt_preview = (r.text or "").strip()[:200]
-    print(f"  LLM trigger fired (receipt: {receipt_preview})")
+    # Pull session URL out of the trigger receipt for post-hoc debugging
+    # when polling times out — operator can open the URL on claude.ai
+    # to see what the routine actually did.
+    receipt_text = (r.text or "").strip()
+    session_url = ""
+    try:
+        receipt = json.loads(receipt_text)
+        if isinstance(receipt, dict):
+            session_url = receipt.get("claude_code_session_url", "") or ""
+    except json.JSONDecodeError:
+        pass
+    print(f"  LLM trigger fired (receipt: {receipt_text[:200]})")
+    if session_url:
+        print(f"  LLM session URL (debug if timeout): {session_url}")
     print(f"  Polling origin/{branch} for {os.path.basename(pending_path)} (max {POLL_MAX_S}s)...")
 
     # 2) Poll for the routine's commit

@@ -178,15 +178,24 @@ def reconstruct_trades(orders: list[dict]) -> list[dict]:
 
 def _is_close(order: dict) -> bool:
     """
-    Detect close orders by `client_order_id` prefix.
+    Detect close orders. Two patterns:
 
-    Entry monitors emit ids like "<strategy>-<symbol>-<ts>" where
-    <strategy> is e.g. 'momentum-long', 'options-momentum'. Exit
-    monitors emit ids prefixed with 'exit-' (e.g. 'exit-emergency-*',
-    'exit-tp-*', 'exit-sl-*'). Anything else is treated as an entry.
+    1. Explicit tagging by exit-monitor / options-exit-monitor:
+       client_order_id starts with 'exit-' (e.g. 'exit-emergency-*',
+       'exit-tp-*', 'exit-sl-*').
+    2. Alpaca bracket-order child legs (auto-created by Alpaca when a
+       parent is placed with order_class=bracket):
+       client_order_id ends with '_take_profit' or '_stop_loss'.
+       These are standard Alpaca naming for bracket children.
+
+    Anything else is treated as an entry.
     """
     cid = (order.get("client_order_id") or "").lower()
-    return cid.startswith("exit-")
+    if cid.startswith("exit-"):
+        return True
+    if cid.endswith("_take_profit") or cid.endswith("_stop_loss"):
+        return True
+    return False
 
 
 def _make_trade(symbol, direction, entry, exit_price, exit_time) -> dict:
@@ -358,7 +367,11 @@ def compute_tp_hit_rate(orders: list[dict]) -> dict:
     )
     for o in orders:
         cid = (o.get("client_order_id") or "").lower()
-        if not cid.startswith("exit-tp-"):
+        # Two patterns count as a TP order:
+        #   1. our explicit 'exit-tp-' tagging (options-exit-monitor)
+        #   2. Alpaca bracket-order TP child legs ('*_take_profit' suffix)
+        is_tp = cid.startswith("exit-tp-") or cid.endswith("_take_profit")
+        if not is_tp:
             continue
         sym = o.get("symbol", "")
         strat = entry_strategy_by_symbol.get(sym, "unknown")
