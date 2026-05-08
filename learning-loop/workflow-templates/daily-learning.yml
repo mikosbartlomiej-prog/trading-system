@@ -6,9 +6,13 @@ on:
     - cron: '0 21 * * *'
   workflow_dispatch:
 
-# Wymagane żeby workflow mógł commitować state.json + rationale.md + history/
+# Permissions:
+#   contents: write       — workflow commits state.json + rationale.md + history/
+#   pull-requests: write  — Lane 2 auto-PR for LLM-proposed adapter heuristics
+#                           (see learning-loop/lane2_pr.py + STRATEGY.md §5.6).
 permissions:
-  contents: write
+  contents:      write
+  pull-requests: write
 
 jobs:
   analyze-and-adapt:
@@ -43,6 +47,11 @@ jobs:
           # LLM augmentation — Senior PM persona via existing learning-loop routine
           CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
           USE_LLM_LEARNING:                'true'
+          # Lane 2 auto-PR — gh CLI uses GH_TOKEN (or GITHUB_TOKEN fallback)
+          # to authenticate `gh pr create` against this repo. Default
+          # GITHUB_TOKEN has write access to PRs because of the workflow's
+          # `pull-requests: write` permission above.
+          GH_TOKEN:                        ${{ secrets.GITHUB_TOKEN }}
         run: python learning-loop/analyzer.py
 
       - name: Commit and push learning state

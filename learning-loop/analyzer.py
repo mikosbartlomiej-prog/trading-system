@@ -50,6 +50,7 @@ sys.path.insert(0, LEARNING_DIR)
 from adapter    import adapt          # noqa: E402
 from llm_client import (              # noqa: E402
     call_routine, safe_apply_overrides, append_heuristic_proposals,
+    route_proposals,
 )
 
 HEURISTIC_PROPOSALS_PATH = os.path.join(LEARNING_DIR, "heuristic_proposals.md")
@@ -603,11 +604,58 @@ def run():
         if edge:
             llm_narrative_lines.append(f"{date_iso} · LLM edge: {edge.strip()}")
 
-        # Queue heuristic proposals
+        # Route heuristic proposals into the three-lane architecture:
+        #   Lane 1 (state_overrides) — already applied above
+        #   Lane 2 (auto_pr)         — create a PR for adapter.py heuristics
+        #   Lane 3 (backlog)         — append structured entry to
+        #                              heuristic_proposals.md
+        # See STRATEGY.md §5.6 and learning-loop/lane2_pr.py for details.
         proposals = llm_resp.get("new_heuristic_proposals") or []
-        added = append_heuristic_proposals(proposals, HEURISTIC_PROPOSALS_PATH)
-        if added:
-            print(f"  LLM proposed {added} new heuristic(s) -> heuristic_proposals.md")
+        if proposals:
+            base_branch = (
+                os.environ.get("GITHUB_REF_NAME")
+                or _git_current_branch()
+                or "main"
+            )
+            try:
+                routed = route_proposals(proposals, base_branch=base_branch)
+            except Exception as e:
+                # Routing should never crash the daily run — fall back to
+                # legacy queue so proposals aren't silently lost.
+                print(f"  Lane router error ({type(e).__name__}: {e}); "
+                      f"falling back to flat queue")
+                routed = {"auto_pr_attempted": False, "auto_pr_url": None,
+                          "backlog_added": append_heuristic_proposals(
+                              [str(p) for p in proposals], HEURISTIC_PROPOSALS_PATH),
+                          "rejected": []}
+
+            if routed.get("auto_pr_url"):
+                line = (f"  Lane 2 PR opened: {routed['auto_pr_url']}")
+                print(line)
+                llm_narrative_lines.append(
+                    f"{date_iso} · LLM auto-PR: {routed['auto_pr_url']}"
+                )
+                # Email the operator so the PR doesn't sit unnoticed
+                try:
+                    sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+                    from notify import notify_pr_open  # noqa: E402
+                    title = next((p.get("title", "(no title)") for p in proposals
+                                  if isinstance(p, dict) and p.get("lane") == "auto_pr"),
+                                 "(no title)")
+                    risk = next((p.get("risk", "?") for p in proposals
+                                 if isinstance(p, dict) and p.get("lane") == "auto_pr"),
+                                "?")
+                    notify_pr_open(routed["auto_pr_url"], title, "auto_pr", risk)
+                except Exception as e:
+                    print(f"  notify_pr_open failed: {e}")
+            elif routed.get("auto_pr_attempted"):
+                print(f"  Lane 2: auto-PR attempted but failed — see log; "
+                      f"proposal moved to backlog")
+            if routed.get("backlog_added"):
+                print(f"  Lane 3: queued {routed['backlog_added']} proposal(s) "
+                      f"-> heuristic_proposals.md")
+            for r in routed.get("rejected", []):
+                print(f"  proposal rejected: {r}")
 
     else:
         llm_narrative_lines.append(

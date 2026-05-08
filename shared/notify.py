@@ -252,3 +252,45 @@ def notify_summary(monitor: str, signals_found: int, alerts_sent: int) -> bool:
     )
 
     return send_email(subject, body)
+
+
+def notify_pr_open(pr_url: str, title: str, lane: str, risk: str) -> bool:
+    """
+    Email the operator when the daily learning-loop opens a Lane 2 auto-PR
+    with a new heuristic for adapter.py. The PR is not pilne — but the
+    operator should know it's queued.
+    """
+    now     = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    subject = f"[learning-loop AUTO-PR] {title[:60]}"
+    body = (
+        f"Learning-loop Lane 2 — auto-PR opened\n"
+        f"{'='*60}\n"
+        f"Time:    {now}\n"
+        f"Lane:    {lane}\n"
+        f"Risk:    {risk}\n"
+        f"Title:   {title}\n"
+        f"PR URL:  {pr_url}\n"
+        f"{'='*60}\n\n"
+        f"What this is:\n"
+        f"  The daily learning-loop LLM (Senior PM persona) proposed a new\n"
+        f"  heuristic for learning-loop/adapter.py. The proposal passed the\n"
+        f"  Lane 2 validation gate (target file in whitelist, code parses,\n"
+        f"  test_adapter.py stays green) and a PR has been opened.\n\n"
+        f"What you should do:\n"
+        f"  1. Open the PR.\n"
+        f"  2. Review the appended function and its test (both append-only\n"
+        f"     to the existing files — no edits to existing code).\n"
+        f"  3. If the proposal includes a `wire_into_adapt_strategy` hint,\n"
+        f"     add a small follow-up commit that wires the call point.\n"
+        f"  4. Merge when satisfied. CI must be green (it should be —\n"
+        f"     local tests passed before the PR was created).\n\n"
+        f"Safety net:\n"
+        f"  - The PR is append-only by construction. Existing heuristics\n"
+        f"    are untouched.\n"
+        f"  - If you don't merge, nothing changes — daily-learning will\n"
+        f"    keep using the deterministic adapter unchanged.\n"
+        f"  - The branch name pattern is `learning-loop/auto-YYYY-MM-DD-*`\n"
+        f"    so you can filter / batch-review later.\n"
+    )
+
+    return send_email(subject, body)

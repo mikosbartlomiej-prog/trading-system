@@ -313,46 +313,45 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
     them: *"Trailing stop decision data is ready — want to review the
     10-day TP hit rates?"*
 
-- **🔔 Auto-implementation of LLM lessons learned — DISCUSS NEXT SESSION** (added 2026-05-07 LATE-NIGHT)
-  - **Problem statement:** the learning loop's LLM produces high-quality
-    actionable proposals daily (today's run alone caught a real bug —
-    `_is_close()` always False — and proposed 3 testable heuristics).
-    Right now those proposals land in `learning-loop/heuristic_proposals.md`
-    as a tickbox queue, and a human (me + Claude in a session) has to:
-      1. Read the proposal
-      2. Decide if it's worth implementing
-      3. Write the code
-      4. Test it
-      5. Commit + tick the box
-    This is the bottleneck — the LLM thinks faster than we ship.
-  - **Open question:** can/should the system auto-implement (some)
-    lessons learned without human-in-the-loop? Possible mechanisms to
-    discuss next session:
-    - **A. Auto-promote heuristics to adapter.py** — for proposals that
-      match a known pattern (e.g. "pause strategy X if 3 daily losses
-      with hold<1h"), generate the deterministic rule code and add to
-      `adapter.py` automatically. Risk: LLM hallucinates a rule that
-      breaks the adapter.
-    - **B. Auto-update backlog only** — LLM proposals automatically
-      become structured backlog entries in CLAUDE.md (with priority,
-      effort estimate, revisit date). Human still implements but
-      backlog is always fresh. Lower risk than A.
-    - **C. PR-based auto-implementation** — routine generates a PR
-      with the implementation; human just reviews + merges. Combines
-      LLM speed with human gate. Needs routine to have GitHub PR
-      creation capability (it already has push access — proven this
-      session).
-    - **D. Tiered approach** — auto-apply for whitelisted-low-risk
-      changes (e.g. tweaking thresholds in state.json — already
-      whitelisted), require human review for code changes (adapter.py,
-      monitors).
-  - **What we know works (this session's evidence):** the routine has
-    bash + git + workflow-scope write access and successfully
-    self-commits its analysis to the repo. So the *infrastructure*
-    for auto-implementation exists — we just need a design that
-    doesn't break things.
-  - **Decision required next session:** pick A / B / C / D (or hybrid),
-    define scope, build PoC.
+- ✅ **Auto-implementation of LLM lessons learned — DESIGNED + MVP SHIPPED 2026-05-08**
+  (was 🔔 reminder added 2026-05-07 LATE-NIGHT)
+  - **What landed:** Three-lane architecture for LLM proposals.
+    - **Lane 1** (state_overrides) — already shipped as v2.3.1; LLM directly
+      adjusts `size_multiplier`, `enabled`, `side_bias` via whitelist-protected
+      `safe_apply_overrides()`. Daily.
+    - **Lane 2** (auto-PR) — NEW: when LLM tags a proposal `lane=auto_pr` with
+      `code_patch` + `test_addition` for `learning-loop/adapter.py`,
+      `lane2_pr.py` validates (whitelisted target file, AST-checked patch,
+      tests must pass), creates a `learning-loop/auto-<date>-<slug>` branch,
+      pushes, and opens a PR via `gh pr create`. Operator gets
+      `[learning-loop AUTO-PR]` email; reviews + merges when ready. Max 1
+      PR/day from learning-loop.
+    - **Lane 3** (backlog) — NEW: structured proposals (with risk/effort/
+      revisit) are appended to `heuristic_proposals.md` instead of as flat
+      strings. Operator implements when prioritized.
+  - **Files:** `learning-loop/lane2_pr.py` (new), `learning-loop/test_adapter.py`
+    (new — 19 tests, baseline CI gate), `learning-loop/llm_client.py::route_proposals`
+    (new), `learning-loop/routine-prompts.md` (extended schema with strict
+    lane classification rules), `shared/notify.py::notify_pr_open` (new),
+    `.github/workflows/daily-learning.yml` (added `pull-requests: write` +
+    `GH_TOKEN`).
+  - **What user must do (one-time):** re-paste new system prompt from
+    `learning-loop/routine-prompts.md` into Learning Loop Strategist
+    routine on claude.ai (extended with three-lane classification rules
+    and code_patch / test_addition format).
+  - **Observability TODO:** after first auto-PR fires in production,
+    verify (a) PR opens cleanly, (b) email arrives, (c) CI runs green
+    on the bot's commit, (d) merge button works. Roll back / tighten
+    validation if hallucinated patches sneak through.
+  - **Original problem statement (kept for context):** the learning
+    loop LLM produces high-quality actionable proposals daily (the
+    first run caught the `_is_close()` always-False bug + 3 testable
+    heuristics). The bottleneck was a 5-step human round-trip per
+    proposal. Of the 4 design options sketched (A: auto-promote→adapter.py,
+    B: auto-update backlog, C: PR-based, D: tiered), we picked **C+B+D
+    hybrid** — Lane 2 is C (PR-based for adapter heuristics), Lane 3
+    is B (structured backlog for everything else), Lane 1 is the
+    pre-existing tiered low-risk auto-apply (state_overrides whitelist).
 
 - ~~**Live Portfolio Dashboard**~~ ✅ **DONE 2026-05-07** (master plan #1 — last item closed)
   - Path 2 chosen: single self-contained Cloudflare Worker (`dashboard/worker.js`)

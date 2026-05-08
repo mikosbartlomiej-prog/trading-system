@@ -3,9 +3,12 @@
 The OAuth proxy used by Claude Code can't push files under `.github/workflows/`
 without `workflow` scope, so these YAMLs live here as paste-ready templates.
 
-**Latest version (poll-based architecture, v2.3.2):** the workflows now (a) pull
-any commits the routine pushed during the analyzer step and (b) push to the
-current branch instead of hardcoded `main`, so feature-branch testing works.
+**Latest version (poll-based architecture, v2.3.2 + Lane 2 auto-PR, v2.3.3):**
+the workflows now (a) pull any commits the routine pushed during the analyzer
+step, (b) push to the current branch instead of hardcoded `main`, so
+feature-branch testing works, and (c) for daily-learning specifically, expose
+`GH_TOKEN` + `pull-requests: write` permission so the analyzer can open Lane 2
+auto-PRs via `gh pr create` when the LLM proposes a new adapter heuristic.
 
 Deploy via GitHub UI:
 

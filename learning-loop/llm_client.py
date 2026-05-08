@@ -275,7 +275,148 @@ def safe_apply_overrides(state: dict, overrides: dict | None) -> tuple[dict, lis
     return new_state, applied
 
 
-def append_heuristic_proposals(proposals: list[str], path: str) -> int:
+def route_proposals(proposals: list, base_branch: str = "main") -> dict:
+    """
+    Route LLM-proposed heuristics into the three lanes:
+
+      - Lane 2 (auto_pr): create a PR via `lane2_pr.create_pr_from_proposal`.
+        Max 1 per run — additional auto_pr proposals are bumped to Lane 3.
+      - Lane 3 (backlog): append a structured entry to heuristic_proposals.md
+        with title / risk / effort / revisit / sketch.
+      - Old format (plain string): treated as Lane 3 with minimal metadata.
+
+    Returns a dict summary:
+      {
+        "auto_pr_attempted": bool,
+        "auto_pr_url": str | None,
+        "backlog_added": int,
+        "rejected": [reasons...],
+      }
+
+    Errors are caught per-proposal — a single bad proposal does NOT block
+    the rest. PR creation failures fall back to backlog (so the proposal
+    isn't lost).
+    """
+    summary = {
+        "auto_pr_attempted": False,
+        "auto_pr_url":       None,
+        "backlog_added":     0,
+        "rejected":          [],
+    }
+    if not isinstance(proposals, list) or not proposals:
+        return summary
+
+    # Lazy-import lane2_pr — keeps llm_client.py importable in test envs
+    # where git/gh aren't configured.
+    try:
+        from lane2_pr import create_pr_from_proposal
+    except ImportError as e:
+        print(f"  Lane2: import error ({e}); all proposals routed to backlog")
+        create_pr_from_proposal = None
+
+    auto_pr_done = False
+    backlog_lines: list[str] = []
+
+    for idx, p in enumerate(proposals):
+        # Old format — plain string
+        if isinstance(p, str):
+            backlog_lines.append({"title": p.strip(), "lane": "backlog"})
+            continue
+
+        if not isinstance(p, dict):
+            summary["rejected"].append(f"#{idx}: not str/dict ({type(p).__name__})")
+            continue
+
+        lane = (p.get("lane") or "backlog").lower()
+        title = (p.get("title") or "").strip()
+        if not title:
+            summary["rejected"].append(f"#{idx}: empty title")
+            continue
+
+        if lane == "auto_pr" and not auto_pr_done and create_pr_from_proposal:
+            summary["auto_pr_attempted"] = True
+            url = create_pr_from_proposal(p, base_branch=base_branch)
+            if url:
+                summary["auto_pr_url"] = url
+                auto_pr_done = True
+                continue  # don't also add to backlog
+            else:
+                # PR creation failed (validation, tests, gh, etc.) —
+                # fall through and put this proposal in backlog so the
+                # idea isn't lost.
+                p_copy = dict(p)
+                p_copy["lane"] = "backlog"
+                p_copy.setdefault("rationale",
+                    "(originally lane=auto_pr; PR creation failed — see workflow log)")
+                backlog_lines.append(p_copy)
+                continue
+
+        # Lane 3 — backlog
+        backlog_lines.append(p)
+
+    if backlog_lines:
+        summary["backlog_added"] = _append_structured_proposals(backlog_lines)
+
+    return summary
+
+
+def _append_structured_proposals(props: list) -> int:
+    """Write proposals to heuristic_proposals.md in structured form."""
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date().isoformat()
+
+    HEURISTIC_PROPOSALS_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "heuristic_proposals.md",
+    )
+
+    blocks: list[str] = []
+    for p in props:
+        if isinstance(p, str):
+            blocks.append(f"- [ ] [{today}] {p}")
+            continue
+        if not isinstance(p, dict):
+            continue
+        title  = p.get("title", "(no title)")
+        risk   = p.get("risk", "?")
+        effort = p.get("effort_estimate") or "?"
+        revisit = p.get("revisit_date") or "no specific date"
+        rationale = p.get("rationale", "")
+        sketch    = p.get("implementation_sketch", "")
+
+        b = f"- [ ] [{today}] **{title}** _(risk: {risk}, effort: {effort}, revisit: {revisit})_"
+        if rationale:
+            b += f"\n  - **Rationale:** {rationale}"
+        if sketch:
+            b += f"\n  - **Sketch:** {sketch}"
+        blocks.append(b)
+
+    if not blocks:
+        return 0
+
+    block_text = "\n".join(blocks) + "\n"
+
+    try:
+        with open(HEURISTIC_PROPOSALS_PATH) as f:
+            existing = f.read()
+    except FileNotFoundError:
+        existing = (
+            "# Heuristic Proposals (LLM-generated)\n\n"
+            "> Open queue of heuristic ideas suggested by the daily LLM\n"
+            "> annotator + weekly retrospective. Tick the box `[x]` when\n"
+            "> implemented in `learning-loop/adapter.py`. Older entries\n"
+            "> kept indefinitely so we can audit which ideas worked.\n\n"
+            "> **Three-lane architecture (v2.3.2):** lane=auto_pr proposals\n"
+            "> get a PR opened automatically; only lane=backlog and old-format\n"
+            "> string proposals land here. See STRATEGY.md §5.6.\n\n"
+        )
+
+    with open(HEURISTIC_PROPOSALS_PATH, "w") as f:
+        f.write(existing + block_text)
+    return len(blocks)
+
+
+def append_heuristic_proposals(proposals: list, path: str) -> int:
     """
     Append `proposals` to `path` (e.g. learning-loop/heuristic_proposals.md).
     Returns count of new entries appended.

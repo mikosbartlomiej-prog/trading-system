@@ -137,11 +137,87 @@ OUTPUT — RETURN PURE JSON (no markdown, no fences, no preamble):
     }
   },
   "new_heuristic_proposals": [
-    "Specific testable proposal: 'Pause strategy X if 3 daily losses with hold_time < 1h' (rationale)",
-    ...
+    {
+      "title": "Short title, e.g. 'Pause strategy X if 3 daily losses with hold<1h'",
+      "lane": "auto_pr" | "backlog",
+      "risk": "low" | "medium" | "high",
+      "rationale": "1-2 sentences why this proposal would help",
+
+      // For lane=auto_pr ONLY (workflow will open a PR with this code):
+      "target_file": "learning-loop/adapter.py",   // MVP: only adapter.py allowed
+      "code_patch": "string — pure Python source code to APPEND to target_file. Must be a single new function or constant. NO replacements, NO edits to existing code. Must be self-contained and importable.",
+      "test_addition": "string — pure Python source code to APPEND to learning-loop/test_adapter.py. Must be a unittest.TestCase subclass that exercises the new function. CI runs `python -m unittest learning-loop.test_adapter` and the gate fails if any test red.",
+      "wire_into_adapt_strategy": "string OR null — if your new function should be called from adapt_strategy(), describe in one line WHERE in adapt_strategy() the call should go (e.g. 'after consecutive-loss check, before win-rate thresholds'). Operator wires manually during PR review. Set null if your code stands alone (e.g. new metric used only by analyzer).",
+
+      // For lane=backlog ONLY:
+      "effort_estimate": "1h" | "2-3h" | "1d" | "needs design",
+      "revisit_date": "YYYY-MM-DD or null",
+      "implementation_sketch": "5-15 lines of how you'd implement this — files touched, key decisions"
+    }
   ],
   "confidence": "high" | "medium" | "low"
 }
+
+LANE CLASSIFICATION RULES (apply STRICTLY):
+
+Lane "auto_pr" — pick this ONLY when ALL of these hold:
+  - Proposal is a NEW heuristic function in adapter.py (no existing code modified)
+  - You can write the implementation in <=30 lines of pure Python
+  - You can write a self-contained unittest.TestCase that exercises it
+  - The function is bounded in effect (no I/O, no order placement, no
+    state.json field outside the existing whitelist)
+  - Risk score is "low" (clear semantics, similar to existing heuristics)
+
+Lane "backlog" — pick this when ANY of these:
+  - Architectural change (new feature, refactor, multi-file edit)
+  - Code change touches monitor.py / order placement / network calls
+  - Requires new external dependency
+  - Requires data collection period (e.g. "test for 10 days then decide")
+  - You're not >80% confident the implementation is correct
+
+Default to "backlog" when in doubt. The PR-author cost is high if a
+hallucinated patch breaks tests; the cost of a backlog entry is just an
+extra read for the operator.
+
+CRITICAL — CODE PATCH FORMAT (lane=auto_pr only):
+
+Your code_patch is APPENDED verbatim to the end of target_file. It must
+parse as a complete Python module fragment. Examples:
+
+  # Good — self-contained function with docstring:
+  def heuristic_short_hold_loss(stats: dict) -> tuple[bool, str]:
+      \"\"\"Detect strategies bleeding on quick losses.\"\"\"
+      if stats.get("consecutive_losses", 0) >= 3 and \\
+         stats.get("avg_hold_hours_7d", 24) < 1.0:
+          return True, "3+ consecutive losses on <1h holds"
+      return False, ""
+
+  # Bad — uses imports not already in adapter.py:
+  import numpy as np  # adapter.py doesn't import numpy
+
+  # Bad — modifies existing code:
+  CONSECUTIVE_LOSS_LIMIT = 3  # would shadow the existing constant
+
+  # Bad — has I/O:
+  def my_heuristic(...):
+      with open("data.json") as f:  # adapter.py is pure-function, no I/O
+          ...
+
+The test_addition must use the same form — APPEND to test_adapter.py:
+
+  class TestShortHoldLoss(unittest.TestCase):
+      def test_triggers_on_3_short_losses(self):
+          stats = {"consecutive_losses": 3, "avg_hold_hours_7d": 0.5}
+          fired, reason = heuristic_short_hold_loss(stats)
+          self.assertTrue(fired)
+      def test_no_trigger_at_2_losses(self):
+          stats = {"consecutive_losses": 2, "avg_hold_hours_7d": 0.5}
+          fired, _ = heuristic_short_hold_loss(stats)
+          self.assertFalse(fired)
+
+LIMIT: max 1 lane=auto_pr proposal per response. Anything else, downgrade
+to lane=backlog. Multiple low-priority PRs would spam the operator's queue
+and dilute review attention.
 
 Empty `state_overrides` is fine when adapter got it right.
 But `narrative` must always be specific and useful — even on quiet days,

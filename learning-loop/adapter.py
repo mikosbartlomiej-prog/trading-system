@@ -45,27 +45,34 @@ def _adjust_size(current: float, factor: float) -> float:
 def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
     """
     Compute new strategy state given:
-      old:     prior state dict (or {} if first run)
+      old:     prior state dict (or {} / partial dict if first run /
+               manual edit). Missing keys get default values.
       stats:   today's contribution + 7d totals + lifetime totals
       equity:  current account equity (for P&L %)
 
     Returns a new dict with size_multiplier, enabled, side_bias, rationale,
     and rolled-up stats.
     """
-    new = deepcopy(old) if old else {
-        "trades_lifetime": 0,
-        "trades_7d": 0,
-        "win_rate_lifetime": 0.0,
-        "win_rate_7d": 0.0,
-        "pnl_usd_lifetime": 0.0,
-        "pnl_usd_7d": 0.0,
-        "size_multiplier": 1.0,
-        "enabled": True,
-        "side_bias": None,
+    defaults = {
+        "trades_lifetime":    0,
+        "trades_7d":          0,
+        "win_rate_lifetime":  0.0,
+        "win_rate_7d":        0.0,
+        "pnl_usd_lifetime":   0.0,
+        "pnl_usd_7d":         0.0,
+        "size_multiplier":    1.0,
+        "enabled":            True,
+        "side_bias":          None,
         "consecutive_losses": 0,
-        "rationale": "default",
-        "paused_until": None,
+        "rationale":          "default",
+        "paused_until":       None,
     }
+    # Start from defaults, overlay any old keys present (defensive: handles
+    # partial state.json after manual edit or first run).
+    new = deepcopy(defaults)
+    if old:
+        for k, v in old.items():
+            new[k] = v
 
     # Roll in the latest stats (analyzer computes these)
     new["trades_lifetime"]   = stats.get("trades_lifetime", new["trades_lifetime"])

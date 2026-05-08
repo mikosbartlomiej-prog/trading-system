@@ -1,6 +1,6 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 2.3 (daily adaptive learning loop with permanent memory; supersedes 2.2)
+**Version:** 2.3.3 (three-lane LLM proposal architecture; supersedes 2.3.2)
 **Effective from:** 2026-05-07 LATE
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
@@ -421,16 +421,14 @@ old Cloudflare Worker → routine path for that monitor. Useful for:
 
 ---
 
-## 5.6 Daily + Weekly Learning Loop (v2.3.1 — LLM-augmented adaptive parameters)
+## 5.6 Daily + Weekly Learning Loop (v2.3.3 — three-lane LLM proposal architecture)
 
-**Decision (2026-05-07):** the system reads its own Alpaca order history
-once per day, computes per-strategy performance, runs a deterministic
-heuristic adapter, then forwards the proposed state + raw stats to a
-**Senior Portfolio Manager LLM persona** (Claude routine on claude.ai)
-which can override / refine the adapter's choices. All overrides are
-whitelist-enforced. Resulting `size_multiplier`, `enabled`, `side_bias`
-land in `learning-loop/state.json` via a daily git push. Monitors read
-this state at the start of every cron run.
+**Decision (2026-05-07, extended 2026-05-08):** the system reads its own
+Alpaca order history once per day, computes per-strategy performance,
+runs a deterministic heuristic adapter, then forwards the proposed state
++ raw stats to a **Senior Portfolio Manager LLM persona** (Claude
+routine on claude.ai). The LLM produces three classes of output, each
+routed to a different "lane" with different risk/automation tradeoffs.
 
 **On Sunday 22:00 UTC** a second cron triggers `weekly_retro.py` — the
 same routine, type-dispatched to `weekly_retrospective`. It reviews the
@@ -440,23 +438,118 @@ experiments for the next week.
 
 **One goal:** consistently earn more. Adaptation tunes HOW; the goal is fixed.
 
-### Two-layer architecture
+### Three-lane architecture (v2.3.3)
 
 ```
-Alpaca trades  →  deterministic adapter  →  LLM strategist (Senior PM)
-                  (heuristics, always)       (override + narrative + new ideas)
+Alpaca orders  →  deterministic adapter  →  LLM strategist (Senior PM)
+                  (heuristics, always)       (proposals classified by lane)
                                                           │
-                                                          ▼
-                                       safe_apply_overrides() — whitelist enforcement
-                                                          │
-                                                          ▼
-                                       state.json + rationale.md → committed via git
+                  ┌───────────────────────────────────────┼───────────────────────────────────────┐
+                  ▼                                       ▼                                       ▼
+        Lane 1: state_overrides                  Lane 2: auto-PR                   Lane 3: structured backlog
+        (parameter tweaks — bounded               (new heuristic in adapter.py)    (architectural changes)
+         whitelist)                                                                
+                  │                                       │                                       │
+                  ▼                                       ▼                                       ▼
+        safe_apply_overrides()                   lane2_pr.py validates +           heuristic_proposals.md
+        clamps & rejects bad fields              creates branch + PR              (rich entry: risk/effort/
+                                                 (CI gate: tests must pass)        revisit/sketch)
+                  │                                       │                                       │
+                  ▼                                       ▼                                       ▼
+        state.json (auto-applied,                Operator review + merge          Operator implements
+        committed via git)                       (notify_pr_open email)            when prioritized
 ```
 
-The deterministic adapter is the idiot-proof baseline; the LLM is the
-intelligence layer on top. **Fail-soft contract:** if the LLM is
-unavailable (HTTP 429 / `USE_LLM_LEARNING=false` / no Worker URL), the
-adapter alone produces a complete, valid output — system never blocks.
+The deterministic adapter is the idiot-proof baseline; the three LLM
+lanes layer increasing levels of human gating on top. **Fail-soft
+contract:** if the LLM is unavailable (HTTP 429 / `USE_LLM_LEARNING=false`
+/ no Worker URL / poll timeout), the adapter alone produces a complete,
+valid output — system never blocks.
+
+### Lane 1 — `state_overrides` (auto-applied, whitelist-enforced)
+
+The LLM directly tunes `size_multiplier`, `enabled`, `side_bias`,
+`paused_until`, `rationale`, `llm_note` per strategy, plus
+`options_side_bias` and `max_open_options` globally.
+`safe_apply_overrides()` clamps `size_multiplier` to `[0.30, 2.00]`,
+rejects non-bool `enabled`, rejects invalid `side_bias` enums, and
+silently drops any field name outside the whitelist (defends against
+hallucinated keys like `delete_everything` or typos like `enbled`).
+
+**Risk profile:** very low — every change is bounded, reversible, and
+audited via `git log -- learning-loop/state.json`.
+
+### Lane 2 — `auto_pr` (PR-based, CI-gated, ~1/day)
+
+When the LLM is confident enough to propose a NEW heuristic for
+`learning-loop/adapter.py`, it tags the proposal `lane=auto_pr` and
+includes:
+
+- `code_patch` — pure-Python source code, AST-validated to contain only
+  function/class/assignment definitions. Appended to `adapter.py`.
+- `test_addition` — a `unittest.TestCase` subclass exercising the new
+  function. Appended to `learning-loop/test_adapter.py`.
+- `wire_into_adapt_strategy` — optional one-line hint where the new
+  function should be called from `adapt_strategy()`. Operator wires
+  manually during PR review.
+
+`learning-loop/lane2_pr.py::create_pr_from_proposal`:
+1. Validates the proposal against the safety gate (target file in
+   `{adapter.py}` whitelist, code parses, no top-level imports/exprs,
+   test contains a real TestCase).
+2. Creates branch `learning-loop/auto-<date>-<slug>`.
+3. Appends patch + test, runs `python -m unittest learning-loop.test_adapter`.
+4. **CI gate:** if any test red, abandons the branch — no PR is opened.
+5. If green, pushes the branch and runs `gh pr create` with a labelled,
+   structured PR body explaining the rationale + safety contract.
+6. Returns PR URL; operator gets `[learning-loop AUTO-PR]` email via
+   `notify_pr_open()`.
+
+**Limits enforced** (see `routine-prompts.md` SELF-COMMIT INSTRUCTIONS):
+- max 1 auto-PR per workflow run (further auto_pr proposals downgrade
+  to backlog)
+- only `learning-loop/adapter.py` modifiable in MVP
+- patch must be append-only (no edits to existing code)
+- patch must parse + tests must be green
+
+**Risk profile:** medium — code lands in adapter.py but only via PR (human
+gate), and only after the existing test suite stays green. Append-only
+constraint prevents the LLM from breaking existing heuristics.
+
+### Lane 3 — `backlog` (structured queue, manual implementation)
+
+For everything else — architectural changes, multi-file edits, anything
+requiring a data collection period, anything where the LLM isn't
+confident enough to write code. Proposal includes `effort_estimate`,
+`revisit_date`, `implementation_sketch`. Appended to
+`heuristic_proposals.md` as a rich tickbox entry. Operator implements
+when prioritized.
+
+**Risk profile:** zero — nothing happens until a human implements.
+
+### Lane classification rules (enforced in routine system prompt)
+
+The LLM must self-classify each proposal:
+
+| Lane | Pick when |
+|---|---|
+| `auto_pr` | New heuristic function in adapter.py, ≤30 LOC, self-contained test, low risk |
+| `backlog` | Architectural change, monitor.py / order placement, requires new dep, requires data collection, <80% confidence |
+| (default) | When in doubt, `backlog` |
+
+Plus hard caps: max 1 `auto_pr` per response. Multiple low-priority PRs
+would dilute review attention.
+
+### Fail-soft contract (still holds across all lanes)
+
+If the LLM call fails (HTTP 429 / `USE_LLM_LEARNING=false` / no Worker
+URL / poll timeout / unparseable JSON), the deterministic adapter alone
+produces a complete, valid output. No lane fires. The system never
+blocks on LLM availability.
+
+If the LLM succeeds but Lane 2 PR creation fails (validation rejects
+patch, tests red, gh CLI fails), the proposal automatically downgrades
+to Lane 3 backlog so the idea isn't lost.
 
 | Mechanism | File |
 |---|---|
@@ -740,6 +833,8 @@ These are reflected verbatim in `CLAUDE.md`:
 | **2.2** | **2026-05-07 EOD** | **routine bypass — direct Alpaca REST execution** | Hit 15-call/day Routines limit; refactored price/crypto/defense/twitter monitors to AUTO_EXECUTE via `shared/alpaca_orders.py`. Twitter Pattern A-D encoded as deterministic Python classifier; Pattern E ambiguous → email-only manual review. Routine reserved for weekly-learning + opt-in via `USE_ROUTINE=true` env. Realistic budget now ~1-3 calls/day vs 15+ before. |
 | **2.3** | **2026-05-07 LATE** | **daily learning loop with permanent memory** | Replaced weekly-learning with daily cron. New `learning-loop/`: analyzer + adapter + state.json + rationale.md + per-day history. Daily-learning workflow commits state back to repo via `GITHUB_TOKEN` (permissions: contents:write); git history is audit log. Heuristics (v1.0): cool-down on losing strategies, warm-up on winners, pause after 5 consec losses, side-bias for options based on long-vs-short P&L split. options-monitor wired to read state.json (size_multiplier + side_bias enforced). Other monitors wire in Phase 2. Routines no longer used here either (the LLM-on-routine path was the original analyzer's intent — replaced with deterministic heuristics + git-as-state-store). |
 | **2.3.1** | **2026-05-07 NIGHT** | **LLM augmentation on daily + weekly learning loop** | Reversed v2.3's "no LLM in learning" stance — learning is the most important thing in the system, so user demanded LLM be engaged in BOTH daily and weekly cycles with a "master-piece" prompt. Senior Portfolio Manager persona (20+ years, $100k paper, 4× margin, same mission as STRATEGY.md) added to `learning-loop/routine-prompts.md` with type-dispatch on `daily_learning_annotation` vs `weekly_retrospective`. Daily framework: 6-pass review (EDGE → SIZING → TIME-REGIME → SIGNAL QUALITY → MACRO → FILL-RATE). Weekly framework: 6-pass retro (P&L story → scorecard → allocation → sources → mistakes → experiments). New `learning-loop/llm_client.py` handles routine call + JSON parse + fail-soft + whitelist-enforced `safe_apply_overrides` (size_multiplier clamped 0.30-2.00, enabled bool, side_bias enum, hallucinated keys silently dropped). New `learning-loop/weekly_retro.py` (Sunday 22:00 UTC cron) writes full retro to `learning-loop/weekly-retros/<week_end>.md`. New `heuristic_proposals.md` queue for LLM-suggested rules. v2.2 routine-bypass on other monitors gives this layer the routine budget it needs (~1.14 calls/day vs 15/day limit → ~13.86 in reserve). |
+| **2.3.2** | **2026-05-08 (early)** | **Poll-based routine response + close-detection fix + emergency MARKET** | Anthropic Routines trigger is fire-and-forget — receipt comes back in <1s but the actual model JSON is async. Architecture: routine self-commits its JSON output to `learning-loop/pending-llm-{daily,weekly}.json` and pushes; `llm_client.call_routine` polls origin/<branch> for that file (180s → 300s after first nightly cron timeout). Closes "free LLM augmentation, no Anthropic API key needed" requirement. Plus 3 LLM-proposed bug fixes from the first augmented run: (a) `_is_close()` was always False — fixed to detect `exit-*` prefix AND Alpaca bracket child `*_take_profit`/`*_stop_loss` suffix; (b) `options-exit-monitor` SL exits switched LIMIT→MARKET (guaranteed fill in panic); (c) `compute_tp_hit_rate` metric for trailing-stop decision (10-day data collect). |
+| **2.3.3** | **2026-05-08 (afternoon)** | **Three-lane architecture for LLM proposals** | Resolves "auto-implementation of LLM lessons learned" backlog item. Three-lane proposal routing: Lane 1 = state_overrides whitelist (existing, auto-applied), Lane 2 = auto-PR for new heuristics in `learning-loop/adapter.py` (NEW — lane2_pr.py validates + creates branch + opens PR via gh CLI, max 1/day, CI-gated by test_adapter.py), Lane 3 = structured backlog entries with risk/effort/revisit metadata (NEW — auto-appended to heuristic_proposals.md). Routine system prompt extended with strict lane classification rules. New: `learning-loop/test_adapter.py` (19 tests, baseline CI gate), `learning-loop/lane2_pr.py`, `shared/notify.py::notify_pr_open`. Workflow updated with `pull-requests: write` permission + `GH_TOKEN`. User-side: re-paste new system prompt into Learning Loop Strategist routine. |
 
 ---
 
