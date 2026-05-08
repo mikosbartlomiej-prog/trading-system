@@ -34,7 +34,17 @@ Triggers: Sundays 22:00 UTC (`0 22 * * 0`) + manual `workflow_dispatch`.
 Sends `payload.type = "weekly_retrospective"` to the same learning-loop routine
 on claude.ai (type-dispatched).
 
-## 3. Update routine on claude.ai
+## 3. (Optional) Add `backtest.yml` for one-click backtests
+
+Open https://github.com/mikosbartlomiej-prog/trading-system/tree/main/.github/workflows
+→ Add file → Create new file → name `backtest.yml` → paste contents from
+`backtest.yml` in this folder → commit to `main`.
+
+After deploy: GitHub Actions → "Backtest — momentum strategies" → Run
+workflow → pick strategy / tickers / days → Run. Results in the run log
++ JSON ledger as a 30-day artifact.
+
+## 4. Update routine on claude.ai
 
 Open the existing `learning-loop` routine (rename to **Learning Loop Strategist**)
 → replace system prompt with the entire `═══` block from
