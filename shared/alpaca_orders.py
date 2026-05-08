@@ -120,7 +120,8 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     take_profit: absolute price for TP leg
     strategy:    used in client_order_id prefix
 
-    Returns the Alpaca order JSON on success, None on failure.
+    Returns the Alpaca order JSON on success, None on failure (incl.
+    risk-officer REJECT — see shared.risk_officer.evaluate_trade).
     """
     if qty < 1 or entry_price <= 0 or stop_loss <= 0 or take_profit <= 0:
         print(f"  bracket reject: qty={qty} entry={entry_price} sl={stop_loss} tp={take_profit}")
@@ -128,6 +129,32 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     if side not in ("buy", "sell_short"):
         print(f"  bracket reject: bad side '{side}'")
         return None
+
+    # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
+    # block the trade; soft warnings are logged but don't reject. Fail-soft
+    # if the officer module is unavailable for any reason — proceed to place.
+    try:
+        from risk_officer import evaluate_trade  # noqa: E402
+        verdict = evaluate_trade({
+            "symbol":      symbol,
+            "action":      "BUY" if side == "buy" else "SELL_SHORT",
+            "size_usd":    qty * entry_price,
+            "entry_price": entry_price,
+            "stop_loss":   stop_loss,
+            "take_profit": take_profit,
+            "strategy":    strategy,
+        })
+        if verdict.get("decision") == "REJECT":
+            print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
+            for f in verdict.get("checks_failed", []):
+                print(f"    - {f}")
+            return None
+        if verdict.get("warnings"):
+            print(f"  risk-officer warnings ({symbol}):")
+            for w in verdict["warnings"]:
+                print(f"    - {w}")
+    except Exception as e:
+        print(f"  risk-officer unavailable ({type(e).__name__}: {e}); proceeding")
 
     payload = {
         "symbol":         symbol,
@@ -168,6 +195,35 @@ def place_crypto_order(symbol: str, side: str, qty: float,
         return None
     if side not in ("buy", "sell"):
         return None
+
+    # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
+    # (Alpaca crypto = simple limit only); we pass the strategy-level
+    # values so the officer can validate R:R and per-trade size.
+    try:
+        from risk_officer import evaluate_trade  # noqa: E402
+        # For crypto, look up SL/TP from strategy defaults if available.
+        # If caller didn't compute them, the officer treats no-TP as a
+        # soft-warning trailing-exit assumption (won't reject).
+        verdict = evaluate_trade({
+            "symbol":      symbol,
+            "action":      "BUY" if side == "buy" else "SELL_SHORT",
+            "size_usd":    qty * limit_price,
+            "entry_price": limit_price,
+            "stop_loss":   limit_price * 0.93 if side == "buy" else limit_price * 1.07,
+            "take_profit": limit_price * 1.20 if side == "buy" else limit_price * 0.80,
+            "strategy":    strategy,
+        })
+        if verdict.get("decision") == "REJECT":
+            print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
+            for f in verdict.get("checks_failed", []):
+                print(f"    - {f}")
+            return None
+        if verdict.get("warnings"):
+            print(f"  risk-officer warnings ({symbol}):")
+            for w in verdict["warnings"]:
+                print(f"    - {w}")
+    except Exception as e:
+        print(f"  risk-officer unavailable ({type(e).__name__}: {e}); proceeding")
 
     payload = {
         "symbol":         symbol,

@@ -1,0 +1,265 @@
+"""
+Risk Officer — deterministic trade-validation gate.
+
+Replaces the agent-based `.claude/agents/risk-officer.md` with a
+synchronous Python check. Monitors call `evaluate_trade(proposal)`
+BEFORE placing an order; APPROVE → place, REJECT → log + skip.
+
+This consolidates checks that were previously scattered across
+monitors and shared/risk_guards.py. The semantics mirror v2.0 of the
+agent (default APPROVE, REJECT only on hard violations) so existing
+strategies/*.md and STRATEGY.md continue to be the source of truth.
+
+Hard checks (any fail → REJECT):
+  1. ticker on whitelist (.claude/rules/tickers-whitelist.md)
+  2. size_usd ≤ 20% of equity
+  3. stop_loss provided + numeric
+  4. R:R ≥ 1.2 (TP-distance / SL-distance from entry)
+  5. per-ticker total exposure ≤ 40% equity (uses
+     shared.risk_guards.concentration_ok)
+  6. daily P&L > -12% (uses shared.risk_guards.daily_drawdown_guard)
+  7. VIX < 60 (uses shared.risk_guards.vix_guard)
+
+Soft warnings (don't block — annotated in `warnings`):
+  - R:R in [1.2, 1.5]
+  - size_usd > 15% equity
+  - ticker already > 25% portfolio post-trade
+
+Fail-open contract: if any external dependency (Alpaca, VIX source) is
+unavailable, the check is logged as `unavailable` and skipped — REJECT
+is reserved for explicit rule violations the system can verify, never
+for missing data.
+
+Env override:
+  USE_RISK_OFFICER=false  →  evaluate_trade always returns APPROVE.
+                              Useful for backtests or emergency bypass.
+"""
+
+import os
+from typing import Any
+
+from risk_guards import (   # noqa: E402 — same-dir import (monitors path-insert shared/)
+    vix_guard, daily_drawdown_guard, concentration_ok,
+    get_account_status,
+)
+
+
+# ─── Whitelist (mirrors .claude/rules/tickers-whitelist.md) ───────────────────
+
+_WHITELIST: set[str] = {
+    # Mega-cap
+    "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA",
+    # Financials
+    "JPM", "V", "MA", "JNJ", "BRK.B",
+    # Broad ETFs
+    "SPY", "QQQ", "VOO", "VTI", "IWM", "VXUS", "VWO",
+    # Sector ETFs
+    "XLK", "XLF", "XLE", "XLV", "XLY",
+    # Commodity ETFs
+    "GLD", "SLV",
+    # Crypto
+    "BTC/USD", "ETH/USD",
+    # Defense
+    "RTX", "LMT", "NOC", "GD", "BA",
+    "KTOS", "PLTR", "AXON", "LDOS", "SAIC", "CACI",
+    "ITA", "XAR", "DFEN",
+    "BAESY", "EADSY",
+    # Energy
+    "XOM", "CVX",
+    # Leveraged 3x
+    "TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO", "SPXU",
+    "SOXL", "SOXS", "FAS", "FAZ", "TNA", "TZA",
+    # High-beta singles
+    "COIN", "MSTR", "ARM", "SMCI",
+}
+
+
+# ─── Thresholds (must match docs/STRATEGY.md) ─────────────────────────────────
+
+MAX_PER_TRADE_PCT       = 20.0   # size_usd as % of equity
+MAX_PER_TICKER_PCT      = 40.0   # combined ticker exposure %
+MIN_RR_RATIO            = 1.2    # take_profit / stop_loss distance
+WARN_PER_TRADE_PCT      = 15.0
+WARN_PER_TICKER_PCT     = 25.0
+WARN_RR_UPPER           = 1.5
+
+USE_OFFICER = os.environ.get("USE_RISK_OFFICER", "true").lower() == "true"
+
+
+def _is_options_contract(symbol: str) -> bool:
+    """Heuristic: OCC option symbol is 6+ chars with embedded date+CP digits."""
+    return len(symbol) > 7 and any(ch.isdigit() for ch in symbol)
+
+
+def _on_whitelist(symbol: str) -> bool:
+    """Whitelist check. Options contracts are allowed if their underlying is."""
+    if symbol in _WHITELIST:
+        return True
+    if _is_options_contract(symbol):
+        # Heuristic: leading alpha chars before first digit = underlying root
+        underlying = ""
+        for ch in symbol:
+            if ch.isalpha():
+                underlying += ch
+            else:
+                break
+        return underlying in _WHITELIST
+    return False
+
+
+def _rr_ratio(entry: float, sl: float, tp: float | None) -> float | None:
+    """Compute reward:risk. Returns None if SL or TP missing / on wrong side."""
+    if entry <= 0 or sl <= 0:
+        return None
+    sl_dist = abs(entry - sl)
+    if sl_dist <= 0:
+        return None
+    if tp is None or tp <= 0:
+        # No TP → R:R undefined. Treat as soft (don't reject just because
+        # the strategy uses trailing exit). Caller can decide.
+        return None
+    tp_dist = abs(tp - entry)
+    return tp_dist / sl_dist
+
+
+# ─── Public API ───────────────────────────────────────────────────────────────
+
+def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
+    """
+    Validate `proposal` (entry-monitor sized) before order placement.
+
+    Proposal shape (mirrors risk-officer.md):
+      {
+        "symbol":      "AAPL",
+        "action":      "BUY" | "SELL_SHORT" | "BUY_TO_OPEN_CALL" | ...,
+        "size_usd":    10000,
+        "entry_price": 175.25,
+        "stop_loss":   170.00,
+        "take_profit": 180.00,
+        "strategy":    "aggressive-momentum",
+      }
+
+    Returns:
+      {
+        "decision":      "APPROVE" | "REJECT",
+        "checks_passed": [...],
+        "checks_failed": [...],
+        "warnings":      [...],
+        "rationale":     "one-sentence explanation",
+      }
+    """
+    if not USE_OFFICER:
+        return {
+            "decision":      "APPROVE",
+            "checks_passed": [],
+            "checks_failed": [],
+            "warnings":      ["risk-officer disabled via USE_RISK_OFFICER=false"],
+            "rationale":     "officer bypassed — proposal accepted as-is",
+        }
+
+    passed: list[str] = []
+    failed: list[str] = []
+    warnings: list[str] = []
+
+    symbol      = (proposal.get("symbol") or "").strip().upper()
+    size_usd    = float(proposal.get("size_usd") or 0)
+    entry       = float(proposal.get("entry_price") or 0)
+    sl          = float(proposal.get("stop_loss") or 0)
+    tp          = proposal.get("take_profit")
+    if tp is not None:
+        try:
+            tp = float(tp)
+        except (TypeError, ValueError):
+            tp = None
+
+    # ── HARD: whitelist ──────────────────────────────────────────────────────
+    if not symbol:
+        failed.append("missing symbol")
+    elif not _on_whitelist(symbol):
+        failed.append(f"ticker '{symbol}' not on whitelist")
+    else:
+        passed.append("whitelist")
+
+    # ── HARD: stop_loss exists ───────────────────────────────────────────────
+    if sl <= 0:
+        failed.append("stop_loss missing or non-positive")
+    else:
+        passed.append("stop_loss")
+
+    # ── HARD: R:R ≥ 1.2 (only when TP provided) ──────────────────────────────
+    rr = _rr_ratio(entry, sl, tp)
+    if rr is not None:
+        if rr < MIN_RR_RATIO:
+            failed.append(f"R:R {rr:.2f} < {MIN_RR_RATIO}")
+        else:
+            passed.append(f"rr={rr:.2f}")
+            if rr <= WARN_RR_UPPER:
+                warnings.append(f"R:R {rr:.2f} is mid-range (warn-zone {MIN_RR_RATIO}-{WARN_RR_UPPER})")
+    elif tp is None:
+        # No TP — likely trailing exit strategy. Add as warning, not fail.
+        warnings.append("no take_profit (trailing exit assumed)")
+
+    # ── HARD: account-relative checks (need equity) ──────────────────────────
+    account = get_account_status()
+    if account is None:
+        warnings.append("account-data-unavailable (Alpaca outage) — fail-open")
+    else:
+        equity = float(account.get("equity") or 0)
+        if equity > 0:
+            # Per-trade cap
+            pct = (size_usd / equity) * 100 if size_usd > 0 else 0
+            if pct > MAX_PER_TRADE_PCT:
+                failed.append(f"size_usd {pct:.1f}% > {MAX_PER_TRADE_PCT}% equity")
+            else:
+                passed.append(f"per_trade={pct:.1f}%")
+                if pct > WARN_PER_TRADE_PCT:
+                    warnings.append(f"size_usd {pct:.1f}% > {WARN_PER_TRADE_PCT}% (large position)")
+
+            # Per-ticker concentration (existing position + this trade)
+            if size_usd > 0:
+                ok, combined = concentration_ok(symbol, size_usd, equity)
+                if not ok:
+                    failed.append(
+                        f"per-ticker {combined:.1f}% > {MAX_PER_TICKER_PCT}% post-trade"
+                    )
+                else:
+                    passed.append(f"per_ticker={combined:.1f}%")
+                    if combined > WARN_PER_TICKER_PCT:
+                        warnings.append(
+                            f"per-ticker {combined:.1f}% > {WARN_PER_TICKER_PCT}% (concentration risk)"
+                        )
+
+        # Drawdown circuit-breaker
+        status, reason = daily_drawdown_guard(account)
+        if status == "HALT":
+            failed.append(f"daily-drawdown HALT: {reason}")
+        else:
+            passed.append("daily_drawdown_ok")
+
+    # ── HARD: VIX guard ──────────────────────────────────────────────────────
+    vix_status, _ = vix_guard()
+    if vix_status == "HALT":
+        failed.append("VIX > 60 (catastrophic-only HALT)")
+    else:
+        passed.append("vix_ok")
+
+    # ── Decision ─────────────────────────────────────────────────────────────
+    if failed:
+        return {
+            "decision":      "REJECT",
+            "checks_passed": passed,
+            "checks_failed": failed,
+            "warnings":      warnings,
+            "rationale":     f"REJECT — {failed[0]}",
+        }
+
+    return {
+        "decision":      "APPROVE",
+        "checks_passed": passed,
+        "checks_failed": [],
+        "warnings":      warnings,
+        "rationale":     (
+            f"APPROVE ({len(passed)} checks; {len(warnings)} warnings)"
+            if warnings else f"APPROVE ({len(passed)} checks)"
+        ),
+    }

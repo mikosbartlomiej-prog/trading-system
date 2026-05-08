@@ -31,8 +31,10 @@ POSITION_PCT_CAP         = 40.0    # block new entries if combined pos% > 40% eq
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
 
-def get_vix() -> float | None:
-    """Fetch current VIX index level via Finnhub. Returns None on failure."""
+def _vix_from_finnhub() -> float | None:
+    """Fetch VIX from Finnhub /quote. Free tier currently returns 0 for ^VIX
+    (the endpoint moved to a paid plan mid-2024) — kept here as preferred
+    source in case the free tier is restored. Returns None on failure / 0."""
     api_key = os.environ.get("FINNHUB_API_KEY", "")
     if not api_key:
         return None
@@ -46,8 +48,53 @@ def get_vix() -> float | None:
         c = float(r.json().get("c", 0))
         return c if c > 0 else None
     except Exception as e:
-        print(f"  VIX fetch error: {e}")
+        print(f"  VIX/Finnhub error: {e}")
         return None
+
+
+def _vix_from_yahoo() -> float | None:
+    """Fetch VIX from Yahoo Finance public chart endpoint. No API key
+    required. Returns None on failure. Brittle (Yahoo can change response
+    format without notice) — used as fallback when Finnhub is empty."""
+    try:
+        r = requests.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX",
+            params={"interval": "1d", "range": "1d"},
+            headers={"User-Agent": "trading-system/1.0 (mikosbartlomiej-prog)"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        data = r.json()
+        result = (data.get("chart") or {}).get("result") or []
+        if not result:
+            return None
+        meta = result[0].get("meta") or {}
+        price = meta.get("regularMarketPrice")
+        if isinstance(price, (int, float)) and price > 0:
+            return float(price)
+        return None
+    except Exception as e:
+        print(f"  VIX/Yahoo error: {e}")
+        return None
+
+
+def get_vix() -> float | None:
+    """
+    Fetch current VIX with provider fallback chain:
+      1. Finnhub `/quote?symbol=^VIX` (preferred — paid tier returns proper
+         data; free tier currently returns 0)
+      2. Yahoo Finance public chart endpoint (free, no key, brittle)
+
+    Returns the first non-None positive number, or None if all sources
+    fail. Caller (`vix_guard`) treats None as fail-open (normal sizing).
+    """
+    for fetcher_name, fetcher in (("finnhub", _vix_from_finnhub),
+                                   ("yahoo",   _vix_from_yahoo)):
+        v = fetcher()
+        if v is not None:
+            print(f"  VIX from {fetcher_name}: {v:.2f}")
+            return v
+    return None
 
 
 def vix_guard() -> tuple[str, float]:

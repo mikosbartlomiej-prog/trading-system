@@ -21,3 +21,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Backtest harness artifacts
+backtest/.cache/
+backtest/results/

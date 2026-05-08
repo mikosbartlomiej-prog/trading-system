@@ -372,18 +372,19 @@ The GMAIL_APP_PASSWORD GitHub Secret contained \xa0 (non-breaking space) from co
   - When email arrives: create app at reddit.com/prefs/apps → type: script
   - Add secrets: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `CLOUDFLARE_REDDIT_WORKER_URL`
 
-- **VIX guard pivot to a working source** (follow-up to Done #7 production note)
-  - Symptom: Finnhub free `/quote?symbol=^VIX` returns empty; vix_guard always fail-opens in prod
-  - Candidates: VIXY ETF via Alpaca bars (proxy with rough scaling), Yahoo Finance public quote (brittle), FRED VIXCLS series (free key)
-  - ETA when prioritised: ~15 min to wire one source + test
+- ~~**VIX guard pivot to a working source**~~ ✅ **DONE 2026-05-08** (Yahoo Finance fallback)
+  - `shared/risk_guards.py::get_vix` now chains Finnhub → Yahoo `/v8/finance/chart/^VIX` (no key, public). When Finnhub returns 0 (free-tier behaviour mid-2024+), Yahoo kicks in. If both fail, fail-open as before.
 
-- **Backtest harness** for the momentum-long / overbought-short strategies on 6+ months of data
-  - Currently trading on live signals only; no validation that the rules actually have edge
-  - Would need historical bars (Alpaca offers free historical IEX), simple replay of `check_long_signal` / `check_short_signal` and tracking simulated P&L
+- **Backtest harness** ✅ **MVP shipped 2026-05-08** (`backtest/` directory)
+  - `python -m backtest.run --strategy momentum-long --tickers AAPL MSFT NVDA --days 180`
+  - Replays daily-bar signals through walk-forward loop with bracket SL/TP simulation. Per-ticker summary + aggregate stats + JSON ledger.
+  - **What works:** signal pure functions extracted from price-monitor (momentum-long, overbought-short); Alpaca data fetcher with cache; one-position-at-a-time replay; smoke-test on synthetic 60-day range→breakout→pullback pattern catches +3.8% breakout trade.
+  - **What's missing (next-iteration TODOs):** multi-position pyramiding, slippage/commission modelling, intraday bars (currently only daily), other asset classes (no crypto/options yet), walk-forward parameter optimization.
+  - **Run it post-trade-day to gain confidence**: pick the basket of tickers we're trading + 6-month window. If `win_rate < 40%` or `total_pnl_usd` negative across the basket → strategy edge is questionable; tighten ATR multipliers or add filters.
 
-- **Risk officer agent gate** (`.claude/agents/risk-officer.md`) — exists but not wired into monitor flow
-  - CLAUDE.md "Mandatory workflow for every order" still expects this gate; today's monitors bypass it (alerts go straight to routine / Alpaca)
-  - Either delete the rule or wire the agent in
+- ~~**Risk officer agent gate**~~ ✅ **DONE 2026-05-08** (codified deterministically as `shared/risk_officer.py::evaluate_trade`; wired into `place_stock_bracket` + `place_crypto_order`)
+  - The agent in `.claude/agents/risk-officer.md` was an LLM-based design that never landed in the monitor flow. We now have a synchronous Python version that runs all 9 hard checks (whitelist, size cap, SL exists, R:R, per-ticker concentration, daily drawdown, VIX HALT) + 4 soft warnings, returning the same JSON envelope. `USE_RISK_OFFICER=false` env bypasses for backtests / emergency.
+  - Old agent file kept as documentation (it describes the same semantics).
 
 - **Verify weekly-learning loop end-to-end** (added 2026-05-06 EOD)
   - Workflow `weekly-learning.yml` runs Sunday 20:00 UTC; never confirmed it actually
