@@ -19,3 +19,6 @@
 - 2026-05-07 · LLM unavailable (skipped) — deterministic adapter only
 - 2026-05-07 · no parameter changes (all strategies within thresholds)
 
+- 2026-05-08 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-08 · no parameter changes (all strategies within thresholds)
+
