@@ -33,3 +33,30 @@
 <!-- ============================================================ -->
 
 - [x] [2026-05-09] **Cancel pre-patch exit-emergency LIMIT orders stuck open in Alpaca** ✅ DONE 2026-05-09 — `scripts/cancel_stale_emergency_orders.py` + `.github/workflows/cancel-stale-emergency-orders.yml`; user ran workflow, **4/4 stale LIMIT orders cancelled** (GOOGL260515P00400, QQQ260515P00709, QQQ260514P00699, AMZN260513P00275). Script idempotent — safe to re-run.
+
+<!-- ============================================================ -->
+<!-- 2026-05-09 (rescued from commit 2beb4b7 — Senior PM output    -->
+<!-- from timeout run, written to old path before routine prompt   -->
+<!-- was updated; workflow cleanup removed file before route_      -->
+<!-- proposals could process it. Manually appended here as Lane 3. -->
+<!-- ============================================================ -->
+
+- [ ] [2026-05-09] **Regime mismatch exit: proactive PUT close when side_bias=long + SPY uptrend** _(risk: medium, effort: 2-3h, revisit: 2026-05-14)_
+  - **Rationale:** Gdy LLM ustawia `options_side_bias=long` w risk_on rally, stare PUT pozycje krwawią bez mechanizmu proaktywnego zamknięcia. Statyczny SL=entry*0.50 to za daleko — tracimy więcej niż konieczne zanim SL się aktywuje. Potrzebny dodatkowy trigger: jeśli `side_bias='long' AND pozycja jest PUT AND strata > -15% AND SPY 5d return > +1.5%`, zamknąć po midpoint niezależnie od SL.
+  - **Sketch:**
+    1. `options-exit-monitor/monitor.py`: po głównej pętli SL/TP dodaj blok `regime_mismatch_check`.
+    2. Wczytaj `global_overrides.options_side_bias` z `learning-loop/state.json`.
+    3. Pobierz SPY 5d return z `shared/market_data.py::compute_reaction_metrics('SPY')`.
+    4. Jeśli `side_bias='long' AND contract_type='put' AND current_pl_pct < -0.15 AND spy_5d_return > 0.015`: place SELL_TO_CLOSE LIMIT @ bid (nie midpoint — agresywne wyjście).
+    5. `client_order_id`: `exit-regime-{symbol}-{ts}`.
+    6. `notify_exit reason='regime_mismatch'`.
+    7. DTE guard: skip jeśli `DTE>14 AND strata < -25%` (można jeszcze odwrócić).
+
+- [ ] [2026-05-09] **TP hit rate feedback loop: tighten TP multiplier when miss rate > 80% on 5+ placements** _(risk: low, effort: 1h, revisit: 2026-05-17)_
+  - **Rationale:** `exit-tp-qqq699` canceled (tp_hit_rate 0% / 1 placed) to wczesny sygnał że TP=entry*1.8 jest za daleko w normalnych warunkach. `analyzer.py` liczy tp_hit_rate ale brak feedbacku do exit monitorów. Gdy `hit_rate < 0.20 AND tp_placed >= 5`, dynamicznie redukować TP multiplier do 1.4× — mniej per-trade zysku, dramatycznie lepsza wypełnioność.
+  - **Sketch:**
+    1. `analyzer.py compute_tp_hit_rate()`: dodaj per-strategy breakdown (obecnie 'unknown' bo brak client_order_id attribution w `exit-tp-*` orders).
+    2. Payload `today_stats.tp_hit_rate`: dict keyed by strategy name.
+    3. `adapter.py adapt_strategy()`: jeśli `tp_hit_rate[strategy] < 0.20 AND tp_placed >= 5`, zapisz `state['strategies'][strategy]['suggested_tp_multiplier'] = 1.4`.
+    4. `options-exit-monitor`: wczytaj `suggested_tp_multiplier` z state.json, użyj zamiast hardcoded 1.8.
+    5. **Uwaga:** to tylko options — stock TP/SL w exit-monitor ma osobną logikę.
