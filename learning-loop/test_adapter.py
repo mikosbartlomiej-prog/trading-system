@@ -276,3 +276,27 @@ class TestAdaptOrchestration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ─── Lane2 auto-added test for: Detect options-momentum fill rate below 50% over 5+ orders and alert to widen limits ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_options_limit_too_tight  # noqa: E402,F401
+
+
+class TestOptionsLimitTooTight(unittest.TestCase):
+    def test_triggers_on_low_fill_with_sufficient_sample(self):
+        fill_stats = {"options-momentum": {"placed": 10, "fill_rate": 0.4}}
+        fired, reason = heuristic_options_limit_too_tight(fill_stats)
+        self.assertTrue(fired)
+        self.assertIn("limits too tight", reason)
+    def test_no_trigger_below_min_sample(self):
+        fill_stats = {"options-momentum": {"placed": 3, "fill_rate": 0.2}}
+        fired, _ = heuristic_options_limit_too_tight(fill_stats)
+        self.assertFalse(fired)
+    def test_no_trigger_acceptable_fill_rate(self):
+        fill_stats = {"options-momentum": {"placed": 10, "fill_rate": 0.65}}
+        fired, _ = heuristic_options_limit_too_tight(fill_stats)
+        self.assertFalse(fired)
+    def test_no_trigger_missing_strategy_key(self):
+        fired, _ = heuristic_options_limit_too_tight({})
+        self.assertFalse(fired)

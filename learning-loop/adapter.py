@@ -250,3 +250,18 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
         rationale.append(f"{today_iso} · no parameter changes (all strategies within thresholds)")
 
     return new_state, rationale
+
+
+# ─── Lane2 auto-added — Detect options-momentum fill rate below 50% over 5+ orders and alert to widen limits ────────────
+
+def heuristic_options_limit_too_tight(fill_stats: dict) -> tuple:
+    """Flag when options-momentum limits are systematically too tight."""
+    opts = fill_stats.get("options-momentum", {})
+    placed = opts.get("placed", 0)
+    fill_rate = opts.get("fill_rate", 1.0)
+    if placed >= 5 and fill_rate < 0.5:
+        return True, (
+            f"options-momentum fill_rate {fill_rate:.0%} over {placed} orders"
+            " — limits too tight, widen to ask+1% or mid+3%"
+        )
+    return False, ""
