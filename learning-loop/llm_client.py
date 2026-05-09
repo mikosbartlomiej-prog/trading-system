@@ -37,14 +37,15 @@ import requests
 
 USE_LLM            = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true"
 WORKER_URL         = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
+CHALLENGER_WORKER_URL = os.environ.get("CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL", "")
 TRIGGER_TIMEOUT_S  = 30        # POST is fire-and-forget; receipt comes back <1s
 POLL_INTERVAL_S    = 15        # how often we git fetch + check for pending file
 # Max wait for routine to push its JSON. Calibrated from observed runs:
 # 2026-05-08 first manual: 139 s. 2026-05-09 manual #1 (post auto-merge):
 # 247 s. 2026-05-09 manual #2: 325 s (race — file arrived 25 s after the
 # prior 300 s timeout fired). Bumped 180->300->480 to give 2x headroom
-# over worst observed. Workflow's timeout-minutes is 10, so 480 still
-# leaves ~2 min for git ops + commit.
+# over worst observed. With 3-round daily dialog the workflow's
+# timeout-minutes is bumped to 30 so each leg gets a full 480 s budget.
 POLL_MAX_S         = 480
 GIT_OP_TIMEOUT_S   = 30
 
@@ -52,9 +53,19 @@ LEARNING_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT    = os.path.abspath(os.path.join(LEARNING_DIR, ".."))
 
 
+# Per-payload-type → contracted output filename. Matches routine-prompts.md
+# (Senior PM) and challenger-prompts.md.
+_PENDING_FILES = {
+    "daily_learning_annotation": "pending-llm-daily-draft1.json",
+    "challenger_review":         "pending-llm-daily-challenge.json",
+    "daily_revise":              "pending-llm-daily.json",
+    "weekly_retrospective":      "pending-llm-weekly.json",
+}
+
+
 def _pending_path(payload_type: str) -> str:
     """Return the file path the routine is contracted to write."""
-    name = "pending-llm-weekly.json" if payload_type == "weekly_retrospective" else "pending-llm-daily.json"
+    name = _PENDING_FILES.get(payload_type, "pending-llm-daily.json")
     return os.path.join(LEARNING_DIR, name)
 
 
@@ -91,24 +102,29 @@ def _git_pull(branch: str) -> bool:
     return True
 
 
-def call_routine(payload: dict) -> dict | None:
+def call_routine(payload: dict, worker_url: str | None = None) -> dict | None:
     """
     Trigger the learning routine and wait for its JSON output to appear
     as a committed file in the repo.
 
-    The routine system prompt (`routine-prompts.md`) instructs the LLM
-    to save its JSON to `learning-loop/pending-llm-{daily|weekly}.json`
-    and `git push` to `payload.target_branch`. We poll for that file
-    here and consume it (`git rm`) so the workflow's final commit
-    cleans up automatically.
+    The routine system prompt (`routine-prompts.md` for Senior PM,
+    `challenger-prompts.md` for Challenger) instructs the LLM to save
+    its JSON to a per-type file and `git push` to `payload.target_branch`
+    with the `[automerge]` tag. We poll for that file here and consume
+    it (`git rm`) so the workflow's final commit cleans up automatically.
+
+    `worker_url` selects which Cloudflare Worker (and therefore which
+    routine) to invoke. Defaults to the Senior PM worker
+    (`CLOUDFLARE_LEARNING_WORKER_URL`).
 
     Returns parsed dict on success, None on any failure (fail-soft).
     """
     if not USE_LLM:
         print("  LLM: USE_LLM_LEARNING=false, skipping")
         return None
-    if not WORKER_URL:
-        print("  LLM: CLOUDFLARE_LEARNING_WORKER_URL not set, skipping")
+    target_url = worker_url if worker_url is not None else WORKER_URL
+    if not target_url:
+        print("  LLM: worker URL not set, skipping")
         return None
 
     payload_type = payload.get("type", "daily_learning_annotation")
@@ -132,7 +148,7 @@ def call_routine(payload: dict) -> dict | None:
 
     # 1) Fire trigger
     try:
-        r = requests.post(WORKER_URL, json=payload, timeout=TRIGGER_TIMEOUT_S)
+        r = requests.post(target_url, json=payload, timeout=TRIGGER_TIMEOUT_S)
     except Exception as e:
         print(f"  LLM trigger exception: {e}")
         return None
@@ -213,6 +229,78 @@ def call_routine(payload: dict) -> dict | None:
             return data
 
         print(f"  LLM: not yet ({elapsed:.0f}s / {POLL_MAX_S}s)")
+
+
+# ─── 3-round daily dialog wrappers ───────────────────────────────────────────
+#
+# Daily flow (replaces single call_routine in the analyzer):
+#
+#   1. call_senior_pm_round1(payload)   -> draft analysis (Senior PM routine)
+#   2. call_challenger(payload)         -> critique     (Challenger routine)
+#   3. call_senior_pm_revise(payload)   -> revised final (Senior PM routine)
+#
+# Each leg is fail-soft: if any returns None, the analyzer must use the
+# best partial product available (see analyzer.py orchestration).
+
+
+def call_senior_pm_round1(payload: dict) -> dict | None:
+    """
+    Round 1 — Senior PM produces draft analysis.
+
+    Payload type MUST be `daily_learning_annotation`. Output lands in
+    `pending-llm-daily-draft1.json` (NOT the analyzer-consumed file).
+    """
+    payload = dict(payload)
+    payload["type"] = "daily_learning_annotation"
+    return call_routine(payload, worker_url=WORKER_URL)
+
+
+def call_challenger(payload: dict) -> dict | None:
+    """
+    Round 2 — Challenger critiques Senior PM's draft.
+
+    Payload shape (per challenger-prompts.md):
+      {
+        "type": "challenger_review",
+        "today_stats": {...},
+        "senior_pm_draft": {...round 1 output...},
+        "target_branch": "..."
+      }
+
+    Output lands in `pending-llm-daily-challenge.json`. Returns None if
+    the Challenger Worker URL isn't configured (fail-soft → round 3
+    skipped, round 1 applied directly).
+    """
+    if not CHALLENGER_WORKER_URL:
+        print("  LLM Challenger: CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL "
+              "not set, skipping critique step")
+        return None
+    payload = dict(payload)
+    payload["type"] = "challenger_review"
+    return call_routine(payload, worker_url=CHALLENGER_WORKER_URL)
+
+
+def call_senior_pm_revise(payload: dict) -> dict | None:
+    """
+    Round 3 — Senior PM reads Challenger's critique and produces FINAL
+    revised analysis.
+
+    Payload shape (per routine-prompts.md TYPE 3):
+      {
+        "type": "daily_revise",
+        "today_stats": {...},
+        "your_previous_draft": {...round 1 output...},
+        "challenger_critique": {...round 2 output...},
+        "target_branch": "..."
+      }
+
+    Output lands in `pending-llm-daily.json` — this is the file the
+    analyzer ultimately consumes for state_overrides + heuristic
+    proposals + narrative.
+    """
+    payload = dict(payload)
+    payload["type"] = "daily_revise"
+    return call_routine(payload, worker_url=WORKER_URL)
 
 
 # ─── Safe override application ───────────────────────────────────────────────

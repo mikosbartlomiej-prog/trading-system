@@ -17,7 +17,10 @@ permissions:
 jobs:
   analyze-and-adapt:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 3-round daily LLM dialog (Senior PM round1 -> Challenger -> Senior PM
+    # revise) means three sequential routine calls of up to 480 s each.
+    # Worst-case ≈ 24 min for the dialog + git ops; bumped from 10 -> 30.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repo
@@ -44,9 +47,14 @@ jobs:
           GMAIL_USER:                      ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD:              ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:                    ${{ secrets.NOTIFY_EMAIL }}
-          # LLM augmentation — Senior PM persona via existing learning-loop routine
-          CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
-          USE_LLM_LEARNING:                'true'
+          # LLM augmentation — 3-round daily dialog:
+          #   Round 1+3 (Senior PM)  -> CLOUDFLARE_LEARNING_WORKER_URL
+          #   Round 2   (Challenger) -> CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL
+          # If the Challenger Worker URL is missing, round 2+3 are skipped
+          # and the analyzer applies Senior PM's draft 1 unfiltered (fail-soft).
+          CLOUDFLARE_LEARNING_WORKER_URL:             ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
+          CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL }}
+          USE_LLM_LEARNING:                           'true'
           # Lane 2 auto-PR — gh CLI uses GH_TOKEN (or GITHUB_TOKEN fallback)
           # to authenticate `gh pr create` against this repo. Default
           # GITHUB_TOKEN has write access to PRs because of the workflow's
@@ -68,6 +76,8 @@ jobs:
           # the deletion. --ignore-unmatch makes it a no-op when absent.
           git rm -f --ignore-unmatch \
             learning-loop/pending-llm-daily.json \
+            learning-loop/pending-llm-daily-draft1.json \
+            learning-loop/pending-llm-daily-challenge.json \
             learning-loop/pending-llm-weekly.json 2>/dev/null || true
           git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
           # LLM-only artifacts — may not exist on a quiet day; ignore failure

@@ -49,8 +49,9 @@ HISTORY_DIR      = os.path.join(LEARNING_DIR, "history")
 sys.path.insert(0, LEARNING_DIR)
 from adapter    import adapt          # noqa: E402
 from llm_client import (              # noqa: E402
-    call_routine, safe_apply_overrides, append_heuristic_proposals,
-    route_proposals,
+    call_routine, call_senior_pm_round1, call_challenger,
+    call_senior_pm_revise, safe_apply_overrides,
+    append_heuristic_proposals, route_proposals,
 )
 
 HEURISTIC_PROPOSALS_PATH = os.path.join(LEARNING_DIR, "heuristic_proposals.md")
@@ -543,6 +544,64 @@ def write_history_report(date_iso: str, today_stats: dict,
         f.write("\n".join(lines))
 
 
+# ─── Challenger filter (round-3-failed fallback) ─────────────────────────────
+
+def _apply_challenger_filter(draft1: dict, critique: dict) -> dict:
+    """
+    Apply Challenger's REJECTED verdicts to Senior PM's draft 1 when
+    round 3 (Senior PM revision) is unavailable.
+
+    This is a minimal safety net — we drop overrides + heuristic
+    proposals that the Challenger explicitly REJECTED, but we don't
+    try to apply MODIFIED suggestions (that's Senior PM's job in
+    round 3, and without their judgement we play conservative).
+
+    Returns a copy of `draft1` with rejected items removed.
+    """
+    if not isinstance(draft1, dict) or not isinstance(critique, dict):
+        return draft1 or {}
+
+    log = critique.get("challenge_log") or []
+    rejected_refs: set[str] = {
+        (entry.get("original_proposal") or "").strip().lower()
+        for entry in log
+        if isinstance(entry, dict) and entry.get("decision") == "REJECTED"
+    }
+    rejected_refs.discard("")
+    if not rejected_refs:
+        return draft1
+
+    filtered = json.loads(json.dumps(draft1))  # deep copy
+
+    # Drop matching strategy overrides. Match is substring against
+    # `original_proposal` ref (Challenger uses free-form strings like
+    # "state_overrides.strategies.options-momentum.size_multiplier 1.0->0.6").
+    strats = (filtered.get("state_overrides") or {}).get("strategies") or {}
+    for strat_name in list(strats.keys()):
+        for ref in rejected_refs:
+            if strat_name.lower() in ref:
+                del strats[strat_name]
+                break
+
+    # Drop matching heuristic proposals (match against title)
+    proposals = filtered.get("new_heuristic_proposals") or []
+    kept = []
+    for p in proposals:
+        if not isinstance(p, dict):
+            kept.append(p)
+            continue
+        title = (p.get("title") or "").strip().lower()
+        if not title:
+            kept.append(p)
+            continue
+        if any(title in ref or ref in title for ref in rejected_refs):
+            continue   # rejected
+        kept.append(p)
+    filtered["new_heuristic_proposals"] = kept
+
+    return filtered
+
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 def run():
@@ -590,27 +649,82 @@ def run():
     old_state = load_state()
     new_state, rationale = adapt(old_state, today_stats)
 
-    # ── LLM augmentation step (fail-soft) ──────────────────────────────────
-    # The deterministic adapter has produced a baseline new_state + rationale.
-    # We now ask the LLM (Senior PM persona, see routine-prompts.md) to:
-    #   1. Validate / second-guess the adapter's output
-    #   2. Apply selective overrides where the adapter missed something
-    #   3. Write a richer narrative for rationale.md
-    #   4. Suggest new heuristics for future adapter versions
+    # ── LLM augmentation — 3-round dialog (fail-soft) ──────────────────────
     #
-    # If the LLM call fails (USE_LLM_LEARNING=false / 429 / no creds /
-    # bad JSON), we keep the deterministic baseline. LLM is strictly
-    # additive — never blocks the loop.
-    print("\n  Calling LLM annotator (Senior PM review)...")
-    llm_payload = {
-        "type":                    "daily_learning_annotation",
+    #   Round 1: Senior PM produces draft analysis
+    #   Round 2: Challenger critiques the draft
+    #   Round 3: Senior PM revises with FINAL WORD, reading the critique
+    #
+    # Fail-soft cascade:
+    #   - Round 1 fails → keep deterministic baseline only
+    #   - Round 2 fails → apply Round 1 unfiltered (no challenge happened)
+    #   - Round 3 fails → apply Round 1 with Challenger filter
+    #     (drop any state_override the Challenger marked REJECTED)
+    #
+    # LLM is strictly additive — never blocks the loop.
+    target_branch = os.environ.get("GITHUB_REF_NAME") or _git_current_branch()
+    base_payload = {
         "today_stats":             today_stats,
         "proposed_state":          new_state,
         "deterministic_rationale": rationale,
         "recent_rationale_tail":   _tail_rationale(20),
-        "target_branch":           os.environ.get("GITHUB_REF_NAME") or _git_current_branch(),
+        "target_branch":           target_branch,
     }
-    llm_resp = call_routine(llm_payload)
+
+    print("\n  [Round 1/3] Calling Senior PM for draft analysis...")
+    draft1 = call_senior_pm_round1(base_payload)
+
+    critique = None
+    llm_resp = None  # final round-3 (or fall-back round-1) output applied below
+
+    if draft1 is None:
+        print("  [Round 1/3] Senior PM unavailable — skipping rounds 2 & 3, "
+              "falling back to deterministic baseline only")
+    else:
+        print(f"  [Round 1/3] Senior PM draft received "
+              f"(confidence={draft1.get('confidence', '?')}, "
+              f"{len((draft1.get('state_overrides') or {}).get('strategies') or {})} strategy overrides, "
+              f"{len(draft1.get('new_heuristic_proposals') or [])} heuristic proposals)")
+
+        print("\n  [Round 2/3] Calling Challenger for critique...")
+        critique = call_challenger({
+            "today_stats":     today_stats,
+            "senior_pm_draft": draft1,
+            "target_branch":   target_branch,
+        })
+
+        if critique is None:
+            print("  [Round 2/3] Challenger unavailable — skipping round 3, "
+                  "applying Senior PM's draft 1 unfiltered")
+            llm_resp = draft1
+        else:
+            cs = critique.get("stats") or {}
+            print(f"  [Round 2/3] Challenger critique received "
+                  f"(reviewed={cs.get('total_proposals_reviewed', '?')}, "
+                  f"survived={cs.get('survived', '?')}, "
+                  f"modified={cs.get('modified', '?')}, "
+                  f"rejected={cs.get('rejected', '?')}, "
+                  f"confidence={critique.get('confidence_in_critique', '?')})")
+
+            print("\n  [Round 3/3] Calling Senior PM for FINAL revision...")
+            revised = call_senior_pm_revise({
+                "today_stats":         today_stats,
+                "your_previous_draft": draft1,
+                "challenger_critique": critique,
+                "target_branch":       target_branch,
+            })
+
+            if revised is None:
+                print("  [Round 3/3] Senior PM revision unavailable — applying "
+                      "draft 1 with Challenger REJECTED filter")
+                llm_resp = _apply_challenger_filter(draft1, critique)
+            else:
+                rev_log = revised.get("revision_log") or []
+                print(f"  [Round 3/3] Senior PM revision received "
+                      f"(confidence={revised.get('confidence', '?')}, "
+                      f"{len(rev_log)} revision_log entries)")
+                llm_resp = revised
+
     llm_narrative_lines: list[str] = []
 
     if llm_resp:
@@ -635,6 +749,32 @@ def run():
             )
         if edge:
             llm_narrative_lines.append(f"{date_iso} · LLM edge: {edge.strip()}")
+
+        # Surface Challenger stats + Senior PM revision_log so the dialog is
+        # auditable in rationale.md / history report.
+        if critique:
+            cs = critique.get("stats") or {}
+            llm_narrative_lines.append(
+                f"{date_iso} · Challenger reviewed "
+                f"{cs.get('total_proposals_reviewed', 0)} proposals: "
+                f"{cs.get('survived', 0)} survived, "
+                f"{cs.get('modified', 0)} modified, "
+                f"{cs.get('rejected', 0)} rejected "
+                f"(confidence={critique.get('confidence_in_critique', '?')})"
+            )
+            for q in (critique.get("open_questions_for_senior_pm") or [])[:3]:
+                llm_narrative_lines.append(f"{date_iso} · Challenger Q: {q}")
+
+        for entry in (llm_resp.get("revision_log") or [])[:10]:
+            if not isinstance(entry, dict):
+                continue
+            llm_narrative_lines.append(
+                f"{date_iso} · revision: "
+                f"[{entry.get('your_disposition', '?')}] "
+                f"{entry.get('original_proposal', '?')} -> "
+                f"{entry.get('final_value', '?')} "
+                f"({entry.get('reasoning', '')})"
+            )
 
         # Route heuristic proposals into the three-lane architecture:
         #   Lane 1 (state_overrides) — already applied above
