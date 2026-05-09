@@ -1,0 +1,127 @@
+{
+  "narrative": "Dwa propozycje operacyjne (stale-exit-emergency detector + UUID pruning) są solidne i przeżywają. Natomiast jedyna state_override (options_side_bias=long) jest utrzymywana przy zerowych danych opcyjnych — options-momentum CAŁKOWICIE NIEOBECNE w by_strategy, zero completed round-trips, confidence=low. Największa luka: Senior PM nie proponuje żadnego działania wobec strukturalnej straty -$3,306 z AMZN PUT w risk_on trendzie ani nie wyjaśnia dlaczego strategie POZA crypto-momentum są niewidoczne dla analyzera.",
+  "challenge_log": [
+    {
+      "original_proposal": "global_overrides.options_side_bias = 'long' (maintained from previous session)",
+      "decomposition": [
+        "sub-claim a: Obecny regime jest risk_on — uzasadniający preferowanie CALLs nad PUTs",
+        "sub-claim b: options-momentum strategia jest widoczna w today_stats.by_strategy i potwierdzono pozytywną skuteczność CALLs",
+        "sub-claim c: Brak completed options trades nie podważa premise regime-based bias",
+        "sub-claim d: Istniejąca strata -$3,306 pochodzi z pozycji otwartej PRZED ustawieniem bias=long",
+        "sub-claim e: W aktualnych warunkach rynkowych utrzymywanie long bias redukuje ryzyko otwierania PUTs w uptrend",
+        "sub-claim f: Brak danych wskazujących na konieczność zmiany lub resetu biasu"
+      ],
+      "research_findings": [
+        "sub-claim a: PARTIALLY SUPPORTED — regime_assessment='risk_on' w drafcie, ale today_stats nie zawiera żadnych danych rynkowych (SPY MA, VIX, ATR); twierdzenie oparte na narracji Senior PM, nie na konkretnych liczbach z today_stats",
+        "sub-claim b: CONTRADICTED — today_stats.by_strategy zawiera WYŁĄCZNIE crypto-momentum; options-momentum CAŁKOWICIE NIEOBECNY w statystykach; analyzer nie rekonstruuje opcyjnych round-tripów lub options-monitor nie odpalał — w obu przypadkach brak empirycznej podstawy dla directional override",
+        "sub-claim c: UNFOUNDED — zero danych = zero podstaw dla KAŻDEJ aktywnej directional zmiany; utrzymywanie override bez dowodów to nie jest konserwatywna decyzja, to ślepa wiara w regime-assessment bez walidacji",
+        "sub-claim d: PARTIALLY SUPPORTED — AMZN PUT otwarty 2026-05-06 per CLAUDE.md historia, options_side_bias=long applied later; chronologia spójna ale nie eliminuje ryzyka nowych CALL pozycji otwieranych na podstawie błędnej bias",
+        "sub-claim e: SUPPORTED — logicznie poprawne: CALLs w uptrend mają pozytywną delta z trendem; ryzyko PUTs-in-uptrend jest realne",
+        "sub-claim f: CONTRADICTED — brak danych opcyjnych w by_strategy jest SAMYM W SOBIE red flag: albo analyzer jest broken (nie widzi options trades), albo options-monitor nie odpalał; oba scenariusze wymagają resetu do neutral do czasu wyjaśnienia, nie utrzymywania aktywnej directional override"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 5, "loss": 5, "passed": false},
+        {"sub_claim": "b", "profit": 2, "loss": 2, "passed": false},
+        {"sub_claim": "c", "profit": 3, "loss": 3, "passed": false},
+        {"sub_claim": "d", "profit": 6, "loss": 6, "passed": true},
+        {"sub_claim": "e", "profit": 7, "loss": 7, "passed": true},
+        {"sub_claim": "f", "profit": 2, "loss": 2, "passed": false}
+      ],
+      "step3_pass_rate": 0.33,
+      "stress_test": {
+        "scenario": "options_side_bias=long jest błędne — market reverses risk_off; każdy nowy CALL kupiony przez options-monitor pod trend gubi wartość; 1 pozycja $2,500 premium → zero w single session",
+        "max_loss_usd": 2500.0,
+        "as_pct_equity": 2.58
+      },
+      "decision": "REJECTED",
+      "modification_proposal": "Reset options_side_bias do 'neutral' do czasu gdy options-momentum pojawi się w today_stats.by_strategy z ≥3 completed trades i potwierdzonym positive P&L. Alternatywnie Senior PM musi wyjaśnić dlaczego options-momentum jest niewidoczne w by_strategy zanim bias zostanie utrzymany.",
+      "reason": "33% sub-claim pass rate (poniżej 50% progu REJECTED) + stress test $2,500 = 2.58% equity (powyżej 2% limitu) + options-momentum ABSENT z by_strategy = brak empirycznej podstawy dla aktywnej directional override przy confidence=low"
+    },
+    {
+      "original_proposal": "Stale-exit-emergency detector — heuristic_stale_exit_emergency() w adapter.py (lane: auto_pr)",
+      "decomposition": [
+        "sub-claim a: exit-emergency wykazało historyczny pattern placed>=2 / filled=0 / canceled=0 przez minimum dwie sesje z rzędu",
+        "sub-claim b: Ten wzorzec wskazuje na stale LIMIT orders w Alpaca (legacy przed MARKET-patch z 2026-05-07)",
+        "sub-claim c: Kod heurystyki poprawnie identyfikuje ten pattern bez side effects",
+        "sub-claim d: Testy pokrywają wystarczającą liczbę ścieżek (5 scenariuszy: true positive + 4 false negative variants)",
+        "sub-claim e: Dodanie heurystyki redukuje ryzyko false protection — operator wie że emergency orders nie chronią",
+        "sub-claim f: lane=auto_pr jest właściwy — target_file=learning-loop/adapter.py, standalone funkcja, testy dołączone"
+      ],
+      "research_findings": [
+        "sub-claim a: SUPPORTED — CLAUDE.md historia 2026-05-09: '4 stale exit-emergency LIMIT orders cancelled via cancel-stale-emergency-orders.py'; pattern potwierdzony empirycznie w produkcji",
+        "sub-claim b: SUPPORTED — root cause zidentyfikowany w CLAUDE.md 2026-05-07 LATE-NIGHT: 'options-exit-monitor switched SL→MARKET (TP stays LIMIT)'; stare LIMIT orders to legacy pre-patch artifacts",
+        "sub-claim c: SUPPORTED — kod prosty i deterministyczny: get('exit-emergency', {}) + trzy counter checks; brak Alpaca API calls; brak state mutation",
+        "sub-claim d: SUPPORTED — 5 testów pokrywa: true positive (placed=4/filled=0/canceled=0), canceled-ok (placed=4/canceled=4), below-min (placed=1), some-filled (filled=1), missing-key ({}); boundary conditions kompletne",
+        "sub-claim e: SUPPORTED — heurystyka jest purely observational (rationale.md log + operator notification); zero execution side effects; false alarm = operator sprawdza i nie anuluje",
+        "sub-claim f: SUPPORTED — spełnia kryteria Lane 2: learning-loop/adapter.py target, AST-checkable standalone funkcja, testy w tym samym pliku"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "b", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "c", "profit": 8, "loss": 7, "passed": true},
+        {"sub_claim": "d", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "e", "profit": 6, "loss": 9, "passed": true},
+        {"sub_claim": "f", "profit": 7, "loss": 7, "passed": true}
+      ],
+      "step3_pass_rate": 1.0,
+      "stress_test": {
+        "scenario": "Heurystyka emituje false alarm — operator uruchamia cancel-stale-emergency-orders workflow niepotrzebnie i anuluje live protection LIMIT order który byłby wypełniony",
+        "max_loss_usd": 0.0,
+        "as_pct_equity": 0.0
+      },
+      "decision": "SURVIVED",
+      "modification_proposal": null,
+      "reason": "100% sub-claim pass rate; zero execution risk (flag-only, operator decyduje o akcji); stress test max_loss=0; UWAGA: po cleanup stale legacy orders i potwierdzeniu MARKET-patch, heurystyka będzie dormant — to akceptowalne (permanent guard lepszy niż brak guard)"
+    },
+    {
+      "original_proposal": "UUID strategy artifact pruning in analyzer.py (lane: backlog, revisit 2026-05-11)",
+      "decomposition": [
+        "sub-claim a: state.json zawiera UUID-format klucze w sekcji strategies (7 potwierdzonych artefaktów)",
+        "sub-claim b: UUID klucze to Alpaca bracket order IDs które trafiły do by_strategy zamiast prawdziwych nazw strategii",
+        "sub-claim c: Filtrowanie przez _is_uuid_key() regex w analyzer.py eliminuje je z analizy bez zmiany state.json",
+        "sub-claim d: Root cause (client_order_id format) jest już naprawiony w options-monitor per commit 2026-05-08",
+        "sub-claim e: Filtrowanie redukuje szum LLM — 7 pustych 'hold insufficient sample' wpisów znika z analizy",
+        "sub-claim f: Backlog priority i revisit_date=2026-05-11 są odpowiednio skalibrowene dla 1h effort"
+      ],
+      "research_findings": [
+        "sub-claim a: SUPPORTED — CLAUDE.md 2026-05-09 prod log: '7 UUID-keyed phantom strategies zaśmiecające state.json'; potwierdzono empirycznie",
+        "sub-claim b: SUPPORTED — mechanizm: Alpaca bracket orders generują UUID-format order IDs; pre-patch options-monitor używał ich jako client_order_id; analyzer zbierał je do by_strategy",
+        "sub-claim c: SUPPORTED — re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-', name) jest deterministyczny i specyficzny dla UUID v4 format; nie koliduje z nazwami jak 'momentum-long' / 'crypto-momentum'",
+        "sub-claim d: PARTIALLY SUPPORTED — CLAUDE.md 2026-05-08: 'tagged options entries with proper options-momentum-<contract>-<ts> format'; ale 7 UUID keys NADAL w state.json z poprzednich runs — cleanup nie jest retroaktywny; filtrowanie w analyzer nadal potrzebne dla legacy entries",
+        "sub-claim e: SUPPORTED — 7 phantom entries × 'hold (insufficient sample)' = 7 misleading wierszy w analizie LLM; ich usunięcie = czystszy signal bez false precision",
+        "sub-claim f: SUPPORTED — 1h effort estimate realistyczny dla dodania helpera + podłączenia w _build_proposed_state(); revisit_date 2026-05-11 = 2 dni od teraz = odpowiedni czas"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 7, "loss": 7, "passed": true},
+        {"sub_claim": "b", "profit": 7, "loss": 7, "passed": true},
+        {"sub_claim": "c", "profit": 8, "loss": 8, "passed": true},
+        {"sub_claim": "d", "profit": 6, "loss": 6, "passed": true},
+        {"sub_claim": "e", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "f", "profit": 6, "loss": 6, "passed": true}
+      ],
+      "step3_pass_rate": 1.0,
+      "stress_test": {
+        "scenario": "Regex _is_uuid_key() false positive — usuwa z analizy legalną strategię o nazwie przypadkowo pasującej do UUID pattern (skrajnie mało prawdopodobne — nazwy strategii to 'momentum-long', 'crypto-momentum' etc.)",
+        "max_loss_usd": 0.0,
+        "as_pct_equity": 0.0
+      },
+      "decision": "SURVIVED",
+      "modification_proposal": null,
+      "reason": "100% sub-claim pass rate; zero execution risk; root cause już naprawiony per 2026-05-08 commit; filtrowanie eliminuje permanentnie legacy noise bez modyfikacji state.json"
+    }
+  ],
+  "stats": {
+    "total_proposals_reviewed": 3,
+    "survived": 2,
+    "modified": 0,
+    "rejected": 1
+  },
+  "open_questions_for_senior_pm": [
+    "options-momentum jest CAŁKOWICIE NIEOBECNE w today_stats.by_strategy — jedyna widoczna strategia to crypto-momentum. Czy analyzer poprawnie rekonstruuje opcyjne round-tripy? Jeśli options-monitor odpalał, dlaczego by_strategy jest puste dla opcji? Podaj konkretną diagnozę przed utrzymaniem options_side_bias=long.",
+    "Strukturalna strata -$3,306 pochodzi z AMZN PUT w risk_on trendzie — Senior PM identyfikuje to jako mechanizm straty ale nie proponuje ŻADNEGO działania (close PUT / hedge / czas expiry). Jaka jest aktualna thesis dla utrzymania tej pozycji? Kiedy strata staje się wystarczająco duża żeby zamknąć pozycję manualnie?",
+    "Senior PM proponuje ZERO zmian strategies (strategies: {}) pomimo 10 dni trackingu i -$3,306 straty cumulative. Kiedy sample będzie wystarczający do pierwszej adaptacji? Podaj konkretny threshold (N trades per strategy lub M dni).",
+    "by_strategy zawiera tylko crypto-momentum z today_stats. Gdzie są: momentum-long, defense-momentum, reddit-sentiment, twitter-sentiment, options-momentum? Czy te strategie nie wygenerowały żadnych orders w ostatnich 7 dniach — i jeśli tak, dlaczego? To krytyczne pytanie o kompletność pętli uczenia.",
+    "Czy post-MARKET-patch (2026-05-07) nowe exit-emergency orders są GWARANTOWANIE MARKET order type, a nie LIMIT? Jeśli tak, stale-exit-emergency heurystyka jest one-shot cleanup guard i po pierwszym run będzie dormant na stałe — czy to jest oczekiwane zachowanie?"
+  ],
+  "confidence_in_critique": "high"
+}
