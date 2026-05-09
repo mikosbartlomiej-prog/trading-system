@@ -459,23 +459,24 @@ def rolling_avg(reddit_state: dict, ticker: str, today: str) -> float:
 
 # ─── Signal pipeline ─────────────────────────────────────────────────────────
 
-def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]) -> list[dict]:
+def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]
+                  ) -> tuple[list[dict], str]:
     """
     Lane A — sub-level evaluator.
-    Evaluate one post → list of (ticker, post_quality, sentiment) dicts.
-    Empty list if post fails quality / keyword gate.
+    Returns (signals, reason). Reason is "" on accept, or a short tag
+    describing why no signals emerged (for debug logging).
     """
     if post["ups"] < sub_cfg["min_upvotes"]:
-        return []
+        return [], f"low_ups({post['ups']}<{sub_cfg['min_upvotes']})"
     if post["num_comments"] < sub_cfg["min_comments"]:
-        return []
+        return [], f"low_comments({post['num_comments']}<{sub_cfg['min_comments']})"
     text = f"{post['title']} {post['selftext']}"
     if not passes_keyword_filter(text, sub_cfg["category"]):
-        return []
+        return [], "no_keyword_match"
 
     tickers = extract_tickers(text, whitelist)
     if not tickers:
-        return []
+        return [], "no_whitelist_ticker"
 
     out = []
     for t in tickers:
@@ -496,31 +497,29 @@ def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]) -> list[dict]:
             "bear":         s["bear"],
             "mentions":     s["mentions"],
         })
-    return out
+    if not out:
+        return [], "tickers_found_but_zero_mentions"
+    return out, ""
 
 
 def evaluate_user_post(post: dict, user_cfg: dict, whitelist: set[str],
-                       cutoff_utc: float) -> list[dict]:
+                       cutoff_utc: float) -> tuple[list[dict], str]:
     """
     Lane B — tracked-user evaluator.
-    Same shape as evaluate_post but with relaxed filters:
-      - No keyword filter (tracked users post DDs by definition)
-      - Must be self-text (real DD, not link/meme)
-      - Must be from last TRACKED_USER_LOOKBACK_HRS
-      - ups >= user_cfg.min_post_ups (per-user threshold)
-    Higher credibility downstream (event_scoring source_type).
+    Returns (signals, reason).
     """
     if not post.get("is_self", False):
-        return []                                   # only self-text DDs
+        return [], "not_self_text"
     if post["created_utc"] < cutoff_utc:
-        return []                                   # too old
+        age_h = int((cutoff_utc - post["created_utc"]) / 3600 + TRACKED_USER_LOOKBACK_HRS)
+        return [], f"too_old({age_h}h)"
     if post["ups"] < user_cfg["min_post_ups"]:
-        return []                                   # not enough engagement
+        return [], f"low_ups({post['ups']}<{user_cfg['min_post_ups']})"
 
     text = f"{post['title']} {post['selftext']}"
     tickers = extract_tickers(text, whitelist)
     if not tickers:
-        return []
+        return [], "no_whitelist_ticker"
 
     out = []
     for t in tickers:
@@ -542,7 +541,9 @@ def evaluate_user_post(post: dict, user_cfg: dict, whitelist: set[str],
             "bear":          s["bear"],
             "mentions":      s["mentions"],
         })
-    return out
+    if not out:
+        return [], "tickers_found_but_zero_mentions"
+    return out, ""
 
 
 def aggregate_per_ticker(post_signals: list[dict]) -> dict[str, dict]:
@@ -834,12 +835,16 @@ def run_scan() -> int:
         print(f"  → /user/{u['username']} (cat={u['category']}, w={u['weight']})...")
         posts = client.get_user_submissions(u["username"], limit=10, sort="new")
         kept = 0
+        reasons: dict[str, int] = defaultdict(int)
         for p in posts:
-            sigs = evaluate_user_post(p, u, whitelist, cutoff_utc)
+            sigs, reason = evaluate_user_post(p, u, whitelist, cutoff_utc)
             if sigs:
                 kept += len(sigs)
                 user_post_signals.extend(sigs)
-        print(f"    {len(posts)} posts → {kept} ticker mentions kept")
+            elif reason:
+                reasons[reason] += 1
+        rej_summary = ", ".join(f"{r}×{n}" for r, n in sorted(reasons.items())) or "(none)"
+        print(f"    {len(posts)} posts → {kept} mentions kept; rejections: {rej_summary}")
         time.sleep(INTER_REQUEST_DELAY_S)
 
     user_signals = detect_user_signals(user_post_signals)
@@ -851,17 +856,39 @@ def run_scan() -> int:
         print(f"  → r/{sub_cfg['sub']} (cat={sub_cfg['category']})...")
         posts = client.get_top(sub_cfg["sub"], t="day", limit=25)
         kept = 0
+        reasons: dict[str, int] = defaultdict(int)
         for p in posts:
-            sigs = evaluate_post(p, sub_cfg, whitelist)
+            sigs, reason = evaluate_post(p, sub_cfg, whitelist)
             if sigs:
                 kept += len(sigs)
                 all_post_signals.extend(sigs)
-        print(f"    {len(posts)} posts → {kept} ticker mentions kept")
+            elif reason:
+                reasons[reason] += 1
+        rej_summary = ", ".join(f"{r}×{n}" for r, n in sorted(reasons.items())) or "(none)"
+        print(f"    {len(posts)} posts → {kept} mentions kept; rejections: {rej_summary}")
         time.sleep(INTER_REQUEST_DELAY_S)
 
     per_ticker = aggregate_per_ticker(all_post_signals) if all_post_signals else {}
     today_counts = {t: a["mentions"] for t, a in per_ticker.items()}
     reddit_state = load_reddit_state()
+
+    # Diagnostic: show per-ticker rollup BEFORE spike check, so we can see
+    # what was just-below-threshold (and tune in future if needed).
+    if per_ticker:
+        print(f"  Lane A — per-ticker aggregation (before spike check):")
+        rows = sorted(per_ticker.items(),
+                      key=lambda kv: kv[1]["mentions"], reverse=True)
+        for t, a in rows[:15]:
+            avg = rolling_avg(reddit_state, t, today)
+            ratio = (a["mentions"] / avg) if avg > 0 else None
+            ratio_s = f"{ratio:.1f}×" if ratio is not None else "n/a (no history)"
+            total_sent = a["bull"] + a["bear"]
+            skew = (a["bull"] - a["bear"]) / total_sent if total_sent else 0
+            print(f"    {t:6s}  mentions={a['mentions']:2d}  "
+                  f"bull={a['bull']:2d} bear={a['bear']:2d} skew={skew:+.2f}  "
+                  f"7d_avg={avg:.1f} ratio={ratio_s}  "
+                  f"best_post={a['best_post_ups']} ups")
+
     reddit_state = update_mentions(reddit_state, today, today_counts)
     sub_signals = detect_spike_signals(per_ticker, reddit_state, today)
     print(f"  Lane A — sub signals after spike+sentiment filter: {len(sub_signals)}")
