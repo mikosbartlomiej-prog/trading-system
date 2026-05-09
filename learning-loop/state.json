@@ -188,5 +188,6 @@
     "options_side_bias": "long",
     "max_open_options": null,
     "max_concurrent_per_strategy": {}
-  }
+  },
+  "reddit_state": {}
 }
