@@ -176,8 +176,12 @@ JOB 2 — VALIDATE / KILL
     {
       "lane": "sub" | "user",
       "ticker": "NVDA",
-      "side": "BUY" | "SELL_SHORT",
-      "skew": 0.43,                   // (bull-bear)/total, [-1, 1]
+      "side": "BUY" | "SELL_SHORT" | "UNCLEAR",
+                                       // UNCLEAR = upstream regex couldn't
+                                       // classify — YOU determine direction
+                                       // by reading post_excerpts. If still
+                                       // unclear after reading, REJECT.
+      "skew": 0.43,                   // (bull-bear)/total, [-1, 1]; null when UNCLEAR
       "mentions": 4,                  // 24h mention count for this ticker
       "rolling_avg_7d": 1.2,           // baseline; null if no history
       "spike_ratio": 3.3,              // mentions / rolling_avg_7d; null on first day

@@ -120,8 +120,9 @@ MAX_OPEN_POSITIONS = 4
 MAX_ALERTS_PER_LANE = 1                # 1 from sub-lane + 1 from user-lane = max 2 per run
 SPIKE_THRESHOLD    = 1.5               # Lane A: today_mentions >= 1.5× 7d avg
                                         # Lowered 3.0 -> 1.5 for richer LLM candidate pool.
-SENTIMENT_THRESHOLD = 0.15             # |skew| >= 0.15 to act
-                                        # Lowered 0.3 -> 0.15 — let LLM judge weak signals.
+SENTIMENT_THRESHOLD = 0.05             # |skew| >= 0.05 to act
+                                        # Lowered 0.3 -> 0.15 -> 0.05 — Curator
+                                        # is real filter; this is passthrough.
 TRACKED_USER_LOOKBACK_HRS = 48         # Lane B: posts from last 48h (was 24)
 ROLLING_WINDOW_DAYS = 7
 
@@ -263,15 +264,52 @@ KEYWORD_FILTERS = {
 }
 
 BULLISH_WORDS = {
+    # Original WSB-centric
     "bullish", "long", "calls", "buy", "rocket", "moon", "undervalued",
     "breakout", "beat", "raised", "upgraded", "target", "bottoming",
     "bounce", "catalyst", "opportunity", "oversold", "accumulate",
     "conviction", "bullrun",
+    # Quantitative / value-investing language
+    "value", "deep", "cheap", "underpriced", "discount", "dcf",
+    "fcf", "cashflow", "moat", "compounding", "compounder", "multibagger",
+    "tenbagger", "asymmetric", "edge", "alpha", "tailwind", "tailwinds",
+    "secular", "growth", "expansion", "margins", "buybacks", "dividend",
+    "yield", "earnings", "revenue", "guidance", "fundamentals", "thesis",
+    # Momentum / options trader slang
+    "ripping", "ripping", "printing", "tendies", "yolo", "leaps", "0dte",
+    "atm", "otm", "delta", "gamma", "squeeze", "shortsqueeze",
+    "gammasqueeze", "flow", "unusual", "ipo", "spinoff", "merger",
+    # Position-language (proxy for conviction)
+    "load", "loading", "loaded", "adding", "scaling", "scalein", "size",
+    "position", "holding", "hold", "diamond", "hands", "hodl", "longing",
+    "dip", "dipbuy", "support", "uptrend", "trend", "continuation",
+    # Crypto cycle vocabulary
+    "halving", "etf", "bitcoin", "ethereum", "altseason", "bullmarket",
+    "accumulation", "supercycle", "btcvol",
+    # Action-language
+    "buying", "buy", "bought", "going", "into", "betting", "bet",
 }
 BEARISH_WORDS = {
+    # Original
     "bearish", "short", "puts", "sell", "dump", "crash", "overvalued",
     "breakdown", "miss", "cut", "downgraded", "decline", "exit", "avoid",
     "overpriced", "distribution", "rejection", "weak", "bagholder",
+    # Value-investing concerns
+    "headwind", "headwinds", "decline", "declining", "deteriorating",
+    "compression", "valuetrap", "trap", "dilution", "buyback",  # buyback is ambiguous; left in
+    "burn", "runway", "debt", "leverage", "loss", "losses", "writedown",
+    "impairment", "downtrend", "topping", "exhaustion", "parabolic",
+    "blowoff", "bull-trap", "bulltrap",
+    # Momentum / options bearish slang
+    "shorting", "shorted", "fade", "fading", "selling", "sold", "soldoff",
+    "trim", "trimming", "reduce", "reducing", "lighten", "exit",
+    "stoploss", "ivcrush", "thetadecay",
+    # Position-language
+    "trapped", "underwater", "down", "redday", "redweek", "deadmoney",
+    "cope", "coping", "averaging-down", "doubledown",
+    # Macro fears
+    "recession", "stagflation", "hawkish", "fed-hike", "ratehike",
+    "selloff", "drawdown", "correction", "bearmarket",
 }
 
 
@@ -616,14 +654,18 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             continue
 
         total = agg["bull"] + agg["bear"]
-        if total == 0:
-            continue
-        skew = (agg["bull"] - agg["bear"]) / total
+        if total > 0:
+            skew = (agg["bull"] - agg["bear"]) / total
+            if abs(skew) < SENTIMENT_THRESHOLD:
+                continue
+            side = "BUY" if skew > 0 else "SELL_SHORT"
+        else:
+            # Heuristic regex couldn't classify, but post quality cleared
+            # spike floor — pass to Curator with side="UNCLEAR"; Curator
+            # reads excerpts and decides direction.
+            skew = None
+            side = "UNCLEAR"
 
-        if abs(skew) < SENTIMENT_THRESHOLD:
-            continue
-
-        side = "BUY" if skew > 0 else "SELL_SHORT"
         # Top 3 post excerpts by ups for LLM curator context
         top_posts = sorted(agg["posts"], key=lambda p: p["post_ups"], reverse=True)[:3]
         excerpts = [p.get("post_excerpt", "") for p in top_posts if p.get("post_excerpt")]
@@ -631,7 +673,7 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             "lane":           "sub",
             "ticker":         t,
             "side":           side,
-            "skew":           round(skew, 3),
+            "skew":           round(skew, 3) if skew is not None else None,
             "mentions":       agg["mentions"],
             "rolling_avg_7d": round(avg, 2),
             "spike_ratio":    round(agg["mentions"] / avg, 2) if avg > 0 else float("inf"),
@@ -644,7 +686,12 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             "take_profit_pct": TAKE_PROFIT_PCT,
             "strategy":       STRATEGY_NAME,
         })
-    signals.sort(key=lambda s: s["spike_ratio"] * abs(s["skew"]), reverse=True)
+    # Sort with skew=None treated as 0.5 (mid-priority)
+    signals.sort(
+        key=lambda s: (s["spike_ratio"] if s["spike_ratio"] != float("inf") else 99)
+                       * (abs(s["skew"]) if s["skew"] is not None else 0.5),
+        reverse=True,
+    )
     return signals
 
 
@@ -681,20 +728,23 @@ def detect_user_signals(user_post_signals: list[dict]) -> list[dict]:
 
     signals = []
     for (_t, _u), agg in by_pair.items():
+        # Lane B bypass: tracked-user posts ALWAYS pass to Curator
+        # regardless of regex sentiment — the user being whitelisted IS
+        # the credibility. Curator reads post excerpts and decides side.
         total = agg["bull"] + agg["bear"]
-        if total == 0:
-            continue
-        skew = (agg["bull"] - agg["bear"]) / total
-        if abs(skew) < SENTIMENT_THRESHOLD:
-            continue
-        side = "BUY" if skew > 0 else "SELL_SHORT"
+        if total > 0:
+            skew = (agg["bull"] - agg["bear"]) / total
+            side = "BUY" if skew > 0 else "SELL_SHORT"
+        else:
+            skew = None
+            side = "UNCLEAR"   # Curator must determine direction
         signals.append({
             "lane":           "user",
             "ticker":         agg["ticker"],
             "user":           agg["user"],
             "category":       agg["category"],
             "side":           side,
-            "skew":           round(skew, 3),
+            "skew":           round(skew, 3) if skew is not None else None,
             "mentions":       agg["mentions"],
             "rolling_avg_7d": None,
             "spike_ratio":    None,                 # N/A for user lane
