@@ -276,28 +276,40 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
             f"- [ ] CI green.\n"
         )
 
-        r = subprocess.run(
-            [
-                "gh", "pr", "create",
-                "--base", base_branch,
-                "--head", branch,
-                "--title", f"learning-loop[auto]: {title}",
-                "--body", pr_body,
-                "--label", "learning-loop,auto-pr",
-            ],
-            capture_output=True, text=True, timeout=60, cwd=REPO_ROOT,
-        )
-        if r.returncode != 0:
-            # gh failed — still log the branch URL so user can find it
-            print(f"  Lane2: gh pr create failed ({r.returncode}): {r.stderr[:300]}")
+        # Try gh pr create with labels first; on label-related failure
+        # (labels don't exist in repo yet), retry without --label so the
+        # PR still opens. Operator can label manually or create the
+        # `learning-loop` / `auto-pr` labels in repo settings later.
+        pr_args_base = [
+            "gh", "pr", "create",
+            "--base", base_branch,
+            "--head", branch,
+            "--title", f"learning-loop[auto]: {title}",
+            "--body", pr_body,
+        ]
+        for attempt in (
+            ("with-labels",   pr_args_base + ["--label", "learning-loop,auto-pr"]),
+            ("without-labels", pr_args_base),
+        ):
+            label, cmd = attempt
+            r = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=60, cwd=REPO_ROOT,
+            )
+            if r.returncode == 0:
+                pr_url = r.stdout.strip()
+                print(f"  Lane2: PR opened ({label}) — {pr_url}")
+                return pr_url
+            err = (r.stderr or "")[:300]
+            if "label" in err.lower() and label == "with-labels":
+                print(f"  Lane2: gh pr create with labels failed — retrying without labels")
+                continue
+            # Non-label failure (auth, network, etc.) — log + bail
+            print(f"  Lane2: gh pr create failed ({r.returncode}): {err}")
             print(f"  Lane2: branch was pushed — manual PR: "
                   f"https://github.com/mikosbartlomiej-prog/trading-system/"
                   f"compare/{base_branch}...{branch}?expand=1")
             return None
-
-        pr_url = r.stdout.strip()
-        print(f"  Lane2: PR opened — {pr_url}")
-        return pr_url
+        return None
 
     except subprocess.CalledProcessError as e:
         print(f"  Lane2: git error — {e.cmd}: {e.stderr[:300]}")
