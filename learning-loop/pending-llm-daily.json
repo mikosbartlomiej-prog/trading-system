@@ -1,0 +1,42 @@
+{
+  "narrative": "Czwarty dzień śledzenia — equity $96,642 (-3.87% / -$3,900 od startu). Portfel trzyma bearish PUT pozycje w rynku który rally'uje: to jest core problem. Dwa sygnały strukturalne wymagają natychmiastowej reakcji: (1) exit-emergency 0/4 filled — przez minimum kilka godzin byliśmy bez ochrony emergency exit; patch wysłany w ciągu sesji, ale incydent się powtórzył po poprzedniej naprawie, co oznacza że fix z 2026-05-07 nie zadziałał w trybie produkcyjnym; (2) options-momentum 40% fill rate (4/10, 3 canceled) — systematycznie tracimy ~60% zamierzonej opcyjnej ekspozycji przez ciasne limity. Geo-entries XOM/XLE/RTX 100% fill to jedyna jasna karta. Flippuję global options_side_bias na LONG — w risk_on reżimie PUT-bias kosztuje nas ~$3,900 i będzie dalej krwawić dopóki rynek rally'uje.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Brak danych per-strategy — cumulative_trades=0 czwarty dzień z rzędu, by_strategy puste pomimo naprawy _is_close(); brak domkniętych round-tripów bo wszystkie geo/options pozycje nadal otwarte. Jedyny potwierdzony edge: geo-entries execution quality 75% fill (3/4 XOM/XLE/RTX vs GLD canceled). Options-momentum 40% fill = płacimy slippage i opportunity cost bez pełnej ekspozycji; w obecnym rally PUT-bias produkuje straty strukturalne.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": "long"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Detect chronic options-momentum fill deficit (< 50% on >= 5 placed orders)",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "options-momentum osiągnął 40% fill rate przy 10 placed — trzeci dzień z rzędu nie wchodzimy w 60% zamierzonych pozycji przez ciasne limity. Funkcja diagnostyczna wyemituje WARNING do rationale gdy stan się utrzymuje, dając operatorowi jasny sygnał do korekty limit-price logiki w options-monitor.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_options_fill_deficit(fill_rate_data: dict) -> tuple[bool, str]:\n    \"\"\"Flag chronic under-fill on options-momentum — limit prices likely too tight.\"\"\"\n    opts = fill_rate_data.get(\"options-momentum\", {})\n    placed = opts.get(\"placed\", 0)\n    fill_rate = opts.get(\"fill_rate\", 1.0)\n    if placed >= 5 and fill_rate < 0.50:\n        missed = round((1 - fill_rate) * placed)\n        return True, (\n            f\"options-momentum fill_rate={fill_rate:.0%} on {placed} orders \"\n            f\"— ~{missed} intended positions missed; limit prices too tight\"\n        )\n    return False, \"\"",
+      "test_addition": "class TestOptionsFillDeficit(unittest.TestCase):\n    def test_triggers_low_fill_sufficient_sample(self):\n        data = {\"options-momentum\": {\"placed\": 10, \"fill_rate\": 0.4}}\n        fired, reason = heuristic_options_fill_deficit(data)\n        self.assertTrue(fired)\n        self.assertIn(\"fill_rate=40%\", reason)\n        self.assertIn(\"6 intended positions missed\", reason)\n\n    def test_no_trigger_insufficient_sample(self):\n        data = {\"options-momentum\": {\"placed\": 3, \"fill_rate\": 0.2}}\n        fired, _ = heuristic_options_fill_deficit(data)\n        self.assertFalse(fired)\n\n    def test_no_trigger_acceptable_fill(self):\n        data = {\"options-momentum\": {\"placed\": 10, \"fill_rate\": 0.7}}\n        fired, _ = heuristic_options_fill_deficit(data)\n        self.assertFalse(fired)\n\n    def test_no_trigger_missing_key(self):\n        fired, _ = heuristic_options_fill_deficit({})\n        self.assertFalse(fired)\n\n    def test_boundary_exactly_50pct(self):\n        data = {\"options-momentum\": {\"placed\": 10, \"fill_rate\": 0.50}}\n        fired, _ = heuristic_options_fill_deficit(data)\n        self.assertFalse(fired)",
+      "wire_into_adapt_strategy": "null — this is a module-level diagnostic. Call from adapt() loop after per-strategy processing: `fired, msg = heuristic_options_fill_deficit(today_stats.get('fill_rate', {})); if fired: rationale.append(f\"{today_iso} · WARNING: {msg}\")`"
+    },
+    {
+      "title": "options-exit: accelerated close for near-expiry positions (DTE <= 5) with loss > 40%",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "QQQ260514P00699 ma -62% straty z DTE ~5 — theta decay przyspiesza nieliniowo poniżej 5 DTE i statyczny SL=entry*0.50 jest za wolny. Wcześniejszy trigger dla near-expiry pozycji zapobiegłby dalszemu bleeding na opcjach wygasających w tym tygodniu.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-14",
+      "implementation_sketch": "W options-exit-monitor/monitor.py: przy ewaluacji każdej pozycji, wyciągnij expiry date z OCC symbol (format: TICKER + YYMMDD + C/P + strike*1000). Oblicz DTE = (expiry_date - today).days. Jeśli DTE <= 5 AND current_price < entry_price * 0.60 → fire SELL MARKET (nie LIMIT — near-expiry opcje mają szerokie spready, LIMIT może nie wejść w czasie). Tag client_order_id: 'exit-neardth-{symbol}-{ts}'. Progi: DTE <= 5 + loss > 40% (liberalniej niż normalny SL=50% bo theta decay przyspiesza nieliniowo). Test: OCC=QQQ260514P00699, DTE=4, P&L=-62% → trigger; DTE=15, P&L=-62% → HOLD (normalny SL wystarczy)."
+    },
+    {
+      "title": "options-monitor: use bid/ask midpoint + 5% margin as limit price instead of close_price",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "40% fill rate opcyjny to systematyczny problem — close_price z /v2/options/contracts jest staroświeckie i nie odzwierciedla realnego bid/ask spreadu (który w opcjach wynosi 5-20% nominal). Użycie midpoint * 1.05 jako agresywnego limitu powinno poprawić fill rate z 40% do 70%+.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-14",
+      "implementation_sketch": "W options-monitor/monitor.py: w execute_options_buy(), po wyborze kontraktu, dodaj call do Alpaca /v2/options/snapshots/{symbol}. Pobierz bid_price i ask_price. limit_price = (bid + ask) / 2 * 1.05. Fallback na close_price * 1.05 jeśli snapshot call fails (network error, brak quote). Dodatkowy koszt: 1 Alpaca API call per contract attempt. Weryfikacja: mock snapshot z bid=4.00/ask=4.40 → limit=4.41 vs obecne close=4.35. Oczekiwany efekt na fill rate: ~+30 pp (40% → 70%). Uwaga: midpoint * 1.05 to buyer-aggressive limit — płacimy ~2.5% ponad mid, ale dostajemy ekspozycję."
+    }
+  ],
+  "confidence": "low"
+}
