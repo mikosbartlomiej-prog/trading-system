@@ -55,7 +55,13 @@ jobs:
           # win rate ≥ 50%.
           AUTO_EXECUTE_REDDIT:     'false'
           USE_ROUTINE:             'false'
-          # Optional: legacy Cloudflare worker path. Empty = skip.
+          # REQUIRED on GitHub Actions: Reddit 403s data-center IPs (Azure
+          # egress = our runner). Cloudflare Worker proxy bypasses the
+          # block. Deploy reddit-monitor/cloudflare-reddit-proxy.js as a
+          # Worker and set this secret to its workers.dev URL.
+          # Without it: monitor logs 403 on every fetch (graceful no-op).
+          REDDIT_FETCH_PROXY_URL:  ${{ secrets.REDDIT_FETCH_PROXY_URL }}
+          # Optional: legacy routine path. Empty = skip.
           CLOUDFLARE_REDDIT_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_WORKER_URL }}
         run: python reddit-monitor/monitor.py
 

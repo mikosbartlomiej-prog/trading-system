@@ -87,7 +87,13 @@ USE_ROUTINE        = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 AUTO_EXECUTE       = os.environ.get("AUTO_EXECUTE_REDDIT", "false").lower() == "true"
 CLOUDFLARE_WORKER  = os.environ.get("CLOUDFLARE_REDDIT_WORKER_URL", "")
 
-USER_AGENT         = "trading-system-research/1.0 (low-volume polling)"
+# Reddit blocks data-center IPs (GitHub Actions = Azure egress) — 403 on
+# direct fetches. Cloudflare Worker proxy bypasses this; see
+# reddit-monitor/cloudflare-reddit-proxy.js. If unset, we still attempt
+# direct www.reddit.com (works for local dev / residential IPs).
+REDDIT_PROXY_BASE  = os.environ.get("REDDIT_FETCH_PROXY_URL", "").rstrip("/")
+
+USER_AGENT         = "trading-system-research/1.0 (by /u/anonymous)"
 SUBS_FILE          = os.path.join(os.path.dirname(__file__), '..',
                                    '.claude', 'rules', 'reddit-subs.md')
 USERS_FILE         = os.path.join(os.path.dirname(__file__), '..',
@@ -268,8 +274,19 @@ class RedditClient:
     def __init__(self, user_agent: str = USER_AGENT):
         self.headers = {"User-Agent": user_agent}
 
-    def _get_listing(self, url: str, params: dict | None = None) -> list[dict]:
-        """Fetch a Reddit listing endpoint and return normalized post dicts."""
+    def _get_listing(self, path: str, params: dict | None = None) -> list[dict]:
+        """
+        Fetch a Reddit listing endpoint by path (e.g. '/r/wallstreetbets/top.json').
+
+        Routes through CLOUDFLARE proxy if REDDIT_FETCH_PROXY_URL is set
+        (required on GitHub Actions — Reddit 403s data-center IPs).
+        Falls back to direct www.reddit.com otherwise (local dev OK).
+        """
+        if REDDIT_PROXY_BASE:
+            url = f"{REDDIT_PROXY_BASE}{path}"
+        else:
+            url = f"https://www.reddit.com{path}"
+
         try:
             r = requests.get(url, headers=self.headers, params=params or {},
                              timeout=REQUEST_TIMEOUT_S)
@@ -278,6 +295,9 @@ class RedditClient:
             return []
         if r.status_code != 200:
             print(f"    GET {url} -> HTTP {r.status_code}")
+            if r.status_code == 403 and not REDDIT_PROXY_BASE:
+                print(f"    HINT: Reddit blocks data-center IPs. Deploy "
+                      f"cloudflare-reddit-proxy.js + set REDDIT_FETCH_PROXY_URL.")
             return []
         try:
             data = r.json()
@@ -307,7 +327,7 @@ class RedditClient:
     def get_top(self, sub: str, t: str = "day", limit: int = 25) -> list[dict]:
         """Fetch top posts from r/<sub>?t=<day|week|...>."""
         return self._get_listing(
-            f"https://www.reddit.com/r/{sub}/top.json",
+            f"/r/{sub}/top.json",
             {"t": t, "limit": limit},
         )
 
@@ -315,7 +335,7 @@ class RedditClient:
                               sort: str = "new") -> list[dict]:
         """Fetch /user/<name>/submitted.json — last N posts by user."""
         return self._get_listing(
-            f"https://www.reddit.com/user/{username}/submitted.json",
+            f"/user/{username}/submitted.json",
             {"limit": limit, "sort": sort},
         )
 
