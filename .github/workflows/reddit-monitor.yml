@@ -39,8 +39,9 @@ jobs:
           GMAIL_APP_PASSWORD:      ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:            ${{ secrets.NOTIFY_EMAIL }}
           AUTO_EXECUTE_REDDIT:     'false'
-          USE_ROUTINE:             'false'
           CLOUDFLARE_REDDIT_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_WORKER_URL }}
+          CLOUDFLARE_REDDIT_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_CURATOR_WORKER_URL }}
+          USE_REDDIT_CURATOR:      'true'
         run: python reddit-monitor/monitor.py
 
       - name: Commit reddit_state if changed
@@ -49,7 +50,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git rm -f --ignore-unmatch reddit-monitor/pending-curation.json 2>/dev/null || true
           git add learning-loop/state.json 2>/dev/null || true
+          git add -u reddit-monitor/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No reddit_state changes."
           else
