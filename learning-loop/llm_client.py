@@ -39,11 +39,13 @@ USE_LLM            = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true
 WORKER_URL         = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
 TRIGGER_TIMEOUT_S  = 30        # POST is fire-and-forget; receipt comes back <1s
 POLL_INTERVAL_S    = 15        # how often we git fetch + check for pending file
-# Max wait for routine to push its JSON. Yesterday's manual test took 139 s;
-# nightly cron timed out at 188 s. Routine cold-start + queue delay vary by
-# load on claude.ai — bump to 5 min to give comfortable headroom. Workflow
-# has timeout-minutes: 10 so we still leave ~5 min for git ops.
-POLL_MAX_S         = 300
+# Max wait for routine to push its JSON. Calibrated from observed runs:
+# 2026-05-08 first manual: 139 s. 2026-05-09 manual #1 (post auto-merge):
+# 247 s. 2026-05-09 manual #2: 325 s (race — file arrived 25 s after the
+# prior 300 s timeout fired). Bumped 180->300->480 to give 2x headroom
+# over worst observed. Workflow's timeout-minutes is 10, so 480 still
+# leaves ~2 min for git ops + commit.
+POLL_MAX_S         = 480
 GIT_OP_TIMEOUT_S   = 30
 
 LEARNING_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -163,10 +165,26 @@ def call_routine(payload: dict) -> dict | None:
         time.sleep(POLL_INTERVAL_S)
         elapsed = time.monotonic() - start
         if elapsed > POLL_MAX_S:
-            print(f"  LLM: timeout after {elapsed:.0f}s — falling back to deterministic")
-            return None
+            # Last-chance pickup: routine has been observed pushing 25 s
+            # after our timeout (race when both auto-merge.yml and our
+            # poll fire near the boundary). One final 30 s grace check
+            # before returning None — costs at most 30 s on the failure
+            # path, saves the run when routine is just-barely-late.
+            print(f"  LLM: poll budget exhausted at {elapsed:.0f}s — "
+                  f"giving routine one last 30s grace period before falling back")
+            time.sleep(30)
+            _git_pull(branch)
+            if os.path.exists(pending_path):
+                print(f"  LLM: GRACE PICKUP — found {os.path.basename(pending_path)} "
+                      f"after {(time.monotonic() - start):.0f}s total")
+                # Drop into the consume path below by NOT returning here
+            else:
+                print(f"  LLM: timeout after {(time.monotonic() - start):.0f}s "
+                      f"(incl. 30s grace) — falling back to deterministic")
+                return None
 
-        _git_pull(branch)
+        if not os.path.exists(pending_path):
+            _git_pull(branch)
 
         if os.path.exists(pending_path):
             print(f"  LLM: found {os.path.basename(pending_path)} after {elapsed:.0f}s")

@@ -45,7 +45,7 @@
   },
   "next_actions": [],
   "global_overrides": {
-    "options_side_bias": null,
+    "options_side_bias": "long",
     "max_open_options": null,
     "max_concurrent_per_strategy": {}
   }

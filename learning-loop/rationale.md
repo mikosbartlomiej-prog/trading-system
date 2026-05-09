@@ -33,3 +33,7 @@
 - 2026-05-09 · LLM unavailable (skipped) — deterministic adapter only
 - 2026-05-09 · no parameter changes (all strategies within thresholds)
 
+- 2026-05-09 · LLM[low] regime=risk_on (rescued from orphan after race-condition timeout): Czwarty dzień śledzenia — equity $96,642 (-3.87% / -$3,900 od startu). Portfel trzyma bearish PUT pozycje w rynku który rally'uje: to jest core problem. Dwa sygnały strukturalne wymagają natychmiastowej reakcji: (1) exit-emergency 0/4 filled — przez minimum kilka godzin byliśmy bez ochrony emergency exit; patch wysłany w ciągu sesji, ale incydent się powtórzył po poprzedniej naprawie, co oznacza że fix z 2026-05-07 nie zadziałał w trybie produkcyjnym; (2) options-momentum 40% fill rate (4/10, 3 canceled) — systematycznie tracimy ~60% zamierzonej opcyjnej ekspozycji przez ciasne limity. Geo-ent
+- 2026-05-09 · LLM edge: Brak danych per-strategy — cumulative_trades=0 czwarty dzień z rzędu, by_strategy puste pomimo naprawy _is_close(); brak domkniętych round-tripów bo wszystkie geo/options pozycje nadal otwarte. Jedyny potwierdzony edge: geo-entries execution quality 75% fill (3/4 XOM/XLE/RTX vs GLD canceled). Options-momentum 40% fill = płacimy slippage i opportunity cost bez pełnej ekspozycji; w obecnym rally PUT
+- 2026-05-09  · global_overrides.options_side_bias: None -> long
+- 2026-05-09 · ACTION: orphan pending-llm-daily.json from race-condition rescued + applied; analyzer timeout being bumped 300->480s
