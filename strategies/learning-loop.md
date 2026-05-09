@@ -70,8 +70,9 @@ Per strategy / asset class / source:
 - Fill rate (placed vs filled vs canceled vs rejected)
 
 ### 4. Adaptuje parametry per strategia
-Heurystyki w `learning-loop/adapter.py` (v1.0):
+Heurystyki w `learning-loop/adapter.py`:
 
+#### Per-strategy heuristics (v1.0 — pierwotne)
 | Trigger | Akcja |
 |---|---|
 | Lifetime trades < 10 | Hold (insufficient sample) |
@@ -85,6 +86,16 @@ Heurystyki w `learning-loop/adapter.py` (v1.0):
 | Options short P&L < 0 + long P&L > \|short P&L\| | `side_bias = "long"` |
 
 Granice: `0.30 ≤ size_multiplier ≤ 2.00`. Pause auto-resumuje po 3 dniach.
+
+#### Fill-rate heuristics (v1.2 — added 2026-05-08/09 from LLM proposals)
+| Function | Trigger | Effect |
+|---|---|---|
+| `heuristic_options_limit_too_tight` | options-momentum fill_rate < 50% over ≥ 5 placed | Emit alert (no state change) |
+| `heuristic_fill_rate_size_cut` | cancel_rate ≥ 50% over ≥ 3 placed | Cap options-momentum `size_multiplier` to factor in [0.40, 0.75] |
+| `heuristic_fill_rate_alert` | any strategy with fill_rate < 50% over ≥ 3 placed | Returns sorted alert list (worst first); analyzer emits to rationale |
+| `heuristic_options_chronic_fill` | options-momentum fill_rate < 50% over ≥ 5 placed (multi-session pattern) | Emit chronic-fill warning recommending midpoint+5% pricing |
+
+All fire after the per-strategy loop in `adapt()` and write to `rationale` for daily history visibility.
 
 ### 5. LLM strategist annotation (Senior PM persona) — NEW v1.1
 Po deterministic adapter, ale PRZED zapisem `state.json`, analyzer wysyła payload do
