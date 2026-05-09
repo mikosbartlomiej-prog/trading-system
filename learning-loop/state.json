@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-09T09:33:43.664969+00:00",
-  "days_tracked": 9,
+  "last_updated": "2026-05-09T21:50:18.235845+00:00",
+  "days_tracked": 10,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
@@ -185,7 +185,7 @@
   },
   "next_actions": [],
   "global_overrides": {
-    "options_side_bias": "long",
+    "options_side_bias": null,
     "max_open_options": null,
     "max_concurrent_per_strategy": {}
   },

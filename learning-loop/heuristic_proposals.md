@@ -60,3 +60,9 @@
     3. `adapter.py adapt_strategy()`: jeśli `tp_hit_rate[strategy] < 0.20 AND tp_placed >= 5`, zapisz `state['strategies'][strategy]['suggested_tp_multiplier'] = 1.4`.
     4. `options-exit-monitor`: wczytaj `suggested_tp_multiplier` z state.json, użyj zamiast hardcoded 1.8.
     5. **Uwaga:** to tylko options — stock TP/SL w exit-monitor ma osobną logikę.
+- [ ] [2026-05-09] **UUID strategy artifact pruning in analyzer — filter phantom state.json entries** _(risk: low, effort: 1h, revisit: 2026-05-11)_
+  - **Rationale:** State.json zawiera 7 UUID-format kluczy — artefakty Alpaca bracket order IDs. Root cause naprawiony (commit 2026-05-08), ale legacy entries nadal zaśmiecają LLM analizę 7 pustymi wpisami.
+  - **Sketch:** W learning-loop/analyzer.py: dodać helper _is_uuid_key(name: str) -> bool z re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-', name). W _build_proposed_state() filtrować klucze strategies dict przed iteracją. Emitować jeden wiersz rationale: 'pruned N UUID artifact strategy keys'. Nie modyfikować state.json — tylko ignorować w analizie.
+- [ ] [2026-05-09] **options_side_bias auto-clear gdy zero options trades w 7d window** _(risk: low, effort: 1h, revisit: 2026-05-13)_
+  - **Rationale:** Challenger wskazał: options_side_bias=long utrzymywany przez 5 sesji bez żadnych danych options-momentum w by_strategy. Adapter powinien auto-resetować directional bias do null gdy brak supporting trade data — zapobiega evidence-free override.
+  - **Sketch:** W learning-loop/adapter.py: w adapt_strategy() dla options-momentum: jeśli trades_7d == 0, wyzerować global_overrides.options_side_bias zamiast propagować z poprzedniego state. Alternatywnie: osobny pass w _build_proposed_state() resetujący options_side_bias gdy options-momentum.trades_7d < 3. Emitować rationale: 'options_side_bias reset to null — zero supporting data in 7d window'.
