@@ -801,49 +801,34 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
         print(f"  {ticker}: pominięty (concentration {combined:.1f}% > 40%)")
         return False
 
-    # If Curator already validated this signal, TRUST it and skip
-    # event_scoring veto. event_scoring is for un-curated heuristic path
-    # (raw monitor → Alpaca w/o LLM); when Curator stamps, LLM did the
-    # smart filtering already.
+    # event_scoring was designed for news monitors (twitter/defense/geo)
+    # with REAL market_reaction data. For Reddit it would use placeholder
+    # values (atr=0.5, vol=1.0, gap=0.0) → returns WAIT_FOR_CONFIRMATION
+    # for almost everything → pipeline becomes useless on Curator 429.
+    #
+    # Reddit-specific gates already enforce signal quality:
+    #   - extract_tickers (whitelist only)
+    #   - sub.min_upvotes / user.min_post_ups (engagement floor)
+    #   - keyword filter (only DD-flavored posts)
+    #   - sentiment_around (skew threshold or UNCLEAR side)
+    #   - spike threshold + first-day floor
+    #   - has_open_position (dup guard)
+    #   - concentration_ok (per-ticker cap)
+    #   - VIX guard / drawdown guard (account level)
+    # Curator (when available) layers smart validation on top.
+    #
+    # So we skip event_scoring entirely. Stance is FOLLOW unless signal
+    # was rejected upstream.
     if sig.get("curator_rationale"):
-        decision = {
-            "stance":    "FOLLOW_REACTION",
-            "rationale": f"curator-approved: {sig['curator_rationale']}",
-        }
+        decision_rationale = f"curator-approved: {sig['curator_rationale']}"
     else:
-        source_type = _source_type_for(sig)
-        if sig["lane"] == "sub":
-            ratio = sig.get("spike_ratio") or 1.0
-            magnitude = "large" if ratio >= 5 else "normal" if ratio >= 3 else "small"
-        else:
-            ups = sig.get("best_post_ups", 0)
-            magnitude = "large" if ups >= 1500 else "normal" if ups >= 500 else "small"
-
-        try:
-            decision = score_and_decide(
-                source_type=source_type,
-                event_type="sentiment_spike",
-                magnitude=magnitude,
-                price_move_atr=0.5,    # TODO: real metrics from market_data
-                volume_ratio=1.0,
-                gap_pct=0.0,
-            )
-        except Exception as e:
-            print(f"  {ticker}: event_scoring error ({e}) — falling back to FOLLOW")
-            decision = {"stance": "FOLLOW_REACTION", "rationale": "fallback"}
-    stance = decision.get("stance", "WAIT_FOR_CONFIRMATION")
-
-    if stance == "IGNORE_EVENT":
-        print(f"  {ticker} ({sig['lane']}): IGNORE — {decision.get('rationale','')}")
-        return False
-    if stance == "WAIT_FOR_CONFIRMATION":
-        print(f"  {ticker} ({sig['lane']}): WAIT — skipping")
-        return False
+        decision_rationale = "heuristic fallback (Curator unavailable)"
+    stance = "FOLLOW_REACTION"
 
     sig["size_usd"] = round(sized, 2)
     sig["stance"]   = stance
-    sig["event_score_rationale"] = decision.get("rationale", "")
-    sig["source_type"] = source_type
+    sig["event_score_rationale"] = decision_rationale
+    sig["source_type"] = _source_type_for(sig)
 
     src_label = f"@{sig['user']}" if sig["lane"] == "user" else f"r/{sig.get('sub','?')}"
     spike_lbl = (f"{sig['spike_ratio']}×" if sig.get("spike_ratio")
@@ -851,6 +836,8 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
     print(f"  >>> SYGNAŁ {sig['side']} {ticker} [{sig['lane']}:{src_label}] "
           f"({stance}, skew={sig['skew']}, {spike_lbl}, "
           f"size=${sig['size_usd']:,.0f})")
+    if sig.get("curator_rationale"):
+        print(f"      curator: {sig['curator_rationale'][:120]}")
 
     try:
         notify_signal(sig, alert_sent=AUTO_EXECUTE)
