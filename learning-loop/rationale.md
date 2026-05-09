@@ -50,3 +50,8 @@
 - 2026-05-09 · fill-rate alert [options-momentum]: fill rate 40% below 50% (3 canceled / 10 placed) — limits too tight or quote stale
 - 2026-05-09 · chronic-fill [options-momentum]: options-momentum fill_rate 40% on 10 placed — suggests chronic limit-pricing miscalibration (consider pricing at midpoint+5% instead of close*1.05)
 
+- 2026-05-09 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-09 · fill-rate alert [exit-emergency]: fill rate 0% below 50% (4 canceled / 4 placed) — limits too tight or quote stale
+- 2026-05-09 · fill-rate alert [options-momentum]: fill rate 40% below 50% (3 canceled / 10 placed) — limits too tight or quote stale
+- 2026-05-09 · chronic-fill [options-momentum]: options-momentum fill_rate 40% on 10 placed — suggests chronic limit-pricing miscalibration (consider pricing at midpoint+5% instead of close*1.05)
+
