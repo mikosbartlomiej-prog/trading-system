@@ -352,30 +352,46 @@ After producing your JSON output:
 
 3. Write your JSON to that path (RAW — same JSON you would have
    returned, no markdown fences, no preamble) using bash. Then commit
-   and push:
+   and push.
 
-     BRANCH="<target_branch>"
+   IMPORTANT — channel (revised 2026-05-09 after 3-day failure mode):
+   Push to `main` is BLOCKED (HTTP 403) for routine sessions — the
+   Claude Code OAuth proxy refuses pushes to default branch. DO NOT
+   try `git push origin main`. Instead:
+
+   a. Stay on your CURRENT auto-named session branch (`claude/<slug>`)
+      — that branch you can always push to.
+   b. Tag the commit message with `[automerge]`. The repo has an
+      `auto-merge.yml` workflow that triggers on any push to `claude/*`
+      branches with that tag and fast-forwards your commit into main
+      within ~30 s using `GITHUB_TOKEN` (which has the contents:write
+      scope your OAuth proxy lacks).
+   c. After your push, that workflow merges to main and deletes the
+      source branch. The daily-learning analyzer polls main every 15 s
+      for up to 300 s — it will find your file ~30-60 s after your push.
+
+   Bash (only your CURRENT branch — do NOT switch):
+
      FILE="<target file path>"
-
-     git fetch origin "$BRANCH"
-     git checkout "$BRANCH"
-     git pull --ff-only origin "$BRANCH"
+     CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
      cat > "$FILE" <<'JSON_EOF'
      <your raw JSON output here>
      JSON_EOF
 
      git add "$FILE"
-     git commit -m "llm: <type> output $(date -u +%Y-%m-%d)"
-     git push origin "$BRANCH"
+     git commit -m "llm: <type> output $(date -u +%Y-%m-%d) [automerge]"
+     git push origin "$CURRENT_BRANCH"
 
-4. The workflow polls origin every 15 s for up to 180 s for that file.
-   Once it sees your push, it consumes the file (`git rm`) and applies
-   your `state_overrides` through the whitelist-enforced safe-applier.
+4. The auto-merge workflow runs on the GitHub side, lands the file on
+   main, and the analyzer's poll picks it up shortly after. From your
+   perspective the contract is: write file + commit with [automerge] +
+   push current branch — the rest happens autonomously.
 
-5. If `git push` fails, do NOT retry — the workflow has a fail-soft
-   path; the deterministic adapter will run alone. Do not modify any
-   other files in the repo. Do not amend prior commits.
+5. If `git push` fails for any reason — do NOT retry, do NOT switch
+   branches, do NOT push to main directly. The workflow has a
+   fail-soft path; the deterministic adapter will run alone. Do not
+   modify any other files in the repo. Do not amend prior commits.
 
 The HTTP response body of the trigger is irrelevant; what matters is
 the file you commit. If you cannot commit (no git access in your
