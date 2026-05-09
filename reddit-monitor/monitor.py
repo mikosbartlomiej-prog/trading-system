@@ -669,6 +669,9 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
         # Top 3 post excerpts by ups for LLM curator context
         top_posts = sorted(agg["posts"], key=lambda p: p["post_ups"], reverse=True)[:3]
         excerpts = [p.get("post_excerpt", "") for p in top_posts if p.get("post_excerpt")]
+        # JSON-safe spike_ratio: 99.0 sentinel for "no rolling history yet"
+        # (real ratios cap around 10-20× even on viral days; 99 is unambiguous).
+        spike_ratio = round(agg["mentions"] / avg, 2) if avg > 0 else 99.0
         signals.append({
             "lane":           "sub",
             "ticker":         t,
@@ -676,7 +679,7 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             "skew":           round(skew, 3) if skew is not None else None,
             "mentions":       agg["mentions"],
             "rolling_avg_7d": round(avg, 2),
-            "spike_ratio":    round(agg["mentions"] / avg, 2) if avg > 0 else float("inf"),
+            "spike_ratio":    spike_ratio,
             "weight":         1.0,                    # sub-lane uses no per-source weight here
             "best_post_url":  agg["best_post_url"],
             "best_post_ups":  agg["best_post_ups"],
@@ -688,7 +691,7 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
         })
     # Sort with skew=None treated as 0.5 (mid-priority)
     signals.sort(
-        key=lambda s: (s["spike_ratio"] if s["spike_ratio"] != float("inf") else 99)
+        key=lambda s: s["spike_ratio"]
                        * (abs(s["skew"]) if s["skew"] is not None else 0.5),
         reverse=True,
     )
@@ -798,26 +801,36 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
         print(f"  {ticker}: pominięty (concentration {combined:.1f}% > 40%)")
         return False
 
-    source_type = _source_type_for(sig)
-    if sig["lane"] == "sub":
-        ratio = sig.get("spike_ratio") or 1.0
-        magnitude = "large" if ratio >= 5 else "normal" if ratio >= 3 else "small"
+    # If Curator already validated this signal, TRUST it and skip
+    # event_scoring veto. event_scoring is for un-curated heuristic path
+    # (raw monitor → Alpaca w/o LLM); when Curator stamps, LLM did the
+    # smart filtering already.
+    if sig.get("curator_rationale"):
+        decision = {
+            "stance":    "FOLLOW_REACTION",
+            "rationale": f"curator-approved: {sig['curator_rationale']}",
+        }
     else:
-        ups = sig.get("best_post_ups", 0)
-        magnitude = "large" if ups >= 1500 else "normal" if ups >= 500 else "small"
+        source_type = _source_type_for(sig)
+        if sig["lane"] == "sub":
+            ratio = sig.get("spike_ratio") or 1.0
+            magnitude = "large" if ratio >= 5 else "normal" if ratio >= 3 else "small"
+        else:
+            ups = sig.get("best_post_ups", 0)
+            magnitude = "large" if ups >= 1500 else "normal" if ups >= 500 else "small"
 
-    try:
-        decision = score_and_decide(
-            source_type=source_type,
-            event_type="sentiment_spike",
-            magnitude=magnitude,
-            price_move_atr=0.5,    # TODO: real metrics from market_data
-            volume_ratio=1.0,
-            gap_pct=0.0,
-        )
-    except Exception as e:
-        print(f"  {ticker}: event_scoring error ({e}) — falling back to FOLLOW")
-        decision = {"stance": "FOLLOW_REACTION", "rationale": "fallback"}
+        try:
+            decision = score_and_decide(
+                source_type=source_type,
+                event_type="sentiment_spike",
+                magnitude=magnitude,
+                price_move_atr=0.5,    # TODO: real metrics from market_data
+                volume_ratio=1.0,
+                gap_pct=0.0,
+            )
+        except Exception as e:
+            print(f"  {ticker}: event_scoring error ({e}) — falling back to FOLLOW")
+            decision = {"stance": "FOLLOW_REACTION", "rationale": "fallback"}
     stance = decision.get("stance", "WAIT_FOR_CONFIRMATION")
 
     if stance == "IGNORE_EVENT":
