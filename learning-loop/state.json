@@ -1,1 +1,17 @@
-{"_sentinel": "analyzer was here", "version": "1.0"}
+{
+  "_sentinel": "analyzer was here",
+  "version": "1.0",
+  "last_updated": "2026-05-09T07:24:13.473237+00:00",
+  "days_tracked": 1,
+  "cumulative": {
+    "total_trades": 0,
+    "total_pnl_usd": 0,
+    "starting_equity": 100542.49
+  },
+  "asset_classes": {},
+  "sources": {},
+  "next_actions": [],
+  "global_overrides": {
+    "options_side_bias": "long"
+  }
+}
