@@ -246,6 +246,37 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
     new_state["sources"]       = today_stats.get("by_source", {})
     new_state["next_actions"]  = next_actions
 
+    # ── Fill-rate heuristics (LLM proposals 2026-05-09 #4 + #5 + #7) ─────────
+    # Run AFTER per-strategy adaptation so we can both alert (warning) and
+    # cut size (action) in one pass. Each heuristic is pure; rationale lines
+    # become part of the daily log.
+    fill_data = today_stats.get("fill_rate") or {}
+
+    # Alerts (no state change, just visibility) — proposal #7
+    for alert in heuristic_fill_rate_alert(fill_data):
+        rationale.append(
+            f"{today_iso} · fill-rate alert [{alert['strategy']}]: {alert['alert']}"
+        )
+
+    # Chronic options-momentum signal (proposal #5)
+    chronic, why = heuristic_options_chronic_fill(fill_data)
+    if chronic:
+        rationale.append(f"{today_iso} · chronic-fill [options-momentum]: {why}")
+
+    # Size-cut for options-momentum on high cancel rate (proposal #4)
+    opts = fill_data.get("options-momentum", {})
+    cut, factor, cut_reason = heuristic_fill_rate_size_cut(
+        opts.get("canceled", 0), opts.get("placed", 0),
+    )
+    if cut and "options-momentum" in new_state.get("strategies", {}):
+        cur = new_state["strategies"]["options-momentum"].get("size_multiplier", 1.0)
+        capped = max(MIN_SIZE_MULT, min(MAX_SIZE_MULT, cur * factor))
+        if abs(capped - cur) > 0.001:
+            new_state["strategies"]["options-momentum"]["size_multiplier"] = round(capped, 2)
+            line = f"options-momentum: size_multiplier {cur:.2f} -> {capped:.2f} (fill-rate guard)"
+            rationale.append(f"{today_iso} · {line} · {cut_reason}")
+            next_actions.append(line)
+
     if not rationale:
         rationale.append(f"{today_iso} · no parameter changes (all strategies within thresholds)")
 
@@ -263,5 +294,108 @@ def heuristic_options_limit_too_tight(fill_stats: dict) -> tuple:
         return True, (
             f"options-momentum fill_rate {fill_rate:.0%} over {placed} orders"
             " — limits too tight, widen to ask+1% or mid+3%"
+        )
+    return False, ""
+
+
+# ─── Lane 3 → manual-implemented — fill-rate heuristics (LLM proposals 2026-05-09) ───
+
+def heuristic_fill_rate_size_cut(canceled: int, placed: int,
+                                   cancel_threshold: float = 0.50) -> tuple:
+    """
+    Recommend a size_multiplier scaling factor when cancel rate is high.
+
+    Implementation of LLM proposal 2026-05-09 #4: chronic high cancel
+    rate suggests we're placing 'phantom' orders that never fill,
+    wasting allocated capital. Scaling size_multiplier down forces
+    less notional to be deployed until execution improves.
+
+    Returns (should_cut, factor, reason):
+      factor in [0.40, 0.75] when should_cut True
+      factor 1.0 when no action (sample too small or fill_rate OK)
+    Requires >= 3 placed for a signal.
+
+    Caller wires into adapt() AFTER the per-strategy loop:
+        cap, factor, why = heuristic_fill_rate_size_cut(...)
+        if cap and 'options-momentum' in new_state['strategies']:
+            sm = new_state['strategies']['options-momentum']['size_multiplier']
+            new_state['strategies']['options-momentum']['size_multiplier'] = (
+                max(MIN_SIZE_MULT, min(MAX_SIZE_MULT, sm * factor))
+            )
+    """
+    if placed < 3:
+        return False, 1.0, f"sample too small ({placed} placed)"
+    cancel_rate = canceled / placed
+    if cancel_rate >= cancel_threshold:
+        factor = max(0.40, min(0.75, 1.0 - cancel_rate))
+        return True, factor, (
+            f"cancel_rate={cancel_rate:.0%} >= {cancel_threshold:.0%} "
+            f"({canceled}/{placed} canceled) -> cap multiplier *{factor}"
+        )
+    return False, 1.0, f"fill_rate OK (cancel_rate={cancel_rate:.0%})"
+
+
+def heuristic_fill_rate_alert(fill_rate_data: dict,
+                                threshold: float = 0.50,
+                                min_placed: int = 3) -> list:
+    """
+    Identify all strategies with persistent low fill rates.
+
+    Implementation of LLM proposal 2026-05-09 #7 (alert function).
+    Pure function — takes a `today_stats['fill_rate']` dict, returns a
+    sorted list of alert dicts (worst-first). Zero side effects;
+    caller (analyzer or weekly_retro) decides whether to emit warnings
+    to rationale.md or trigger size cuts via heuristic_fill_rate_size_cut.
+
+    Each alert dict:
+      {strategy, fill_rate, placed, filled, canceled, alert (str)}
+    """
+    alerts = []
+    for strategy, data in (fill_rate_data or {}).items():
+        if not isinstance(data, dict):
+            continue
+        placed = data.get("placed", 0)
+        rate = data.get("fill_rate", 1.0)
+        canceled = data.get("canceled", 0)
+        if placed >= min_placed and rate < threshold:
+            alerts.append({
+                "strategy":  strategy,
+                "fill_rate": rate,
+                "placed":    placed,
+                "filled":    data.get("filled", 0),
+                "canceled":  canceled,
+                "alert": (
+                    f"fill rate {rate:.0%} below {threshold:.0%} "
+                    f"({canceled} canceled / {placed} placed) — "
+                    f"limits too tight or quote stale"
+                ),
+            })
+    return sorted(alerts, key=lambda x: x["fill_rate"])  # worst first
+
+
+def heuristic_options_chronic_fill(fill_rate_data: dict,
+                                     min_consecutive_sessions: int = 2) -> tuple:
+    """
+    Flag chronic (multi-session) options-momentum fill deficit.
+
+    Implementation of LLM proposal 2026-05-09 #5: distinct from the
+    single-day `heuristic_options_limit_too_tight` because chronic
+    multi-day deficit means our cost model is wrong, not just a quiet
+    market. Without persistent state we can only detect it within the
+    24h window, but we tag the alert so weekly_retro can stitch
+    multiple days together.
+
+    Returns (alert, reason). Note: cannot determine "consecutive
+    sessions" from a single-day stats dict — caller can extend with
+    state.json `chronic_fill_deficit_streak` field if desired.
+    """
+    opts = (fill_rate_data or {}).get("options-momentum", {})
+    placed = opts.get("placed", 0)
+    rate = opts.get("fill_rate", 1.0)
+    if placed >= 5 and rate < 0.50:
+        return True, (
+            f"options-momentum fill_rate {rate:.0%} on {placed} placed "
+            f"— suggests chronic limit-pricing miscalibration (consider "
+            f"pricing at midpoint+5% instead of close*1.05)"
         )
     return False, ""

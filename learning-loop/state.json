@@ -1,17 +1,52 @@
 {
-  "_sentinel": "analyzer was here",
   "version": "1.0",
+  "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
   "last_updated": "2026-05-09T07:24:13.473237+00:00",
-  "days_tracked": 1,
+  "days_tracked": 7,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
     "starting_equity": 100542.49
   },
+  "strategies": {
+    "overbought-short": {
+      "size_multiplier": 1.0,
+      "enabled": false,
+      "side_bias": null,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0,
+      "win_rate_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "consecutive_losses": 0,
+      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering"
+    }
+  },
   "asset_classes": {},
   "sources": {},
+  "tickers": {
+    "MSTR": {
+      "enabled": false,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
+    },
+    "SMCI": {
+      "enabled": false,
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
+    }
+  },
   "next_actions": [],
   "global_overrides": {
-    "options_side_bias": "long"
+    "options_side_bias": "long",
+    "max_open_options": null,
+    "max_concurrent_per_strategy": {}
   }
 }

@@ -45,6 +45,7 @@ except ImportError:
 ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
 ALPACA_BASE_URL   = "https://paper-api.alpaca.markets"
+ALPACA_DATA_URL   = "https://data.alpaca.markets"   # for /options/snapshots
 FINNHUB_API_KEY   = os.environ.get("FINNHUB_API_KEY", "")
 CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_OPTIONS_WORKER_URL", "")
 AUTO_EXECUTE      = os.environ.get("AUTO_EXECUTE_OPTIONS", "true").lower() == "true"
@@ -201,6 +202,59 @@ def pick_best_contract(contracts: list[dict], spot: float, max_premium: float):
     return contract, premium
 
 
+def _get_option_quote(contract_symbol: str) -> dict | None:
+    """
+    Fetch latest bid/ask snapshot for an OCC option symbol.
+
+    Returns {"bid": float, "ask": float, "mid": float} on success,
+    None on any failure (caller falls back to close-price-based limit).
+    """
+    try:
+        r = requests.get(
+            f"{ALPACA_DATA_URL}/v1beta1/options/snapshots/{contract_symbol}",
+            headers=alpaca_headers(),
+            timeout=8,
+        )
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        # snapshot shape: {"snapshot": {"latestQuote": {"bp": bid, "ap": ask, ...}}}
+        snap = (data.get("snapshot") or data)
+        quote = (snap.get("latestQuote") or snap.get("latest_quote") or {})
+        bid = float(quote.get("bp") or quote.get("bid_price") or 0)
+        ask = float(quote.get("ap") or quote.get("ask_price") or 0)
+        if bid <= 0 or ask <= 0 or ask < bid:
+            return None
+        return {"bid": bid, "ask": ask, "mid": (bid + ask) / 2.0}
+    except Exception as e:
+        print(f"  options quote {contract_symbol} error: {e}")
+        return None
+
+
+def _compute_buy_limit_price(contract_symbol: str, close_premium: float) -> tuple[float, str]:
+    """
+    Compute aggressive buy limit_price using bid/ask midpoint when available.
+
+    Per LLM proposal 2026-05-09 (40% fill rate root cause): close-price-based
+    limit (`close * 1.05`) systematically lands BELOW market mid because
+    options spreads run 5-15% wide. Pricing at midpoint + 5% margin should
+    push fill rate from ~40% to 70%+.
+
+    Returns (limit_price, source) where source explains which formula won
+    so monitor logs make the choice visible.
+    """
+    quote = _get_option_quote(contract_symbol)
+    if quote and quote["mid"] > 0:
+        # Aggressive buyer: pay 5% over midpoint to clear typical spreads
+        lim = round(quote["mid"] * 1.05, 2)
+        return lim, f"mid-aggressive (bid={quote['bid']}, ask={quote['ask']}, mid={quote['mid']:.2f})"
+    # Fallback when snapshot unavailable: 20% over close (was 5% — still
+    # too tight for typical options spreads, but no quote means we're
+    # flying blind anyway).
+    lim = round(close_premium * 1.20, 2)
+    return lim, f"close-fallback (close={close_premium}, *1.20 = {lim})"
+
+
 def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | None:
     """
     Place a SIMPLE limit buy_to_open order via Alpaca REST.
@@ -209,6 +263,11 @@ def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | 
     (returns 422 'complex orders not supported for options trading').
     TP/SL must be placed as separate orders after the fill — handled by a
     follow-up exit step (or manually by the user via the dashboard).
+
+    Limit price is computed via _compute_buy_limit_price using bid/ask
+    midpoint + 5% margin (fallback close*1.20 when no quote available).
+    Replaces the prior `close * 1.05` which gave us ~40% fill rate over
+    multiple sessions.
     """
     # Tag with strategy-prefixed client_order_id so the learning-loop
     # analyzer can attribute fills to "options-momentum" instead of
@@ -218,12 +277,15 @@ def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | 
     safe_sym = contract_symbol.replace("/", "").replace(" ", "")
     client_order_id = f"options-momentum-{safe_sym}-{ts}"
 
+    limit_price, src = _compute_buy_limit_price(contract_symbol, premium)
+    print(f"  limit_price ${limit_price} via {src}")
+
     payload = {
         "symbol":          contract_symbol,
         "qty":             str(qty),
         "side":            "buy",
         "type":            "limit",
-        "limit_price":     str(round(premium, 2)),
+        "limit_price":     str(limit_price),
         "time_in_force":   "day",
         "client_order_id": client_order_id,
     }

@@ -95,13 +95,15 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     """
     Place a SELL-to-close on `contract_symbol`.
 
-    decision == "TP" -> LIMIT at `exit_price` (price discipline)
-    decision == "SL" -> MARKET (emergency; guarantee fill in falling tape)
+    decision == "TP"      -> LIMIT at `exit_price` (price discipline)
+    decision == "SL"      -> MARKET (emergency; guarantee fill in falling tape)
+    decision == "NEARDTH" -> MARKET (theta-acceleration close; near-expiry
+                              spreads are too wide for LIMIT to reliably fill)
 
-    Tags client_order_id with `exit-tp-` or `exit-sl-` so the analyzer
-    can attribute the close to the right strategy bucket.
+    Tags client_order_id with `exit-tp-`, `exit-sl-`, or `exit-neardth-`
+    so the analyzer can attribute the close to the right bucket.
     """
-    reason = decision.lower()  # "tp" or "sl"
+    reason = decision.lower()  # "tp", "sl", or "neardth"
     payload: dict = {
         "symbol":          contract_symbol,
         "qty":             str(int(qty)),
@@ -109,7 +111,7 @@ def place_sell_to_close(contract_symbol: str, qty: int,
         "time_in_force":   "day",
         "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
-    if decision == "SL":
+    if decision in ("SL", "NEARDTH"):
         payload["type"] = "market"
     else:
         payload["type"]        = "limit"
@@ -127,12 +129,60 @@ def place_sell_to_close(contract_symbol: str, qty: int,
         return None
 
 
+def _occ_dte(occ_symbol: str) -> int | None:
+    """
+    Extract days-to-expiry from an OCC options symbol.
+
+    OCC format: TICKER + YYMMDD + (C|P) + STRIKE*1000 (zero-padded to 8)
+    Example: AMZN260520P00270000  -> exp 2026-05-20
+             QQQ260514P00699000   -> exp 2026-05-14
+
+    Returns None if parsing fails.
+    """
+    if not occ_symbol or len(occ_symbol) < 15:
+        return None
+    # Find the position of the date (6 digits before C/P)
+    # Strategy: the rightmost 15 chars are YYMMDD + C/P + strike(8)
+    try:
+        date_str = occ_symbol[-15:-9]   # 6 chars: YYMMDD
+        if not date_str.isdigit():
+            return None
+        yy = int(date_str[:2])
+        mm = int(date_str[2:4])
+        dd = int(date_str[4:6])
+        # OCC uses 2-digit year — assume 20YY for years 00-79, 19YY for 80-99
+        year = 2000 + yy if yy < 80 else 1900 + yy
+        from datetime import date
+        expiry = date(year, mm, dd)
+        today = datetime.now(timezone.utc).date()
+        return (expiry - today).days
+    except (ValueError, IndexError):
+        return None
+
+
 # ─── Decision ────────────────────────────────────────────────────────────────
+
+# Near-expiry early-close trigger (proposal #9 from 2026-05-09 LLM):
+# theta decay accelerates non-linearly under DTE 5; static SL=entry*0.50
+# is too slow for that regime. When BOTH conditions hold, fire MARKET sell
+# regardless of normal SL — better to exit at -40% than let it become -90%
+# at expiry.
+NEAR_DTH_DTE_THRESHOLD = 5      # days
+NEAR_DTH_LOSS_THRESHOLD = -40.0 # percent loss (more liberal than SL=-50%)
+
 
 def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
     """
     Returns (decision, exit_limit_price, pl_pct, reason).
-    decision: "TP" | "SL" | "HOLD"
+    decision: "TP" | "SL" | "NEARDTH" | "HOLD"
+
+    Order of checks:
+      1. NEARDTH — DTE <= 5 AND loss > 40% (theta acceleration regime;
+         takes priority over normal SL because non-linear decay below 5
+         days makes static SL too slow). Tagged "exit-neardth-*".
+      2. TP — current >= entry * 1.80 (80% gain target).
+      3. SL — current <= entry * 0.50 (50% loss stop, MARKET).
+      4. HOLD — within window.
     """
     try:
         qty     = abs(float(pos.get("qty", 0)))
@@ -148,6 +198,13 @@ def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
     tp_lvl = entry * TP_PREMIUM_MULT
     sl_lvl = entry * SL_PREMIUM_MULT
 
+    # Near-expiry accelerated close (highest priority)
+    dte = _occ_dte(pos.get("symbol", ""))
+    if dte is not None and dte <= NEAR_DTH_DTE_THRESHOLD and pl_pct <= NEAR_DTH_LOSS_THRESHOLD:
+        return ("NEARDTH", current, pl_pct,
+                f"DTE={dte}d (<={NEAR_DTH_DTE_THRESHOLD}) + pl {pl_pct:+.1f}% (<={NEAR_DTH_LOSS_THRESHOLD}%) "
+                f"-> theta-acceleration close (MARKET)")
+
     if current >= tp_lvl:
         return ("TP", tp_lvl, pl_pct,
                 f"current ${current:.2f} >= TP ${tp_lvl:.2f} (+{pl_pct:.1f}%)")
@@ -155,7 +212,8 @@ def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
         return ("SL", current, pl_pct,
                 f"current ${current:.2f} <= SL ${sl_lvl:.2f} ({pl_pct:.1f}%)")
     return ("HOLD", None, pl_pct,
-            f"in window (pl {pl_pct:+.1f}%, TP=${tp_lvl:.2f}, SL=${sl_lvl:.2f})")
+            f"in window (pl {pl_pct:+.1f}%, TP=${tp_lvl:.2f}, SL=${sl_lvl:.2f}"
+            f"{f', DTE={dte}d' if dte is not None else ''})")
 
 
 # ─── Main ────────────────────────────────────────────────────────────────────

@@ -246,18 +246,43 @@ def _asset_class(symbol: str) -> str:
 
 def compute_strategy_stats(trades: list[dict], orders_all: list[dict],
                             equity: float) -> dict:
-    """Per-strategy roll-up: trades_7d, win_rate_7d, pnl_usd_7d,
-    consecutive_losses, plus long/short P&L splits for options bias."""
+    """
+    Per-strategy roll-up: trades_7d, win_rate_7d, pnl_usd_7d,
+    consecutive_losses, plus long/short P&L splits for options bias.
+
+    SINGLE-LEG ATTRIBUTION (proposal #6 from 2026-05-09 LLM, fix for
+    by_strategy=empty 4 days running): also include strategies that
+    have OPEN entries (filled buy/sell_short orders not yet paired
+    with a close in the 24h window). For those strategies emit
+    placeholder stats with `open_positions_7d` count so the LLM /
+    adapter at least knows the strategy IS active. Without this, any
+    multi-day held position keeps the strategy invisible to learning.
+    """
     strat_trades: dict[str, list[dict]] = defaultdict(list)
     for t in trades:
         strat_trades[t["strategy"]].append(t)
 
+    # NEW: count entry-side fills per strategy from raw orders, even
+    # when no matching close exists in the window.
+    strat_opens: dict[str, int] = defaultdict(int)
+    for o in orders_all:
+        if o.get("status") != "filled" or not o.get("filled_avg_price"):
+            continue
+        cid = (o.get("client_order_id") or "").lower()
+        # Skip closes (exit-* prefix or bracket child suffix)
+        if cid.startswith("exit-") or cid.endswith(("_take_profit", "_stop_loss")):
+            continue
+        strat = _strategy_from_client_id(o.get("client_order_id", ""),
+                                          o.get("symbol", ""))
+        if strat == "unknown":
+            continue
+        strat_opens[strat] += 1
+
     out = {}
-    for strat, ts in strat_trades.items():
+    all_strategies = set(strat_trades.keys()) | set(strat_opens.keys())
+    for strat in all_strategies:
+        ts = strat_trades.get(strat, [])
         wins = [t for t in ts if t["winner"]]
-        # Lifetime: this analyzer reads only the window, so lifetime accumulator
-        # is the responsibility of state.json (added across days).
-        # For first run, lifetime == window. Subsequent runs, adapter merges.
         long_pl  = sum(t["pnl_usd"] for t in ts if t["direction"] == "long")
         short_pl = sum(t["pnl_usd"] for t in ts if t["direction"] == "short")
 
@@ -269,13 +294,20 @@ def compute_strategy_stats(trades: list[dict], orders_all: list[dict],
                 break
             consec += 1
 
+        # Open positions = total entries on this strategy minus those that
+        # matched to a close (= len(ts), each completed trade consumed one
+        # open). Negative would be weird; clamp to 0.
+        opens_total      = strat_opens.get(strat, 0)
+        opens_unmatched  = max(0, opens_total - len(ts))
+
         out[strat] = {
-            "trades_7d":        len(ts),
-            "win_rate_7d":      round(len(wins) / len(ts), 3) if ts else 0.0,
-            "pnl_usd_7d":       round(sum(t["pnl_usd"] for t in ts), 2),
-            "trades_lifetime":  len(ts),    # first-run; merged with state in adapter
-            "win_rate_lifetime":round(len(wins) / len(ts), 3) if ts else 0.0,
-            "pnl_usd_lifetime": round(sum(t["pnl_usd"] for t in ts), 2),
+            "trades_7d":         len(ts),
+            "open_positions_7d": opens_unmatched,
+            "win_rate_7d":       round(len(wins) / len(ts), 3) if ts else 0.0,
+            "pnl_usd_7d":        round(sum(t["pnl_usd"] for t in ts), 2),
+            "trades_lifetime":   len(ts),
+            "win_rate_lifetime": round(len(wins) / len(ts), 3) if ts else 0.0,
+            "pnl_usd_lifetime":  round(sum(t["pnl_usd"] for t in ts), 2),
             "consecutive_losses": consec,
             "pnl_long_7d":  round(long_pl, 2),
             "pnl_short_7d": round(short_pl, 2),
