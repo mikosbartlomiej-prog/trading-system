@@ -36,19 +36,32 @@ Category determines `source_type` w event_scoring:
 Wyższy weight = sub o lepszej historycznej jakości signalu.
 
 ```
-wallstreetbets    | wsb           | 300  | 30  | 1.0
-options           | options_sub   |  30  | 10  | 1.2
-stocks            | quality_sub   | 100  | 20  | 1.3
-investing         | quality_sub   |  80  | 15  | 1.4
-securityanalysis  | quality_sub   |  30  | 10  | 1.5
-valueinvesting    | quality_sub   |  50  | 10  | 1.4
+wallstreetbets    | wsb           | 100  | 10  | 1.0
+options           | options_sub   |  10  |  3  | 1.2
+stocks            | quality_sub   |  30  |  5  | 1.3
+investing         | quality_sub   |  20  |  5  | 1.4
+securityanalysis  | quality_sub   |   5  |  2  | 1.5
+valueinvesting    | quality_sub   |  10  |  3  | 1.4
 ```
 
-**Kalibracja 2026-05-09:** thresholdy obniżone na podstawie pierwszego biegu prod
-(top observed posts per sub: WSB 418, options 23, stocks 192, investing 144,
-securityanalysis 0, valueinvesting 84). Stare wartości (500/100/200/200/100/100)
-odrzucały >90% postów, w tym wartościowe DD'eki. Po 7 dniach observation
-przekalibrować na podstawie własnej historii sygnałów.
+**Kalibracja 2026-05-09 v2 — szeroki candidate pool dla LLM downstream:**
+Thresholdy znacznie obniżone (3-10× w dół vs poprzednie). Filozofia: LLM
+interpretuje dziesiątki kandydatów lepiej niż prosty regex; lepiej dać mu
+szerokie pole do oceny niż pre-filtrować zbyt agresywnie.
+
+| Sub | min_ups v1 | v2 (lowered) | min_comments v1→v2 |
+|---|---|---|---|
+| wallstreetbets | 500→300 | **100** | 50→30→**10** |
+| options | 100→30 | **10** | 20→10→**3** |
+| stocks | 200→100 | **30** | 30→20→**5** |
+| investing | 200→80 | **20** | 30→15→**5** |
+| securityanalysis | 100→30 | **5** | 20→10→**2** |
+| valueinvesting | 100→50 | **10** | 20→10→**3** |
+
+`MAX_ALERTS_PER_LANE=1` zostaje (cap dla emaila). Per-ticker
+aggregation log pokazuje top 15 kandydatów — to feed dla LLM.
+Po dodaniu LLM, cap stanie się "candidates fed to LLM" zamiast
+"emails sent".
 
 ## Per-sub keyword filter (post tytuł + flair)
 

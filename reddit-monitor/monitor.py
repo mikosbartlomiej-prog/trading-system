@@ -108,10 +108,17 @@ STOP_LOSS_PCT      = -0.06
 TAKE_PROFIT_PCT    = +0.14
 MAX_OPEN_POSITIONS = 4
 MAX_ALERTS_PER_LANE = 1                # 1 from sub-lane + 1 from user-lane = max 2 per run
-SPIKE_THRESHOLD    = 3.0               # Lane A: today_mentions >= 3× 7d avg
-SENTIMENT_THRESHOLD = 0.3              # |skew| >= 0.3 to act
-TRACKED_USER_LOOKBACK_HRS = 24         # Lane B: only posts from last 24h
+SPIKE_THRESHOLD    = 1.5               # Lane A: today_mentions >= 1.5× 7d avg
+                                        # Lowered 3.0 -> 1.5 for richer LLM candidate pool.
+SENTIMENT_THRESHOLD = 0.15             # |skew| >= 0.15 to act
+                                        # Lowered 0.3 -> 0.15 — let LLM judge weak signals.
+TRACKED_USER_LOOKBACK_HRS = 48         # Lane B: posts from last 48h (was 24)
 ROLLING_WINDOW_DAYS = 7
+
+# First-day fallback when reddit_state has no rolling history yet.
+# Lowered for broader LLM candidate pool.
+FIRST_DAY_MIN_MENTIONS = 2             # was 5
+FIRST_DAY_MIN_BEST_UPS = 200           # was 1000
 
 REQUEST_TIMEOUT_S  = 15
 INTER_REQUEST_DELAY_S = 1.0            # ToS-friendly delay between subs
@@ -588,7 +595,8 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
         if avg > 0:
             spike = agg["mentions"] >= SPIKE_THRESHOLD * avg
         else:
-            spike = agg["mentions"] >= 5 or agg["best_post_ups"] >= 1000
+            spike = (agg["mentions"] >= FIRST_DAY_MIN_MENTIONS
+                     or agg["best_post_ups"] >= FIRST_DAY_MIN_BEST_UPS)
 
         if not spike:
             continue
