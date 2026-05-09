@@ -1,0 +1,35 @@
+name: Portfolio Snapshot — Alpaca REST dump
+
+# Manual-only workflow for ad-hoc portfolio inspection.
+# Output JSON goes to the run log; Claude (or operator) reads + parses.
+# Sandboxed agent sessions can't reach .workers.dev hosts in some
+# environments, but they CAN reach paper-api.alpaca.markets — this
+# workflow bridges that gap by using Alpaca creds via GitHub secrets.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Dump portfolio snapshot
+        env:
+          PYTHONIOENCODING:    utf-8
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          echo "================ SNAPSHOT JSON ================"
+          python scripts/portfolio_snapshot.py
+          echo "================ END SNAPSHOT ================="
