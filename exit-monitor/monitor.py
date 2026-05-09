@@ -55,6 +55,58 @@ def alpaca_get(endpoint: str) -> dict | list:
     return resp.json()
 
 
+def place_emergency_close(ep: dict) -> dict | None:
+    """
+    Place a MARKET order to close an emergency-flagged position.
+
+    Bypasses the Exit Handler routine for emergency exits because LIMIT
+    orders chronically fail to fill in fast-market conditions (4/5 unfilled
+    in 2026-05-08 daily report). MARKET trades a few cents of slippage for
+    a guaranteed fill, which is the right tradeoff when we've already
+    crossed the -12% emergency threshold.
+
+    `ep` is the enriched-position dict from `enrich_position()`. Returns
+    the Alpaca order JSON on success, None on any failure (caller logs
+    + falls back to routine path).
+    """
+    symbol = ep.get("symbol", "")
+    qty    = abs(float(ep.get("qty", 0)))
+    side   = ep.get("side", "long")
+    if qty <= 0 or not symbol:
+        return None
+
+    # Long position closes via SELL; short position closes via BUY (cover)
+    close_side = "sell" if side == "long" else "buy"
+
+    ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
+    safe_sym = symbol.replace("/", "").replace(" ", "")
+    payload = {
+        "symbol":          symbol,
+        "qty":             str(int(qty)) if qty == int(qty) else str(qty),
+        "side":            close_side,
+        "type":            "market",
+        "time_in_force":   "gtc" if "/" in symbol else "day",
+        "client_order_id": f"exit-emergency-{safe_sym}-{ts}",
+    }
+    try:
+        r = requests.post(
+            f"{ALPACA_BASE_URL}/v2/orders",
+            headers={
+                "APCA-API-KEY-ID":     ALPACA_API_KEY,
+                "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY,
+            },
+            json=payload,
+            timeout=15,
+        )
+        if r.status_code in (200, 201):
+            return r.json()
+        print(f"  emergency-close error {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        print(f"  emergency-close exception: {e}")
+        return None
+
+
 def get_open_positions() -> list[dict]:
     """Pobiera wszystkie otwarte pozycje"""
     try:
@@ -251,13 +303,36 @@ def run_exit_check():
         reason = "; ".join(ep["reasons"]) if ep["reasons"] else ep["recommendation"]
         notify_exit(ep["symbol"], ep["recommendation"], reason, ep["unrealized_plpc"])
 
-    # Routine call only when at least one position is non-HOLD.
-    # Calling routine with all-HOLD positions wastes daily routine budget
-    # (~10 calls/day saved during quiet markets). Email summary still goes
-    # for flagged positions regardless.
-    if flagged:
-        print(f"\n  Wysyłam do Claude Routine Exit Handler ({len(flagged)} flagged)...")
+    # ── EMERGENCY EXITS: bypass routine, place MARKET order directly ─────────
+    # Discovered 2026-05-09 via daily learning loop: of 5 exit-emergency
+    # orders placed by the Exit Handler routine, 4 never filled (LIMIT
+    # orders in fast-market conditions where price runs away from limit).
+    # Per LLM proposal #1, route emergency exits through Alpaca REST with
+    # type=MARKET to guarantee fill — same pattern as options-exit-monitor's
+    # SL path. Other recommendations (CLOSE_FLAT / CLOSE_DECAY / CONSIDER_TP)
+    # still go to routine (they're not time-critical).
+    emergency = [ep for ep in flagged if ep["recommendation"] == "CLOSE_EMERGENCY"]
+    other_flagged = [ep for ep in flagged if ep["recommendation"] != "CLOSE_EMERGENCY"]
+    closed_directly = 0
+    for ep in emergency:
+        result = place_emergency_close(ep)
+        if result:
+            print(f"  EMERGENCY MARKET close placed: {ep['symbol']} qty={ep['qty']} "
+                  f"id={result.get('id')}")
+            closed_directly += 1
+        else:
+            print(f"  EMERGENCY close FAILED for {ep['symbol']} — "
+                  f"falling back to routine")
+            other_flagged.append(ep)  # let routine try as backup
+
+    # Routine call only for non-emergency flagged positions
+    if other_flagged:
+        print(f"\n  Wysyłam do Claude Routine Exit Handler ({len(other_flagged)} flagged, "
+              f"{closed_directly} emergency closed directly)...")
         send_to_routine(enriched, account)
+    elif emergency:
+        print(f"\n  {closed_directly} emergency closed directly via REST — "
+              f"no routine call needed")
     else:
         print(f"\n  Wszystkie pozycje HOLD — pomijam routine call (oszczędzam budget).")
 
