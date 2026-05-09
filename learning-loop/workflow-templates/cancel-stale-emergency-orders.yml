@@ -1,0 +1,36 @@
+name: Cancel stale exit-emergency LIMIT orders (one-shot cleanup)
+
+# Manual-only workflow. Cancels stale LIMIT orders left over from before
+# the 2026-05-09 MARKET-order patch (commits c4bc437 + 0f7ce0b). Those
+# orders have client_order_id starting with `exit-emergency` and would
+# never fill in fast-market conditions, giving phantom protection.
+#
+# After running this workflow once and seeing 0 candidates remaining,
+# you can safely delete this workflow file (it's a one-shot tool).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Cancel stale exit-emergency LIMIT orders
+        env:
+          PYTHONIOENCODING:  utf-8
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python scripts/cancel_stale_emergency_orders.py
