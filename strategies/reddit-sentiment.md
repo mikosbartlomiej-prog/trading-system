@@ -1,16 +1,31 @@
-# Strategia: Reddit Sentiment Trading — v2.0
+# Strategia: Reddit Sentiment Trading — v2.1
 
-**Wersja:** 2.0 (2026-05-06 risk-on overhaul) — **5× sizing**
+**Wersja:** 2.1 (2026-05-09 — no-API path via public JSON endpoints)
 **Źródło prawdy:** `docs/STRATEGY.md` §4.7
-**Status:** PAUSED — czeka na approval Reddit API
+**Status:** LIVE — `reddit-monitor/monitor.py` deployed
 
 ---
 
 ## Opis
-Wykrywanie spike wzmianek (3× 7-day avg) + post DD od wiarygodnego usera.
-Subreddity: r/wallstreetbets, r/investing, r/stocks.
 
-**Cel ekspozycji:** max **$10,000** w Reddit positions (5× wzrost vs v1)
+Trzy-osiowe skanowanie Reddita **bez wymogu API approval** — używamy
+publicznych endpointów `.json` z odpowiednim `User-Agent` i niskim
+volumem (~10 req/h).
+
+**Lane A — Curated subs (.claude/rules/reddit-subs.md):**
+6 subów (wallstreetbets, options, stocks, investing, securityanalysis,
+valueinvesting). SPIKE detection: ≥ 3× rolling 7-day mention avg
++ sentiment skew |≥ 0.3|.
+
+**Lane B — Tracked users (.claude/rules/reddit-users.md):**
+Curated lista DD writers z udokumentowanym track record. Per-user
+fetch `/user/<name>/submitted.json`. Brak spike requirement —
+1 high-quality post starczy. Wyższa credibility (`tracked_dd` 65 vs
+random WSB `tracked_anon_trader` 55).
+
+**Lane C** (cross-sub viral) — out of MVP scope.
+
+**Cel ekspozycji:** max **$10,000** w Reddit positions (max 4 pozycje × $5k podstawowo, weight per-source mnoży)
 
 ---
 

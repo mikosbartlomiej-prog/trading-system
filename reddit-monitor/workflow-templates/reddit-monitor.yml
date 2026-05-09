@@ -1,0 +1,74 @@
+name: Reddit Monitor — sentiment + tracked-user scan
+
+# No Reddit API approval required — uses public .json endpoints with
+# proper User-Agent and conservative polling (~10 req/h).
+#
+# Two signal lanes per run:
+#   Lane A: top.json scan over curated subs (.claude/rules/reddit-subs.md)
+#   Lane B: per-user submitted.json over tracked DD writers
+#           (.claude/rules/reddit-users.md)
+
+on:
+  schedule:
+    # During US session (~13:30-20:00 UTC), every 60 min
+    - cron: '0 13,14,15,16,17,18,19,20 * * 1-5'
+  workflow_dispatch:
+
+# Permissions:
+#   contents: write — workflow commits learning-loop/state.json with
+#                     reddit_state rolling 7-day mention counts
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run reddit monitor
+        env:
+          PYTHONIOENCODING:        utf-8
+          LC_ALL:                  C
+          LANG:                    C
+          ALPACA_API_KEY:          ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:       ${{ secrets.ALPACA_SECRET_KEY }}
+          FINNHUB_API_KEY:         ${{ secrets.FINNHUB_API_KEY }}
+          GMAIL_USER:              ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:      ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:            ${{ secrets.NOTIFY_EMAIL }}
+          # Default: AUTO_EXECUTE=false (email-only audit trail).
+          # Flip to true once you observe ≥10 signals over a week and
+          # win rate ≥ 50%.
+          AUTO_EXECUTE_REDDIT:     'false'
+          USE_ROUTINE:             'false'
+          # Optional: legacy Cloudflare worker path. Empty = skip.
+          CLOUDFLARE_REDDIT_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_WORKER_URL }}
+        run: python reddit-monitor/monitor.py
+
+      - name: Commit reddit_state if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add learning-loop/state.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No reddit_state changes."
+          else
+            git commit -m "reddit-monitor: rolling state $(date -u +%Y-%m-%d_%H%M)"
+            git push origin "$BRANCH"
+          fi
