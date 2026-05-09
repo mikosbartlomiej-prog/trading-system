@@ -51,11 +51,17 @@ jobs:
           BRANCH="${GITHUB_REF_NAME:-main}"
           # Pull any commits the routine pushed during this run.
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          # Belt-and-suspenders: explicitly remove any pending-llm-*.json
+          # that the FF pull may have re-introduced (auto-merge can land
+          # the routine's commit AFTER weekly_retro's local consumption).
+          git rm -f --ignore-unmatch \
+            learning-loop/pending-llm-daily.json \
+            learning-loop/pending-llm-weekly.json 2>/dev/null || true
           git add learning-loop/weekly-retros/ learning-loop/state.json \
                   learning-loop/rationale.md
           # LLM-only artifact — may not exist on a fail-soft week; ignore failure
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
-          # Stage any deletions of pending-llm-*.json (consumed by weekly_retro)
+          # Stage any other modifications/deletions in learning-loop/
           git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No retro changes to commit (workflow ran but produced no diff)."
