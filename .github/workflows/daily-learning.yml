@@ -6,10 +6,6 @@ on:
     - cron: '0 21 * * *'
   workflow_dispatch:
 
-# Permissions:
-#   contents: write       — workflow commits state.json + rationale.md + history/
-#   pull-requests: write  — Lane 2 auto-PR for LLM-proposed adapter heuristics
-#                           (see learning-loop/lane2_pr.py + STRATEGY.md §5.6).
 permissions:
   contents:      write
   pull-requests: write
@@ -17,7 +13,7 @@ permissions:
 jobs:
   analyze-and-adapt:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repo
@@ -44,13 +40,9 @@ jobs:
           GMAIL_USER:                      ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD:              ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:                    ${{ secrets.NOTIFY_EMAIL }}
-          # LLM augmentation — Senior PM persona via existing learning-loop routine
-          CLOUDFLARE_LEARNING_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
-          USE_LLM_LEARNING:                'true'
-          # Lane 2 auto-PR — gh CLI uses GH_TOKEN (or GITHUB_TOKEN fallback)
-          # to authenticate `gh pr create` against this repo. Default
-          # GITHUB_TOKEN has write access to PRs because of the workflow's
-          # `pull-requests: write` permission above.
+          CLOUDFLARE_LEARNING_WORKER_URL:             ${{ secrets.CLOUDFLARE_LEARNING_WORKER_URL }}
+          CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL:  ${{ secrets.CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL }}
+          USE_LLM_LEARNING:                           'true'
           GH_TOKEN:                        ${{ secrets.GITHUB_TOKEN }}
         run: python learning-loop/analyzer.py
 
@@ -59,26 +51,19 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="${GITHUB_REF_NAME:-main}"
-          # Pull any commits the routine pushed during this run.
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
-          # Belt-and-suspenders: if the FF pull above re-introduced a
-          # pending-llm-*.json that analyzer already consumed locally
-          # (auto-merge committed it on origin AFTER analyzer's git rm),
-          # explicitly remove it now so the workflow's commit propagates
-          # the deletion. --ignore-unmatch makes it a no-op when absent.
           git rm -f --ignore-unmatch \
             learning-loop/pending-llm-daily.json \
+            learning-loop/pending-llm-daily-draft1.json \
+            learning-loop/pending-llm-daily-challenge.json \
             learning-loop/pending-llm-weekly.json 2>/dev/null || true
           git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
-          # LLM-only artifacts — may not exist on a quiet day; ignore failure
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
-          # Stage any other modifications/deletions in learning-loop/
           git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
-            echo "No state changes to commit (no orders this window or no parameter shifts)."
+            echo "No state changes to commit."
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: daily update ${DATE}"
             git push origin "$BRANCH"
-            echo "Pushed learning state for ${DATE} to ${BRANCH}."
           fi
