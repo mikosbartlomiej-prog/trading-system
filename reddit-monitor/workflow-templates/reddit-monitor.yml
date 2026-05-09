@@ -60,6 +60,12 @@ jobs:
           # Worker and set this secret to its workers.dev URL.
           # Without it: monitor logs 403 on every fetch (graceful no-op).
           CLOUDFLARE_REDDIT_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_WORKER_URL }}
+          # OPTIONAL but recommended: LLM Curator routine that interprets
+          # candidate signals and validates fast-trade sense. See
+          # reddit-monitor/curator-prompts.md for deploy. If empty,
+          # monitor falls back to heuristic top-N selection.
+          CLOUDFLARE_REDDIT_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_CURATOR_WORKER_URL }}
+          USE_REDDIT_CURATOR:      'true'
         run: python reddit-monitor/monitor.py
 
       - name: Commit reddit_state if changed
@@ -68,7 +74,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          # Belt-and-suspenders: remove curator pending file if it survived
+          # (analyzer should have consumed it via git rm; this catches edge cases
+          # where auto-merge re-introduced the file post-consume).
+          git rm -f --ignore-unmatch reddit-monitor/pending-curation.json 2>/dev/null || true
           git add learning-loop/state.json 2>/dev/null || true
+          git add -u reddit-monitor/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No reddit_state changes."
           else

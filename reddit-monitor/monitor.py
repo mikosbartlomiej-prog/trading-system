@@ -79,6 +79,16 @@ except ImportError as e:
     def is_strategy_enabled(_n): return True
     def size_multiplier(_n): return 1.0
 
+# Curator (LLM signal filter). Imported separately because llm_curator.py
+# is local to reddit-monitor (not in shared/).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from llm_curator import curate as curate_signals
+    from llm_curator import filter_signals_via_curator
+except ImportError:
+    def curate_signals(_c, _a): return None
+    def filter_signals_via_curator(s, _c): return s
+
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -485,6 +495,7 @@ def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]
     if not tickers:
         return [], "no_whitelist_ticker"
 
+    excerpt = (post["title"] + " — " + post["selftext"])[:500]
     out = []
     for t in tickers:
         s = sentiment_around(text, t)
@@ -500,6 +511,7 @@ def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]
             "post_ups":     post["ups"],
             "post_comments": post["num_comments"],
             "post_url":     "https://www.reddit.com" + post["permalink"],
+            "post_excerpt": excerpt,
             "bull":         s["bull"],
             "bear":         s["bear"],
             "mentions":     s["mentions"],
@@ -528,6 +540,7 @@ def evaluate_user_post(post: dict, user_cfg: dict, whitelist: set[str],
     if not tickers:
         return [], "no_whitelist_ticker"
 
+    excerpt = (post["title"] + " — " + post["selftext"])[:500]
     out = []
     for t in tickers:
         s = sentiment_around(text, t)
@@ -544,6 +557,7 @@ def evaluate_user_post(post: dict, user_cfg: dict, whitelist: set[str],
             "post_ups":      post["ups"],
             "post_comments": post["num_comments"],
             "post_url":      "https://www.reddit.com" + post["permalink"],
+            "post_excerpt":  excerpt,
             "bull":          s["bull"],
             "bear":          s["bear"],
             "mentions":      s["mentions"],
@@ -610,6 +624,9 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             continue
 
         side = "BUY" if skew > 0 else "SELL_SHORT"
+        # Top 3 post excerpts by ups for LLM curator context
+        top_posts = sorted(agg["posts"], key=lambda p: p["post_ups"], reverse=True)[:3]
+        excerpts = [p.get("post_excerpt", "") for p in top_posts if p.get("post_excerpt")]
         signals.append({
             "lane":           "sub",
             "ticker":         t,
@@ -621,6 +638,7 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             "weight":         1.0,                    # sub-lane uses no per-source weight here
             "best_post_url":  agg["best_post_url"],
             "best_post_ups":  agg["best_post_ups"],
+            "post_excerpts":  excerpts,
             "size_usd":       SIZE_USD,
             "stop_loss_pct":  STOP_LOSS_PCT,
             "take_profit_pct": TAKE_PROFIT_PCT,
@@ -650,6 +668,7 @@ def detect_user_signals(user_post_signals: list[dict]) -> list[dict]:
             "bear":       0,
             "best_post_ups": 0,
             "best_post_url": "",
+            "excerpts":   [],
         })
         agg["mentions"] += s["mentions"]
         agg["bull"]     += s["bull"]
@@ -657,6 +676,8 @@ def detect_user_signals(user_post_signals: list[dict]) -> list[dict]:
         if s["post_ups"] > agg["best_post_ups"]:
             agg["best_post_ups"] = s["post_ups"]
             agg["best_post_url"] = s["post_url"]
+        if s.get("post_excerpt"):
+            agg["excerpts"].append(s["post_excerpt"])
 
     signals = []
     for (_t, _u), agg in by_pair.items():
@@ -680,6 +701,7 @@ def detect_user_signals(user_post_signals: list[dict]) -> list[dict]:
             "weight":         agg["weight"],
             "best_post_url":  agg["best_post_url"],
             "best_post_ups":  agg["best_post_ups"],
+            "post_excerpts":  agg["excerpts"][:3],
             "size_usd":       SIZE_USD,
             "stop_loss_pct":  STOP_LOSS_PCT,
             "take_profit_pct": TAKE_PROFIT_PCT,
@@ -908,6 +930,49 @@ def run_scan() -> int:
         print(f"  No signals from either lane — quiet day")
         notify_summary("Reddit Monitor", 0, 0)
         return 0
+
+    # ── LLM Curator (fail-soft) ──────────────────────────────────────────
+    # Pass all candidates to the Curator routine which validates each
+    # against fast-trade goal + account context and picks 0-3 to actually
+    # emit. If Curator unavailable / fails / times out, we fall back to
+    # the heuristic top-N selection (current pre-LLM behaviour).
+    print(f"\n  Curator: validating {len(user_signals) + len(sub_signals)} "
+          f"candidates ({len(user_signals)} user + {len(sub_signals)} sub)")
+    account_context = {
+        "equity":             float((account or {}).get("equity", 100_000)),
+        "daily_pl_pct":       float((account or {}).get("daily_pl_pct", 0)),
+        "open_positions":     [],   # filled by curator if needed via Alpaca; skip for MVP
+        "options_side_bias":  None,  # could read from learning_state.global_overrides
+        "vix":                round(17.0 * vix_mult, 1) if vix_mult else None,
+    }
+
+    curator_output = curate_signals(user_signals + sub_signals, account_context)
+    if curator_output:
+        print(f"  Curator: narrative — {curator_output.get('narrative', '?')}")
+        sel = curator_output.get("selected_signals") or []
+        rej = curator_output.get("rejected_signals") or []
+        print(f"  Curator: {len(sel)} selected, {len(rej)} rejected, "
+              f"confidence={curator_output.get('confidence_in_curation', '?')}")
+        for r in rej[:5]:
+            print(f"    REJECT {r.get('ticker','?')}: {r.get('reason','?')}")
+
+        # Apply curator filter — replace user_signals + sub_signals with
+        # curator-approved (preserves lane attribution + injects curator
+        # rationale + size_multiplier override).
+        all_filtered = filter_signals_via_curator(
+            user_signals + sub_signals, curator_output
+        )
+        user_signals = [s for s in all_filtered if s.get("lane") == "user"]
+        sub_signals  = [s for s in all_filtered if s.get("lane") == "sub"]
+        print(f"  Curator: post-filter pool — {len(user_signals)} user + "
+              f"{len(sub_signals)} sub")
+
+        if not user_signals and not sub_signals:
+            print(f"  Curator: rejected all candidates — no trades today")
+            notify_summary("Reddit Monitor", 0, 0)
+            return 0
+    else:
+        print(f"  Curator: unavailable — using heuristic top-N (fail-soft)")
 
     # ── Send alerts (per-lane cap) ───────────────────────────────────────
     sent_total = 0
