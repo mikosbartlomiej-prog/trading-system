@@ -32,7 +32,4 @@
 <!-- OPEN — proposals still requiring action                      -->
 <!-- ============================================================ -->
 
-- [ ] [2026-05-09] **Cancel pre-patch exit-emergency LIMIT orders stuck open in Alpaca** _(risk: low, effort: 1h, revisit: 2026-05-09)_
-  - **Rationale:** 4 exit-emergency orders (4 placed/0 filled/0 canceled) are stale LIMIT orders from before the MARKET-order patch. They provide phantom protection that won't execute in fast-market conditions. exit-emergency-googl 1/1 confirms new path works; old flat-ID orders need manual cleanup.
-  - **Sketch:** Immediate manual: Alpaca dashboard → Orders → status=open → cancel any orders where `client_order_id == 'exit-emergency'` (old flat format, no symbol suffix). Code (automated): add startup scan to exit-monitor — `GET /v2/orders?status=open&limit=100`, filter where `client_order_id in ('exit-emergency',)` (old flat format), `DELETE /v2/orders/{id}` each. Log count in notify_summary. Priority HIGH — stale emergency orders give false safety signal. 15 min manual + 45 min code for automated scan.
-  - **Status:** open — operator should cancel the 4 stale orders manually via Alpaca dashboard NOW; automated scan can land in next code session.
+- [x] [2026-05-09] **Cancel pre-patch exit-emergency LIMIT orders stuck open in Alpaca** ✅ DONE 2026-05-09 — `scripts/cancel_stale_emergency_orders.py` + `.github/workflows/cancel-stale-emergency-orders.yml`; user ran workflow, **4/4 stale LIMIT orders cancelled** (GOOGL260515P00400, QQQ260515P00709, QQQ260514P00699, AMZN260513P00275). Script idempotent — safe to re-run.
