@@ -1,0 +1,33 @@
+{
+  "narrative": "Piąty dzień śledzenia — equity $96,725.88 (+$53.89 dziś, -3.37% / -$3,306 od startu śledzenia). Dzienny ruch minimalny; portfel strukturalnie pozycjonowany bearish PUT w risk_on rally — to jest mechanizm kumulowanej straty, nie błąd kodu. Trzy problemy operacyjne powtarzają się z poprzednich sesji i wymagają zamknięcia: stale exit-emergency LIMIT orders (0/4 filled historycznie — fałszywa ochrona), options-momentum fill rate 40% (chronic, midpoint pricing fix do weryfikacji w produkcji), 7 UUID-keyed phantom strategies zaśmiecające state.json. options_side_bias=long potwierdzone i utrzymane.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Zero completed round-trips po 10 dniach śledzenia — brak danych edge per-strategy. Jedyny potwierdzony signal dziś: crypto-momentum 2/2 fills (100%) = execution clean. Potwierdzona anti-edge strukturalna: bearish PUT exposure w risk_on trend generuje kumulowaną stratę -$3,306.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": "long"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Stale-exit-emergency detector — flag when placed>=2 and filled=0 and canceled=0",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "exit-emergency pokazał 4 placed/0 filled/0 canceled przez minimum dwie sesje z rzędu. To sygnał że stare LIMIT orders wiszą w Alpaca jako open bez szansy na fill (legacy przed MARKET-patch). Heurystyka flaguje ten stan w rationale.md żeby operator mógł odpalić cancel-stale-emergency-orders workflow zamiast cicho logować.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:\n    \"\"\"Flag when exit-emergency orders placed but never filled or canceled.\"\"\"\n    fe = fill_stats.get(\"exit-emergency\", {})\n    placed = fe.get(\"placed\", 0)\n    filled = fe.get(\"filled\", 0)\n    canceled = fe.get(\"canceled\", 0)\n    if placed >= 2 and filled == 0 and canceled == 0:\n        return True, (\n            f\"exit-emergency: {placed} placed / 0 filled / 0 canceled \"\n            \"\\u2014 stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow\"\n        )\n    return False, \"\"\n",
+      "test_addition": "class TestStaleExitEmergency(unittest.TestCase):\n    def test_triggers_on_stale_pattern(self):\n        stats = {\"exit-emergency\": {\"placed\": 4, \"filled\": 0, \"canceled\": 0, \"rejected\": 0, \"fill_rate\": 0}}\n        fired, reason = heuristic_stale_exit_emergency(stats)\n        self.assertTrue(fired)\n        self.assertIn(\"stale LIMIT orders suspected\", reason)\n\n    def test_no_trigger_when_orders_canceled(self):\n        stats = {\"exit-emergency\": {\"placed\": 4, \"filled\": 0, \"canceled\": 4, \"rejected\": 0, \"fill_rate\": 0}}\n        fired, _ = heuristic_stale_exit_emergency(stats)\n        self.assertFalse(fired)\n\n    def test_no_trigger_below_min_placed(self):\n        stats = {\"exit-emergency\": {\"placed\": 1, \"filled\": 0, \"canceled\": 0, \"rejected\": 0, \"fill_rate\": 0}}\n        fired, _ = heuristic_stale_exit_emergency(stats)\n        self.assertFalse(fired)\n\n    def test_no_trigger_when_some_filled(self):\n        stats = {\"exit-emergency\": {\"placed\": 4, \"filled\": 1, \"canceled\": 0, \"rejected\": 0, \"fill_rate\": 0.25}}\n        fired, _ = heuristic_stale_exit_emergency(stats)\n        self.assertFalse(fired)\n\n    def test_no_trigger_missing_key(self):\n        stats = {}\n        fired, _ = heuristic_stale_exit_emergency(stats)\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": null
+    },
+    {
+      "title": "UUID strategy artifact pruning in analyzer — filter phantom state.json entries",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "State.json zawiera 7 UUID-format kluczy (fdeebe90-902f-4b5b, 62bd8628-7958-48fd itd.) — artefakty Alpaca bracket order IDs które trafiły do by_strategy zamiast prawdziwych nazw strategii. Zaśmiecają LLM analizę tworząc 7 pustych 'hold (insufficient sample)' wpisów. Filtrowanie w analyzer.py eliminuje szum bez modyfikacji state.json.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-11",
+      "implementation_sketch": "W learning-loop/analyzer.py: dodać helper _is_uuid_key(name: str) -> bool z re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-', name). W _build_proposed_state() filtrować klucze strategies dict przed iteracją. Emitować jeden wiersz rationale: 'pruned N UUID artifact strategy keys'. Nie modyfikować state.json — tylko ignorować w analizie. Docelowo naprawić client_order_id format w options-monitor/exit-monitor żeby używał nazwy strategii nie UUID Alpaca."
+    }
+  ],
+  "confidence": "low"
+}
