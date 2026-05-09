@@ -1,0 +1,42 @@
+{
+  "narrative": "Czwarty dzień śledzenia — equity $96,643 (-3.87% / -$3,900 od startu). Krytyczny incydent zamknięty dziś: exit-emergency 4/4 bez wykonania (LIMIT w szybkim rynku = zero ochrony przez kilka godzin); patch na direct REST MARKET ląduje w tej sesji, exit-emergency-GOOGL 1/1 filled potwierdza że poprawka technicznie działa. options-momentum 40% fill rate (4/10, 3 canceled) = systematycznie tracimy ~60% zamierzonej ekspozycji CALL przez limity poniżej ask. Reżim trending_up — options_side_bias=long poprawny; natychmiastowy priorytet to szersze limity opcyjne, nie zmiana strony.",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "Zero zamkniętych round-tripów po 4 dniach (wszystkie geo/options pozycje wciąż otwarte) — nie można ocenić edge per-strategy ilościowo. Jedyna potwierdzona jakość wykonania: geo-entry XOM/XLE/RTX 3/3 filled; geo-GLD 0/1 (canceled) sugeruje zbyt ciasny limit na ETF surowcowym w szybkim rally.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": "long"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Detect options-momentum fill rate below 50% over 5+ orders and alert to widen limits",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "options-momentum 40% fill rate (4/10, 3 canceled) — systematically losing ~60% of intended CALL exposure because limit prices sit below the ask. This function detects the pattern and surfaces an actionable warning in rationale.md so the operator widens bid tolerance in options-monitor.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "\ndef heuristic_options_limit_too_tight(fill_stats: dict) -> tuple:\n    \"\"\"Flag when options-momentum limits are systematically too tight.\"\"\"\n    opts = fill_stats.get(\"options-momentum\", {})\n    placed = opts.get(\"placed\", 0)\n    fill_rate = opts.get(\"fill_rate\", 1.0)\n    if placed >= 5 and fill_rate < 0.5:\n        return True, (\n            f\"options-momentum fill_rate {fill_rate:.0%} over {placed} orders\"\n            \" — limits too tight, widen to ask+1% or mid+3%\"\n        )\n    return False, \"\"\n",
+      "test_addition": "\nclass TestOptionsLimitTooTight(unittest.TestCase):\n    def test_triggers_on_low_fill_with_sufficient_sample(self):\n        fill_stats = {\"options-momentum\": {\"placed\": 10, \"fill_rate\": 0.4}}\n        fired, reason = heuristic_options_limit_too_tight(fill_stats)\n        self.assertTrue(fired)\n        self.assertIn(\"limits too tight\", reason)\n    def test_no_trigger_below_min_sample(self):\n        fill_stats = {\"options-momentum\": {\"placed\": 3, \"fill_rate\": 0.2}}\n        fired, _ = heuristic_options_limit_too_tight(fill_stats)\n        self.assertFalse(fired)\n    def test_no_trigger_acceptable_fill_rate(self):\n        fill_stats = {\"options-momentum\": {\"placed\": 10, \"fill_rate\": 0.65}}\n        fired, _ = heuristic_options_limit_too_tight(fill_stats)\n        self.assertFalse(fired)\n    def test_no_trigger_missing_strategy_key(self):\n        fired, _ = heuristic_options_limit_too_tight({})\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": "after fill-rate section, before win-rate thresholds: call heuristic_options_limit_too_tight(fill_stats); if True, log warning with reason so operator sees it in rationale.md"
+    },
+    {
+      "title": "Widen options-monitor limit prices to ask+1% to fix 40% fill rate",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "options-momentum fill rate 40% (4/10, 3 canceled) = limits sit below market ask. Options spreads are 3-8% on retail size; buying at bid/mid guarantees non-fills in any directional move. Fix lives in options-monitor.py, not adapter.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-11",
+      "implementation_sketch": "In options-monitor/monitor.py::auto_execute_options(): (1) Fetch live quote via Alpaca /v2/options/contracts/{symbol}/quotes to get real-time ask_price. (2) Set limit_price = round(ask_price * 1.01, 2). (3) On quote-fetch failure fall back to close_price * 1.05. (4) After 5 days check fill_rate in daily-learning — if still < 60%, escalate to market-at-open (verify Alpaca paper supports MOO on options first)."
+    },
+    {
+      "title": "Emergency exit patch production verification — confirm MARKET orders fill in next session",
+      "lane": "backlog",
+      "risk": "high",
+      "rationale": "exit-emergency 4/4 unfilled (LIMIT in fast market = no protection). Patch applied this session sends MARKET orders via direct REST. Must verify in the next trading session that new exit-emergency-* client_order_ids appear in fill_rate with fill_rate=1.0. This is the highest-risk unverified fix in the system.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-12",
+      "implementation_sketch": "In next daily-learning run: check fill_stats for any exit-emergency-* keys created after 2026-05-09T15:00Z. If fill_rate < 1.0, MARKET patch is broken in production — revert and debug. Also add post-order status poll in exit-monitor: after placing MARKET order, call /v2/orders/{id} after 30s; if not filled, raise alert email with order details and position size."
+    }
+  ],
+  "confidence": "low"
+}
