@@ -42,7 +42,6 @@ Iron rule preservation: this monitor honors strategy.enabled state from
 learning-loop, drawdown guard, VIX guard, dup-position guard, per-ticker
 concentration cap. Mandatory stop-loss + take-profit on every signal.
 
-USE_ROUTINE=true switches to legacy Cloudflare worker → routine path.
 AUTO_EXECUTE_REDDIT=true enables direct Alpaca exec (default false =
 email-only audit trail).
 """
@@ -83,15 +82,15 @@ except ImportError as e:
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-USE_ROUTINE        = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 AUTO_EXECUTE       = os.environ.get("AUTO_EXECUTE_REDDIT", "false").lower() == "true"
-CLOUDFLARE_WORKER  = os.environ.get("CLOUDFLARE_REDDIT_WORKER_URL", "")
 
 # Reddit blocks data-center IPs (GitHub Actions = Azure egress) — 403 on
 # direct fetches. Cloudflare Worker proxy bypasses this; see
-# reddit-monitor/cloudflare-reddit-proxy.js. If unset, we still attempt
-# direct www.reddit.com (works for local dev / residential IPs).
-REDDIT_PROXY_BASE  = os.environ.get("REDDIT_FETCH_PROXY_URL", "").rstrip("/")
+# reddit-monitor/cloudflare-reddit-proxy.js. The same `CLOUDFLARE_REDDIT_WORKER_URL`
+# secret slot that was originally reserved for a routine path now serves
+# as the proxy URL (one Worker, one secret, single role). If unset, falls
+# back to direct www.reddit.com (works for local dev / residential IPs).
+REDDIT_PROXY_BASE  = os.environ.get("CLOUDFLARE_REDDIT_WORKER_URL", "").rstrip("/")
 
 USER_AGENT         = "trading-system-research/1.0 (by /u/anonymous)"
 SUBS_FILE          = os.path.join(os.path.dirname(__file__), '..',
@@ -773,14 +772,6 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
                 print(f"    [EXECUTE FAILED] — see notify email")
         except Exception as e:
             print(f"    execute_stock_signal error: {e}")
-
-    if USE_ROUTINE and CLOUDFLARE_WORKER:
-        try:
-            r = requests.post(CLOUDFLARE_WORKER, json=sig,
-                              timeout=REQUEST_TIMEOUT_S)
-            print(f"    Worker HTTP {r.status_code}")
-        except Exception as e:
-            print(f"    Worker error: {e}")
 
     return True
 
