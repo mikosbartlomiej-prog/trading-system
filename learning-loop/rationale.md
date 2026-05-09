@@ -30,3 +30,6 @@
 - 2026-05-09 · LLM edge: Zero danych per-strategy — brak completed trades trzeci dzień (oczekiwane przy otwartych pozycjach bez domkniętych par). Geo entries 100% fill = solidna execution quality. options-momentum 40% fill = płacimy prowizję za pozycje które nie wchodzą; wymaga korekty cen limitowych lub przejścia na market-at-open dla opcji.
 - 2026-05-09 · no parameter changes (all strategies within thresholds)
 
+- 2026-05-09 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-09 · no parameter changes (all strategies within thresholds)
+
