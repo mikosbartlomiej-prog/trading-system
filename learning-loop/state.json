@@ -194,6 +194,36 @@
       "mentions_per_day": {
         "2026-05-09": 1
       }
+    },
+    "AMZN": {
+      "mentions_per_day": {
+        "2026-05-09": 1
+      }
+    },
+    "SPY": {
+      "mentions_per_day": {
+        "2026-05-09": 1
+      }
+    },
+    "META": {
+      "mentions_per_day": {
+        "2026-05-09": 3
+      }
+    },
+    "MSTR": {
+      "mentions_per_day": {
+        "2026-05-09": 3
+      }
+    },
+    "PLTR": {
+      "mentions_per_day": {
+        "2026-05-09": 3
+      }
+    },
+    "TSLA": {
+      "mentions_per_day": {
+        "2026-05-09": 3
+      }
     }
   }
 }
