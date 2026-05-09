@@ -36,13 +36,19 @@ Category determines `source_type` w event_scoring:
 Wyższy weight = sub o lepszej historycznej jakości signalu.
 
 ```
-wallstreetbets    | wsb           | 500  | 50  | 1.0
-options           | options_sub   | 100  | 20  | 1.2
-stocks            | quality_sub   | 200  | 30  | 1.3
-investing         | quality_sub   | 200  | 30  | 1.4
-securityanalysis  | quality_sub   | 100  | 20  | 1.5
-valueinvesting    | quality_sub   | 100  | 20  | 1.4
+wallstreetbets    | wsb           | 300  | 30  | 1.0
+options           | options_sub   |  30  | 10  | 1.2
+stocks            | quality_sub   | 100  | 20  | 1.3
+investing         | quality_sub   |  80  | 15  | 1.4
+securityanalysis  | quality_sub   |  30  | 10  | 1.5
+valueinvesting    | quality_sub   |  50  | 10  | 1.4
 ```
+
+**Kalibracja 2026-05-09:** thresholdy obniżone na podstawie pierwszego biegu prod
+(top observed posts per sub: WSB 418, options 23, stocks 192, investing 144,
+securityanalysis 0, valueinvesting 84). Stare wartości (500/100/200/200/100/100)
+odrzucały >90% postów, w tym wartościowe DD'eki. Po 7 dniach observation
+przekalibrować na podstawie własnej historii sygnałów.
 
 ## Per-sub keyword filter (post tytuł + flair)
 

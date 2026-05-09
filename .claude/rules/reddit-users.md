@@ -43,12 +43,27 @@ Wartości `weight` dobiera operator manualnie podczas dodawania (po
 review historii calls).
 
 ```
-DeepFuckingValue   | tracked_dd      | 500  | 2.0
-1RONYMAN           | tracked_options | 100  | 1.5
-PlotinusEnjoyer    | tracked_dd      | 200  | 1.5
-LavenderAutist     | tracked_options | 100  | 1.3
-ChubbyBunnyy       | tracked_macro   | 150  | 1.2
+# Lista pusta — wszyscy seed userzy (DFV, 1RONYMAN, PlotinusEnjoyer,
+# LavenderAutist, ChubbyBunnyy) okazali się martwi/nieaktywni przy
+# pierwszym biegu prod (2026-05-09 12:14 UTC log):
+#   - DFV:  10 postów = wszystkie linki/picture (porzucił DD-pisanie ~2021)
+#   - 1RONYMAN: 0 postów (konto suspended/deleted)
+#   - PlotinusEnjoyer: 3 posty wszystkie sprzed ~2.7 lat
+#   - LavenderAutist: HTTP 403 (konto deleted/banned/private)
+#   - ChubbyBunnyy: 2 posty = linki (not_self_text)
+# Operator dodaje aktywnych userów manualnie wg kryteriów wyżej.
+# Format wiersza: <username> | <category> | <min_post_ups> | <weight>
 ```
+
+## Audit log — usunięci 2026-05-09
+
+| User | Powód |
+|---|---|
+| DeepFuckingValue | 10 postów = same linki/picture; nie pisze już DDs |
+| 1RONYMAN | 0 postów — konto suspended/deleted |
+| PlotinusEnjoyer | Posty sprzed ~2.7 lat — konto martwe |
+| LavenderAutist | HTTP 403 — konto deleted/banned |
+| ChubbyBunnyy | Posty = same linki (not_self_text) |
 
 ---
 
