@@ -189,5 +189,11 @@
     "max_open_options": null,
     "max_concurrent_per_strategy": {}
   },
-  "reddit_state": {}
+  "reddit_state": {
+    "SOXL": {
+      "mentions_per_day": {
+        "2026-05-09": 1
+      }
+    }
+  }
 }
