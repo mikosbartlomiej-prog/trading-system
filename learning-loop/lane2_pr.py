@@ -33,7 +33,9 @@ proceeds with the rest of the daily pipeline regardless.
 import ast
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 from datetime import datetime, timezone
 
 
@@ -167,17 +169,63 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
         print(f"  Lane2: branch '{branch}' already exists — skipping (idempotent)")
         return None
 
-    # Identity for commit
+    # Identity for commit (set in main repo so worktree inherits)
     _git(["config", "user.name",  "github-actions[bot]"], check=False)
     _git(["config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=False)
 
+    # ── Isolation via git worktree ────────────────────────────────────────────
+    # Bug fix 2026-05-09 run #4: previously did `git checkout -B branch
+    # origin/main` in REPO_ROOT, which RESET the main working tree —
+    # wiping the analyzer's pending writes (state.json, rationale.md,
+    # history/<date>.md). The workflow then committed those writes to
+    # the WRONG branch. Fix: do all lane2 work in an isolated git
+    # worktree under /tmp; main repo working tree is never touched, so
+    # analyzer's in-flight writes survive intact.
+    worktree = tempfile.mkdtemp(prefix=f"lane2-{today}-")
     try:
-        # Ensure we're on a clean base
-        _git(["fetch", "origin", base_branch])
-        _git(["checkout", "-B", branch, f"origin/{base_branch}"])
+        rc, _, err = _git(["fetch", "origin", base_branch])
+        rc, _, err = _git(["worktree", "add", "-B", branch, worktree, f"origin/{base_branch}"])
+        if rc != 0:
+            print(f"  Lane2: worktree add failed: {err[:200]}")
+            return None
 
-        # Append patch + test
-        target_abs = os.path.join(REPO_ROOT, target_rel)
+        # Re-set identity inside the worktree (some git versions don't
+        # inherit from the parent repo for new worktrees)
+        subprocess.run(
+            ["git", "-C", worktree, "config", "user.name",  "github-actions[bot]"],
+            capture_output=True, check=False,
+        )
+        subprocess.run(
+            ["git", "-C", worktree, "config", "user.email", "github-actions[bot]@users.noreply.github.com"],
+            capture_output=True, check=False,
+        )
+
+    except Exception as e:
+        print(f"  Lane2: worktree setup error: {type(e).__name__}: {e}")
+        try:
+            _git(["worktree", "remove", "--force", worktree], check=False)
+        except Exception:
+            pass
+        shutil.rmtree(worktree, ignore_errors=True)
+        return None
+
+    # All subsequent work is inside `worktree`. _git_in_wt is a helper
+    # that runs git scoped to that directory (NOT REPO_ROOT).
+    def _git_in_wt(args: list[str], check: bool = False, timeout: int = 30):
+        try:
+            r = subprocess.run(
+                ["git", "-C", worktree, *args],
+                capture_output=True, text=True, timeout=timeout,
+            )
+        except Exception as e:
+            return 1, "", str(e)
+        if check and r.returncode != 0:
+            raise subprocess.CalledProcessError(r.returncode, r.args, r.stdout, r.stderr)
+        return r.returncode, r.stdout, r.stderr
+
+    try:
+        # Append patch + test inside the worktree
+        target_abs = os.path.join(worktree, target_rel)
         with open(target_abs, "a") as f:
             f.write("\n\n# ─── Lane2 auto-added — " + title + " ────────────\n")
             f.write(code_patch)
@@ -213,26 +261,31 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
             )
             injected_test = import_line + test_addition
 
-        test_abs = os.path.join(REPO_ROOT, TEST_FILE)
+        test_abs = os.path.join(worktree, TEST_FILE)
         with open(test_abs, "a") as f:
             f.write("\n\n# ─── Lane2 auto-added test for: " + title + " ─────\n")
             f.write(injected_test)
 
-        # Run tests — gate
-        passed, test_output = _run_tests()
+        # Run tests in the worktree — gate
+        try:
+            r = subprocess.run(
+                ["python", "-m", "unittest", "learning-loop.test_adapter"],
+                capture_output=True, text=True, timeout=60, cwd=worktree,
+            )
+            passed = r.returncode == 0
+            test_output = (r.stdout + r.stderr)[-2000:]
+        except Exception as e:
+            passed = False
+            test_output = f"test runner exception: {e}"
+
         if not passed:
             print(f"  Lane2: tests RED on the new patch — abandoning branch")
             print(f"  --- test output (tail 2k chars) ---")
             print(test_output)
-            # Don't push or PR; just log. Reset to clean working tree so
-            # subsequent workflow steps aren't confused.
-            _git(["checkout", "--", target_rel, TEST_FILE], check=False)
-            _git(["checkout", base_branch], check=False)
-            _git(["branch", "-D", branch], check=False)
-            return None
+            return None  # finally block below cleans up worktree
 
-        # Stage + commit + push
-        _git(["add", target_rel, TEST_FILE])
+        # Stage + commit + push (all inside worktree)
+        _git_in_wt(["add", target_rel, TEST_FILE])
         commit_msg = (
             f"learning-loop[auto]: {title}\n\n"
             f"Lane 2 auto-PR generated by daily learning-loop LLM "
@@ -245,8 +298,8 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
             f"verify the wiring hint, merge when satisfied. The patch is "
             f"append-only — no existing code is modified."
         )
-        _git(["commit", "-m", commit_msg])
-        _git(["push", "-u", "origin", branch])
+        _git_in_wt(["commit", "-m", commit_msg])
+        _git_in_wt(["push", "-u", "origin", branch])
 
         # Open PR via gh CLI
         pr_body = (
@@ -293,7 +346,7 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
         ):
             label, cmd = attempt
             r = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60, cwd=REPO_ROOT,
+                cmd, capture_output=True, text=True, timeout=60, cwd=worktree,
             )
             if r.returncode == 0:
                 pr_url = r.stdout.strip()
@@ -317,3 +370,13 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
     except Exception as e:
         print(f"  Lane2: unexpected error — {type(e).__name__}: {e}")
         return None
+    finally:
+        # ALWAYS clean up the worktree, regardless of success/failure.
+        # Without this, the next workflow run finds the worktree path
+        # still registered with git and refuses to add a new one with
+        # the same name; or worse, the temp dir leaks and accumulates.
+        try:
+            _git(["worktree", "remove", "--force", worktree], check=False)
+        except Exception:
+            pass
+        shutil.rmtree(worktree, ignore_errors=True)
