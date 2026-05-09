@@ -182,10 +182,41 @@ def create_pr_from_proposal(prop: dict, base_branch: str = "main") -> str | None
             f.write("\n\n# ─── Lane2 auto-added — " + title + " ────────────\n")
             f.write(code_patch)
 
+        # Auto-inject `from adapter import ...` at the top of test_addition
+        # if the LLM didn't include it (today's failure mode 2026-05-09:
+        # routine wrote a working test that called the new function but
+        # never imported it -> NameError on every test method, CI red,
+        # PR abandoned). Parse code_patch with AST to extract defined
+        # top-level names, prepend a single from-import line.
+        defined_names: list[str] = []
+        try:
+            for node in ast.parse(code_patch).body:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    defined_names.append(node.name)
+                elif isinstance(node, ast.Assign):
+                    for tgt in node.targets:
+                        if isinstance(tgt, ast.Name):
+                            defined_names.append(tgt.id)
+                elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                    defined_names.append(node.target.id)
+        except SyntaxError:
+            pass  # validation already ensured parseable; defensive
+
+        # Only inject if the test_addition doesn't already import them
+        needs_import = [n for n in defined_names if f"import {n}" not in test_addition]
+        injected_test = test_addition
+        if needs_import:
+            module_name = os.path.splitext(os.path.basename(target_rel))[0]  # e.g. "adapter"
+            import_line = (
+                f"# Auto-injected by lane2_pr to expose new symbols to the test:\n"
+                f"from {module_name} import {', '.join(needs_import)}  # noqa: E402,F401\n\n"
+            )
+            injected_test = import_line + test_addition
+
         test_abs = os.path.join(REPO_ROOT, TEST_FILE)
         with open(test_abs, "a") as f:
             f.write("\n\n# ─── Lane2 auto-added test for: " + title + " ─────\n")
-            f.write(test_addition)
+            f.write(injected_test)
 
         # Run tests — gate
         passed, test_output = _run_tests()
