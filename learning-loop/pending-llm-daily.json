@@ -1,0 +1,91 @@
+{
+  "narrative": "Akceptuję krytykę Challengera w 2 z 3 punktów i bronię jednego po poprawce. Propozycja 3 (alert oparty o licznik dni) była zbudowana na błędnej przesłance — GLD +2.68%, RTX +2.06% to prawidłowy HOLD per STRATEGY.md v2.0 (max hold leveraged ETF = 96h = 4 dni), brak emaila CLOSE to success path exit-monitora, nie anomalia. Zastępuję STALE_DAYS kryterium P&L vs TP/SL gap — akcjonowalne i false-positive-safe. Propozycja 1 (Lane 2 auto_pr) przeżywa po poprawce: days_tracked rozwiązany przez SYSTEM_START_DATE = date(2026, 4, 29) w code_patch, dodany graniczny test days_tracked=0, wire_into_adapt_strategy z explicytnym snippetem pętli po state.json. Equity +$54.68 flat; 0 closed trades po 11 dniach to wciąż główny diagnostic gap.",
+  "regime_assessment": "unclear",
+  "edge_assessment": "Zero zamkniętych round-tripów po 11 dniach — żadna strategia bez mierzalnej przewagi. Crypto-breakdown: 2/2 fills (100%) — egzekucja działa; alpha nieweryfikowalna do pierwszego close.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Flag enabled strategies with 0 trades after 10+ days tracked",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "11 dni trackingu, 0 closed trades we wszystkich strategiach widocznych w today_stats. Heurystyka diagnostyczna: enabled=True + trades_lifetime=0 + days_tracked>=10 → warning w rationale.md. Challenger fix wdrożony: days_tracked = (today - SYSTEM_START_DATE).days gdzie SYSTEM_START_DATE = date(2026, 4, 29) stała w code_patch.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "import datetime as _dt_module\n\nSYSTEM_START_DATE = _dt_module.date(2026, 4, 29)\n\ndef heuristic_zero_sample_extended(name: str, stats: dict, today=None) -> tuple:\n    \"\"\"Flag enabled strategies with 0 lifetime trades after 10+ days since system start.\"\"\"\n    if today is None:\n        today = _dt_module.date.today()\n    days_tracked = (today - SYSTEM_START_DATE).days\n    if stats.get(\"enabled\", True) and \\\n       stats.get(\"trades_lifetime\", 0) == 0 and \\\n       days_tracked >= 10:\n        return True, f\"{name}: 0 trades after {days_tracked} days tracked (since {SYSTEM_START_DATE}) — verify monitor pipeline or _is_close() reconstruction\"\n    return False, \"\"",
+      "test_addition": "class TestZeroSampleExtended(unittest.TestCase):\n    def _d(self, offset):\n        import datetime\n        from learning_loop.adapter import SYSTEM_START_DATE\n        return SYSTEM_START_DATE + datetime.timedelta(days=offset)\n    def test_triggers_at_10_days_zero_trades(self):\n        from learning_loop.adapter import heuristic_zero_sample_extended\n        fired, msg = heuristic_zero_sample_extended(\"momentum-long\", {\"enabled\": True, \"trades_lifetime\": 0}, today=self._d(10))\n        self.assertTrue(fired)\n        self.assertIn(\"momentum-long\", msg)\n    def test_no_trigger_at_9_days(self):\n        from learning_loop.adapter import heuristic_zero_sample_extended\n        fired, _ = heuristic_zero_sample_extended(\"momentum-long\", {\"enabled\": True, \"trades_lifetime\": 0}, today=self._d(9))\n        self.assertFalse(fired)\n    def test_no_trigger_at_zero_days(self):\n        from learning_loop.adapter import SYSTEM_START_DATE, heuristic_zero_sample_extended\n        fired, _ = heuristic_zero_sample_extended(\"momentum-long\", {\"enabled\": True, \"trades_lifetime\": 0}, today=SYSTEM_START_DATE)\n        self.assertFalse(fired)\n    def test_no_trigger_when_disabled(self):\n        from learning_loop.adapter import heuristic_zero_sample_extended\n        fired, _ = heuristic_zero_sample_extended(\"momentum-long\", {\"enabled\": False, \"trades_lifetime\": 0}, today=self._d(15))\n        self.assertFalse(fired)\n    def test_no_trigger_when_trades_exist(self):\n        from learning_loop.adapter import heuristic_zero_sample_extended\n        fired, _ = heuristic_zero_sample_extended(\"momentum-long\", {\"enabled\": True, \"trades_lifetime\": 1}, today=self._d(15))\n        self.assertFalse(fired)",
+      "wire_into_adapt_strategy": "Adapter main loop w analyzer.py musi iterować WSZYSTKIE strategie z state.json['strategies'] (nie tylko te w today_stats). Per strategia: fired, reason = heuristic_zero_sample_extended(name, {'enabled': strat_state.get('enabled', True), 'trades_lifetime': today_stats.get('by_strategy', {}).get(name, {}).get('trades_lifetime', 0)}); if fired: rationale_lines.append(reason). Diagnostic only — nie modyfikuj size_multiplier ani enabled. Operator wdraża pętlę manualnie podczas PR review."
+    },
+    {
+      "title": "UUID strategy key pruning in state.json",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "7 UUID-named kluczy zaśmieca state.json i maskuje prawdziwe strategie. Challenger wskazał brak backup step — dodany jako krok 0. Regex zaostrzony do dwuczęściowego UUID prefix zmniejszającego false positive risk. Revisit jutro (2026-05-11).",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-11",
+      "implementation_sketch": "0. BACKUP: cp state.json state.json.bak-$(date +%Y%m%d) PRZED jakimkolwiek pruningiem.\n1. _is_uuid_key(name): bool(re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-', name)) — dwuczęściowy prefix.\n2. scripts/prune_uuid_strategies.py: load state.json, usuń pasujące klucze, save.\n3. python -m scripts.prune_uuid_strategies (jednorazowo manualnie).\n4. Weryfikacja: git diff state.json.bak-* learning-loop/state.json — upewnij się że usunięto tylko UUID klucze.\n5. Commit + push."
+    },
+    {
+      "title": "Position P&L vs TP/SL distance audit (replaces naive stale-days alert)",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Challenger słusznie odrzucił STALE_DAYS=3 jako kryterium — 4 dni HOLD per STRATEGY.md v2.0 jest prawidłowy dla leveraged ETF. Nowe kryterium: (pnl_pct >= tp_threshold AND no exit order) OR (pnl_pct <= sl_threshold AND no exit order). Akcjonowalne i false-positive-safe.",
+      "effort_estimate": "3-4h",
+      "revisit_date": "2026-05-13",
+      "implementation_sketch": "1. compute_position_tp_sl_audit() w analyzer.py: GET /v2/positions + GET /v2/orders?status=open via Alpaca REST.\n2. Per pozycja: pnl_pct = float(pos['unrealized_plpc']), tp_threshold = +0.10 (stocks proxy), +0.80 (options per entry*1.80), sl_threshold = -0.12 (emergency stop per STRATEGY.md v2.0).\n3. has_exit_order = any open order z client_order_id matching 'exit-*' dla danego symbolu.\n4. Flaguj SUSPECT: (pnl_pct >= tp AND NOT has_exit_order) OR (pnl_pct <= -|sl| AND NOT has_exit_order).\n5. Append do rationale.md: 'position-audit: {symbol} pnl={pnl_pct:.1%} vs tp={tp:.1%} — no exit order found'.\n6. Opcjonalnie: notify.py '[ALERT] Position TP/SL gap: {symbol}'.\nPriorytety: najpierw options (AMZN PUT, tp=entry*1.80 znane), potem stocks."
+    }
+  ],
+  "revision_log": [
+    {
+      "original_proposal": "new_heuristic_proposals[0]: Flag enabled strategies with 0 trades after 10+ days (auto_pr)",
+      "challenger_decision": "SURVIVED",
+      "your_disposition": "MODIFIED",
+      "final_value": "auto_pr RETAINED — code_patch przepisany z SYSTEM_START_DATE = date(2026, 4, 29) stała; days_tracked obliczany jako (today - SYSTEM_START_DATE).days; today jako optional param z default=None (w pełni testowalny bez mockowania datetime.today); 5 testów w tym graniczny days_tracked=0; wire_into_adapt_strategy rozszerzony o explicytny snippet pętli po state.json['strategies'].",
+      "reasoning": "Challenger correctly flagged sub-claim d UNFOUNDED: days_tracked source undefined w oryginalnym code_patch. MODIFIED not ACCEPTED — wartość diagnostyczna realna (11 dni, 0 closed trades = genuine anomaly per today_stats). SYSTEM_START_DATE = 2026-04-29 per CLAUDE.md session history 'Initial setup'. Stress test: max_loss_usd=$0 — czysto diagnostyczna, zero wpływ na egzekucję."
+    },
+    {
+      "original_proposal": "new_heuristic_proposals[1]: UUID strategy key pruning (backlog)",
+      "challenger_decision": "SURVIVED",
+      "your_disposition": "MODIFIED",
+      "final_value": "backlog RETAINED — implementation_sketch rozszerzony o krok 0 (cp backup) + git diff weryfikacja. Regex zaostrzony do '^[0-9a-f]{8}-[0-9a-f]{4}-' (dwuczęściowy UUID prefix, mniejszy false positive risk). Revisit 2026-05-11.",
+      "reasoning": "Challenger poprawnie wskazał brak backup step (sub-claim d PARTIALLY SUPPORTED). Dodano cp backup jako krok 0 i explicytną weryfikację git diff — defense in depth mimo że git jest audit log. Stress test: max_loss_usd=$0."
+    },
+    {
+      "original_proposal": "new_heuristic_proposals[2]: Stale open position alert — exit monitor health check (backlog)",
+      "challenger_decision": "MODIFIED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Propozycja przebudowana jako 'Position P&L vs TP/SL distance audit'. STALE_DAYS usunięty jako główny trigger. Nowe kryterium: (pnl_pct >= tp_threshold AND no exit order) OR (pnl_pct <= sl_threshold AND no exit order). Effort: 3-4h. Revisit: 2026-05-13.",
+      "reasoning": "ACCEPTED — 4/5 sub-claims failed (20% pass rate, poniżej 50% rejection threshold per Challenger rules). Sub-claims b/c/d wprost sprzeczne z danymi: STRATEGY.md v2.0 max hold leveraged ETF = 96h = 4 dni, GLD +2.68% poprawnie w HOLD, exit-monitor confirmed working 2026-05-06 EOD. Challenger's modification superior — P&L vs TP/SL gap jest akcjonowalne i eliminuje false positives."
+    },
+    {
+      "original_proposal": "open_question: days_tracked source dla Propozycji 1",
+      "challenger_decision": "open_question",
+      "your_disposition": "DEFENDED",
+      "final_value": "Opcja A wdrożona: SYSTEM_START_DATE = date(2026, 4, 29) stała w code_patch. Data = initial setup per CLAUDE.md 'Session History' table: '2026-04-29 | Initial setup: Alpaca account, MCP server on Render, first routines'.",
+      "reasoning": "Opcja A (stała) wybrana nad Opcją B (tracking_start field w state.json) bo nie wymaga migracji schema state.json i jest backward-compatible. Data 2026-04-29 weryfikowalna w CLAUDE.md."
+    },
+    {
+      "original_proposal": "open_question: Jak adapter iteruje strategie niewidoczne w today_stats",
+      "challenger_decision": "open_question",
+      "your_disposition": "DEFENDED",
+      "final_value": "wire_into_adapt_strategy rozszerzony o explicytny snippet: adapter musi iterować state.json['strategies'] bezpośrednio (nie tylko today_stats). Operator wdraża manualnie podczas PR review — per Lane 2 design (code_patch = APPEND only; wiring = operator responsibility).",
+      "reasoning": "Sub-claim a był PARTIALLY SUPPORTED (nie FAILED) — Challenger nie blokował Lane 2 z tego powodu, tylko sygnalizował architektoniczne ryzyko. Wire snippet w propozycji teraz explicytnie opisuje iterację po state.json; to jest per Lane 2 contract gdzie operator approves i manually wires podczas merge."
+    },
+    {
+      "original_proposal": "open_question: Propozycja 3 correctly held vs stuck",
+      "challenger_decision": "open_question",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Kryterium P&L vs TP/SL gap wdrożone w przepisanej Propozycji 3. Definicja Challengera zaakceptowana w całości.",
+      "reasoning": "Challenger był w pełni wiarygodny: 4/5 sub-claims failed, dane jednoznaczne. Moja pierwotna przesłanka (days_count > STALE_DAYS = anomalia) była błędna per STRATEGY.md v2.0 hold limits."
+    },
+    {
+      "original_proposal": "open_question: Dlaczego inne strategie niewidoczne w today_stats",
+      "challenger_decision": "open_question",
+      "your_disposition": "DEFENDED",
+      "final_value": "Root cause niejednoznaczny z dostępnych danych. Trzy hipotezy: (1) monitors nie generują sygnałów (price-monitor RSI/ATR warunki nie spełnione), (2) _is_close() nie rekonstruuje trades bo client_order_id pattern nie pasuje, (3) wszystkie pozycje wciąż otwarte = 0 round-trips. Propozycja 1 (heuristic_zero_sample_extended) da systematyczne ostrzeżenie per strategy przy każdym daily run.",
+      "reasoning": "Challenger poprawnie wskazał jako 'kluczowe pytanie bez odpowiedzi w today_stats'. Odpowiedź nie może być jednoznaczna bez dodatkowych danych (workflow logs, state.json audit). Heurystyka z Propozycji 1 jest odpowiedzią systemową — zastąpi ad-hoc analizę po mergu PR."
+    }
+  ],
+  "confidence": "medium"
+}
