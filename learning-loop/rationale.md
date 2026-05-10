@@ -88,3 +88,6 @@
 - 2026-05-10 · revision: [DEFENDED] open_question: Dlaczego inne strategie niewidoczne w today_stats -> Root cause niejednoznaczny z dostępnych danych. Trzy hipotezy: (1) monitors nie generują sygnałów (price-monitor RSI/ATR warunki nie spełnione), (2) _is_close() nie rekonstruuje trades bo client_order_id pattern nie pasuje, (3) wszystkie pozycje wciąż otwarte = 0 round-trips. Propozycja 1 (heuristic_zero_sample_extended) da systematyczne ostrzeżenie per strategy przy każdym daily run. (Challenger poprawnie wskazał jako 'kluczowe pytanie bez odpowiedzi w today_stats'. Odpowiedź nie może być jednoznaczna bez dodatkowych danych (workflow logs, state.json audit). Heurystyka z Propozycji 1 jest odpowiedzią systemową — zastąpi ad-hoc analizę po mergu PR.)
 - 2026-05-10 · no parameter changes (all strategies within thresholds)
 
+- 2026-05-10 · WEEKLY[medium] regime=risk_on: Pierwszy pełny tydzień operacyjny zakończony equity $96,727 (-$3,305 / -3.30% od szczytu $100,031 z 2026-05-07). Zero zamkniętych round-tripów przez 11 dni — wszystkie P&L to unrealized z 4 otwartych 
+-   · global_overrides.options_side_bias: None -> None
+
