@@ -1,0 +1,125 @@
+{
+  "narrative": "Senior PM poprawnie wstrzymał się od modyfikacji parametrów przy 0 zamkniętych tradach — jedyna w pełni defensywna decyzja i najważniejsza. Ale Propozycja 3 (stale-position alert) jest zbudowana na błędnej przesłance: GLD +2.68% i RTX +2.06% to prawidłowy stan HOLD, exit-monitor potwierdzony działający 2026-05-06, a STALE_DAYS=3 jest poniżej limitu hold dla leveraged ETF (96h = 4 dni per STRATEGY.md v2.0) — sub-claims b/c/d wprost sprzeczne z danymi. Propozycja 1 (auto_pr) ma krytyczną lukę implementacyjną: `days_tracked: int` niezdefinowany w kodzie — żaden Lane 2 PR nie może być mergowany bez określenia źródła tej wartości.",
+
+  "challenge_log": [
+    {
+      "original_proposal": "new_heuristic_proposals[0]: Flag enabled strategies with 0 trades after 10+ days tracked (lane: auto_pr)",
+      "decomposition": [
+        "sub-claim a: Adapter iteruje strategie z state.json (nie tylko klucze z today_stats), więc heurystyka może wykryć strategie z 0 trades niewidoczne w today_stats",
+        "sub-claim b: Próg 10 dni jest odpowiednim sentinel dla 'extended tracking without a trade'",
+        "sub-claim c: Funkcja jest czysto diagnostyczna — brak wpływu na size_multiplier, enabled, ani egzekucję",
+        "sub-claim d: Parametr `days_tracked: int` jest dostępny w momencie wywołania heurystyki (źródło musi być zdefiniowane w code_patch)",
+        "sub-claim e: Dodanie Lane 2 PR jest uzasadnione ROI — real signal przy zero ryzyku handlowym",
+        "sub-claim f: Kod i testy są poprawne składniowo i logicznie"
+      ],
+      "research_findings": [
+        "sub-claim a: PARTIALLY SUPPORTED — today_stats.by_strategy zawiera tylko 'crypto-breakdown'; momentum-long, overbought-short, options-momentum etc. niewidoczne w today_stats. Adapter musi iterować state.json bezpośrednio dla 0-trade strategies — niestandardowe vs obecna architektura; wymaga weryfikacji w analyzer.py",
+        "sub-claim b: SUPPORTED — Senior PM potwierdza '11 dni trackingu, 0 closed trades' w narrative; próg 10 jest natychmiast relevantny i konserywatywny; 11 dni bez zamkniętego trade jest genuinely anomalous",
+        "sub-claim c: SUPPORTED — 'diagnostic only, zero I/O, does not block adaptation' wprost z propozycji; funkcja zwraca (bool, str) bez side-effects na state.json ani egzekucję",
+        "sub-claim d: UNFOUNDED — code_patch definiuje sygnaturę `days_tracked: int` ale wire_into_adapt_strategy mówi tylko 'call heuristic_zero_sample_extended(name, stats, days_tracked)' bez definiowania źródła days_tracked. today_stats ma 'as_of: 2026-05-10' ale brak 'system_start_date' lub 'tracking_start' per-strategy. Hardcoding jest fragile; brak definicji to bloker Lane 2 merge.",
+        "sub-claim e: SUPPORTED — wartość diagnostyczna bezpośrednia i weryfikowalna; ryzyko trade = $0; diagnostyka pipeline bez closed trades jest highest-priority action available",
+        "sub-claim f: SUPPORTED — 4 testy pokrywają scenariusze (10d-zero trigger, 9d-no-trigger, disabled-no-trigger, trades-exist-no-trigger); logika warunkowa poprawna; brak edge case dla days_tracked=0"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 5, "loss": 6, "passed": true},
+        {"sub_claim": "b", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "c", "profit": 6, "loss": 9, "passed": true},
+        {"sub_claim": "d", "profit": 2, "loss": 2, "passed": false},
+        {"sub_claim": "e", "profit": 7, "loss": 8, "passed": true},
+        {"sub_claim": "f", "profit": 7, "loss": 7, "passed": true}
+      ],
+      "step3_pass_rate": 0.833,
+      "stress_test": {
+        "scenario": "Heurystyka jest diagnostyczna — nie wpływa na żaden trade. Worst case: (A) days_tracked źle obliczone → false alarm w rationale.md co run → operator ignoruje; (B) Sub-claim a błędny (adapter nie iteruje state.json) → heurystyka nigdy nie odpala → cisza, brak regressions. Zero wpływu na P&L.",
+        "max_loss_usd": 0.0,
+        "as_pct_equity": 0.0
+      },
+      "decision": "SURVIVED",
+      "modification_proposal": "Przed mergem Lane 2 PR: code_patch musi zawierać explicytną definicję źródła days_tracked. Opcja A: stała `SYSTEM_START_DATE = date(2026, 4, 29)` w analyzer.py, obliczana jako `(date.today() - SYSTEM_START_DATE).days`. Opcja B: nowe pole `tracking_start` w state.json przy pierwszym zapisie per-strategy, czytane w adapt_strategy(). Testy muszą dodać graniczny case days_tracked=0. Wire_into_adapt_strategy musi być rozszerzony o 1 zdanie określające skąd pochodzi days_tracked.",
+      "reason": "5/6 sub-claims passed (83.3% > 70% threshold). Sub-claim d failed: `days_tracked` source undefined in code_patch — bloker do Lane 2 merge. SURVIVED pod warunkiem poprawki przed PR submission."
+    },
+    {
+      "original_proposal": "new_heuristic_proposals[1]: UUID strategy key pruning in state.json (lane: backlog)",
+      "decomposition": [
+        "sub-claim a: 7 UUID-named kluczy istnieje w state.json jako legacy artifacts",
+        "sub-claim b: Te klucze reprezentują naprawdę stare dane (un-tagged orders przed client_order_id fix 2026-05-08)",
+        "sub-claim c: Usunięcie ich jest bezpieczne — żaden aktywny trade ich nie referencjonuje",
+        "sub-claim d: Implementacja (scripts/prune_uuid_strategies.py) nie ryzykuje uszkodzenia state.json",
+        "sub-claim e: Termin revisit 2026-05-11 (jutro) jest odpowiedni — backlog entry jasny i zamknięty"
+      ],
+      "research_findings": [
+        "sub-claim a: SUPPORTED — CLAUDE.md session 2026-05-08 morning wprost wymienia 7 kluczy: 'fdeebe90, 62bd8628, b514d159, 2a526531, 5422a1fc, b4067979, 6b1dbd5a' jako legacy z un-tagged orders",
+        "sub-claim b: SUPPORTED — fix dla client_order_id w options-monitor był w commit 8fcba17 (2026-05-08 morning); UUID klucze są pre-fix artefaktami z orderów przed tym commitem",
+        "sub-claim c: SUPPORTED — today_stats nie pokazuje żadnych trades, wins, P&L dla UUID kluczy; są ghost strategies z 0 lifetime trades; brak aktywnych orderów referencing UUID strategy names",
+        "sub-claim d: PARTIALLY SUPPORTED — implementation_sketch nie zawiera kroku backup state.json przed pruningiem. Brak `cp state.json state.json.bak-$(date +%Y%m%d)`. Jeśli _is_uuid_key() regex jest zbyt szeroki i złapie prawdziwy klucz strategii — dane stracone bez backupu. Ryzyko: re.match(r'^[0-9a-f]{8}-', name) ma false positive potential jeśli ktoś kiedykolwiek nazwie strategię UUID-podobnie.",
+        "sub-claim e: SUPPORTED — revisit_date: 2026-05-11 aligns z poprzednią sesją 2026-05-08 w CLAUDE.md; termin jasny i zamknięty"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 5, "loss": 6, "passed": true},
+        {"sub_claim": "b", "profit": 6, "loss": 7, "passed": true},
+        {"sub_claim": "c", "profit": 6, "loss": 8, "passed": true},
+        {"sub_claim": "d", "profit": 4, "loss": 4, "passed": false},
+        {"sub_claim": "e", "profit": 6, "loss": 7, "passed": true}
+      ],
+      "step3_pass_rate": 0.80,
+      "stress_test": {
+        "scenario": "Jeśli _is_uuid_key() usuwa błędnie prawdziwy klucz strategii: adapter traktuje ją jako nową strategię bez historii przez jeden cron run. Brak wpływu na egzekucję orderów — monitors czytają state.json ale brak strategii = default params, nie crash. Odzysk: git revert state.json (git to audit log). Max opportunity cost: jedna sesja bez LLM adaptacji = $0 direct P&L impact.",
+        "max_loss_usd": 0.0,
+        "as_pct_equity": 0.0
+      },
+      "decision": "SURVIVED",
+      "modification_proposal": null,
+      "reason": "4/5 sub-claims passed (80% > 70% threshold). Sub-claim d failed: brak backup step w implementation_sketch. Senior PM powinien dodać jako krok 0: `cp state.json state.json.bak-$(date +%Y%m%d)` przed jakimkolwiek pruningiem. Bez tego: nieodwracalne przy błędzie regex."
+    },
+    {
+      "original_proposal": "new_heuristic_proposals[2]: Stale open position alert — exit monitor health check (lane: backlog)",
+      "decomposition": [
+        "sub-claim a: GLD/RTX/XLE/AMZN PUT są otwarte 4 dni od 2026-05-06 — fakt weryfikowalny",
+        "sub-claim b: 4 sesje bez sygnału wyjścia od exit-monitora jest anomalią wymagającą alertu",
+        "sub-claim c: Exit-monitor może nie odpalać poprawnie — brak emaila CLOSE sugeruje problem z pipeline",
+        "sub-claim d: STALE_DAYS=3 jest odpowiednim progiem dla 'zbyt długa pozycja'",
+        "sub-claim e: Diagnostyczny GET /v2/positions nie wpłynie na egzekucję"
+      ],
+      "research_findings": [
+        "sub-claim a: SUPPORTED — CLAUDE.md open positions table: GLD/RTX/XLE od 2026-05-06, AMZN PUT od 2026-05-06. Today = 2026-05-10 = 4 kalendarzowe dni, ~3 trading sessions. Fact correct.",
+        "sub-claim b: CONTRADICTED — GLD P&L +2.68%, RTX P&L +2.06% = pozycje w zysku poniżej TP threshold. TP dla stocks = entry × 4.0× ATR per STRATEGY.md v2.0. Brak emaila CLOSE ≠ anomalia; HOLD jest prawidłowym outputem exit-monitora gdy pozycja nie osiągnęła TP/SL thresholdów. Senior PM sam pisze '(3) pozycje poprawnie w HOLD' jako jeden z możliwych scenariuszy — ale nadal flaguje jako 'czerwoną flagę'.",
+        "sub-claim c: CONTRADICTED — CLAUDE.md 2026-05-06 EOD: exit-monitor status = '✅ WORKING, integrated 2026-05-06 (notify_exit per flagged position + notify_summary at end)'. Brak emaila CLOSE w 4 dniach = pozycje w HOLD = success path, NIE failure. Exit-monitor confirmed functional; pipeline nie jest zepsuta na podstawie dostępnych danych.",
+        "sub-claim d: CONTRADICTED — docs/STRATEGY.md v2.0 exit thresholds: leveraged ETF max hold = 96h (= 4 dni!), stocks quick-profit threshold = '+10% in 6h', time decay exit = 24h for quick-profit ONLY (nie mandatory close). GLD +2.68% w 4 dniach = poniżej +10% TP → HOLD correct. XLE -3.30% = poniżej -12% emergency stop → HOLD correct. STALE_DAYS=3 zbyt restrykcyjny — flagowałby XLE i GLD jako 'stale' gdy są w prawidłowym holding window per strategy.",
+        "sub-claim e: SUPPORTED — GET /v2/positions jest read-only Alpaca call; brak side-effects na trading, egzekucję, ani state.json"
+      ],
+      "scores": [
+        {"sub_claim": "a", "profit": 4, "loss": 5, "passed": false},
+        {"sub_claim": "b", "profit": 2, "loss": 2, "passed": false},
+        {"sub_claim": "c", "profit": 2, "loss": 2, "passed": false},
+        {"sub_claim": "d", "profit": 2, "loss": 3, "passed": false},
+        {"sub_claim": "e", "profit": 5, "loss": 7, "passed": true}
+      ],
+      "step3_pass_rate": 0.20,
+      "stress_test": {
+        "scenario": "Alert jest diagnostyczny — $0 bezpośredni wpływ na P&L. Pośredni risk: false-positive alert (bo STALE_DAYS=3 < hold limit 4 dni) prowadzi operatora do przedwczesnego zamknięcia GLD (HOLD, +$33.63 unrealized) i RTX (HOLD, +$3.56 unrealized). Opportunity cost = max ~$37 utracony zysk przy zamknięciu w złym momencie. Poniżej $2k progu ale fałszywy alarm szkodzi signal quality całego systemu.",
+        "max_loss_usd": 37.0,
+        "as_pct_equity": 0.038
+      },
+      "decision": "MODIFIED",
+      "modification_proposal": "Zmień premise z 'exit monitor health check' na 'position P&L vs TP/SL distance audit'. compute_open_position_age() powinien raportować per pozycja: (symbol, age_days, pnl_pct, distance_to_tp_pct, distance_to_sl_pct, has_open_exit_order_bool). Flaguj jako SUSPECT tylko jeśli JEDNO z dwóch: (A) pnl_pct >= tp_threshold AND has_open_exit_order=False — pozycja powinna być zamknięta ale order nie istnieje; (B) pnl_pct <= sl_threshold AND has_open_exit_order=False — analogicznie po stronie SL. Usuń STALE_DAYS jako główny trigger — HOLD przez 4+ dni jest prawidłowym scenariuszem per STRATEGY.md. Effort estimate: 3-4h zamiast 2-3h ale eliminuje false-positive alerty i daje operatorowi actionable P&L vs TP/SL gap zamiast prostego licznika dni.",
+      "reason": "Tylko 1/5 sub-claims passed (20% < 50% rejection threshold). Sub-claims b, c, d wprost sprzeczne z danymi: GLD/RTX prawidłowo w HOLD, exit-monitor confirmed working 2026-05-06, STALE_DAYS=3 poniżej max hold limit 4 dni dla leveraged ETF per STRATEGY.md v2.0. MODIFIED zamiast REJECTED — intencja (position audit) ma wartość; implementacja wymaga przebudowy wokół P&L vs TP/SL gap, nie prostego licznika dni."
+    }
+  ],
+
+  "stats": {
+    "total_proposals_reviewed": 3,
+    "survived": 2,
+    "modified": 1,
+    "rejected": 0
+  },
+
+  "open_questions_for_senior_pm": [
+    "Propozycja 1 (auto_pr Lane 2): Skąd pochodzi wartość `days_tracked` przekazywana do heuristic_zero_sample_extended()? today_stats nie zawiera 'system_start_date' ani per-strategy 'tracking_start'. Zdefiniuj wprost w code_patch PRZED submitem PR — opcja A: stała SYSTEM_START_DATE = date(2026, 4, 29) w analyzer.py; opcja B: nowe pole tracking_start w state.json. Bez tej definicji PR jest niekompletny i nie może być mergowany.",
+    "Propozycja 1 (auto_pr Lane 2): today_stats.by_strategy zawiera tylko 'crypto-breakdown'. Jak adapter.py iteruje strategie z 0 trades (momentum-long, options-momentum etc.) skoro nie ma ich w today_stats? Czy code_patch zakłada iterację po state.json zamiast today_stats? Jeśli tak — wire_into_adapt_strategy musi to explicytnie opisać.",
+    "Propozycja 2 (UUID pruning): Brak kroku backup przed pruningiem to ryzyko nieodwracalnej straty danych. Dodaj jako krok 0 w implementation_sketch: `cp state.json state.json.bak-$(date +%Y%m%d)`. Bez backupu _is_uuid_key() regex error może skasować prawdziwe klucze strategii bez możliwości odzysku.",
+    "Propozycja 3 (stale alert): GLD +2.68% i RTX +2.06% to prawidłowe pozycje w HOLD per exit-monitor logic — brak emaila CLOSE jest SUCCESS path, nie anomalia. Jak Senior PM odróżnia 'position correctly held' od 'position stuck'? Zaproponuj kryterium oparte na (pnl_pct vs TP/SL threshold) AND (has_open_exit_order=False) zamiast prostego days_count > STALE_DAYS. Ten trigger jest bezpieczny dla 4-dniowych holds per STRATEGY.md.",
+    "Ogólne: today_stats.by_strategy = {'crypto-breakdown': {...}} i tylko ta strategia. Pozostałe strategie (momentum-long, overbought-short, options-momentum) niewidoczne — 0 completed trades po 11 dniach to prawdziwy sygnał ostrzegawczy. Czy to analyzer._is_close() nie rekonstruuje trades, czy monitors nie generują sygnałów, czy exit-monitor nie zamyka pozycji? To jest kluczowe pytanie bez odpowiedzi w today_stats."
+  ],
+
+  "confidence_in_critique": "high"
+}
