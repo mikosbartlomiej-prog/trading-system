@@ -66,3 +66,22 @@
 - [ ] [2026-05-09] **options_side_bias auto-clear gdy zero options trades w 7d window** _(risk: low, effort: 1h, revisit: 2026-05-13)_
   - **Rationale:** Challenger wskazał: options_side_bias=long utrzymywany przez 5 sesji bez żadnych danych options-momentum w by_strategy. Adapter powinien auto-resetować directional bias do null gdy brak supporting trade data — zapobiega evidence-free override.
   - **Sketch:** W learning-loop/adapter.py: w adapt_strategy() dla options-momentum: jeśli trades_7d == 0, wyzerować global_overrides.options_side_bias zamiast propagować z poprzedniego state. Alternatywnie: osobny pass w _build_proposed_state() resetujący options_side_bias gdy options-momentum.trades_7d < 3. Emitować rationale: 'options_side_bias reset to null — zero supporting data in 7d window'.
+- [ ] [2026-05-10] **Flag enabled strategies with 0 trades after 10+ days tracked** _(risk: low, effort: ?, revisit: no specific date)_
+  - **Rationale:** 11 dni trackingu, 0 closed trades we wszystkich strategiach widocznych w today_stats. Heurystyka diagnostyczna: enabled=True + trades_lifetime=0 + days_tracked>=10 → warning w rationale.md. Challenger fix wdrożony: days_tracked = (today - SYSTEM_START_DATE).days gdzie SYSTEM_START_DATE = date(2026, 4, 29) stała w code_patch.
+- [ ] [2026-05-10] **UUID strategy key pruning in state.json** _(risk: low, effort: 1h, revisit: 2026-05-11)_
+  - **Rationale:** 7 UUID-named kluczy zaśmieca state.json i maskuje prawdziwe strategie. Challenger wskazał brak backup step — dodany jako krok 0. Regex zaostrzony do dwuczęściowego UUID prefix zmniejszającego false positive risk. Revisit jutro (2026-05-11).
+  - **Sketch:** 0. BACKUP: cp state.json state.json.bak-$(date +%Y%m%d) PRZED jakimkolwiek pruningiem.
+1. _is_uuid_key(name): bool(re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-', name)) — dwuczęściowy prefix.
+2. scripts/prune_uuid_strategies.py: load state.json, usuń pasujące klucze, save.
+3. python -m scripts.prune_uuid_strategies (jednorazowo manualnie).
+4. Weryfikacja: git diff state.json.bak-* learning-loop/state.json — upewnij się że usunięto tylko UUID klucze.
+5. Commit + push.
+- [ ] [2026-05-10] **Position P&L vs TP/SL distance audit (replaces naive stale-days alert)** _(risk: low, effort: 3-4h, revisit: 2026-05-13)_
+  - **Rationale:** Challenger słusznie odrzucił STALE_DAYS=3 jako kryterium — 4 dni HOLD per STRATEGY.md v2.0 jest prawidłowy dla leveraged ETF. Nowe kryterium: (pnl_pct >= tp_threshold AND no exit order) OR (pnl_pct <= sl_threshold AND no exit order). Akcjonowalne i false-positive-safe.
+  - **Sketch:** 1. compute_position_tp_sl_audit() w analyzer.py: GET /v2/positions + GET /v2/orders?status=open via Alpaca REST.
+2. Per pozycja: pnl_pct = float(pos['unrealized_plpc']), tp_threshold = +0.10 (stocks proxy), +0.80 (options per entry*1.80), sl_threshold = -0.12 (emergency stop per STRATEGY.md v2.0).
+3. has_exit_order = any open order z client_order_id matching 'exit-*' dla danego symbolu.
+4. Flaguj SUSPECT: (pnl_pct >= tp AND NOT has_exit_order) OR (pnl_pct <= -|sl| AND NOT has_exit_order).
+5. Append do rationale.md: 'position-audit: {symbol} pnl={pnl_pct:.1%} vs tp={tp:.1%} — no exit order found'.
+6. Opcjonalnie: notify.py '[ALERT] Position TP/SL gap: {symbol}'.
+Priorytety: najpierw options (AMZN PUT, tp=entry*1.80 znane), potem stocks.

@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-09T21:50:18.235845+00:00",
-  "days_tracked": 10,
+  "last_updated": "2026-05-10T21:52:07.897196+00:00",
+  "days_tracked": 11,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
@@ -151,6 +151,20 @@
       "paused_until": null
     },
     "6b1dbd5a-949a-485f": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
+    },
+    "crypto-breakdown": {
       "trades_lifetime": 0,
       "trades_7d": 0,
       "win_rate_lifetime": 0.0,
