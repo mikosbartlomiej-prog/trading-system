@@ -66,8 +66,22 @@ jobs:
             echo "result=merge-commit" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push merged main
-        run: git push origin main
+      - name: Push merged main (with retry on race)
+        run: |
+          # Race condition with concurrent cron pushes (reddit-monitor,
+          # exit-monitor, learning-loop) can cause non-fast-forward
+          # rejection. Retry up to 3 times: pull --rebase + re-push.
+          for attempt in 1 2 3; do
+            if git push origin main; then
+              echo "Push succeeded (attempt $attempt)"
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt) — race with concurrent push. Rebasing + retrying..."
+            git pull --rebase origin main
+            sleep 3
+          done
+          echo "Push failed after 3 attempts — bailing"
+          exit 1
 
       - name: Delete source branch
         if: steps.ffmerge.outputs.result != ''
