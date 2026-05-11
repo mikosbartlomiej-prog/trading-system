@@ -60,7 +60,7 @@ try:
     from notify import notify_signal, notify_summary
     from risk_guards import (
         vix_guard, daily_drawdown_guard, get_account_status,
-        has_open_position, concentration_ok,
+        has_open_position, concentration_ok, get_open_positions,
     )
     from event_scoring import score_and_decide
     from alpaca_orders import execute_stock_signal
@@ -74,6 +74,7 @@ except ImportError as e:
     def get_account_status(): return None
     def has_open_position(_s): return False
     def concentration_ok(_s, _u, _e=None): return (True, 0.0)
+    def get_open_positions(): return []
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub"}
     def execute_stock_signal(_s): return None
     def is_strategy_enabled(_n): return True
@@ -1011,13 +1012,45 @@ def run_scan() -> int:
     # the heuristic top-N selection (current pre-LLM behaviour).
     print(f"\n  Curator: validating {len(user_signals) + len(sub_signals)} "
           f"candidates ({len(user_signals)} user + {len(sub_signals)} sub)")
+    # Build rich open_positions list — Curator needs to see what's
+    # already on the book to detect concentration/redundancy/regime
+    # conflicts ("BTC bullish DD but you have 30% in MSTR already").
+    eq = float((account or {}).get("equity", 100_000)) or 100_000
+    raw_positions = get_open_positions()
+    positions_summary: list[dict] = []
+    for p in raw_positions:
+        try:
+            pct_equity = (abs(p["market_value"]) / eq * 100) if eq > 0 else 0
+        except (KeyError, TypeError):
+            pct_equity = 0
+        positions_summary.append({
+            "symbol":          p["symbol"],
+            "asset_class":     p["asset_class"],         # us_equity / crypto / us_option
+            "side":            p["side"],
+            "qty":             round(p["qty"], 4),
+            "pl_pct":          round(p["unrealized_plpc"] * 100, 2),
+            "pct_equity":      round(pct_equity, 1),
+        })
+
+    # options_side_bias from learning-loop state (LLM may have set it)
+    try:
+        from learning_state import load_global_overrides as _lgo
+        glob = _lgo() or {}
+        opt_bias = glob.get("options_side_bias")
+    except Exception:
+        opt_bias = None
+
     account_context = {
-        "equity":             float((account or {}).get("equity", 100_000)),
+        "equity":             eq,
         "daily_pl_pct":       float((account or {}).get("daily_pl_pct", 0)),
-        "open_positions":     [],   # filled by curator if needed via Alpaca; skip for MVP
-        "options_side_bias":  None,  # could read from learning_state.global_overrides
+        "open_positions":     positions_summary,
+        "open_position_count": len(positions_summary),
+        "options_side_bias":  opt_bias,
         "vix":                round(17.0 * vix_mult, 1) if vix_mult else None,
     }
+    print(f"  Curator context: equity=${eq:,.0f}, "
+          f"{len(positions_summary)} open positions, "
+          f"options_side_bias={opt_bias}")
 
     curator_output = curate_signals(user_signals + sub_signals, account_context)
     if curator_output:

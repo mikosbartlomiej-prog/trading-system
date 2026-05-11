@@ -167,11 +167,21 @@ JOB 2 — VALIDATE / KILL
   "account_context": {
     "equity": 96632.03,
     "daily_pl_pct": -0.1,
-    "open_positions": ["GLD", "RTX", "XLE", "AMZN_PUT_270_20260520"],
+    "open_positions": [
+      {"symbol": "GLD", "asset_class": "us_equity", "side": "long",
+       "qty": 3, "pl_pct": 2.68, "pct_equity": 1.3},
+      {"symbol": "AMZN260520P00270000", "asset_class": "us_option",
+       "side": "long", "qty": 1, "pl_pct": -17.8, "pct_equity": 0.3}
+    ],
     "open_position_count": 4,
-    "options_side_bias": "long",
+    "options_side_bias": null,            // from learning-loop state
     "vix": 17.2
   },
+
+  // Use open_positions for:
+  //   · concentration check ("BTC bullish DD but MSTR already 30% equity = NO")
+  //   · regime conflict ("AMZN PUT bleeds; new bearish PUT on MSFT = double-down RISK")
+  //   · redundancy ("XOM already long; new XLE long = same trade twice")
   "candidates": [
     {
       "lane": "sub" | "user",

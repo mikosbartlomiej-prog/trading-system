@@ -19,6 +19,8 @@
 //                          a frictionless open-in-browser experience.
 
 const ALPACA_BASE = "https://paper-api.alpaca.markets";
+const GH_API_BASE = "https://api.github.com";
+const GH_REPO     = "mikosbartlomiej-prog/trading-system";
 
 async function alpaca(env, path) {
   const r = await fetch(`${ALPACA_BASE}${path}`, {
@@ -33,11 +35,99 @@ async function alpaca(env, path) {
   return r.json();
 }
 
+// Fetch a file from the trading-system repo (private). Requires
+// GITHUB_TOKEN env var with `contents:read` scope on the repo.
+// Returns parsed JSON for .json files, raw text for everything else.
+// On 404 / missing token / network failure returns null (caller renders
+// "unavailable" gracefully). Cache-busts via Authorization header.
+async function githubReadFile(env, path) {
+  if (!env.GITHUB_TOKEN) return null;
+  try {
+    const r = await fetch(
+      `${GH_API_BASE}/repos/${GH_REPO}/contents/${path}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+          "Accept":        "application/vnd.github.v3+json",
+          "User-Agent":    "trading-system-dashboard",
+        },
+      }
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.content) return null;
+    // GitHub returns base64 with line breaks; atob handles that.
+    const raw = atob(data.content.replace(/\n/g, ""));
+    if (path.endsWith(".json")) {
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+    return raw;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function buildLearningLoopSnapshot(env) {
+  // Best-effort fetch — if GITHUB_TOKEN missing or any call fails,
+  // return null so dashboard shows "unavailable" tile.
+  const [state, rationale] = await Promise.all([
+    githubReadFile(env, "learning-loop/state.json"),
+    githubReadFile(env, "learning-loop/rationale.md"),
+  ]);
+  if (!state) return null;
+
+  const strategies = state.strategies || {};
+  const tickers    = state.tickers    || {};
+  const overrides  = [];
+  const disabled_strategies = [];
+  const paused_tickers      = [];
+
+  for (const [name, cfg] of Object.entries(strategies)) {
+    if (cfg.enabled === false) {
+      disabled_strategies.push({ name, paused_until: cfg.paused_until || null });
+    }
+    const mult = cfg.size_multiplier;
+    if (mult !== undefined && mult !== null && Math.abs(mult - 1.0) > 0.001) {
+      overrides.push({
+        name,
+        size_multiplier: mult,
+        side_bias:       cfg.side_bias || null,
+      });
+    }
+  }
+  for (const [name, cfg] of Object.entries(tickers)) {
+    if (cfg.enabled === false) {
+      paused_tickers.push({ name, evidence: cfg.evidence || null });
+    }
+  }
+
+  // Last 8 rationale lines (rationale.md grows append-only)
+  let rationale_tail = [];
+  if (rationale && typeof rationale === "string") {
+    const lines = rationale.split("\n")
+                            .filter(L => L.trim().startsWith("- "))
+                            .map(L => L.replace(/^- /, "").trim());
+    rationale_tail = lines.slice(-8);
+  }
+
+  return {
+    days_tracked:        state.days_tracked || 0,
+    last_updated:        state.last_updated || null,
+    options_side_bias:   (state.global_overrides || {}).options_side_bias || null,
+    cumulative:          state.cumulative || {},
+    overrides,
+    disabled_strategies,
+    paused_tickers,
+    rationale_tail,
+  };
+}
+
 async function buildSnapshot(env) {
-  const [account, positions, orders] = await Promise.all([
+  const [account, positions, orders, learning_loop] = await Promise.all([
     alpaca(env, "/v2/account"),
     alpaca(env, "/v2/positions"),
     alpaca(env, "/v2/orders?status=all&limit=15&direction=desc"),
+    buildLearningLoopSnapshot(env),
   ]);
 
   const equity      = parseFloat(account.equity || "0");
@@ -93,6 +183,7 @@ async function buildSnapshot(env) {
     },
     positions: enriched,
     orders:    recentOrders,
+    learning_loop,                     // may be null if GITHUB_TOKEN missing
     errors: [account, positions, orders]
               .filter(o => o && o._error)
               .map(o => o._error),
@@ -210,6 +301,31 @@ const HTML = `<!doctype html>
     <div class="empty" id="orders-empty" style="display:none">No recent orders</div>
   </div>
 
+  <div class="panel" id="learning-panel">
+    <h2>Learning loop <span id="ll-meta" style="color: var(--muted); text-transform: none; font-weight: normal"></span></h2>
+    <div id="ll-unavailable" class="empty" style="display:none">
+      learning-loop snapshot unavailable
+      (set <code>GITHUB_TOKEN</code> Worker env var with contents:read scope)
+    </div>
+    <div id="ll-content" style="display:none">
+      <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 12px">
+        <div>
+          <div style="color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px">Active overrides</div>
+          <table id="ll-overrides"><tbody></tbody></table>
+          <div class="empty" id="ll-overrides-empty" style="display:none; padding: 8px 0; text-align: left">all multipliers = 1.0</div>
+        </div>
+        <div>
+          <div style="color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px">Disabled / paused</div>
+          <div id="ll-disabled"></div>
+        </div>
+      </div>
+      <div>
+        <div style="color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px">Recent rationale (last 8)</div>
+        <ul id="ll-rationale" style="margin: 0; padding-left: 18px; color: var(--text); font-size: 12px; line-height: 1.5"></ul>
+      </div>
+    </div>
+  </div>
+
   <div class="footer">
     Alpaca paper account · read-only · <span id="account-id"></span>
   </div>
@@ -311,6 +427,79 @@ function render(d) {
         + '<td class="num">' + (o.limit_price ? "$" + parseFloat(o.limit_price).toFixed(2) : "—") + "</td>"
         + "<td>" + statusPill + "</td>"
         + "</tr>";
+    }).join("");
+  }
+
+  // Learning loop
+  renderLearningLoop(d.learning_loop);
+}
+
+function renderLearningLoop(ll) {
+  const meta = document.getElementById("ll-meta");
+  const unavail = document.getElementById("ll-unavailable");
+  const content = document.getElementById("ll-content");
+
+  if (!ll) {
+    meta.textContent = "";
+    unavail.style.display = "";
+    content.style.display = "none";
+    return;
+  }
+  unavail.style.display = "none";
+  content.style.display = "";
+
+  // Meta line
+  const updTs = ll.last_updated ? fmtTime(ll.last_updated) : "—";
+  const cumPL = ll.cumulative && ll.cumulative.total_pnl_usd != null
+    ? fmtUSD(ll.cumulative.total_pnl_usd) : "—";
+  const trades = ll.cumulative && ll.cumulative.total_trades != null
+    ? ll.cumulative.total_trades : 0;
+  const bias = ll.options_side_bias || "neutral";
+  meta.textContent = "· " + ll.days_tracked + "d tracked · "
+                   + trades + " cumulative trades · cum P&L " + cumPL
+                   + " · options bias " + bias + " · adapter ran " + updTs;
+
+  // Overrides table
+  const obody = document.querySelector("#ll-overrides tbody");
+  const oEmpty = document.getElementById("ll-overrides-empty");
+  if (!ll.overrides || ll.overrides.length === 0) {
+    obody.innerHTML = "";
+    oEmpty.style.display = "";
+  } else {
+    oEmpty.style.display = "none";
+    obody.innerHTML = ll.overrides.map(o => {
+      const mult = parseFloat(o.size_multiplier);
+      const cls = mult > 1.0 ? "green" : (mult < 1.0 ? "amber" : "");
+      const bias = o.side_bias ? ' <span class="pill">' + o.side_bias + "</span>" : "";
+      return "<tr>"
+        + "<td><strong>" + o.name + "</strong>" + bias + "</td>"
+        + '<td class="num ' + cls + '">' + mult.toFixed(2) + "×</td>"
+        + "</tr>";
+    }).join("");
+  }
+
+  // Disabled / paused
+  const dbox = document.getElementById("ll-disabled");
+  const items = [];
+  (ll.disabled_strategies || []).forEach(s => {
+    items.push('<div style="margin-bottom:4px"><span class="pill" style="background:#7f1d1d;color:#fca5a5">strategy</span> <strong>' + s.name + "</strong></div>");
+  });
+  (ll.paused_tickers || []).forEach(t => {
+    items.push('<div style="margin-bottom:4px"><span class="pill" style="background:#451a03;color:#fed7aa">ticker</span> <strong>' + t.name + "</strong></div>");
+  });
+  dbox.innerHTML = items.length
+    ? items.join("")
+    : '<div class="empty" style="padding:8px 0;text-align:left">none</div>';
+
+  // Rationale tail
+  const rul = document.getElementById("ll-rationale");
+  if (!ll.rationale_tail || ll.rationale_tail.length === 0) {
+    rul.innerHTML = '<li class="empty" style="list-style:none;margin-left:-18px">no recent rationale</li>';
+  } else {
+    rul.innerHTML = ll.rationale_tail.map(line => {
+      // escape minimal HTML
+      const safe = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return "<li>" + safe + "</li>";
     }).join("");
   }
 }

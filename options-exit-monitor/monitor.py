@@ -22,6 +22,7 @@ De-dup: skips a position if there is already an open SELL order for the
 same contract symbol (prevents stacking duplicate exits across runs).
 """
 
+import json
 import os
 import sys
 import requests
@@ -140,7 +141,7 @@ def place_sell_to_close(contract_symbol: str, qty: int,
         "time_in_force":   "day",
         "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
-    if decision in ("SL", "NEARDTH", "REGIME"):
+    if decision in ("SL", "NEARDTH", "REGIME", "TRAIL"):
         payload["type"] = "market"
     else:
         payload["type"]        = "limit"
@@ -172,6 +173,110 @@ REGIME_MISMATCH_LOSS_THRESHOLD     = -15.0   # percent
 REGIME_MISMATCH_SPY_5D_THRESHOLD   = 1.5     # percent
 REGIME_MISMATCH_DTE_GUARD          = 14      # days
 REGIME_MISMATCH_DEEP_LOSS_GUARD    = -25.0   # percent
+
+# ─── Trailing stop (LLM proposal 2026-05-07, revisit 2026-05-17) ────────────
+#
+# Framework gated by env flag TRAILING_STOP_ENABLED. Defaults to OFF until
+# 10-day TP-hit-rate data confirms static-TP is leaving money on the table.
+# When ON: tracks peak price per open position in state.json::trailing_state,
+# fires MARKET sell when current price drops `trail_pct` from peak AND
+# hold time > min_hold_hours.
+#
+# Per-asset trail_pct defaults (educated guess; tune from data when flag flips):
+#   options:  8%  — premium volatility is high; tight trail = whipsaw
+#   stocks:   3%  — normal volatility
+#   crypto:   5%  — between options and stocks
+# In options-exit-monitor: only options matter (8% default).
+TRAILING_STOP_ENABLED              = os.environ.get(
+    "TRAILING_STOP_ENABLED", "false"
+).lower() == "true"
+TRAILING_STOP_TRAIL_PCT            = 0.08    # 8% off peak triggers exit
+TRAILING_STOP_MIN_HOLD_HOURS       = 12      # don't trail very fresh positions
+
+STATE_PATH_REPO = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..',
+    'learning-loop', 'state.json',
+)
+
+
+def _load_trailing_state() -> dict:
+    """Read learning-loop/state.json → trailing_state dict (symbol → peak/entry_ts)."""
+    try:
+        with open(STATE_PATH_REPO) as f:
+            s = json.load(f)
+        return s.get("trailing_state", {}) or {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _save_trailing_state(trailing: dict) -> None:
+    """Merge trailing_state back into state.json. Workflow handles git commit."""
+    try:
+        with open(STATE_PATH_REPO) as f:
+            s = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        s = {}
+    s["trailing_state"] = trailing
+    try:
+        with open(STATE_PATH_REPO, "w") as f:
+            json.dump(s, f, indent=2, ensure_ascii=False)
+    except OSError as e:
+        print(f"  trailing_state save error: {e}")
+
+
+def _check_trailing_stop(pos: dict, trailing_state: dict
+                          ) -> tuple[bool, str, dict]:
+    """
+    Returns (should_close, reason, updated_trailing_entry).
+
+    Per-tick logic:
+      1. Get/init `peak` (= current_price on first sight).
+      2. Update peak if current > peak.
+      3. If TRAILING_STOP_ENABLED AND hold_hours > min_hold AND
+         current < peak * (1 - trail_pct) → FIRE.
+    Returns updated trailing entry regardless so caller can persist.
+    """
+    symbol  = pos.get("symbol", "")
+    current = float(pos.get("current_price", 0) or 0)
+    entry   = float(pos.get("avg_entry_price", 0) or 0)
+    if current <= 0 or not symbol:
+        return False, "", {}
+
+    rec = dict(trailing_state.get(symbol) or {})
+    peak = float(rec.get("peak", entry) or entry)
+    if current > peak:
+        peak = current
+        rec["peak"] = peak
+    rec["peak"] = peak
+    rec["last_seen_price"] = current
+    rec["last_seen_ts"] = datetime.now(timezone.utc).isoformat()
+    # First-sight initialization of entry_ts (best-effort — we approximate
+    # with NOW; real entry timestamp would need an Alpaca order lookup).
+    if "first_seen_ts" not in rec:
+        rec["first_seen_ts"] = rec["last_seen_ts"]
+
+    if not TRAILING_STOP_ENABLED:
+        return False, "", rec
+
+    # Hold-time gate
+    try:
+        first_ts = datetime.fromisoformat(rec["first_seen_ts"].replace("Z", "+00:00"))
+        hold_h = (datetime.now(timezone.utc) - first_ts).total_seconds() / 3600
+    except Exception:
+        hold_h = 0
+    if hold_h < TRAILING_STOP_MIN_HOLD_HOURS:
+        return False, "", rec
+
+    # Drop from peak
+    if peak <= 0:
+        return False, "", rec
+    drop_pct = (peak - current) / peak
+    if drop_pct >= TRAILING_STOP_TRAIL_PCT:
+        return True, (
+            f"trailing stop: peak=${peak:.2f} -> current=${current:.2f} "
+            f"({drop_pct:.1%} drop, hold {hold_h:.1f}h)"
+        ), rec
+    return False, "", rec
 
 
 def _is_put(occ_symbol: str) -> bool:
@@ -288,7 +393,8 @@ NEAR_DTH_DTE_THRESHOLD = 5      # days
 NEAR_DTH_LOSS_THRESHOLD = -40.0 # percent loss (more liberal than SL=-50%)
 
 
-def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
+def evaluate(pos: dict, trailing_state: dict | None = None
+              ) -> tuple[str, float | None, float, str]:
     """
     Returns (decision, exit_limit_price, pl_pct, reason).
     decision: "TP" | "SL" | "NEARDTH" | "HOLD"
@@ -331,6 +437,15 @@ def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
                 f"DTE={dte}d (<={NEAR_DTH_DTE_THRESHOLD}) + pl {pl_pct:+.1f}% (<={NEAR_DTH_LOSS_THRESHOLD}%) "
                 f"-> theta-acceleration close (MARKET)")
 
+    # Trailing stop (gated by TRAILING_STOP_ENABLED env flag). Sits
+    # between NEARDTH and TP/SL: lock in gains before TP / before
+    # static SL takes a deeper loss. Updates trailing_state regardless.
+    if trailing_state is not None:
+        ts_fire, ts_reason, ts_rec = _check_trailing_stop(pos, trailing_state)
+        trailing_state[pos.get("symbol", "")] = ts_rec   # persist updated peak
+        if ts_fire:
+            return ("TRAIL", current, pl_pct, ts_reason)
+
     if current >= tp_lvl:
         return ("TP", tp_lvl, pl_pct,
                 f"current ${current:.2f} >= TP ${tp_lvl:.2f} (+{pl_pct:.1f}%)")
@@ -357,11 +472,20 @@ def run_exit_check():
     if not positions:
         return
 
+    # Load trailing state once per run; pass into evaluate() so it can
+    # both READ (decide trail) and WRITE (update peak per position).
+    trailing_state = _load_trailing_state()
+    if TRAILING_STOP_ENABLED:
+        print(f"  Trailing stop: ENABLED (trail={TRAILING_STOP_TRAIL_PCT:.0%}, "
+              f"min_hold={TRAILING_STOP_MIN_HOLD_HOURS}h)")
+    else:
+        print(f"  Trailing stop: dormant (set TRAILING_STOP_ENABLED=true to arm)")
+
     flagged = 0
     closed  = 0
     for pos in positions:
         symbol = pos["symbol"]
-        decision, exit_price, pl_pct, reason = evaluate(pos)
+        decision, exit_price, pl_pct, reason = evaluate(pos, trailing_state)
         print(f"  {symbol}: {reason} -> {decision}")
         if decision == "HOLD":
             continue
@@ -374,13 +498,20 @@ def run_exit_check():
         qty   = abs(float(pos["qty"]))
         order = place_sell_to_close(symbol, qty, decision, exit_price)
         if order:
-            order_type = "MARKET" if decision in ("SL", "NEARDTH", "REGIME") else "LIMIT"
+            order_type = "MARKET" if decision in ("SL", "NEARDTH", "REGIME", "TRAIL") else "LIMIT"
             print(f"    SELL placed ({order_type}): id={order.get('id')} status={order.get('status')}")
             closed += 1
             notify_exit(symbol, f"SELL_TO_CLOSE_{decision}", reason, pl_pct)
         else:
             # Sell rejected — surface via summary anyway
             print(f"    SELL ODRZUCONY przez Alpaca")
+
+    # Prune trailing_state entries for symbols no longer in open positions.
+    open_symbols = {p["symbol"] for p in positions}
+    for sym in list(trailing_state.keys()):
+        if sym not in open_symbols:
+            del trailing_state[sym]
+    _save_trailing_state(trailing_state)
 
     notify_summary("Options Exit Monitor", flagged, closed)
     print(f"[{now}] Flagged={flagged}, sells placed={closed}\n")

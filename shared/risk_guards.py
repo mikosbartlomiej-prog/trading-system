@@ -238,6 +238,65 @@ def concentration_ok(symbol: str, new_size_usd: float,
     return combined <= POSITION_PCT_CAP, combined
 
 
+def get_open_positions() -> list[dict]:
+    """
+    Fetch ALL open positions in one call (cheaper than per-symbol queries).
+
+    Returns list of normalized dicts:
+      {
+        "symbol":   "AAPL" | "AMZN260520P00270000" (OCC options),
+        "asset_class": "us_equity" | "crypto" | "us_option",
+        "side":     "long" | "short",
+        "qty":      float,
+        "avg_entry_price": float,
+        "current_price":   float,
+        "market_value":    float,
+        "unrealized_pl":   float,
+        "unrealized_plpc": float (already in fractional, e.g. -0.178 for -17.8%),
+      }
+
+    Fail-open: returns [] on missing creds or API error so callers can
+    decide between "no positions" and "API down — assume no positions"
+    via a fallback parameter.
+    """
+    api_key    = os.environ.get("ALPACA_API_KEY", "")
+    secret_key = os.environ.get("ALPACA_SECRET_KEY", "")
+    if not api_key or not secret_key:
+        return []
+    try:
+        r = requests.get(
+            f"{ALPACA_BASE_URL}/v2/positions",
+            headers={
+                "APCA-API-KEY-ID":     api_key,
+                "APCA-API-SECRET-KEY": secret_key,
+            },
+            timeout=10,
+        )
+        if r.status_code != 200:
+            print(f"  positions: HTTP {r.status_code} -> empty list")
+            return []
+        out = []
+        for p in r.json():
+            try:
+                out.append({
+                    "symbol":           p.get("symbol", ""),
+                    "asset_class":      p.get("asset_class", "us_equity"),
+                    "side":             p.get("side", "long"),
+                    "qty":              float(p.get("qty", 0) or 0),
+                    "avg_entry_price":  float(p.get("avg_entry_price", 0) or 0),
+                    "current_price":    float(p.get("current_price", 0) or 0),
+                    "market_value":     float(p.get("market_value", 0) or 0),
+                    "unrealized_pl":    float(p.get("unrealized_pl", 0) or 0),
+                    "unrealized_plpc":  float(p.get("unrealized_plpc", 0) or 0),
+                })
+            except (TypeError, ValueError):
+                continue
+        return out
+    except Exception as e:
+        print(f"  positions: error: {e}")
+        return []
+
+
 def has_open_position(symbol: str) -> bool:
     """
     Check whether Alpaca already holds a position for `symbol`.

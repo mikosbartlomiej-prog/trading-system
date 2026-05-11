@@ -33,6 +33,15 @@ Worker → **Settings** → **Variables and Secrets** → **+ Add variable**
 |---|---|---|
 | `ALPACA_API_KEY` | (same as your GitHub secret) | **Encrypt** |
 | `ALPACA_SECRET_KEY` | (same as your GitHub secret) | **Encrypt** |
+| `GITHUB_TOKEN` | (optional) fine-grained PAT with `Contents: Read` scope on `trading-system` repo | **Encrypt** |
+
+`GITHUB_TOKEN` enables the **Learning loop** panel (active overrides,
+disabled strategies, paused tickers, recent rationale). Without it the
+panel shows "snapshot unavailable" but the rest of the dashboard works.
+
+Create the token at https://github.com/settings/personal-access-tokens/new
+→ scope: only `mikosbartlomiej-prog/trading-system` → permission:
+`Contents: Read-only`. Set 90-day expiry; renew when it expires.
 
 Click **Save and Deploy**.
 
