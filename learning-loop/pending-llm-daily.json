@@ -1,0 +1,90 @@
+{
+  "narrative": "Zaakceptowałem dwie korekty Challengera (wysoka pewność krytyki), utrzymuję jedną. Propozycja 3 zawierała błąd logiczny: exit-tp orders złożono 21:49 UTC, rynek zamknął się o 20:00 UTC — 0% fill to artefakt timing, zero live TP tests faktycznie przeprowadzono; claim 'potwierdza kierunkowo tezę' retraktuję i przywracam oryginalną datę przeglądu 2026-05-17. Propozycja 2 słusznie zmodyfikowana: BTC sideways ~$95k-$105k przez 12 dni implikuje RSI ~45-60, poniżej progów >70/<30 — strategie prawdopodobnie dormant not broken; RSI-first zamiast bezpośredniego grep. Propozycja 1 (attribution fix) broniona: 5/5 sub-claims SURVIVED, trailing stop decision 2026-05-17 ma literalnie zero danych bez tego fixa — priority #1. Q4 Challengera ujawnił lukę: 13.3% cancel rate na options entries (2/15) może być ważniejszym blokerem closed profits niż TP calibration — dodano jako backlog #3.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Zero closed round-trips po 12 dniach; 2 options-momentum losses łącznie -$3.47; GLD/RTX/XLE unrealized +$457 jedyne kandydaty na edge momentum-long (niezrealizowane). Emergency exits 100% fill = backstop sprawny. Options entries 66.7% fill = pipeline techniczny działa; 2 cancellations (13.3%) wymagają wyjaśnienia.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "TP attribution fix — exit orders must embed strategy name in client_order_id",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Challenger potwierdził 5/5 sub-claims: tp_hit_rate['unknown'] blokuje trailing stop decision 2026-05-17 — zero danych bez fixa. Priority #1 przed jakąkolwiek decyzją kalibracyjną. Stress test: $0 dollar risk bezpośredni.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-12",
+      "implementation_sketch": "1. grep options-exit-monitor/monitor.py: format client_order_id przy place_limit_sell\n2. zmien na f'exit-tp-options-momentum-{symbol}-{ts}' i f'exit-sl-options-momentum-{symbol}-{ts}'\n3. grep exit-monitor/monitor.py: analogiczny fix stocks exits\n4. update analyzer.py::_strategy_from_client_id(): regex 'exit-tp-{name}-' prefix\n5. verify: nastepny daily run -> tp_hit_rate['options-momentum'] zamiast 'unknown'"
+    },
+    {
+      "title": "Crypto/geo diagnosis — RSI-first verification before client_order_id audit",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "MODIFIED per Challenger (3/5 sub-claims failed): hipoteza mismatch nieweryfikowalna bez RSI historii. BTC sideways 12 dni sugeruje RSI ~45-60 ponizej progow >70/<30 — dormant not broken. RSI-check first eliminuje 1h debugging non-buga.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-12",
+      "implementation_sketch": "1. Pull BTC/ETH daily bars za 14 dni via shared/market_data.py get_daily_bars\n2. Policz RSI(14) — jesli MAX RSI <65 i MIN RSI >35: dormant not broken, koniec\n3. Jesli RSI byl w zakresie >=2 razy: grep crypto-monitor/monitor.py client_order_id vs state.json keys\n4. Analogicznie SPY proxy dla geo-xom\n5. files dotykane tylko jesli krok 2 potwierdza aktywnosc sygnalow"
+    },
+    {
+      "title": "Options entry cancellations audit — DAY expiry vs limit pricing gap",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate.options-momentum: canceled=2/15 (13.3%). Challenger wskazal ze entry-pricing mismatch moze byc wazniejszym blokerem closed profits niz TP calibration. Diagnoza: expired DAY orders poza session window vs limit zbyt daleko od mark.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-12",
+      "implementation_sketch": "1. Pull Alpaca orders status=canceled dla options, ostatnie 14 dni\n2. Sprawdz canceled_at timestamp vs market session (13:30-20:00 UTC) — jesli after close: fix = nie placuj orders po 19:45 UTC\n3. Sprawdz limit_price vs mark_price w momencie zlozenia — jesli delta >10%: midpoint logic zweryfikowac (post-2026-05-09 fix powinien byc juz w kodzie)\n4. files: options-monitor/monitor.py (pricing logic), skrypt one-shot cancel audit"
+    }
+  ],
+  "revision_log": [
+    {
+      "original_proposal": "heuristic #1: TP attribution fix",
+      "challenger_decision": "SURVIVED",
+      "your_disposition": "DEFENDED",
+      "final_value": "Backlog priority #1, revisit 2026-05-12 — unchanged",
+      "reasoning": "5/5 sub-claims SURVIVED; today_stats.tp_hit_rate kluczem 'unknown' (tp_placed=2, filled=0) potwierdza blind spot od dnia 1. Stress test $0 bezposredni. Challenger wzmocnil priorytet i kolejnosc — zgoda."
+    },
+    {
+      "original_proposal": "heuristic #2: Silent crypto/geo diagnosis",
+      "challenger_decision": "MODIFIED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Modified: RSI-first check; jesli MAX RSI <65 i MIN RSI >35 przez 12 dni -> dormant not broken, grep audit pominieta",
+      "reasoning": "ACCEPTED — 3/5 sub-claims failed (b/c/d). Today_stats nie zawiera BTC RSI historii; BTC sideways ~$95k-$105k implikuje RSI ~45-60; zalozenie mismatch jako 'glowna hipoteza' bylo nieuzasadnione przy braku danych RSI."
+    },
+    {
+      "original_proposal": "heuristic #3: Trailing stop bringforward 2026-05-13",
+      "challenger_decision": "REJECTED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Removed — original 2026-05-17 date przywrocona; minimum 3 live sesje z TP orders aktywnych w oknie rynkowym wymagane przed decyzja",
+      "reasoning": "ACCEPTED — krytyczny blad logiczny: fill_rate.exit-tp placed=2, filled=0 pochodzi z orders zlozonych 21:49 UTC (rynek zamkniety od 20:00 UTC). 4/5 sub-claims failed. Retraktuje claim 'potwierdza kierunkowo teze' — zero live TP tests przeprowadzono."
+    },
+    {
+      "original_proposal": "open_question #1: uzasadnienie 0% fill po zamknietym rynku",
+      "challenger_decision": "REJECTED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Retraktuje twierdzenie 'potwierdza kierunkowo teze'",
+      "reasoning": "Challenger ma racje: orders 21:49 UTC nie mialy technicznej mozliwosci realizacji przy zamknietym rynku 20:00 UTC. Claim byl bledny — zero evidence TP miscalibration z tej obserwacji."
+    },
+    {
+      "original_proposal": "open_question #2: BTC/ETH RSI za 12 dni — czy sprawdzony?",
+      "challenger_decision": "MODIFIED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "Nie mam danych RSI; modyfikacja accepted; RSI-first w propozycji #2",
+      "reasoning": "Nie dysponuje BTC RSI historia za 12 dni w today_stats. Zalozenie mismatch jako 'glowna hipoteza' bylo nieuzasadnione. Challenger sluszny — RSI-first sekwencja w propozycji #2 accepted."
+    },
+    {
+      "original_proposal": "open_question #3: GLD/RTX/XLE exit-monitor recommendations",
+      "challenger_decision": "N/A",
+      "your_disposition": "ADDED",
+      "final_value": "Noted: stock trailing stop review niezalezna od options attribution bug; exit-monitor rekomendacje dla GLD/RTX/XLE do sprawdzenia po sesji 2026-05-12",
+      "reasoning": "GLD/RTX/XLE +$457 unrealized przy 5+ dniach hold — exit-monitor stock pipeline nie wymaga attribution fix. Jesli CONSIDER_TP dla ktorejkolwiek pozycji, to osobna sciezka decyzyjna niezablokowana przez bug opcji."
+    },
+    {
+      "original_proposal": "open_question #4: 2 cancellations options-momentum entries",
+      "challenger_decision": "N/A",
+      "your_disposition": "ADDED",
+      "final_value": "Added backlog #3: entry cancellations audit — DAY expiry vs limit pricing gap, revisit 2026-05-12",
+      "reasoning": "fill_rate.options-momentum canceled=2/15 (13.3%); Challenger poprawnie wskazal ze entry mismatch moze blokowac closed profits bardziej niz TP calibration. Nowe backlog item z revisit 2026-05-12."
+    }
+  ],
+  "confidence": "medium"
+}
