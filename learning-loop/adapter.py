@@ -5,6 +5,7 @@ Heuristics encoded as small testable functions. No I/O — analyzer.py
 owns reading/writing files.
 """
 
+import re
 from copy import deepcopy
 from datetime import datetime, timezone
 
@@ -172,6 +173,59 @@ def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
 
 # ─── Top-level orchestration ─────────────────────────────────────────────────
 
+_UUID_KEY_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-')
+
+
+def _is_uuid_key(name: str) -> bool:
+    """Detect Alpaca bracket order ID artifacts in strategy keys."""
+    return bool(name) and bool(_UUID_KEY_RE.match(name))
+
+
+def _prune_uuid_keys(state: dict) -> tuple[int, list[str]]:
+    """
+    Remove UUID-format strategy keys from state['strategies'].
+
+    LLM proposal 2026-05-09 + 2026-05-10 weekly retro: state.json contains
+    7 legacy UUID keys (fdeebe90-, 62bd8628-, etc.) from old single-leg
+    attribution bug — these never correspond to real strategies and emit
+    noise as '0 trades / 0% WR / $0' in per-strategy reports.
+
+    Returns (count_pruned, list_of_pruned_names).
+    """
+    if not state or not isinstance(state.get("strategies"), dict):
+        return 0, []
+    strats = state["strategies"]
+    pruned = [n for n in list(strats.keys()) if _is_uuid_key(n)]
+    for n in pruned:
+        del strats[n]
+    return len(pruned), pruned
+
+
+def _reset_options_bias_if_no_data(state: dict, today_stats: dict) -> bool:
+    """
+    Auto-clear `global_overrides.options_side_bias` when there's no
+    options-momentum activity to support it.
+
+    LLM proposal 2026-05-09: options_side_bias propagates across days
+    even after the LLM has moved on. If `options-momentum.trades_7d < 3`,
+    we have insufficient evidence for any directional bias — reset to
+    None to prevent stale overrides influencing future entries.
+
+    Returns True if a reset was applied.
+    """
+    if not state or not isinstance(state.get("global_overrides"), dict):
+        return False
+    current_bias = state["global_overrides"].get("options_side_bias")
+    if current_bias is None:
+        return False                      # already clear
+    om_stats = today_stats.get("by_strategy", {}).get("options-momentum", {})
+    trades_7d = om_stats.get("trades_7d", 0)
+    if trades_7d < 3:
+        state["global_overrides"]["options_side_bias"] = None
+        return True
+    return False
+
+
 def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
     """
     Top-level adapter.
@@ -211,6 +265,22 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
     today_iso = today_stats.get("as_of") or datetime.now(timezone.utc).date().isoformat()
     new_state["last_updated"] = datetime.now(timezone.utc).isoformat()
     new_state["days_tracked"] = (state.get("days_tracked", 0) if state else 0) + 1
+
+    # ── Pre-pass cleanups (LLM proposals 2026-05-09 + 2026-05-10) ─────────────
+    # Filter UUID-format strategy keys from previous single-leg attribution
+    # bug (Alpaca bracket order IDs leaked as strategy names).
+    pruned_count, pruned_names = _prune_uuid_keys(new_state)
+    if pruned_count:
+        rationale.append(
+            f"{today_iso} · pruned {pruned_count} UUID artifact strategy keys "
+            f"({', '.join(pruned_names[:3])}{'...' if pruned_count > 3 else ''})"
+        )
+    # Auto-clear options_side_bias when no supporting trade data.
+    if _reset_options_bias_if_no_data(new_state, today_stats):
+        rationale.append(
+            f"{today_iso} · options_side_bias reset to null "
+            f"(zero supporting data in 7d window — proposal 2026-05-09)"
+        )
     new_state["cumulative"]   = {
         "total_trades":     today_stats.get("cumulative_trades",   0),
         "total_pnl_usd":    today_stats.get("cumulative_pnl_usd",  0.0),
