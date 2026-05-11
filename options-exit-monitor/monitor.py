@@ -30,17 +30,43 @@ from datetime import datetime, timezone
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_exit, notify_summary
+    from learning_state import load_strategy_state, load_global_overrides
 except ImportError:
     def notify_exit(*a, **k): pass
     def notify_summary(*a, **k): pass
+    def load_strategy_state(_n): return {}
+    def load_global_overrides(): return {}
 
 ALPACA_API_KEY    = os.environ.get("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY = os.environ.get("ALPACA_SECRET_KEY", "")
 ALPACA_BASE_URL   = "https://paper-api.alpaca.markets"
 
-# v2.0 risk-on (matches options-monitor v2.0)
+# v2.0 risk-on (matches options-monitor v2.0) — DEFAULTS.
+# Effective values can be overridden by adapter's TP feedback loop
+# (LLM proposal 2026-05-09): if `options-momentum.suggested_tp_multiplier`
+# is set in state.json, _effective_tp_mult() uses that instead.
 TP_PREMIUM_MULT = 2.20   # take profit at +120% premium (was +80%)
 SL_PREMIUM_MULT = 0.35   # stop loss at -65% premium    (was -50%)
+
+
+def _effective_tp_mult() -> float:
+    """
+    Return TP multiplier honoring learning-loop's `suggested_tp_multiplier`
+    override. Falls back to TP_PREMIUM_MULT (2.20) if no override.
+
+    The override is set by adapter._apply_tp_feedback when realised hit
+    rate < 20% over 5+ TP placements — current target is too aggressive
+    vs realised price movement. Tightening lets more TPs actually fill
+    (less profit per trade, much higher fill rate = better expected $).
+    """
+    try:
+        cfg = load_strategy_state("options-momentum") or {}
+        sug = cfg.get("suggested_tp_multiplier")
+        if sug is not None:
+            return float(sug)
+    except Exception:
+        pass
+    return TP_PREMIUM_MULT
 
 
 def alpaca_headers() -> dict:
@@ -99,11 +125,14 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     decision == "SL"      -> MARKET (emergency; guarantee fill in falling tape)
     decision == "NEARDTH" -> MARKET (theta-acceleration close; near-expiry
                               spreads are too wide for LIMIT to reliably fill)
+    decision == "REGIME"  -> MARKET (regime mismatch — fill > price; we WANT
+                              out before the position bleeds further)
 
-    Tags client_order_id with `exit-tp-`, `exit-sl-`, or `exit-neardth-`
-    so the analyzer can attribute the close to the right bucket.
+    Tags client_order_id with `exit-tp-`, `exit-sl-`, `exit-neardth-`, or
+    `exit-regime-` so the analyzer can attribute the close to the right
+    bucket.
     """
-    reason = decision.lower()  # "tp", "sl", or "neardth"
+    reason = decision.lower()  # "tp", "sl", "neardth", "regime"
     payload: dict = {
         "symbol":          contract_symbol,
         "qty":             str(int(qty)),
@@ -111,7 +140,7 @@ def place_sell_to_close(contract_symbol: str, qty: int,
         "time_in_force":   "day",
         "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
-    if decision in ("SL", "NEARDTH"):
+    if decision in ("SL", "NEARDTH", "REGIME"):
         payload["type"] = "market"
     else:
         payload["type"]        = "limit"
@@ -127,6 +156,94 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     except Exception as e:
         print(f"  sell-to-close exception: {e}")
         return None
+
+
+# ─── Regime mismatch helpers (LLM proposal 2026-05-09, revisit 2026-05-14) ──
+
+# Trigger conditions for proactive PUT close when learning-loop says we
+# should be long. Catches the AMZN PUT bleeding pattern in current
+# risk_on rally:
+#   - global_overrides.options_side_bias == "long"
+#   - position is a PUT
+#   - current loss <= -15%
+#   - SPY 5d return >= +1.5% (strong risk-on regime)
+# Skip if DTE > 14 AND loss > -25% — still time for thesis to play out.
+REGIME_MISMATCH_LOSS_THRESHOLD     = -15.0   # percent
+REGIME_MISMATCH_SPY_5D_THRESHOLD   = 1.5     # percent
+REGIME_MISMATCH_DTE_GUARD          = 14      # days
+REGIME_MISMATCH_DEEP_LOSS_GUARD    = -25.0   # percent
+
+
+def _is_put(occ_symbol: str) -> bool:
+    """True if OCC symbol is a PUT (P after YYMMDD)."""
+    if not occ_symbol or len(occ_symbol) < 15:
+        return False
+    # rightmost 9 chars = (C|P) + strike(8)
+    return occ_symbol[-9] == "P"
+
+
+def _spy_5d_return() -> float | None:
+    """
+    SPY 5-day percent return (close[-1] / close[-6] - 1) × 100.
+    Returns None if data unavailable.
+
+    Uses shared.market_data.get_daily_bars (cached per run).
+    """
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from market_data import get_daily_bars  # noqa: E402
+        bars = get_daily_bars("SPY", days=10)
+        if not bars or len(bars.get("close", [])) < 6:
+            return None
+        closes = bars["close"]
+        prev = closes[-6]
+        if prev <= 0:
+            return None
+        return (closes[-1] / prev - 1) * 100
+    except Exception:
+        return None
+
+
+def _check_regime_mismatch(pos: dict, pl_pct: float, dte: int | None
+                            ) -> tuple[bool, str]:
+    """
+    Returns (should_close, reason).
+
+    Fires when ALL hold:
+      - options_side_bias == 'long' (from learning-loop state)
+      - position is PUT
+      - pl_pct <= -15%
+      - SPY 5d return >= +1.5%
+      - NOT in deep-loss-with-time guard (DTE > 14 AND pl > -25%)
+    """
+    sym = pos.get("symbol", "")
+    if not _is_put(sym):
+        return False, ""
+
+    try:
+        glob = load_global_overrides() or {}
+    except Exception:
+        glob = {}
+    if glob.get("options_side_bias") != "long":
+        return False, ""
+
+    if pl_pct > REGIME_MISMATCH_LOSS_THRESHOLD:
+        return False, ""                   # not enough loss yet
+
+    spy_5d = _spy_5d_return()
+    if spy_5d is None or spy_5d < REGIME_MISMATCH_SPY_5D_THRESHOLD:
+        return False, ""                   # regime not clearly risk-on
+
+    # Deep-loss-with-time guard: still room for reversal
+    if dte is not None and dte > REGIME_MISMATCH_DTE_GUARD \
+       and pl_pct > REGIME_MISMATCH_DEEP_LOSS_GUARD:
+        return False, ""
+
+    return True, (
+        f"side_bias=long + PUT + pl {pl_pct:+.1f}% (<={REGIME_MISMATCH_LOSS_THRESHOLD}%) "
+        f"+ SPY 5d {spy_5d:+.1f}% (>={REGIME_MISMATCH_SPY_5D_THRESHOLD}%) "
+        f"-> regime mismatch close"
+    )
 
 
 def _occ_dte(occ_symbol: str) -> int | None:
@@ -195,11 +312,20 @@ def evaluate(pos: dict) -> tuple[str, float | None, float, str]:
         return ("HOLD", None, 0.0, "missing entry / current / qty")
 
     pl_pct = (current - entry) / entry * 100
-    tp_lvl = entry * TP_PREMIUM_MULT
+    tp_mult = _effective_tp_mult()      # honors learning-loop TP feedback
+    tp_lvl = entry * tp_mult
     sl_lvl = entry * SL_PREMIUM_MULT
-
-    # Near-expiry accelerated close (highest priority)
     dte = _occ_dte(pos.get("symbol", ""))
+
+    # Regime mismatch — proactive PUT close when learning-loop says
+    # options_side_bias=long and SPY is in risk-on rally (proposal 2026-
+    # 05-09). Sits ABOVE NEARDTH because regime mismatch should fire
+    # earlier (before theta acceleration) when conditions are right.
+    rm_fire, rm_reason = _check_regime_mismatch(pos, pl_pct, dte)
+    if rm_fire:
+        return ("REGIME", current, pl_pct, rm_reason)
+
+    # Near-expiry accelerated close
     if dte is not None and dte <= NEAR_DTH_DTE_THRESHOLD and pl_pct <= NEAR_DTH_LOSS_THRESHOLD:
         return ("NEARDTH", current, pl_pct,
                 f"DTE={dte}d (<={NEAR_DTH_DTE_THRESHOLD}) + pl {pl_pct:+.1f}% (<={NEAR_DTH_LOSS_THRESHOLD}%) "
@@ -248,7 +374,7 @@ def run_exit_check():
         qty   = abs(float(pos["qty"]))
         order = place_sell_to_close(symbol, qty, decision, exit_price)
         if order:
-            order_type = "MARKET" if decision == "SL" else "LIMIT"
+            order_type = "MARKET" if decision in ("SL", "NEARDTH", "REGIME") else "LIMIT"
             print(f"    SELL placed ({order_type}): id={order.get('id')} status={order.get('status')}")
             closed += 1
             notify_exit(symbol, f"SELL_TO_CLOSE_{decision}", reason, pl_pct)

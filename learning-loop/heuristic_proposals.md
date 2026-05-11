@@ -41,7 +41,7 @@
 <!-- proposals could process it. Manually appended here as Lane 3. -->
 <!-- ============================================================ -->
 
-- [ ] [2026-05-09] **Regime mismatch exit: proactive PUT close when side_bias=long + SPY uptrend** _(risk: medium, effort: 2-3h, revisit: 2026-05-14)_
+- [x] [2026-05-09] **Regime mismatch exit: proactive PUT close when side_bias=long + SPY uptrend** ✅ DONE 2026-05-11 — `_check_regime_mismatch` w options-exit-monitor (rate-checked before NEARDTH). Fires gdy: `options_side_bias=long AND PUT AND pl<=-15% AND SPY 5d>=+1.5%`. Guard: skip jeśli `DTE>14 AND pl in (-25%, -15%)` (zostaw room na reversal). Decision "REGIME" → MARKET sell-to-close. client_order_id: `exit-regime-*`. 7 smoke tests pass (PUT vs CALL detection, bias=short skip, pl>-15 skip, DTE>14 deep-loss-guard, fires correctly on AMZN PUT-style setup, fires on deep loss regardless of DTE).
   - **Rationale:** Gdy LLM ustawia `options_side_bias=long` w risk_on rally, stare PUT pozycje krwawią bez mechanizmu proaktywnego zamknięcia. Statyczny SL=entry*0.50 to za daleko — tracimy więcej niż konieczne zanim SL się aktywuje. Potrzebny dodatkowy trigger: jeśli `side_bias='long' AND pozycja jest PUT AND strata > -15% AND SPY 5d return > +1.5%`, zamknąć po midpoint niezależnie od SL.
   - **Sketch:**
     1. `options-exit-monitor/monitor.py`: po głównej pętli SL/TP dodaj blok `regime_mismatch_check`.
@@ -52,7 +52,7 @@
     6. `notify_exit reason='regime_mismatch'`.
     7. DTE guard: skip jeśli `DTE>14 AND strata < -25%` (można jeszcze odwrócić).
 
-- [ ] [2026-05-09] **TP hit rate feedback loop: tighten TP multiplier when miss rate > 80% on 5+ placements** _(risk: low, effort: 1h, revisit: 2026-05-17)_
+- [x] [2026-05-09] **TP hit rate feedback loop: tighten TP multiplier when miss rate > 80% on 5+ placements** ✅ DONE 2026-05-11 — `_apply_tp_feedback` helper w adapter.py: gdy `tp_hit_rate < 0.20 AND tp_placed >= 5`, set `state.strategies[s].suggested_tp_multiplier = 1.4`. `_effective_tp_mult()` w options-exit-monitor czyta state.json przy każdym tick'u, fallback do default TP_PREMIUM_MULT=2.20.
   - **Rationale:** `exit-tp-qqq699` canceled (tp_hit_rate 0% / 1 placed) to wczesny sygnał że TP=entry*1.8 jest za daleko w normalnych warunkach. `analyzer.py` liczy tp_hit_rate ale brak feedbacku do exit monitorów. Gdy `hit_rate < 0.20 AND tp_placed >= 5`, dynamicznie redukować TP multiplier do 1.4× — mniej per-trade zysku, dramatycznie lepsza wypełnioność.
   - **Sketch:**
     1. `analyzer.py compute_tp_hit_rate()`: dodaj per-strategy breakdown (obecnie 'unknown' bo brak client_order_id attribution w `exit-tp-*` orders).
@@ -62,7 +62,7 @@
     5. **Uwaga:** to tylko options — stock TP/SL w exit-monitor ma osobną logikę.
 - [x] [2026-05-09] **UUID strategy artifact pruning in analyzer — filter phantom state.json entries** ✅ DONE 2026-05-11 — `_is_uuid_key` + `_prune_uuid_keys` helpers w adapter.py, wywoływane na początku `adapt()`. Emituje rationale "pruned N UUID artifact strategy keys (...)". 7 UUID kluczy (fdeebe90, 62bd8628, b514d159, 2a526531, 5422a1fc, b4067979, 6b1dbd5a) zostanie wyczyszczone następnym daily-learning cronem.
 - [x] [2026-05-09] **options_side_bias auto-clear gdy zero options trades w 7d window** ✅ DONE 2026-05-11 — `_reset_options_bias_if_no_data` helper w adapter.py. Reset gdy `options-momentum.trades_7d < 3`. State.json już pokazuje `options_side_bias: None` (zerowane wcześniej — być może manualnie); helper zapobiegnie regression.
-- [ ] [2026-05-10] **Flag enabled strategies with 0 trades after 10+ days tracked** _(risk: low, effort: ?, revisit: no specific date)_
+- [x] [2026-05-10] **Flag enabled strategies with 0 trades after 10+ days tracked** ✅ DONE 2026-05-11 — `_flag_silent_strategies` w adapter.py: gdy `days_tracked >= 10 AND enabled=True AND trades_lifetime == 0 AND trades_7d == 0` → emit rationale "X: SILENT — enabled but 0 trades lifetime". Nie auto-disable — operator/LLM decyduje.
   - **Rationale:** 11 dni trackingu, 0 closed trades we wszystkich strategiach widocznych w today_stats. Heurystyka diagnostyczna: enabled=True + trades_lifetime=0 + days_tracked>=10 → warning w rationale.md. Challenger fix wdrożony: days_tracked = (today - SYSTEM_START_DATE).days gdzie SYSTEM_START_DATE = date(2026, 4, 29) stała w code_patch.
 - [x] [2026-05-10] **UUID strategy key pruning in state.json** ✅ DONE 2026-05-11 (duplicate of 2026-05-09 — see entry above for impl details)
   - **Rationale:** 7 UUID-named kluczy zaśmieca state.json i maskuje prawdziwe strategie. Challenger wskazał brak backup step — dodany jako krok 0. Regex zaostrzony do dwuczęściowego UUID prefix zmniejszającego false positive risk. Revisit jutro (2026-05-11).

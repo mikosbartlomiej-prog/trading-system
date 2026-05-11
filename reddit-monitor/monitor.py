@@ -385,6 +385,17 @@ class RedditClient:
             {"t": t, "limit": limit},
         )
 
+    def get_hot(self, sub: str, limit: int = 15) -> list[dict]:
+        """
+        Fetch hot posts from r/<sub>/hot.json — what's catching fire RIGHT
+        NOW (last few hours). Complementary to get_top which shows whole-
+        day winners. Hot picks up fresh signals before they peak.
+        """
+        return self._get_listing(
+            f"/r/{sub}/hot.json",
+            {"limit": limit},
+        )
+
     def get_user_submissions(self, username: str, limit: int = 10,
                               sort: str = "new") -> list[dict]:
         """Fetch /user/<name>/submitted.json — last N posts by user."""
@@ -533,7 +544,7 @@ def evaluate_post(post: dict, sub_cfg: dict, whitelist: set[str]
     if not tickers:
         return [], "no_whitelist_ticker"
 
-    excerpt = (post["title"] + " — " + post["selftext"])[:500]
+    excerpt = (post["title"] + " — " + post["selftext"])[:1500]
     out = []
     for t in tickers:
         s = sentiment_around(text, t)
@@ -578,7 +589,7 @@ def evaluate_user_post(post: dict, user_cfg: dict, whitelist: set[str],
     if not tickers:
         return [], "no_whitelist_ticker"
 
-    excerpt = (post["title"] + " — " + post["selftext"])[:500]
+    excerpt = (post["title"] + " — " + post["selftext"])[:1500]
     out = []
     for t in tickers:
         s = sentiment_around(text, t)
@@ -931,10 +942,21 @@ def run_scan() -> int:
     print(f"  Lane B — user signals after sentiment filter: {len(user_signals)}")
 
     # ── Lane A: subs ─────────────────────────────────────────────────────
+    # Two listings per sub: TOP (whole-day winners) + HOT (catching fire
+    # right now). Dedup by post id so we don't double-count posts that
+    # appear in both feeds (commonly: yesterday's top is today's hot).
     all_post_signals: list[dict] = []
     for sub_cfg in subs:
         print(f"  → r/{sub_cfg['sub']} (cat={sub_cfg['category']})...")
-        posts = client.get_top(sub_cfg["sub"], t="day", limit=25)
+        top_posts = client.get_top(sub_cfg["sub"], t="day", limit=25)
+        time.sleep(INTER_REQUEST_DELAY_S)
+        hot_posts = client.get_hot(sub_cfg["sub"], limit=15)
+        seen_ids: set[str] = set()
+        posts: list[dict] = []
+        for p in top_posts + hot_posts:
+            if p["id"] and p["id"] not in seen_ids:
+                seen_ids.add(p["id"])
+                posts.append(p)
         kept = 0
         reasons: dict[str, int] = defaultdict(int)
         for p in posts:
@@ -945,7 +967,8 @@ def run_scan() -> int:
             elif reason:
                 reasons[reason] += 1
         rej_summary = ", ".join(f"{r}×{n}" for r, n in sorted(reasons.items())) or "(none)"
-        print(f"    {len(posts)} posts → {kept} mentions kept; rejections: {rej_summary}")
+        print(f"    top={len(top_posts)}+hot={len(hot_posts)}=unique {len(posts)} "
+              f"→ {kept} mentions kept; rejections: {rej_summary}")
         time.sleep(INTER_REQUEST_DELAY_S)
 
     per_ticker = aggregate_per_ticker(all_post_signals) if all_post_signals else {}

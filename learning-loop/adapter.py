@@ -173,6 +173,81 @@ def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
 
 # ─── Top-level orchestration ─────────────────────────────────────────────────
 
+def _apply_tp_feedback(state: dict, today_stats: dict) -> list[str]:
+    """
+    LLM proposal 2026-05-09: TP feedback loop.
+
+    When a strategy's static TP target is missing too often (hit_rate
+    < 0.20 over 5+ placements), the target is too aggressive vs realised
+    price movement. Record a `suggested_tp_multiplier` of 1.4 (down
+    from default 1.8) in state['strategies'][s]; options-exit-monitor
+    reads this on next tick and uses tighter TP.
+
+    Returns list of rationale lines (one per strategy where TP was
+    tightened).
+    """
+    if not state or not isinstance(state.get("strategies"), dict):
+        return []
+    tp_hr = today_stats.get("tp_hit_rate") or {}
+    if not isinstance(tp_hr, dict):
+        return []
+
+    out: list[str] = []
+    for strat, stats in tp_hr.items():
+        if not isinstance(stats, dict):
+            continue
+        placed = stats.get("tp_placed", 0)
+        hit = stats.get("tp_hit_rate", 0.0)
+        if placed < 5 or hit >= 0.20:
+            continue
+        if strat not in state["strategies"]:
+            continue
+        cur = state["strategies"][strat].get("suggested_tp_multiplier", 1.8)
+        if cur == 1.4:
+            continue                       # already tightened
+        state["strategies"][strat]["suggested_tp_multiplier"] = 1.4
+        out.append(
+            f"{strat}: suggested_tp_multiplier {cur:.1f} -> 1.4 "
+            f"(hit_rate {hit:.0%} on {placed} placements — TP too far)"
+        )
+    return out
+
+
+def _flag_silent_strategies(state: dict, today_stats: dict,
+                              min_days: int = 10) -> list[str]:
+    """
+    LLM proposal 2026-05-10: flag strategies that are `enabled=True` but
+    have produced zero trades for `min_days` days. They sit in state.json
+    consuming attention budget in LLM payload but contribute nothing.
+
+    We DON'T auto-disable — that's a policy decision the LLM/operator
+    should make. We just emit a rationale flag so they're visible.
+
+    Returns list of rationale lines (one per silent strategy).
+    """
+    if not state or not isinstance(state.get("strategies"), dict):
+        return []
+    days_tracked = state.get("days_tracked", 0) or 0
+    if days_tracked < min_days:
+        return []                          # not enough history yet
+
+    by_strat = today_stats.get("by_strategy") or {}
+    out: list[str] = []
+    for name, cfg in state["strategies"].items():
+        if not cfg.get("enabled", True):
+            continue                       # disabled is fine
+        stats = by_strat.get(name) or {}
+        if stats.get("trades_lifetime", 0) > 0:
+            continue                       # has trades at some point
+        if stats.get("trades_7d", 0) > 0:
+            continue                       # active this week
+        out.append(
+            f"{name}: SILENT — enabled but 0 trades lifetime "
+            f"({days_tracked} days tracked); consider disable or remove"
+        )
+    return out
+
+
 _UUID_KEY_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-')
 
 
@@ -281,6 +356,13 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             f"{today_iso} · options_side_bias reset to null "
             f"(zero supporting data in 7d window — proposal 2026-05-09)"
         )
+    # TP feedback loop (LLM proposal 2026-05-09): tighten suggested_tp_
+    # multiplier when realised hit rate is poor.
+    for line in _apply_tp_feedback(new_state, today_stats):
+        rationale.append(f"{today_iso} · TP feedback: {line}")
+    # Silent-strategy flag (LLM proposal 2026-05-10): surface zombies.
+    for line in _flag_silent_strategies(new_state, today_stats, min_days=10):
+        rationale.append(f"{today_iso} · {line}")
     new_state["cumulative"]   = {
         "total_trades":     today_stats.get("cumulative_trades",   0),
         "total_pnl_usd":    today_stats.get("cumulative_pnl_usd",  0.0),
