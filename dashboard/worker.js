@@ -56,8 +56,13 @@ async function githubReadFile(env, path) {
     if (!r.ok) return null;
     const data = await r.json();
     if (!data.content) return null;
-    // GitHub returns base64 with line breaks; atob handles that.
-    const raw = atob(data.content.replace(/\n/g, ""));
+    // GitHub returns base64 (with line breaks). atob → binary string of
+    // bytes 0-255. For UTF-8 source (polskie znaki, `·`, em-dashes etc.)
+    // we MUST run TextDecoder so multibyte sequences are decoded
+    // correctly — otherwise we get mojibake (`Â·` instead of `·`).
+    const binary = atob(data.content.replace(/\n/g, ""));
+    const bytes  = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const raw    = new TextDecoder("utf-8").decode(bytes);
     if (path.endsWith(".json")) {
       try { return JSON.parse(raw); } catch { return null; }
     }
