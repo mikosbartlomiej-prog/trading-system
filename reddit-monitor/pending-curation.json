@@ -1,12 +1,12 @@
 {
-  "narrative": "MSFT 'jedyny laggard big tech' teza z 2 wzmianek — spike_ratio=99 to artefakt zerowej 7d baseline, nie prawdziwy spike. Argument krąży od tygodni i sam post przyznaje że 'prawie wszyscy o tym mówią' — to stary konsensus, nie fresh alpha. Brak named katalizatora na 1-72h; odrzucamy, portfel czysty, czekamy na prawdziwy momentum setup.",
+  "narrative": "Jedyny kandydat — MSFT BUY z spike_ratio=99 to artefakt zerowej 7d baseline (3 wzmianki / 0 avg = false infinite spike). Teza 'MSFT jedyny laggard big tech mimo 2x earnings beat' to konsensus od tygodni — sam post przyznaje 'prawie wszyscy o tym mówią'. Co gorsza, Post 2 to BEARISH catalyst: Chris Hohn TCI (rekordowo zyskowny hedge fund w zeszłym roku) redukuje MSFT 10%→1% i rotuje do GOOGL z powodu obaw o AI moat. Portfel już załadowany bearish optionami (SPY/QQQ/GOOGL/AMZN puty). Zero edge, odrzucamy, bankroll chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "MSFT",
-      "reason": "spike_ratio=99 jest artefaktem zerowej 7d baseline (tylko 2 wzmianki = brak prawdziwego spike'u); teza 'jedyny laggard big tech mimo 2x earnings beat' to powszechny konsensus od tygodni (post sam stwierdza 'almost everybody talks about it'); brak świeżego katalizatora <24h; value catch-up trade bez named event nie generuje 1-72h momentum edge."
+      "reason": "spike_ratio=99 jest artefaktem zerowej 7d baseline — tylko 3 wzmianki, brak prawdziwego spike'u; teza value catch-up to stary konsensus (post sam stwierdza 'almost everybody talks about it'); Post 2 jest BEARISH catalyst (Chris Hohn TCI redukuje MSFT 10%→1% rotując do GOOGL z obawy o AI moat MSFT) — przeciwny kierunek do proponowanego BUY; brak świeżego named catalyst <24h dla 1-72h momentum play."
     }
   ],
-  "macro_context": "VIX 17, risk-on, dzienne -0.49% — czyste konto bez otwartych pozycji, ale dziś żaden kandydat nie spełnia kryteriów momentum entry z wystarczającym świeżym katalizatorem.",
+  "macro_context": "VIX 17, risk-on, dzienne +0.46% — portfel mocno obciążony bearish optionami (SPY/QQQ/GOOGL/AMZN puty), dodanie long MSFT equity byłoby mieszanym hedgiem bez katalizatora; żaden kandydat dziś nie spełnia momentum entry criteria.",
   "confidence_in_curation": "high"
 }
