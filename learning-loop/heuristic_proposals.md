@@ -86,3 +86,23 @@ Priorytety: najpierw options (AMZN PUT, tp=entry*1.80 znane), potem stocks.
 - [ ] [2026-05-10] WEEKLY EXP: SPY 5d return check jako pre-filter dla options direction (PUT tylko jeśli SPY 5d < -2%; CALL tylko jeśli SPY 5d > +2%) zredukuje AMZN-PUT-style blunders. Backtest koncepcji: w tygodniu risk_on (SPY 5d > +2%) AMZN PUT nie zostałby otwarty. (metric: Dodać 1-linijkowy log w options-monitor: 'SPY 5d return: X%'. Przez następny tydzień ręcznie porównaj: które opcje zostałyby zablokowane przez ten filter vs ile faktycznie otwarto. Jeśli filter blokowałby <30% sygnałów = implementować; jeśli >50% = za restrykcyjny.)
 - [x] [2026-05-10] WEEKLY EXP: Reddit Curator E2E ✅ **CONFIRMED 2026-05-11 15:57 UTC** — commit `c054e4b` "llm: reddit_curate 2026-05-11_1557" zawiera real Curator output: 1 candidate (MSFT) skanowany, `selected_signals=[]` z brutalnym predator-grade rationale ("spike_ratio=99 artefakt zerowej 7d baseline; teza 'almost everybody talks about it' = stary konsensus; brak fresh katalizatora"). confidence=high. Pipeline działa end-to-end. (Side note: auto-merge.yml failnęła na race z reddit-monitor cron push tego samego momentu — fix `retry-on-non-fast-forward` shipped w tym samym batch'u.)
 - [x] [2026-05-10] WEEKLY EXP: UUID strategy keys pruning ✅ DONE 2026-05-11 — `_prune_uuid_keys` helper w adapter.py, wywoływany w `adapt()`. Wyczyści 7 UUID kluczy następnym daily-learning cronem. Pre-implementation audit: żaden UUID nie miał trades_7d > 0 (potwierdzone pre-prune).
+- [ ] [2026-05-11] **TP attribution fix — exit orders must embed strategy name in client_order_id** _(risk: low, effort: 1h, revisit: 2026-05-12)_
+  - **Rationale:** Challenger potwierdził 5/5 sub-claims: tp_hit_rate['unknown'] blokuje trailing stop decision 2026-05-17 — zero danych bez fixa. Priority #1 przed jakąkolwiek decyzją kalibracyjną. Stress test: $0 dollar risk bezpośredni.
+  - **Sketch:** 1. grep options-exit-monitor/monitor.py: format client_order_id przy place_limit_sell
+2. zmien na f'exit-tp-options-momentum-{symbol}-{ts}' i f'exit-sl-options-momentum-{symbol}-{ts}'
+3. grep exit-monitor/monitor.py: analogiczny fix stocks exits
+4. update analyzer.py::_strategy_from_client_id(): regex 'exit-tp-{name}-' prefix
+5. verify: nastepny daily run -> tp_hit_rate['options-momentum'] zamiast 'unknown'
+- [ ] [2026-05-11] **Crypto/geo diagnosis — RSI-first verification before client_order_id audit** _(risk: low, effort: 1h, revisit: 2026-05-12)_
+  - **Rationale:** MODIFIED per Challenger (3/5 sub-claims failed): hipoteza mismatch nieweryfikowalna bez RSI historii. BTC sideways 12 dni sugeruje RSI ~45-60 ponizej progow >70/<30 — dormant not broken. RSI-check first eliminuje 1h debugging non-buga.
+  - **Sketch:** 1. Pull BTC/ETH daily bars za 14 dni via shared/market_data.py get_daily_bars
+2. Policz RSI(14) — jesli MAX RSI <65 i MIN RSI >35: dormant not broken, koniec
+3. Jesli RSI byl w zakresie >=2 razy: grep crypto-monitor/monitor.py client_order_id vs state.json keys
+4. Analogicznie SPY proxy dla geo-xom
+5. files dotykane tylko jesli krok 2 potwierdza aktywnosc sygnalow
+- [ ] [2026-05-11] **Options entry cancellations audit — DAY expiry vs limit pricing gap** _(risk: low, effort: 1h, revisit: 2026-05-12)_
+  - **Rationale:** fill_rate.options-momentum: canceled=2/15 (13.3%). Challenger wskazal ze entry-pricing mismatch moze byc wazniejszym blokerem closed profits niz TP calibration. Diagnoza: expired DAY orders poza session window vs limit zbyt daleko od mark.
+  - **Sketch:** 1. Pull Alpaca orders status=canceled dla options, ostatnie 14 dni
+2. Sprawdz canceled_at timestamp vs market session (13:30-20:00 UTC) — jesli after close: fix = nie placuj orders po 19:45 UTC
+3. Sprawdz limit_price vs mark_price w momencie zlozenia — jesli delta >10%: midpoint logic zweryfikowac (post-2026-05-09 fix powinien byc juz w kodzie)
+4. files: options-monitor/monitor.py (pricing logic), skrypt one-shot cancel audit
