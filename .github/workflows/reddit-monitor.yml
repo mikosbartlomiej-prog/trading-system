@@ -1,8 +1,21 @@
 name: Reddit Monitor — sentiment + tracked-user scan
 
+# No Reddit API approval required — uses public .json endpoints with
+# proper User-Agent and conservative polling (~10 req/h).
+#
+# Two signal lanes per run:
+#   Lane A: top.json scan over curated subs (.claude/rules/reddit-subs.md)
+#   Lane B: per-user submitted.json over tracked DD writers
+#           (.claude/rules/reddit-users.md)
+
 on:
   schedule:
-    - cron: '0 13,14,15,16,17,18,19,20 * * 1-5'
+    # v3.2 (2026-05-12): every 30 min 24/7. Reddit DD posts surface around
+    # the clock; ToS-safe at 30-min cadence (~12 req/h cumulative across
+    # 6 subs, well under anonymous limit). Per-instrument trading window
+    # in shared/instrument_windows.py gates order placement, so off-hours
+    # signals route to [QUEUED] email and replay when relevant market opens.
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
