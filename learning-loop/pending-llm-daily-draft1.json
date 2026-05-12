@@ -1,0 +1,41 @@
+{
+  "narrative": "Trzynasty dzień operacyjny, equity $97,173 (-$149 dziś, -3.83% od starting equity). Jedyna zamknięta pozycja w całej historii systemu: options-momentum 1 trade / 0% WR / -$0.60 — statystycznie nieistotna. Kluczowe odkrycie dziś: RSI snapshot po raz pierwszy zasilony — SPY = 76.5 (overbought), BTC = 68.3, ETH = 49.7. Null side_bias przy SPY RSI 76.5 to strukturalny mismatch — przełączam globalny options bias na short (PUT) jako makro-regime call. NVDA 8 mention-spike na Reddit (vs 1 dzień wcześniej) — potencjalny 6× spike ponad rolling avg; wymaga weryfikacji, czy reddit-monitor wychwycił i wysłał sygnał.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Zero potwierdzonych krawędzi po 13 dniach — 1 trade, $-0.60 lifetime. GLD/RTX/XLE unrealized +$457 to jedyne kandydaty na edge momentum-long, niezrealizowane. Crypto dormant przy RSI BTC 68.3/ETH 49.7 — brak progów RSI >70 lub <30, strategie poprawnie cicho. SPY overbought RSI 76.5 przesuwa prior mean reversion — opcje PUT premiowane w obecnym reżimie.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Geo-xom pipeline audit — 13 dni bez sygnału, diagnoza przed decyzją disable/keep",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Strategia geo-xom włączona 13 dni, 0 tradów — adapter flaguje 'SILENT'. Przed disable należy odróżnić dwa scenariusze: (A) geo-monitor w ogóle nie generuje sygnałów XOM/energy (pipeline broken lub brak geo-eventów kwalifikujących); (B) sygnały generowane ale blokowane przez guardy (VIX, concentration, drawdown). Scenariusz A = broken pipeline wymagający code fix; Scenariusz B = overfiltered wymagający calibration. Bez diagnozy disable usuwa strategię z nieznanych przyczyn.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-14",
+      "implementation_sketch": "1. Pobierz ostatnie 10 logów geo-monitor workflow z GitHub Actions (Actions tab → geo-monitor.yml). 2. Szukaj linii 'XOM', 'energy', 'oil', 'OXY', 'CVX' — jakiekolwiek XOM-relevant content. 3. Jeśli brak jakichkolwiek XOM sygnałów wygenerowanych (Scenariusz A): disable geo-xom w state.json (enabled=false, rationale='pipeline nie generuje XOM sygnałów — needs geo-monitor code audit'); sprawdź geo-monitor/monitor.py czy XOM/energy sector jest w SIGNAL_TICKERS lub equivalent. 4. Jeśli sygnały generowane ale blokowane (Scenariusz B): zidentyfikuj który guard blokuje (log linie 'pominiety'), rozważ relaxation. 5. Deadline: 2026-05-14 — jeśli diagnoza niewykonalna, disable tymczasowy aż do code-fix."
+    },
+    {
+      "title": "NVDA Reddit spike 8× — weryfikacja pipeline end-to-end",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "NVDA: 8 mentions 2026-05-12 vs 1 mention 2026-05-11 — potencjalny ~6× dzienny spike vs rolling 7d avg (~1.3/dzień). AMD: 4 mentions (AI semis cohort). Próg spike w reddit-monitor = 3× rolling avg — powinien być przekroczony. Wymaga weryfikacji: czy email [BUY] NVDA przyszedł dziś od reddit-monitora? Jeśli nie — zidentyfikować blokadę (sentiment_skew, Curator rejection, concentration guard, MAX_ALERTS_PER_LANE już wyczerpany).",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-13",
+      "implementation_sketch": "1. Sprawdź email inbox: czy przyszedł [BUY] NVDA od reddit-monitor w dniu 2026-05-12? 2. Jeśli nie: pobierz log reddit-monitor workflow z 2026-05-12 z GitHub Actions. 3. Sprawdź: (a) czy spike_ratio dla NVDA obliczony i > 3.0? (b) czy sentiment_skew >= 0.3? (c) czy Curator LLM odrzucił NVDA ('ZERO emit' lub competitor rated higher)? (d) czy MAX_ALERTS_PER_LANE=1 był już wyczerpany przez inny ticker wcześniej w tej samej rundzie? 4. Jeśli pipeline milczał mimo spike: dodaj debug log 'NVDA: spike_ratio=X, skew=Y, curator_selected=Z' do reddit-monitor/monitor.py dla przyszłych diagnoz. 5. AMD 4 mentions: sprawdź analogicznie — AI semis cohort ruszył razem (NVDA leading indicator)."
+    },
+    {
+      "title": "Options DAY expiry mitigation — anuluj i re-price po 120 min bez fillu",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "2/10 options-momentum orders wygasło jako DAY (avg 325 min = 5.4h, max 390 min = 6.5h = pełny dzień handlowy). Midpoint pricing (2026-05-09) nie eliminuje problemu — 20% strata fill rate. Ordery złożone przy otwarciu siedzą cały dzień bo limit za daleko od rynku lub spread za szeroki. Zamiast tracić budżet na no-fill, re-price po 120 min na ask (take liquidity) daje szansę wypełnienia w oknie popołudniowym.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-17",
+      "implementation_sketch": "1. W options-monitor/monitor.py: po każdym złożonym order zapisuj {order_id, contract, submitted_at, limit_price, strategy} do state.json::pending_option_orders[]. 2. W options-exit-monitor/monitor.py (lub nowym check-bloku): per każdy pending_option_order starszy niż 120 min i status=open → DELETE /v2/orders/{id} → nowy order z limit=ask*1.01 (fractional tick above ask dla immediate fill). 3. Zabezpieczenia: (a) max 1 re-price per order_id (flaga re_priced=True w state); (b) nie re-price po 18:30 UTC (za blisko 20:00 close); (c) re-priced order przez ten sam risk_officer.evaluate_trade(); (d) notify_order_executed z '[RE-PRICED]' prefix. 4. Pliki dotknięte: options-monitor/monitor.py (state.json write), options-exit-monitor/monitor.py (re-pricing loop), learning-loop/state.json (nowy klucz pending_option_orders). 5. Alternatywa uproszczona: zmień TIF z DAY na GTC + set cancel_after=2h — sprawdź czy Alpaca paper obsługuje GTD/cancel_after parametr."
+    }
+  ],
+  "confidence": "medium"
+}
