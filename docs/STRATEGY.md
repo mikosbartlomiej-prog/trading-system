@@ -186,21 +186,51 @@ constants in monitors must equal these.
 | Max hold | 96 hours |
 | Max concurrent | 4 |
 
-### 4.4 Crypto (BTC, ETH)
+### 4.4 Crypto (predator-grade — BTC/ETH + 9 mid-cap alts, v2.4 2026-05-12)
 
 **Strategy file:** `strategies/crypto-strategy.md`
 **Monitor:** `crypto-monitor` (cron `0,30 * * * *`, 24/7)
+**Universe:** 11 coins across 2 tiers
+**LLM filter:** `crypto-monitor/llm_curator.py` + Curator routine
+(predator on-chain trader persona; 0-3 selected per scan, fail-soft
+to heuristic order on Curator unavailability).
+
+#### Tier 1 — proven majors (BTC, ETH)
 
 | Parameter | BTC LONG | BTC SHORT | ETH LONG | ETH SHORT |
 |---|---|---|---|---|
-| Size weekday | **$8,000** | **$6,000** | **$4,000** | **$3,000** |
-| Size weekend | **$8,000** | **$6,000** | **$4,000** | **$3,000** |
+| Size | **$8,000** | **$6,000** | **$4,000** | **$3,000** |
 | Stop-loss | -7% | +7% | -7% | +7% |
 | Take-profit | +20% | -20% | +20% | -20% |
 | R:R | ~2.9 | ~2.9 | ~2.9 | ~2.9 |
-| Max simultaneous exposure (USD across BTC+ETH) | $25,000 |
-| Entry LONG | 1h close > 20-bar high + RSI 45-68 + volume 2× avg |
-| Entry SHORT | 1h close < 20-bar low + RSI < 35 + volume 1.5× avg |
+| Volume mult | 2.0× avg | 1.5× avg | 2.0× avg | 1.5× avg |
+| RSI band | 45-68 long | <35 short | 45-68 long | <35 short |
+
+#### Tier 2 — mid-cap alts (quick wins, tighter cycles)
+
+**Coins:** SOL, AVAX, LINK, DOT, MATIC, LTC, BCH, UNI, AAVE (all /USD)
+
+| Parameter | LONG | SHORT |
+|---|---|---|
+| Size | **$2,500** each | **$2,000** each |
+| Stop-loss | -8% | +8% |
+| Take-profit | +10% | -10% |
+| R:R | ~1.25 | ~1.25 |
+| Volume mult | 3.0× avg | 2.5× avg |
+| RSI band | 45-65 long | <35 short |
+
+Lower R:R is acceptable because Tier 2 setups cycle FASTER — predator
+philosophy: 5-10 small wins/week > 1 big win that reversed.
+
+#### Predator filters (applied to ALL tiers)
+
+| Filter | Rule |
+|---|---|
+| 24h momentum | move must be in **[3%, 15%]** range (skip stalls + late-pump traps) |
+| BTC dominance | if BTC -3% in last 1h → **block alt longs** (correlated crash) |
+| Alt position cap | max **3 simultaneous Tier 2 open positions** |
+| Combined exposure | max **$25,000** across all 11 coins (unchanged v2.0) |
+| LLM Curator | validates each candidate; can boost size 0.5-1.5× or reject |
 
 The previous "weekend halving" rule is REMOVED. Volume in crypto is high
 enough on weekends that the discount is unnecessary.

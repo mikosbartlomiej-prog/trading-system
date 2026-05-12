@@ -1,0 +1,71 @@
+name: Crypto Monitor — 11 coins predator scan (24/7)
+
+# v2.4 (2026-05-12): expanded universe (BTC/ETH + 9 mid-cap alts) + LLM
+# Curator filter + predator filters (24h momentum bracket, BTC dominance
+# guard, alt position cap).
+#
+# Paste this file via GitHub UI to .github/workflows/crypto-monitor.yml
+# (proxy blocks workflow pushes from agent sessions).
+
+on:
+  schedule:
+    # Every 30 min, 24/7 (split into two crons because GH Actions
+    # doesn't support */30 with weekend flag)
+    - cron: '0 * * * *'
+    - cron: '30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scan-crypto:
+    runs-on: ubuntu-latest
+    # Bumped 5 → 10 min: Curator poll can take up to 90s; with 11 coins
+    # × ~2s API calls + Curator we want headroom.
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r crypto-monitor/requirements.txt
+
+      - name: Run crypto scan
+        env:
+          PYTHONIOENCODING:             utf-8
+          LC_ALL:                       C
+          LANG:                         C
+          ALPACA_API_KEY:               ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:            ${{ secrets.ALPACA_SECRET_KEY }}
+          FINNHUB_API_KEY:              ${{ secrets.FINNHUB_API_KEY }}
+          CLOUDFLARE_CRYPTO_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_WORKER_URL }}
+          # OPTIONAL but recommended: LLM Curator routine that validates
+          # candidate signals (predator on-chain trader persona). Without
+          # it, monitor falls back to heuristic order (current pre-LLM).
+          # See crypto-monitor/curator-prompts.md for routine + Worker deploy.
+          CLOUDFLARE_CRYPTO_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_CURATOR_WORKER_URL }}
+          USE_CRYPTO_CURATOR:           'true'
+          GMAIL_USER:                   ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:           ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:                 ${{ secrets.NOTIFY_EMAIL }}
+        run: python crypto-monitor/monitor.py
+
+      - name: Cleanup pending Curator file if survived
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git rm -f --ignore-unmatch crypto-monitor/pending-curation.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No pending Curator file to clean up."
+          else
+            git commit -m "crypto-monitor: cleanup pending-curation $(date -u +%Y-%m-%d_%H%M)"
+            git push origin "$BRANCH"
+          fi
