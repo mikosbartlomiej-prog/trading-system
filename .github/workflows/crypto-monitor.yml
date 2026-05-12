@@ -1,22 +1,21 @@
-name: Crypto Monitor — BTC/ETH 24/7
+name: Crypto Monitor — 11 coins predator scan (24/7)
 
 on:
   schedule:
-    # Co 30 minut — 24/7 (włącznie z weekendami)
-    # GitHub Actions nie obsługuje */30 bezpośrednio dla weekendów — używamy dwóch cron-ów
-    - cron: '0 * * * *'    # co godzinę (pełna godzina)
-    - cron: '30 * * * *'   # co godzinę (połowa godziny)
-  # Ręczne uruchomienie
+    - cron: '0 * * * *'
+    - cron: '30 * * * *'
   workflow_dispatch:
 
 jobs:
   scan-crypto:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -35,7 +34,23 @@ jobs:
           ALPACA_SECRET_KEY:            ${{ secrets.ALPACA_SECRET_KEY }}
           FINNHUB_API_KEY:              ${{ secrets.FINNHUB_API_KEY }}
           CLOUDFLARE_CRYPTO_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_WORKER_URL }}
+          CLOUDFLARE_CRYPTO_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_CRYPTO_CURATOR_WORKER_URL }}
+          USE_CRYPTO_CURATOR:           'true'
           GMAIL_USER:                   ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD:           ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:                 ${{ secrets.NOTIFY_EMAIL }}
         run: python crypto-monitor/monitor.py
+
+      - name: Cleanup pending Curator file if survived
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git rm -f --ignore-unmatch crypto-monitor/pending-curation.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No pending Curator file to clean up."
+          else
+            git commit -m "crypto-monitor: cleanup pending-curation $(date -u +%Y-%m-%d_%H%M)"
+            git push origin "$BRANCH"
+          fi
