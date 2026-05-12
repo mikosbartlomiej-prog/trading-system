@@ -305,6 +305,19 @@ def execute_stock_signal(signal: dict) -> dict | None:
         print(f"  {sym}: size_usd={size_usd} -> skip")
         return None
 
+    # Pre-flight: market hours check for stock entries (24/7 monitors —
+    # defense, twitter, geo — fire signals pre-market when Alpaca bracket
+    # orders get rejected. Catch here and return early with clear log so
+    # callers can use distinct email reason instead of generic "(error)").
+    try:
+        from market_hours import is_us_market_open
+        mkt_open, mkt_reason = is_us_market_open()
+        if not mkt_open:
+            print(f"  {sym}: US market {mkt_reason} — skipping (use pre-market gate in monitor for QUEUED email)")
+            return None
+    except ImportError:
+        pass   # fail-soft if helper unavailable (tests)
+
     side = "buy" if action.upper() == "BUY" else "sell_short"
 
     # If signal already has absolute SL/TP, use them. Else compute from %.

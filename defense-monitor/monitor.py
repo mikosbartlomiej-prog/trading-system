@@ -719,10 +719,29 @@ def run_scan():
         )
         print(f"      Headline: {signal['headline']}")
         print(f"      Keywords: {signal['keywords']}")
+        # Pre-market gate: defense-monitor runs 24/7 (cron 0,30 * * * *)
+        # but Alpaca stock orders need regular session (09:30-16:00 ET).
+        # If market closed → email-only with QUEUED prefix; don't try
+        # execute_stock_signal (which would fail at quote/bracket placement).
+        try:
+            from market_hours import is_us_market_open, minutes_to_next_open
+        except ImportError:
+            is_us_market_open = lambda: (True, "open")
+            minutes_to_next_open = lambda: 0
+        mkt_open, mkt_reason = is_us_market_open()
+        if not mkt_open:
+            mins = minutes_to_next_open()
+            print(f"  Market {mkt_reason} ({mins}min to next open) — queueing {signal['symbol']} for open (email-only)")
+            notify_signal(signal, alert_sent=False, reason=mkt_reason)
+            continue
+
         sent = send_alert(signal)
         if sent:
             alerts_sent += 1
-        notify_signal(signal, sent)
+        # Pass reason="alpaca_reject" if send failed in regular session
+        # (most common: risk-officer REJECT, quote unavailable, insufficient
+        # buying power). Workflow log has specific cause.
+        notify_signal(signal, sent, reason="" if sent else "alpaca_reject")
         if alerts_sent < MAX_ALERTS_PER_RUN:
             time.sleep(8)
 

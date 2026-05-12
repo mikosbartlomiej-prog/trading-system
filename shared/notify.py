@@ -81,7 +81,7 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
         return False
 
 
-def notify_signal(signal: dict, alert_sent: bool) -> bool:
+def notify_signal(signal: dict, alert_sent: bool, reason: str = "") -> bool:
     """Notification about a detected trading signal.
 
     Options proposals (signal['option_type'] set) get a richer subject and
@@ -108,9 +108,25 @@ def notify_signal(signal: dict, alert_sent: bool) -> bool:
     now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     arrow  = "BUY" if action.upper().startswith("BUY") else "SELL"
-    status = "Alert sent to Alpaca" if alert_sent else "Alert NOT sent (error)"
+    if alert_sent:
+        status = "Alert sent to Alpaca"
+    elif reason:
+        status = f"Alert NOT sent ({reason})"
+    else:
+        status = "Alert NOT sent (error)"
 
-    subject = f"[{arrow}] [{strategy}] {action} {symbol} - {_usd(size_usd)}"
+    # Subject prefix communicates outcome at-a-glance. PENDING for queued
+    # signals (e.g. pre-market), NOT-SENT for hard failures (risk reject,
+    # API error). BUY/SELL when actually placed.
+    if alert_sent:
+        prefix = arrow
+    elif reason in ("pre_market", "after_hours", "weekend", "holiday", "closed"):
+        prefix = "QUEUED"
+    elif reason:
+        prefix = "NOT-SENT"
+    else:
+        prefix = arrow                     # legacy callers without reason
+    subject = f"[{prefix}] [{strategy}] {action} {symbol} - {_usd(size_usd)}"
 
     body = (
         f"Trading Signal Detected\n"
