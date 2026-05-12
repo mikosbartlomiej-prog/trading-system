@@ -1,0 +1,131 @@
+{
+  "generated_at": "2026-05-12T17:44:41.029924+00:00",
+  "workflows": [
+    {
+      "workflow_file": "price-monitor.yml",
+      "label": "price-monitor",
+      "asset_class": "us_equity",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "crypto-monitor.yml",
+      "label": "crypto-monitor",
+      "asset_class": "crypto",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "defense-monitor.yml",
+      "label": "defense-monitor",
+      "asset_class": "us_equity",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "geo-monitor.yml",
+      "label": "geo-monitor",
+      "asset_class": "us_equity",
+      "expected_cadence_min": 15,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "reddit-monitor.yml",
+      "label": "reddit-monitor",
+      "asset_class": "mixed",
+      "expected_cadence_min": 30,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "twitter-monitor.yml",
+      "label": "twitter-monitor",
+      "asset_class": "mixed",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "options-monitor.yml",
+      "label": "options-monitor",
+      "asset_class": "us_option",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "options-exit-monitor.yml",
+      "label": "options-exit-monitor",
+      "asset_class": "us_option",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "exit-monitor.yml",
+      "label": "exit-monitor",
+      "asset_class": "mixed",
+      "expected_cadence_min": 5,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "daily-learning.yml",
+      "label": "daily-learning",
+      "asset_class": "ops",
+      "expected_cadence_min": 60,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "weekly-retro.yml",
+      "label": "weekly-retro",
+      "asset_class": "ops",
+      "expected_cadence_min": 60,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "auto-merge.yml",
+      "label": "auto-merge",
+      "asset_class": "ops",
+      "expected_cadence_min": null,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "keep-alive.yml",
+      "label": "keep-alive",
+      "asset_class": "ops",
+      "expected_cadence_min": 10,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    },
+    {
+      "workflow_file": "snapshot.yml",
+      "label": "snapshot",
+      "asset_class": "ops",
+      "expected_cadence_min": null,
+      "runs_total_returned": 1,
+      "status": "API_ERROR",
+      "error": "HTTP 403"
+    }
+  ]
+}
