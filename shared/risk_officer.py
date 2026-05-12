@@ -57,7 +57,7 @@ _WHITELIST: set[str] = {
     "XLK", "XLF", "XLE", "XLV", "XLY",
     # Commodity ETFs
     "GLD", "SLV",
-    # Crypto
+    # Crypto Tier 1
     "BTC/USD", "ETH/USD",
     # Defense
     "RTX", "LMT", "NOC", "GD", "BA",
@@ -71,7 +71,44 @@ _WHITELIST: set[str] = {
     "SOXL", "SOXS", "FAS", "FAZ", "TNA", "TZA",
     # High-beta singles
     "COIN", "MSTR", "ARM", "SMCI",
+    # v3.0 (2026-05-12) Aggressive Momentum + Event Switch expansion
+    "AMD", "AVGO", "SMH",                # ai_nasdaq_semis bucket additions
+    "USO", "OXY",                          # inflation_energy bucket additions
+    "TLT",                                 # hedge_bonds bucket
+    # v2.4 crypto predator Tier 2 (9 mid-cap alts)
+    "SOL/USD", "AVAX/USD", "LINK/USD", "DOT/USD", "MATIC/USD",
+    "LTC/USD", "BCH/USD", "UNI/USD", "AAVE/USD",
 }
+
+
+def _refresh_whitelist_from_config() -> None:
+    """
+    Augment _WHITELIST with any tickers from config/watchlists.json that
+    aren't already in the hardcoded base. Single source of truth =
+    watchlists.json; hardcoded set above is a fallback for environments
+    where the config file is unavailable (tests / sandboxed runs).
+
+    Idempotent — safe to call multiple times.
+    """
+    try:
+        import os as _os, sys as _sys
+        _shared_dir = _os.path.dirname(_os.path.abspath(__file__))
+        if _shared_dir not in _sys.path:
+            _sys.path.insert(0, _shared_dir)
+        from profile import load_watchlists
+        wls = load_watchlists()
+        for bucket_name, cfg in wls.items():
+            if not isinstance(cfg, dict):
+                continue
+            for t in (cfg.get("tickers") or []):
+                _WHITELIST.add(t)
+    except Exception:
+        # Profile loader unavailable — fall back to hardcoded set above.
+        pass
+
+
+# Augment on import so all callers see the unified universe.
+_refresh_whitelist_from_config()
 
 
 # ─── Thresholds (must match docs/STRATEGY.md) ─────────────────────────────────
