@@ -1,0 +1,16 @@
+{
+  "narrative": "Żadnego sygnału dziś — oba kandydaci odrzuceni. AMD spike_ratio=99 to artefakt (rolling_avg_7d=0, brak realnego baseline); 4 wzmianki na WSB to gain porn + konsensualna narracja 'agentic AI = more compute' bez świeżego katalizatora AMD-specyficznego w oknie 24-48h. NVDA SHORT ma skew=-0.053 (praktycznie neutralny) i oba top posty są faktycznie BULLISH — jeden to AI thesis discussion, drugi to covered-call repair od posiadacza 609 akcji NVDA LONG; żaden nie sygnalizuje reversal. Portfel już załadowany 14%+ equity w PUT-ach na SPY/QQQ/GOOGL — nie dokładamy do bearish bias przy VIX=17.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AMD",
+      "reason": "spike_ratio=99 to artefakt danych (rolling_avg_7d=0 → dzień zero, brak baseline do porównania); 4 wzmianki na WSB bazują na gain porn + konsensualnej narracji AI-compute bez named katalizatora AMD-specyficznego w kolejnych 24-48h; NVDA na ATH podbija cały sektor ale AMD to secondary mention, nie primary play — brak edge."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "Skew=-0.053 praktycznie neutralny (nie spełnia progu bearish); top posty to (1) bullish AI thesis discussion oraz (2) covered-call repair od osoby LONG 609 akcji NVDA — żaden nie jest sygnałem short; shortowanie ATH przy VIX=17 bez reversal catalyst = ryzyko bez edge; portfel już mocno PUT-loaded na SPY/QQQ/GOOGL."
+    }
+  ],
+  "macro_context": "VIX=17, risk-on, semis/AI na ATH — środowisko strukturalnie niekorzystne dla nowych short pozycji; istniejące PUTy SPY/QQQ/GOOGL już zapewniają bearish ekspozycję, dodatkowe shorts = nadmierna koncentracja przy obecnym reżimie.",
+  "confidence_in_curation": "high"
+}
