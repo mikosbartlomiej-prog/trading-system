@@ -1,0 +1,67 @@
+name: Monitor Health — workflow runs introspection
+
+# Queries GitHub Actions API for each monitor's recent runs, classifies
+# health (HEALTHY/STALE/FAILING/IDLE/API_ERROR), computes observed
+# cadence vs expected, writes report to learning-loop/health/<datetime>.md
+# + learning-loop/health/latest.md + learning-loop/health/latest.json.
+#
+# Cron: every 30 min so we always have fresh data ≤30 min old.
+# Manual: workflow_dispatch for on-demand checks.
+#
+# DEPLOY: copy this file via GitHub UI to .github/workflows/monitor-health.yml
+# (OAuth proxy blocks workflow pushes from agent sessions).
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run health check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO:      ${{ github.repository }}
+        run: python scripts/monitor_health.py
+
+      - name: Commit health report
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add learning-loop/health/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No health report changes to commit."
+          else
+            git commit -m "health: monitor snapshot $(date -u +%Y-%m-%d_%H%M) [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed health snapshot on attempt ${attempt}."
+                exit 0
+              fi
+              echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
+            echo "Push failed after 3 attempts; report is in workflow logs only."
+            exit 1
+          fi
