@@ -106,15 +106,30 @@ def already_has_open_sell(contract_symbol: str) -> bool:
         return False  # fail open -> may attempt a duplicate; rare
 
 
-def _exit_client_order_id(reason: str, contract_symbol: str) -> str:
+def _exit_client_order_id(reason: str, contract_symbol: str,
+                            strategy: str = "options-momentum") -> str:
     """
     Build a learning-loop-friendly client_order_id for a sell-to-close.
-    Format: 'exit-<reason>-<contract>-<HHMMSSmmm>'. The 'exit-' prefix
-    is what learning-loop/analyzer.py::_is_close() looks for.
+    Format: 'exit-<reason>-<strategy>-<contract>-<HHMMSSmmm>'.
+
+    The 'exit-' prefix is what learning-loop/analyzer.py::_is_close()
+    looks for. Embedding the strategy name lets `compute_tp_hit_rate`
+    attribute fills WITHOUT a per-symbol lookup table — the strategy
+    travels with the order, so even if the underlying entry's window
+    has rotated out we can still bucket the close correctly.
+
+    Default strategy = options-momentum because this monitor only
+    handles options positions and they all come from that strategy.
+
+    LLM proposal 2026-05-11 (TP attribution fix): without this, tp_hit_
+    rate bucketed everything under 'unknown' and trailing-stop decision
+    2026-05-17 would be blind.
     """
     ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
     safe = contract_symbol.replace("/", "").replace(" ", "")
-    return f"exit-{reason}-{safe}-{ts}"
+    # Strategy may contain hyphens (options-momentum); embed as-is.
+    # Parser side splits on the contract marker, not on '-'.
+    return f"exit-{reason}-{strategy}-{safe}-{ts}"
 
 
 def place_sell_to_close(contract_symbol: str, qty: int,

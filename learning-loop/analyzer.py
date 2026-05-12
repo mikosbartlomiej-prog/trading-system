@@ -97,26 +97,58 @@ def get_account() -> dict:
 
 def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     """
-    client_order_id format set in shared/alpaca_orders.py:
-       "<strategy>-<symbol_clean>-<HHMMSSmmm>"
-    where symbol_clean is the symbol with '/' stripped.
+    client_order_id formats:
+      ENTRY:  "<strategy>-<symbol_clean>-<HHMMSSmmm>"
+              (shared/alpaca_orders.py format)
+      EXIT new (LLM proposal 2026-05-11, TP attribution fix):
+              "exit-<reason>-<strategy>-<symbol_clean>-<HHMMSSmmm>"
+      EXIT legacy (pre-2026-05-12):
+              "exit-<reason>-<symbol_clean>-<HHMMSSmmm>"
+              -> returns 'unknown' (no strategy embedded; caller should
+                 fall back to per-symbol entry lookup).
+
     Strategy names may contain hyphens (e.g. "momentum-long"), so we
     can't simply split on '-'. We locate the symbol marker and take
     everything before it.
     """
     if not client_order_id:
         return "unknown"
+
+    cid = client_order_id
+
+    # Detect EXIT format: strip the "exit-<reason>-" prefix so the
+    # remaining structure matches ENTRY format.
+    is_exit = cid.lower().startswith("exit-")
+    if is_exit:
+        # Strip 'exit-' then strip the reason segment.
+        # Known reasons: tp, sl, neardth, regime, trail, emergency
+        # Defensive: strip exactly one '-'-separated token after 'exit-'.
+        body = cid[5:]  # after 'exit-'
+        dash = body.find("-")
+        if dash < 0:
+            return "unknown"
+        # body[dash+1:] is now <maybe-strategy>-<sym>-<ts>
+        rest = body[dash + 1:]
+    else:
+        rest = cid
+
     if symbol:
         sym_clean = symbol.replace("/", "")
         marker = f"-{sym_clean}-"
-        idx = client_order_id.find(marker)
+        idx = rest.find(marker)
         if idx > 0:
-            return client_order_id[:idx]
+            return rest[:idx]
+        # New exit format may include strategy; older exit format jumps
+        # straight to symbol — detect by checking if rest STARTS with the
+        # symbol (then no strategy embedded).
+        if rest.startswith(sym_clean + "-"):
+            return "unknown"   # legacy exit pre-2026-05-12
+
     # Fallback: strip last 2 segments (timestamp + symbol)
-    parts = client_order_id.split("-")
+    parts = rest.split("-")
     if len(parts) >= 3:
         return "-".join(parts[:-2])
-    return parts[0] if parts else "unknown"
+    return "unknown"
 
 
 def reconstruct_trades(orders: list[dict]) -> list[dict]:
@@ -332,29 +364,61 @@ def compute_asset_stats(trades: list[dict]) -> dict:
 
 
 def compute_fill_rate(orders: list[dict]) -> dict:
-    """Per-strategy fill / cancel / reject stats — answers 'why didn't it fill'."""
+    """
+    Per-strategy fill / cancel / reject stats — answers 'why didn't it fill'.
+
+    LLM proposal 2026-05-11 (entry cancellations audit): breaks out
+    canceled vs expired (DAY orders expiring at 20:00 UTC are different
+    from manually-canceled / SL-triggered cancels). Plus tracks
+    avg_minutes_to_cancel so we can see if cancels happen instantly
+    (rejection-like) vs after sitting at limit for hours (limit too tight).
+    """
     by_strat = defaultdict(lambda: defaultdict(int))
+    cancel_durations: dict[str, list[float]] = defaultdict(list)
     for o in orders:
         strat = _strategy_from_client_id(o.get("client_order_id", ""), o.get("symbol", ""))
         by_strat[strat]["placed"] += 1
         st = o.get("status", "unknown")
         if st == "filled":
             by_strat[strat]["filled"] += 1
-        elif st in ("canceled", "expired"):
+        elif st == "expired":
+            by_strat[strat]["expired"] += 1
+            by_strat[strat]["canceled"] += 1   # legacy aggregate
+        elif st == "canceled":
             by_strat[strat]["canceled"] += 1
+            by_strat[strat]["manually_canceled"] += 1
         elif st == "rejected":
             by_strat[strat]["rejected"] += 1
         else:
             by_strat[strat]["other"] += 1
+        # Time-to-cancel: submitted_at -> canceled_at / expired_at
+        if st in ("canceled", "expired"):
+            try:
+                sub = o.get("submitted_at") or o.get("created_at")
+                end = o.get("canceled_at") or o.get("expired_at") or o.get("updated_at")
+                if sub and end:
+                    sub_dt = datetime.fromisoformat(sub.replace("Z", "+00:00"))
+                    end_dt = datetime.fromisoformat(end.replace("Z", "+00:00"))
+                    delta_min = (end_dt - sub_dt).total_seconds() / 60
+                    if delta_min >= 0:
+                        cancel_durations[strat].append(delta_min)
+            except (ValueError, AttributeError):
+                pass
+
     out = {}
     for strat, counts in by_strat.items():
         placed = counts["placed"]
+        durations = cancel_durations.get(strat) or []
         out[strat] = {
-            "placed":    placed,
-            "filled":    counts.get("filled", 0),
-            "canceled":  counts.get("canceled", 0),
-            "rejected":  counts.get("rejected", 0),
-            "fill_rate": round(counts.get("filled", 0) / placed, 3) if placed else 0.0,
+            "placed":     placed,
+            "filled":     counts.get("filled", 0),
+            "canceled":   counts.get("canceled", 0),
+            "expired":    counts.get("expired", 0),
+            "manually_canceled": counts.get("manually_canceled", 0),
+            "rejected":   counts.get("rejected", 0),
+            "fill_rate":  round(counts.get("filled", 0) / placed, 3) if placed else 0.0,
+            "avg_minutes_to_cancel": round(sum(durations) / len(durations), 1) if durations else None,
+            "max_minutes_to_cancel": round(max(durations), 1) if durations else None,
         }
     return out
 
@@ -408,7 +472,13 @@ def compute_tp_hit_rate(orders: list[dict]) -> dict:
         if not is_tp:
             continue
         sym = o.get("symbol", "")
-        strat = entry_strategy_by_symbol.get(sym, "unknown")
+        # NEW (LLM proposal 2026-05-11 TP attribution fix):
+        # Prefer strategy embedded in exit client_order_id over per-symbol
+        # lookup. Falls back to lookup only when parser returns 'unknown'
+        # (legacy exits pre-2026-05-12).
+        strat = _strategy_from_client_id(o.get("client_order_id", ""), sym)
+        if strat == "unknown" and sym:
+            strat = entry_strategy_by_symbol.get(sym, "unknown")
         by_strat[strat]["placed"] += 1
         if o.get("status") == "filled":
             by_strat[strat]["filled"] += 1
@@ -424,6 +494,145 @@ def compute_tp_hit_rate(orders: list[dict]) -> dict:
             "tp_unfilled": counts["unfilled"],
             "tp_hit_rate": round(counts["filled"] / placed, 3) if placed else 0.0,
         }
+    return out
+
+
+# ─── RSI snapshot for LLM macro context (LLM proposal 2026-05-11) ───────────
+#
+# When the LLM asks "is strategy X dormant or broken?", it currently has to
+# guess from "0 trades in 12 days". RSI snapshot answers the question
+# directly: if BTC RSI(14) stayed between 35-65 the whole period,
+# crypto-momentum/crypto-breakdown were CORRECTLY DORMANT (their thresholds
+# are >70 / <30 by design). If RSI hit 75 and we have 0 entries, something
+# IS broken.
+#
+# Cheap: 3 daily-bar fetches (SPY stock, BTC/USD crypto, ETH/USD crypto),
+# each ~30 calendar days. Runs once per daily-learning cron (21:00 UTC).
+
+def _rsi_from_closes(closes: list[float], period: int = 14) -> float | None:
+    """Standard Wilder's RSI(14). Returns None if insufficient data."""
+    if len(closes) < period + 1:
+        return None
+    gains, losses = [], []
+    for i in range(1, len(closes)):
+        diff = closes[i] - closes[i - 1]
+        gains.append(max(0.0, diff))
+        losses.append(max(0.0, -diff))
+    avg_g = sum(gains[:period]) / period
+    avg_l = sum(losses[:period]) / period
+    # Wilder's smoothing
+    for i in range(period, len(gains)):
+        avg_g = (avg_g * (period - 1) + gains[i]) / period
+        avg_l = (avg_l * (period - 1) + losses[i]) / period
+    if avg_l == 0:
+        return 100.0
+    rs = avg_g / avg_l
+    return round(100 - (100 / (1 + rs)), 1)
+
+
+def _fetch_crypto_daily_closes(symbol: str, days: int = 30) -> list[float]:
+    """Fetch crypto daily closes via Alpaca v1beta3."""
+    api_key    = os.environ.get("ALPACA_API_KEY", "")
+    secret_key = os.environ.get("ALPACA_SECRET_KEY", "")
+    if not api_key or not secret_key:
+        return []
+    start = (datetime.now(timezone.utc) - timedelta(days=days + 5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        r = requests.get(
+            "https://data.alpaca.markets/v1beta3/crypto/us/bars",
+            headers={
+                "APCA-API-KEY-ID":     api_key,
+                "APCA-API-SECRET-KEY": secret_key,
+            },
+            params={
+                "symbols":   symbol,
+                "timeframe": "1Day",
+                "start":     start,
+                "limit":     1000,
+                "sort":      "asc",
+            },
+            timeout=15,
+        )
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        bars = (data.get("bars") or {}).get(symbol) \
+            or (data.get("bars") or {}).get(symbol.replace("/", "")) \
+            or []
+        return [float(b.get("c", 0)) for b in bars if b.get("c")]
+    except Exception as e:
+        print(f"  RSI: crypto fetch {symbol} error: {e}")
+        return []
+
+
+def compute_rsi_snapshot() -> dict:
+    """
+    Per-symbol RSI(14) over last ~12 trading days. Reveals whether market
+    has reached extremes that should have triggered strategies.
+
+    Returns:
+      {
+        "SPY":     {today: 47.3, min_12d: 41.2, max_12d: 58.4, regime: "neutral"},
+        "BTC/USD": {today: 52.1, min_12d: 48.0, max_12d: 61.2, regime: "neutral"},
+        "ETH/USD": {today: 49.5, min_12d: 44.1, max_12d: 56.3, regime: "neutral"},
+      }
+    Regime: "overbought" (today >= 70), "oversold" (today <= 30),
+            "neutral" otherwise. Per-symbol min/max over 12 days lets
+            the LLM see if EVER hit a threshold (not just today).
+
+    Returns {} if data unavailable (callers tolerate missing field).
+    """
+    try:
+        # Lazy import — avoid circular if shared imports analyzer.
+        sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+        from market_data import get_daily_bars  # noqa: E402
+    except ImportError:
+        return {}
+
+    out: dict[str, dict] = {}
+
+    # SPY via stock endpoint
+    spy_bars = get_daily_bars("SPY", days=30)
+    if spy_bars and spy_bars.get("close"):
+        closes = spy_bars["close"][-15:]   # 15 closes = 14 deltas → RSI(14)
+        rsi_today = _rsi_from_closes(closes)
+        # Compute rolling RSI over last 12 trading days
+        rsi_series = []
+        for i in range(max(15, len(closes) - 12), len(closes) + 1):
+            window = closes[max(0, i - 15):i]
+            r = _rsi_from_closes(window)
+            if r is not None:
+                rsi_series.append(r)
+        if rsi_today is not None:
+            out["SPY"] = {
+                "today":  rsi_today,
+                "min_12d": round(min(rsi_series), 1) if rsi_series else rsi_today,
+                "max_12d": round(max(rsi_series), 1) if rsi_series else rsi_today,
+                "regime": "overbought" if rsi_today >= 70 else
+                          "oversold"   if rsi_today <= 30 else "neutral",
+            }
+
+    # Crypto via v1beta3
+    for sym in ("BTC/USD", "ETH/USD"):
+        closes = _fetch_crypto_daily_closes(sym, days=30)
+        if len(closes) < 15:
+            continue
+        closes = closes[-15:]
+        rsi_today = _rsi_from_closes(closes)
+        rsi_series = []
+        for i in range(max(15, len(closes) - 12), len(closes) + 1):
+            window = closes[max(0, i - 15):i]
+            r = _rsi_from_closes(window)
+            if r is not None:
+                rsi_series.append(r)
+        if rsi_today is not None:
+            out[sym] = {
+                "today":  rsi_today,
+                "min_12d": round(min(rsi_series), 1) if rsi_series else rsi_today,
+                "max_12d": round(max(rsi_series), 1) if rsi_series else rsi_today,
+                "regime": "overbought" if rsi_today >= 70 else
+                          "oversold"   if rsi_today <= 30 else "neutral",
+            }
     return out
 
 
@@ -641,6 +850,7 @@ def run():
         "by_source":         {},   # placeholder for future per-source attribution
         "fill_rate":         compute_fill_rate(orders),
         "tp_hit_rate":       compute_tp_hit_rate(orders),  # 10-day data-collect for trailing-stop decision
+        "rsi_snapshot":      compute_rsi_snapshot(),       # macro context for LLM "dormant vs broken" check
         "cumulative_trades": len(trades),
         "cumulative_pnl_usd": round(sum(t["pnl_usd"] for t in trades), 2),
     }
