@@ -1,14 +1,19 @@
 name: Crypto Monitor — 11 coins predator scan (24/7)
 
+# v3.2 (2026-05-12): every 5 min 24/7 — crypto trades around the clock,
+# short cadence catches predator-mode quick wins. Per-instrument trade
+# window in shared/instrument_windows.py keeps everything else gated.
+
 on:
   schedule:
-    - cron: '0 * * * *'
-    - cron: '30 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
   scan-crypto:
     runs-on: ubuntu-latest
+    # Bumped 5 → 10 min: Curator poll can take up to 90s; with 11 coins
+    # × ~2s API calls + Curator we want headroom.
     timeout-minutes: 10
 
     steps:
