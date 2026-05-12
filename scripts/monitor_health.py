@@ -103,12 +103,15 @@ def _parse_cron_to_minutes(workflow_path: Path) -> int | None:
     """
     Read the workflow YAML, find cron lines, return the SMALLEST cadence
     in minutes implied. Recognizes:
-      '*/N * * * *'             → N
-      'M,N,...,Z * * * *'        → smallest gap (cyclic)
-      '0,30 * * * *'             → 30
-      '30 12-21 * * 1-5'         → 60 (hourly window)
-      'M HH * * *' (single hour) → ~1440 (daily)
-    Returns None if can't parse.
+      '*/N * * * *'              → N
+      'M,N,...,Z * * * *'         → smallest gap (cyclic)
+      '0,30 * * * *'              → 30
+      '30 12-21 * * 1-5'          → 60 (hourly window)
+      '0 21 * * *' (daily)        → 1440
+      '0 22 * * 0' (weekly Sun)   → 10080
+      '0 22,0,2 * * *' (3×/day)   → smallest gap modulo 24h (8h = 480)
+
+    Returns None if no cron found (workflow_dispatch-only).
     """
     try:
         content = workflow_path.read_text()
@@ -122,31 +125,70 @@ def _parse_cron_to_minutes(workflow_path: Path) -> int | None:
         parts = cron.split()
         if len(parts) < 5:
             continue
-        m_field = parts[0]
-        # */N pattern
+        m_field, h_field = parts[0], parts[1]
+        dow_field = parts[4]
+
+        # Sub-hour cadence first (minute field controls)
+        # */N → N minutes
         if m_field.startswith("*/"):
             try:
                 cadences.append(int(m_field[2:]))
             except ValueError:
                 pass
             continue
-        # Comma list pattern: 0,30 or 0,15,30,45
+        # Minute comma list (0,30 etc.) → smallest gap
         if "," in m_field:
             try:
                 nums = sorted(int(x) for x in m_field.split(","))
                 gaps = [(nums[i+1] - nums[i]) for i in range(len(nums) - 1)]
+                # Cyclic wrap (e.g. 0,30 → also 30 min from :30 to :00)
+                if nums:
+                    gaps.append(60 - nums[-1] + nums[0])
                 if gaps:
                     cadences.append(min(gaps))
-                else:
-                    cadences.append(60)
+                continue
             except ValueError:
                 pass
-            continue
-        # Hour-only window (e.g. '30 12-21 * * 1-5') → hourly
+
+        # Multi-hour-per-day pattern: m_field='0', h_field='22,0,2' or 'H1-H2'
         if m_field.isdigit():
-            cadences.append(60)
-            continue
+            # Hour comma list → smallest gap in hours × 60
+            if "," in h_field:
+                try:
+                    hs = sorted(int(x) for x in h_field.split(","))
+                    gaps_h = [(hs[i+1] - hs[i]) for i in range(len(hs) - 1)]
+                    if hs:
+                        gaps_h.append(24 - hs[-1] + hs[0])
+                    if gaps_h:
+                        cadences.append(min(gaps_h) * 60)
+                    continue
+                except ValueError:
+                    pass
+            # Hour range → hourly within window
+            if "-" in h_field:
+                cadences.append(60)
+                continue
+            # Single hour → weekly if dow is single, else daily
+            if h_field.isdigit():
+                # dow=* → daily; dow=0..6 single → weekly
+                if dow_field.isdigit():
+                    cadences.append(60 * 24 * 7)   # weekly
+                else:
+                    cadences.append(60 * 24)        # daily
+                continue
+
+        # Default fallback: hourly
+        cadences.append(60)
     return min(cadences) if cadences else None
+
+
+def _is_manual_only(workflow_path: Path) -> bool:
+    """True if workflow has no `schedule:` block (workflow_dispatch only)."""
+    try:
+        content = workflow_path.read_text()
+    except FileNotFoundError:
+        return False
+    return "schedule:" not in content
 
 
 # ─── Report computation ────────────────────────────────────────────────
@@ -168,6 +210,7 @@ def _parse_ts(s: str) -> datetime:
 
 def _classify_workflow(workflow_file: str, label: str, asset_class: str,
                         runs: list[dict], expected_min: int | None,
+                        manual_only: bool,
                         now: datetime) -> dict:
     """Compute summary stats for one workflow."""
     out = {
@@ -175,6 +218,7 @@ def _classify_workflow(workflow_file: str, label: str, asset_class: str,
         "label":            label,
         "asset_class":      asset_class,
         "expected_cadence_min": expected_min,
+        "manual_only":      manual_only,
         "runs_total_returned":  len(runs),
     }
 
@@ -240,22 +284,29 @@ def _classify_workflow(workflow_file: str, label: str, asset_class: str,
 
 def _verdict(s: dict) -> str:
     """
-    HEALTHY / STALE / FAILING / IDLE / API_ERROR per stats:
-      - API_ERROR if API failed
-      - FAILING if last conclusion is failure
-      - STALE if last run > 3x expected cadence ago AND expected cadence known
-      - IDLE if no runs in last 24h
-      - else HEALTHY
+    HEALTHY / STALE / FAILING / IDLE / MANUAL_ONLY / API_ERROR per stats:
+      - API_ERROR    if API failed
+      - MANUAL_ONLY  workflow has no schedule (workflow_dispatch only)
+      - FAILING      if last conclusion is failure
+      - STALE        if minutes_since_last > 3x expected cadence
+      - IDLE         no runs in last 24h AND expected cadence < 1440 (sub-daily)
+      - HEALTHY      otherwise (incl. daily/weekly that haven't run today)
     """
     if s.get("error"):
         return "API_ERROR"
+    if s.get("manual_only"):
+        return "MANUAL_ONLY"
     last_conc = s.get("last_run_conclusion")
     if last_conc == "failure":
         return "FAILING"
-    if s.get("expected_cadence_min") and s.get("staleness_ratio") is not None:
+    exp = s.get("expected_cadence_min")
+    if exp and s.get("staleness_ratio") is not None:
         if s["staleness_ratio"] > 3.0:
             return "STALE"
-    if s.get("runs_last_24h", 0) == 0:
+    # IDLE only flags sub-daily workflows that haven't run in 24h.
+    # Daily/weekly workflows expected to have <=1 run/day are HEALTHY when
+    # last_run is within expected_cadence window.
+    if s.get("runs_last_24h", 0) == 0 and exp and exp < 1440:
         return "IDLE"
     return "HEALTHY"
 
@@ -264,12 +315,13 @@ def _verdict(s: dict) -> str:
 
 def _emoji(status: str) -> str:
     return {
-        "HEALTHY":   "OK",
-        "FAILING":   "FAIL",
-        "STALE":     "STALE",
-        "IDLE":      "IDLE",
-        "API_ERROR": "ERR",
-        "NO_RUNS":   "NONE",
+        "HEALTHY":     "OK",
+        "FAILING":     "FAIL",
+        "STALE":       "STALE",
+        "IDLE":        "IDLE",
+        "MANUAL_ONLY": "MANUAL",
+        "API_ERROR":   "ERR",
+        "NO_RUNS":     "NONE",
     }.get(status, "?")
 
 
@@ -352,8 +404,10 @@ def _run(repo: str, token: str) -> int:
     for wf_file, label, asset_class in _WORKFLOWS:
         wf_path = _WORKFLOWS_DIR / wf_file
         expected = _parse_cron_to_minutes(wf_path)
+        manual_only = _is_manual_only(wf_path)
         runs = _list_runs(wf_file, token, repo)
-        stats.append(_classify_workflow(wf_file, label, asset_class, runs, expected, now))
+        stats.append(_classify_workflow(wf_file, label, asset_class, runs,
+                                          expected, manual_only, now))
 
     _HEALTH_DIR.mkdir(parents=True, exist_ok=True)
     md = _to_md(stats, now)
