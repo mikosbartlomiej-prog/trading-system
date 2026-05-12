@@ -1,10 +1,14 @@
 name: Options Monitor — CALL/PUT proposals
 
+# v3.2 schedule (2026-05-12): bumped from */10 to */5 during regular
+# session. Options chain data only updates during equity hours so no
+# point scanning outside that window. AUTO_EXECUTE_OPTIONS=true path
+# places orders direct via Alpaca REST; per-instrument trading window
+# gate in shared/instrument_windows.py prevents off-hours fills.
+
 on:
   schedule:
-    # Co 10 minut podczas sesji giełdowej (9:30-16:00 ET = 13:30-20:00 UTC)
-    # Poniedziałek-Piątek
-    - cron: '*/10 13-20 * * 1-5'
+    - cron: '*/5 13-20 * * 1-5'
   workflow_dispatch:
 
 jobs:
