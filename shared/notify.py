@@ -95,7 +95,14 @@ def notify_signal(signal: dict, alert_sent: bool) -> bool:
     action   = signal.get("action", "?")
     strategy = signal.get("strategy", "?")
     size_usd = signal.get("size_usd", 0)
-    price    = signal.get("price", signal.get("score", "?"))
+    # Display entry price if monitor provided it. Do NOT fall back to
+    # `score` (relevance/momentum score) — that produced misleading
+    # bodies like "Price: $2.00" for defense signals where score=2 is
+    # unrelated to ticker price. Defense/Twitter signals leave price
+    # blank; order placement uses fresh quote at execute time.
+    price    = signal.get("price")
+    if price is None and signal.get("entry_price") is not None:
+        price = signal["entry_price"]
     headline = signal.get("headline", signal.get("keywords", ""))
     source   = signal.get("source", "")
     now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
