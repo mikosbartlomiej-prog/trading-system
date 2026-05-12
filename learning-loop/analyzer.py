@@ -1080,8 +1080,22 @@ def run():
                     f"{date_iso} · allocator: {o['action']} {o['symbol']} "
                     f"${o.get('delta', 0):+.0f} ({o.get('reason', '')})"
                 )
+        # Email the plan to operator (always, regardless of auto-exec).
+        # Fail-soft: don't break learning loop if email backend is down.
+        try:
+            sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+            from notify import notify_allocation_plan
+            notify_allocation_plan(plan)
+        except Exception as ne:
+            print(f"  [allocator] email_plan skipped ({type(ne).__name__}: {ne})")
         if alloc.cfg.get("auto_execute_rebalance", False):
-            alloc.execute_orders(plan["rebalance_orders"])
+            print("  [allocator] auto_execute_rebalance=true — invoking execute_orders()")
+            exec_results = alloc.execute_orders(plan["rebalance_orders"])
+            try:
+                from notify import notify_allocation_execution
+                notify_allocation_execution(plan.get("date", date_iso), exec_results)
+            except Exception as ne:
+                print(f"  [allocator] email_exec skipped ({type(ne).__name__}: {ne})")
     except Exception as e:
         print(f"  [allocator] error ({type(e).__name__}: {e}) — skipped, learning loop continues")
 

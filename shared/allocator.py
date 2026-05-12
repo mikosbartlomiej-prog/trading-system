@@ -74,6 +74,71 @@ def _today() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
+class _TraceLogger:
+    """
+    In-memory append + stdout mirror. Every line is timestamped UTC and
+    flushed to <date>.log alongside the JSON plan, so retrospective
+    analysis can replay the decision tree without re-running the
+    allocator.
+
+    Levels (prefix in log line):
+      DBG  trace detail (per-symbol scoring, cap math)
+      INFO normal pipeline progression
+      WARN soft issue (sector cap hit, fallback exhausted)
+      ERR  fail-soft pathway (Alpaca outage, missing config)
+    """
+
+    def __init__(self):
+        self.lines: list[str] = []
+
+    def _emit(self, lvl: str, msg: str, indent: int = 0) -> None:
+        ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        prefix = "  " * indent
+        line = f"[{ts} {lvl:<4}] {prefix}{msg}"
+        self.lines.append(line)
+        print(line)
+
+    def header(self, msg: str) -> None:
+        bar = "=" * 60
+        self._emit("INFO", bar)
+        self._emit("INFO", msg)
+        self._emit("INFO", bar)
+
+    def step(self, n: int, title: str) -> None:
+        self._emit("INFO", f"── Step {n}: {title} ──")
+
+    def info(self, msg: str, indent: int = 1) -> None:
+        self._emit("INFO", msg, indent)
+
+    def dbg(self, msg: str, indent: int = 2) -> None:
+        self._emit("DBG", msg, indent)
+
+    def warn(self, msg: str, indent: int = 1) -> None:
+        self._emit("WARN", msg, indent)
+
+    def err(self, msg: str, indent: int = 1) -> None:
+        self._emit("ERR", msg, indent)
+
+    def order(self, o: dict) -> None:
+        sym = o.get("symbol", "?")
+        act = o.get("action", "?")
+        cur = o.get("current_value", 0)
+        tgt = o.get("target_value", 0)
+        dlt = o.get("delta", 0)
+        reason = o.get("reason", "")
+        self._emit("INFO",
+                    f"{sym:<8} {act:<7} current=${cur:>9.2f} target=${tgt:>9.2f} "
+                    f"delta=${dlt:+9.2f}  -- {reason}",
+                    indent=2)
+
+    def save(self, path: str) -> None:
+        try:
+            with open(path, "w") as f:
+                f.write("\n".join(self.lines) + "\n")
+        except OSError as e:
+            print(f"  trace: save error: {e}")
+
+
 class AccountAwareAllocator:
     """Day-to-day portfolio rebalancer running after learning-loop."""
 
@@ -91,6 +156,8 @@ class AccountAwareAllocator:
             from shared.profile import load_profile, load_watchlists
         self.profile = load_profile()
         self.watchlists = load_watchlists()
+        # Trace log — populated during compute_daily_plan, flushed by save_plan
+        self.trace = _TraceLogger()
 
     # ── Public API ────────────────────────────────────────────────────
 
@@ -118,6 +185,10 @@ class AccountAwareAllocator:
           current_weights, rebalance_orders, risk_checks,
           learning_loop_signature
         """
+        # Reset trace for this run (allocator may be re-used across tests)
+        self.trace = _TraceLogger()
+        self.trace.header(f"AccountAwareAllocator — daily plan {_today()}")
+
         plan: dict = {
             "date":              _today(),
             "generated_at":      _utcnow_iso(),
@@ -130,6 +201,7 @@ class AccountAwareAllocator:
         }
 
         # 1. Fetch account state
+        self.trace.step(1, "fetching account state")
         account = account_override if account_override is not None else self._fetch_account()
         plan["account_equity"]    = account.get("equity", 0)
         plan["portfolio_value"]   = account.get("portfolio_value", account.get("equity", 0))
@@ -137,32 +209,77 @@ class AccountAwareAllocator:
         plan["buying_power"]      = account.get("buying_power", 0)
         plan["account_blocked"]   = bool(account.get("account_blocked", False))
         plan["trading_blocked"]   = bool(account.get("trading_blocked", False))
+        self.trace.info(
+            f"equity=${plan['account_equity']:>10.2f}  cash=${plan['cash']:>10.2f}  "
+            f"buying_power=${plan['buying_power']:>10.2f}"
+        )
+        if plan["account_blocked"] or plan["trading_blocked"]:
+            self.trace.warn(
+                f"account_blocked={plan['account_blocked']}  trading_blocked={plan['trading_blocked']}"
+            )
 
         # 2. Fetch positions
+        self.trace.step(2, "fetching open positions")
         positions = positions_override if positions_override is not None else self._fetch_positions()
         plan["current_positions"] = [self._normalize_position(p, plan["account_equity"]) for p in positions]
         plan["invested_ratio_before"] = self._invested_ratio(plan["current_positions"], plan["account_equity"])
+        self.trace.info(
+            f"{len(plan['current_positions'])} positions, invested_ratio={plan['invested_ratio_before']:.4f} "
+            f"(target={plan['config']['target_invested_ratio']:.2f}, "
+            f"min={plan['config']['min_invested_ratio']:.2f})"
+        )
+        for p in plan["current_positions"]:
+            self.trace.dbg(
+                f"{p['symbol']:<10} {p['side']:<5} qty={p['qty']:.4f} "
+                f"mv=${p['market_value']:>9.2f}  pct_eq={p['pct_equity']:.2f}%  "
+                f"pl={p['pl_pct']:+.2f}%"
+            )
 
         # 3. Detect kill-switch / defensive mode
+        self.trace.step(3, "defensive mode check")
         defensive = self._check_defensive_mode()
         plan["defensive_mode_active"] = defensive["active"]
         plan["kill_switch_armed"]     = defensive["kill_switch_armed"]
+        if defensive["active"]:
+            self.trace.warn(
+                f"defensive_mode ACTIVE  kill_switch_armed={defensive['kill_switch_armed']} "
+                "→ no new entries; existing positions inventoried"
+            )
+        else:
+            self.trace.info("defensive_mode OFF → proceed with deployment")
 
         # 4. Detect regime (from new_state if provided, else live detect)
+        self.trace.step(4, "regime detection")
         regime_info = self._infer_regime(new_state, today_stats)
         plan["market_regime"]         = regime_info["regime"]
         plan["regime_source"]         = regime_info.get("source", "?")
         plan["allowed_buckets"]       = regime_info.get("allowed_buckets") or []
         plan["regime_size_mult"]      = regime_info.get("size_multiplier", 1.0)
+        self.trace.info(
+            f"regime={plan['market_regime']}  source={plan['regime_source']}  "
+            f"size_mult={plan['regime_size_mult']:.2f}"
+        )
+        self.trace.info(f"allowed_buckets={plan['allowed_buckets']}", indent=2)
 
         # 5. Build scored universe (top momentum candidates from allowed buckets)
+        self.trace.step(5, "scoring allowed universe")
         if scored_universe_override is not None:
             scored = scored_universe_override
+            self.trace.info(f"{len(scored)} pre-scored tickers injected (test/override)")
         else:
             scored = self._score_allowed_universe(regime_info, today_stats)
         plan["scored_universe"] = scored[:15]   # top 15 for visibility
+        if scored:
+            top = scored[:5]
+            for s in top:
+                self.trace.dbg(
+                    f"{s.get('ticker','?'):<8} score={s.get('score',0):+.3f}  bucket={s.get('bucket','?')}"
+                )
+        else:
+            self.trace.warn("scored universe EMPTY — fallback will dominate")
 
         # 6. Compute target weights — primary picks + fallback fill
+        self.trace.step(6, "target weight construction")
         target_weights, allocation_reason = self._compute_target_weights(
             scored=scored,
             regime_info=regime_info,
@@ -172,6 +289,10 @@ class AccountAwareAllocator:
         plan["target_weights"] = target_weights
         plan["allocation_reason"] = allocation_reason
         plan["invested_ratio_after_target"] = sum(target_weights.values())
+        self.trace.info(f"reason: {allocation_reason}")
+        self.trace.info(f"target_invested_ratio_after_plan = {plan['invested_ratio_after_target']:.4f}")
+        for sym, w in target_weights.items():
+            self.trace.dbg(f"{sym:<10} target_weight={w:.4f} (${w * plan['account_equity']:.2f})")
 
         # 7. Current weights (from existing positions)
         plan["current_weights"] = {
@@ -180,6 +301,7 @@ class AccountAwareAllocator:
         }
 
         # 8. Generate delta rebalance orders
+        self.trace.step(7, "rebalance order generation")
         orders, risk_checks = self._compute_rebalance_orders(
             target=target_weights,
             current=plan["current_positions"],
@@ -192,21 +314,46 @@ class AccountAwareAllocator:
         plan["risk_checks"]        = risk_checks
         plan["learning_loop_ref"]  = (today_stats or {}).get("as_of") or _today()
 
+        for o in orders:
+            self.trace.order(o)
+        self.trace.info(
+            f"summary: {risk_checks['n_orders']} actionable + {risk_checks['n_hold']} hold; "
+            f"passed={len(risk_checks['passed'])}  failed={len(risk_checks['failed'])}"
+        )
+        if risk_checks["failed"]:
+            for f in risk_checks["failed"]:
+                self.trace.warn(f"order check failed: {f}", indent=2)
+
+        # 9. Final status
+        self.trace.step(8, "plan complete")
+        plan["trace_log_lines"] = len(self.trace.lines)
+        self.trace.info(
+            f"auto_execute={plan['config']['auto_execute']}  "
+            f"(flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)"
+        )
+
         return plan
 
     def save_plan(self, plan: dict, date_iso: str | None = None) -> str:
-        """Write plan to learning-loop/allocations/<date>.json. Returns path."""
+        """
+        Write plan to learning-loop/allocations/<date>.json AND companion
+        trace log to learning-loop/allocations/<date>.log. Returns JSON path.
+        """
         if not os.path.exists(_ALLOCATIONS_DIR):
             os.makedirs(_ALLOCATIONS_DIR, exist_ok=True)
         date_iso = date_iso or plan.get("date") or _today()
         path = os.path.join(_ALLOCATIONS_DIR, f"{date_iso}.json")
+        log_path = os.path.join(_ALLOCATIONS_DIR, f"{date_iso}.log")
         try:
             with open(path, "w") as f:
                 json.dump(plan, f, indent=2, ensure_ascii=False)
-            return path
         except OSError as e:
             print(f"  allocator: save_plan error: {e}")
             return ""
+        # Trace log (best-effort; never fail the plan if log write fails)
+        if self.trace and self.trace.lines:
+            self.trace.save(log_path)
+        return path
 
     # ── Internals ─────────────────────────────────────────────────────
 
@@ -601,20 +748,269 @@ class AccountAwareAllocator:
             return False, f"invalid action {action}"
         return True, "ok"
 
-    def execute_orders(self, orders: list[dict]) -> list[dict]:
+    def execute_orders(self, orders: list[dict],
+                        force: bool = False,
+                        market_hours_override: tuple[bool, str] | None = None,
+                        ) -> list[dict]:
         """
-        Execute approved BUY/REDUCE/EXIT orders via shared.alpaca_orders.
+        Execute approved BUY/REDUCE/EXIT orders via Alpaca REST.
 
-        GATED: only runs when config.auto_execute_rebalance=true. Default OFF
-        — operator reviews plan first.
+        GATED: only runs when config.auto_execute_rebalance=true (or force=True
+        for testing). Default OFF — operator reviews plan first.
 
-        Returns list of execution results (one per order).
+        Pre-flight gates (per order, fail-soft):
+          1. action != HOLD (skip silently)
+          2. action is one of BUY/REDUCE/EXIT (SELL not used by current orders)
+          3. market is OPEN for stocks/ETFs (crypto bypasses)
+          4. quantity > 0 after rounding
+          5. risk_officer whitelist (already checked at plan time but re-checked
+             here in case config changed between plan + execute)
+
+        Returns list of per-order result dicts:
+          {symbol, action, status: placed|skipped|failed, alpaca_order_id?,
+           reason, attempted_at}
+
+        Routing by action + asset_class:
+          BUY  + stock  → place_stock_bracket (with SL/TP from aggressive_profile)
+          BUY  + crypto → place_crypto_order  (no bracket)
+          REDUCE        → simple LIMIT SELL via /v2/orders (partial close)
+          EXIT          → simple MARKET SELL via /v2/orders (full close)
+
+        Trace + log each step. Self-contained; safe to call from
+        scripts/execute_allocation_plan.py.
         """
-        if not self.cfg.get("auto_execute_rebalance", False):
-            print("  allocator: auto_execute_rebalance=false; skipping execution (plan-only)")
-            return []
-        # Implementation deferred — operator reviews plan first.
-        # When enabled, this would call execute_stock_signal / similar
-        # with sizing from order["qty_delta"] and asset_class routing.
-        print("  allocator: auto_execute path NOT YET IMPLEMENTED — flip flag once safe")
-        return []
+        results: list[dict] = []
+        self.trace.header("execute_orders() — auto-execute path")
+
+        if not (force or self.cfg.get("auto_execute_rebalance", False)):
+            self.trace.info(
+                "auto_execute_rebalance=false → plan-only mode (no orders sent). "
+                "To enable: edit config/capital_deployment.json::capital_deployment.auto_execute_rebalance=true"
+            )
+            return results
+
+        # Market hours gate (stocks). Crypto bypasses.
+        try:
+            from market_hours import is_us_market_open
+        except ImportError:
+            from shared.market_hours import is_us_market_open
+        if market_hours_override is not None:
+            market_open, mkt_reason = market_hours_override
+        else:
+            market_open, mkt_reason = is_us_market_open()
+        self.trace.info(f"market_status: open={market_open} reason={mkt_reason}")
+
+        # Defensive mode re-check at execute time (config might have flipped
+        # between plan and execute — be safe).
+        defensive = self._check_defensive_mode()
+        if defensive["active"] and not force:
+            self.trace.warn(
+                f"defensive_mode ACTIVE at execute time → only EXIT/REDUCE permitted, "
+                f"BUY orders will be skipped"
+            )
+
+        # Sort orders: EXIT first (free up capital), then REDUCE, then BUY
+        action_priority = {ORDER_EXIT: 0, ORDER_REDUCE: 1, ORDER_BUY: 2}
+        sorted_orders = sorted(
+            [o for o in orders if o.get("action") != ORDER_HOLD],
+            key=lambda o: action_priority.get(o.get("action", ""), 9),
+        )
+
+        for o in sorted_orders:
+            results.append(self._execute_one(o, market_open, defensive["active"]))
+
+        n_placed = sum(1 for r in results if r["status"] == "placed")
+        n_skipped = sum(1 for r in results if r["status"] == "skipped")
+        n_failed = sum(1 for r in results if r["status"] == "failed")
+        self.trace.info(
+            f"execution complete: {n_placed} placed, {n_skipped} skipped, {n_failed} failed"
+        )
+        return results
+
+    def _execute_one(self, order: dict, market_open: bool, defensive_active: bool) -> dict:
+        """Place a single rebalance order via Alpaca. Returns result dict."""
+        sym = order.get("symbol", "")
+        action = order.get("action", "")
+        asset_class = order.get("asset_class", "us_equity")
+        qty_delta = order.get("qty_delta")
+        result = {
+            "symbol":       sym,
+            "action":       action,
+            "asset_class":  asset_class,
+            "status":       "skipped",
+            "reason":       "",
+            "attempted_at": _utcnow_iso(),
+        }
+
+        # Defensive mode → no new BUY
+        if defensive_active and action == ORDER_BUY:
+            result["reason"] = "defensive_mode_active (BUY blocked)"
+            self.trace.warn(f"{sym} {action}: {result['reason']}", indent=2)
+            return result
+
+        # Market hours gate (stocks only — crypto trades 24/7)
+        is_crypto = "/" in sym
+        if not is_crypto and not market_open:
+            result["reason"] = "market not open"
+            self.trace.warn(f"{sym} {action}: skipped — {result['reason']}", indent=2)
+            return result
+
+        # Quantity sanity
+        if qty_delta is None or abs(qty_delta) < 1e-6:
+            result["reason"] = "qty_delta is zero or unknown"
+            self.trace.warn(f"{sym} {action}: skipped — {result['reason']}", indent=2)
+            return result
+
+        try:
+            if action == ORDER_BUY:
+                result = self._exec_buy(order, sym, qty_delta, is_crypto, result)
+            elif action == ORDER_REDUCE:
+                result = self._exec_reduce(order, sym, qty_delta, is_crypto, result)
+            elif action == ORDER_EXIT:
+                result = self._exec_exit(order, sym, qty_delta, is_crypto, result)
+            else:
+                result["reason"] = f"unsupported action {action}"
+                self.trace.warn(f"{sym} {action}: {result['reason']}", indent=2)
+        except Exception as e:
+            result["status"] = "failed"
+            result["reason"] = f"{type(e).__name__}: {e}"
+            self.trace.err(f"{sym} {action}: exception — {result['reason']}", indent=2)
+
+        return result
+
+    def _exec_buy(self, order: dict, sym: str, qty: float,
+                   is_crypto: bool, result: dict) -> dict:
+        """BUY new or add-to existing position."""
+        try:
+            from alpaca_orders import place_stock_bracket, place_crypto_order, get_latest_quote
+        except ImportError:
+            from shared.alpaca_orders import place_stock_bracket, place_crypto_order, get_latest_quote
+
+        # Need a fresh price for SL/TP calculation
+        ref_price = order.get("current_price")
+        if not ref_price or ref_price <= 0:
+            q = get_latest_quote(sym)
+            ref_price = (q or {}).get("mid") if q else None
+        if not ref_price or ref_price <= 0:
+            result["status"] = "failed"
+            result["reason"] = "no reference price for SL/TP"
+            self.trace.err(f"{sym} BUY: {result['reason']}", indent=2)
+            return result
+
+        sl_pct = float((self.profile.get("exits") or {}).get("default_stop_loss_pct", 0.05))
+        tp_pct = float((self.profile.get("exits") or {}).get("default_take_profit_pct", 0.12))
+
+        if is_crypto:
+            qty_f = round(abs(qty), 6)
+            resp = place_crypto_order(sym, "buy", qty_f, ref_price, strategy="allocator-rebalance")
+        else:
+            qty_i = max(int(abs(qty)), 1)
+            sl = round(ref_price * (1 - sl_pct), 2)
+            tp = round(ref_price * (1 + tp_pct), 2)
+            resp = place_stock_bracket(sym, "buy", qty_i, ref_price, sl, tp,
+                                        strategy="allocator-rebalance")
+
+        if resp and resp.get("id"):
+            result["status"] = "placed"
+            result["alpaca_order_id"] = resp["id"]
+            result["reason"] = f"BUY {abs(qty):.4f} @ ${ref_price:.2f}"
+            self.trace.info(f"{sym} BUY placed: {result['reason']}  id={resp['id']}", indent=2)
+        else:
+            result["status"] = "failed"
+            result["reason"] = "Alpaca rejected order (see stdout)"
+            self.trace.err(f"{sym} BUY failed", indent=2)
+        return result
+
+    def _exec_reduce(self, order: dict, sym: str, qty: float,
+                      is_crypto: bool, result: dict) -> dict:
+        """Partial close — sell |qty| shares."""
+        import requests
+        import urllib.parse
+        try:
+            from alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL, get_latest_quote
+        except ImportError:
+            from shared.alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL, get_latest_quote
+
+        qty_abs = abs(qty)
+        side = "sell"
+        # Stock: LIMIT slightly under bid; crypto: simple LIMIT at current mid
+        q = get_latest_quote(sym)
+        ref_price = (q or {}).get("bid") if q else order.get("current_price")
+        if not ref_price or ref_price <= 0:
+            result["status"] = "failed"
+            result["reason"] = "no reference price for REDUCE"
+            self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
+            return result
+
+        payload = {
+            "symbol":          sym,
+            "side":            side,
+            "type":            "limit",
+            "limit_price":     str(round(ref_price * 0.998, 2) if not is_crypto else round(ref_price, 4)),
+            "time_in_force":   "day" if not is_crypto else "gtc",
+            "client_order_id": _client_order_id("alloc-reduce", sym),
+        }
+        if is_crypto:
+            payload["qty"] = str(round(qty_abs, 6))
+        else:
+            payload["qty"] = str(max(int(qty_abs), 1))
+
+        try:
+            r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
+                              headers=_headers(), json=payload, timeout=15)
+            if r.status_code in (200, 201):
+                resp_j = r.json()
+                result["status"] = "placed"
+                result["alpaca_order_id"] = resp_j.get("id")
+                result["reason"] = f"REDUCE {payload['qty']} @ ${payload['limit_price']}"
+                self.trace.info(f"{sym} REDUCE placed: {result['reason']}", indent=2)
+            else:
+                result["status"] = "failed"
+                result["reason"] = f"Alpaca {r.status_code}: {r.text[:120]}"
+                self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
+        except Exception as e:
+            result["status"] = "failed"
+            result["reason"] = f"{type(e).__name__}: {e}"
+            self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
+        return result
+
+    def _exec_exit(self, order: dict, sym: str, qty: float,
+                    is_crypto: bool, result: dict) -> dict:
+        """Full close — MARKET SELL entire position."""
+        import requests
+        try:
+            from alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL
+        except ImportError:
+            from shared.alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL
+
+        qty_abs = abs(qty)
+        payload = {
+            "symbol":          sym,
+            "side":            "sell",
+            "type":            "market",
+            "time_in_force":   "day" if not is_crypto else "gtc",
+            "client_order_id": _client_order_id("alloc-exit", sym),
+        }
+        if is_crypto:
+            payload["qty"] = str(round(qty_abs, 6))
+        else:
+            payload["qty"] = str(max(int(qty_abs), 1))
+
+        try:
+            r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
+                              headers=_headers(), json=payload, timeout=15)
+            if r.status_code in (200, 201):
+                resp_j = r.json()
+                result["status"] = "placed"
+                result["alpaca_order_id"] = resp_j.get("id")
+                result["reason"] = f"EXIT MARKET {payload['qty']}"
+                self.trace.info(f"{sym} EXIT placed: {result['reason']}", indent=2)
+            else:
+                result["status"] = "failed"
+                result["reason"] = f"Alpaca {r.status_code}: {r.text[:120]}"
+                self.trace.err(f"{sym} EXIT: {result['reason']}", indent=2)
+        except Exception as e:
+            result["status"] = "failed"
+            result["reason"] = f"{type(e).__name__}: {e}"
+            self.trace.err(f"{sym} EXIT: {result['reason']}", indent=2)
+        return result

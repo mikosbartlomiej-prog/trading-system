@@ -317,3 +317,122 @@ def notify_pr_open(pr_url: str, title: str, lane: str, risk: str) -> bool:
     )
 
     return send_email(subject, body)
+
+
+def notify_allocation_plan(plan: dict) -> bool:
+    """
+    Email summary after AccountAwareAllocator generates a daily plan.
+    Always sends (no signal threshold) so operator always sees what
+    is queued for the morning executor.
+
+    Subject:
+      [allocator PLAN] regime=X invested_after=YY% N orders (auto_execute=Z)
+    """
+    now     = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    regime  = plan.get("market_regime", "?")
+    invested_before = plan.get("invested_ratio_before", 0)
+    invested_after  = plan.get("invested_ratio_after_target", 0)
+    orders  = plan.get("rebalance_orders") or []
+    risk    = plan.get("risk_checks") or {}
+    n_act   = risk.get("n_orders", 0)
+    n_hold  = risk.get("n_hold", 0)
+    auto_x  = (plan.get("config") or {}).get("auto_execute", False)
+    equity  = plan.get("account_equity", 0)
+    cash    = plan.get("cash", 0)
+
+    subject = (
+        f"[allocator PLAN] {regime} "
+        f"invested {invested_before:.0%} -> {invested_after:.0%} "
+        f"({n_act} orders, auto={'ON' if auto_x else 'OFF'})"
+    )
+
+    lines = []
+    lines.append(f"Daily allocation plan ({plan.get('date', '?')})")
+    lines.append("=" * 60)
+    lines.append(f"Generated:        {now}")
+    lines.append(f"Equity:           {_usd(equity)}")
+    lines.append(f"Cash:             {_usd(cash)}")
+    lines.append(f"Regime:           {regime} (source={plan.get('regime_source','?')})")
+    lines.append(f"Invested before:  {invested_before:.2%}")
+    lines.append(f"Invested target:  {invested_after:.2%}")
+    lines.append(f"Defensive mode:   {plan.get('defensive_mode_active', False)}")
+    lines.append(f"Kill switch:      {plan.get('kill_switch_armed', False)}")
+    lines.append(f"Auto-execute:     {'ON' if auto_x else 'OFF (plan-only)'}")
+    lines.append("")
+    lines.append(f"Allocation reason: {plan.get('allocation_reason','?')}")
+    lines.append("")
+    lines.append(f"Target weights ({len(plan.get('target_weights') or {})}):")
+    for sym, w in (plan.get("target_weights") or {}).items():
+        usd = w * equity
+        lines.append(f"  {sym:<10} {w:>6.2%}   ({_usd(usd)})")
+    lines.append("")
+    lines.append(f"Rebalance orders ({n_act} actionable + {n_hold} hold):")
+    for o in orders:
+        action = o.get("action", "?")
+        sym = o.get("symbol", "?")
+        delta = o.get("delta", 0)
+        reason = o.get("reason", "")
+        lines.append(f"  [{action:<6}] {sym:<10} delta={delta:+9.2f}  {reason}")
+    lines.append("")
+
+    failed = risk.get("failed") or []
+    if failed:
+        lines.append("Risk checks failed:")
+        for f in failed:
+            lines.append(f"  - {f}")
+        lines.append("")
+
+    lines.append("Next step:")
+    if auto_x:
+        lines.append("  Morning executor will place orders shortly after 13:35 UTC.")
+        lines.append("  Watch inbox for [allocator EXEC] follow-up.")
+    else:
+        lines.append("  Auto-execute is OFF. Review plan in repo:")
+        lines.append(f"  learning-loop/allocations/{plan.get('date','?')}.json")
+        lines.append("  To enable: set capital_deployment.auto_execute_rebalance=true")
+        lines.append("  in config/capital_deployment.json and commit.")
+    lines.append("")
+    lines.append("Trace log: learning-loop/allocations/" + str(plan.get("date", "?")) + ".log")
+    lines.append("Dashboard: https://app.alpaca.markets/paper/dashboard/overview")
+
+    return send_email(subject, "\n".join(lines))
+
+
+def notify_allocation_execution(plan_date: str, results: list[dict]) -> bool:
+    """
+    Email summary after morning executor places orders. Always sends.
+
+    Subject:
+      [allocator EXEC] N placed, M skipped, K failed
+    """
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    n_placed  = sum(1 for r in results if r.get("status") == "placed")
+    n_skipped = sum(1 for r in results if r.get("status") == "skipped")
+    n_failed  = sum(1 for r in results if r.get("status") == "failed")
+
+    subject = f"[allocator EXEC] {n_placed} placed, {n_skipped} skipped, {n_failed} failed"
+
+    lines = []
+    lines.append(f"Allocation execution report ({plan_date})")
+    lines.append("=" * 60)
+    lines.append(f"Executed at:  {now}")
+    lines.append(f"Placed:       {n_placed}")
+    lines.append(f"Skipped:      {n_skipped}")
+    lines.append(f"Failed:       {n_failed}")
+    lines.append("")
+    lines.append("Per-order results:")
+    for r in results:
+        sym    = r.get("symbol", "?")
+        action = r.get("action", "?")
+        status = r.get("status", "?")
+        reason = r.get("reason", "")
+        oid    = r.get("alpaca_order_id", "")
+        line   = f"  [{status:<7}] {action:<6} {sym:<10}  {reason}"
+        if oid:
+            line += f"  id={oid}"
+        lines.append(line)
+    lines.append("")
+    lines.append("Dashboard: https://app.alpaca.markets/paper/dashboard/overview")
+    lines.append(f"Plan source: learning-loop/allocations/{plan_date}.json")
+
+    return send_email(subject, "\n".join(lines))

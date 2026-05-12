@@ -82,6 +82,8 @@ jobs:
           git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
           # LLM-only artifacts — may not exist on a quiet day; ignore failure
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          # v3.1 allocator plan + trace log — new files (git add -u alone misses them)
+          git add learning-loop/allocations/ 2>/dev/null || true
           # Stage any other modifications/deletions in learning-loop/
           git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then

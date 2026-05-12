@@ -557,6 +557,39 @@ Operator reviews `learning-loop/allocations/<date>.json` each morning
 and decides which orders to place via Alpaca dashboard. Flag flips to
 `true` after 30+ days of validated plans matching operator's expectations.
 
+#### Execution Pipeline (v3.1.1 — 2026-05-12)
+
+Two-stage cron architecture separates **plan generation** from **plan execution**:
+
+| Stage | When | What happens |
+|---|---|---|
+| **Plan generation** | `21:00 UTC daily` (end of `daily-learning.yml`) | `analyzer.run()` → `AccountAwareAllocator.compute_daily_plan()` → JSON saved to `learning-loop/allocations/<date>.json` + trace log to `<date>.log` + `[allocator PLAN]` email to operator |
+| **Plan execution** | `13:35 UTC weekdays` (`morning-allocator.yml`) | `scripts/execute_allocation_plan.py` reads today's plan → checks `auto_execute_rebalance` flag → if true: calls Alpaca REST per order, writes `<date>.execution.json`, sends `[allocator EXEC]` email summary |
+
+**To enable auto-execute:**
+1. Edit `config/capital_deployment.json` →
+   `capital_deployment.auto_execute_rebalance = true`
+2. Commit + push to main (`[automerge]` tag OK)
+3. Next morning at 13:35 UTC, the morning-allocator workflow will execute
+   the orders from the previous evening's plan
+
+**To disable mid-stream:** revert the flag to `false`. Effective from the
+next cron tick — no in-flight orders will be cancelled (use exit-monitor
+or Alpaca dashboard for that).
+
+**Diagnostic logs:** `learning-loop/allocations/<date>.log` contains the
+full step-by-step trace (account fetch → regime → scoring → target weights
+→ sector caps → rebalance orders → risk checks). `<date>.execution.json`
+contains the per-order Alpaca response (id, status, reason). Both are
+committed to main by their respective workflows for retrospective analysis.
+
+**Failure modes** (all fail-soft — never crash learning loop):
+- Allocator init fails (missing config) → plan skipped, learning loop continues
+- Alpaca account fetch fails → plan written with `account_equity=0` + warning
+- Market closed at execute time → stock orders skipped, crypto orders proceed
+- Defensive mode active → BUY blocked, EXIT/REDUCE proceeds
+- Risk-officer whitelist rejects symbol → order demoted to HOLD with `BLOCKED (reason)`
+
 ---
 
 ## 5. Exit Logic
