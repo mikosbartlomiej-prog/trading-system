@@ -1,0 +1,16 @@
+{
+  "narrative": "Zero edge dzisiaj — AMD spike_ratio=99 to klasyczny artefakt matematyczny (rolling_avg_7d=0, brak historii → dzielenie przez zero), a top post 2.8k upów to 10-letni holder świętujący exit z 2015 roku, nie fresh catalyst na następne 24-48h; jeden post eksplicytnie bearish ('472 was a fantasy'). NVDA SELL_SHORT klasyfikacja błędna — skew=-0.053 (neutral), najlepszy post (18 upów tylko) faktycznie BYCZY (Jensen: agentic AI = 1000x compute demand, NVDA ATH powyżej $216), upstream regex się pomylił. Portfel załadowany 8× PUTami QQQ/SPY/GOOGL z zyskiem +47-93% i expirem 05/18 — dziś chronić bankroll, nie dokładać FOMO-driven short exposure.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AMD",
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0 → dzielenie przez zero, brak 7-dniowej historii); top post 2,809 upów to retrospektywna celebracja 10-letniego holdera który kupił w 2015 — zero fresh catalyst na 24-48h; trzeci post eksplicytnie bearish ('472 was a fantasy, bears take it from here'); skew=1.0 napompowany historycznymi gain-porn postami, nie forward-looking alpha."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "Upstream SELL_SHORT klasyfikacja błędna — skew=-0.053 (praktycznie neutral), treść top postu (18 upów, za mało) faktycznie BYCZA (Jensen Huang agentic AI thesis: 1000x compute demand, NVDA ATH >$216 tej tygodniu); drugi post to covered-call management question, nie directional signal; dokładanie short na NVDA gdy portfel ma już 8× bearish PUTów na QQQ/SPY/GOOGL z expirem 05/18 = crowded trade bez dodatkowego edge."
+    }
+  ],
+  "macro_context": "VIX=17 (risk-on, niskie strachy), daily P&L +3.27% — portfel załadowany bearish PUTami QQQ/SPY/GOOGL (+47-93%) wygasającymi 05/18; brak fresh Reddit alpha dziś, ochrona bankrollu przed noise.",
+  "confidence_in_curation": "high"
+}
