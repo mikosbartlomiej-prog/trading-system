@@ -1,12 +1,13 @@
-name: Twitter Monitor — Bluesky social-graph news
+name: Twitter Monitor — Bluesky social-graph 24/7
+
+# v3.2 schedule (2026-05-12): unified to every 5 min around the clock.
+# Twitter/Bluesky is global news; eskalacje zdarzają się o każdej porze.
+# Per-instrument trading window gates order placement, so off-session
+# signals route to [QUEUED] email and replay when market opens.
 
 on:
   schedule:
-    # Sesja giełdowa: co 5 minut (13:30-20:00 UTC, Mon-Fri)
-    - cron: '*/5 13-20 * * 1-5'
-    # Po godzinach: co 15 minut przez całą dobę 7 dni w tygodniu
-    # (Twitter/Bluesky to global news; eskalacje zdarzają się nocą)
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
