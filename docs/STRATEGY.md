@@ -1038,6 +1038,70 @@ tickers can be added only by editing `.claude/rules/tickers-whitelist.md`
 **and** updating this document accordingly. Removing a ticker means all
 existing positions in it must be flat first (or carry a manual exception).
 
+### 10.1 Per-Instrument Trading Windows (v3.2 — 2026-05-12)
+
+Orthogonal to the whitelist: `config/instrument_windows.json` controls
+**when** each instrument can be traded. Two layers:
+
+**Layer A — workflow cron schedules** govern when monitors RUN:
+
+| Monitor | Cron | Rationale |
+|---|---|---|
+| price-monitor | `*/5 13-20 * * 1-5` | Alpaca bars only update market hours |
+| crypto-monitor | `*/5 * * * *` | Crypto 24/7 |
+| defense-monitor | `*/5 * * * *` | News breaks any time; gate handles execution |
+| geo-monitor | `*/15 * * * *` | News breaks any time |
+| reddit-monitor | `*/30 * * * *` | ToS-safe at 30 min cadence |
+| twitter-monitor | `*/5 * * * *` | Bluesky 24/7 |
+| options-monitor | `*/5 13-20 * * 1-5` | Options chain market-hours only |
+| options-exit-monitor | `*/5 13-20 * * 1-5` | Same as entry |
+| exit-monitor | `*/5 13-20 weekday + */15 off-hours + */15 weekend` | Dual cron: tight in-session, light coverage for crypto off-hours |
+
+**Layer B — per-instrument trading window** gates order placement:
+
+```python
+# shared/instrument_windows.py
+ok, reason = can_trade_now(symbol, asset_class)  # → (bool, str)
+if not ok:
+    # email subject [QUEUED] (market closed) or [DEFERRED] (paused symbol)
+    notify_signal(signal, alert_sent=False, reason=reason)
+    return
+place_stock_bracket(...)
+```
+
+Decision precedence inside `can_trade_now`:
+1. `instrument_overrides[symbol].enabled == false` → block (manual pause)
+2. `paused_until` is future date → block
+3. Asset-class window says market closed → block (defers to `shared/market_hours.is_us_market_open`)
+4. else → allow
+
+**Asset-class defaults** (from `config/instrument_windows.json`):
+
+| Asset class | Days | Window UTC | Holidays |
+|---|---|---|---|
+| `us_equity` | Mon-Fri | 13:30-20:00 | Yes (NYSE) |
+| `us_option` | Mon-Fri | 13:30-20:00 | Yes (NYSE) |
+| `crypto` | Sun-Sat | 00:00-23:59 | No |
+
+**Per-instrument overrides** (`instrument_overrides`):
+- `MSTR`: enabled=false (backtest 0% WR; gated on momentum-confirm filter)
+- `SMCI`: enabled=false (same)
+- Future overrides: any symbol can be paused with `paused_until` date for
+  auto-resume, or `paused_until: null` for manual-only re-enable
+
+**Wired into 8 enforcement points**:
+- `shared/alpaca_orders.py`: `place_stock_bracket`, `place_crypto_order`,
+  `place_simple_buy`, `execute_stock_signal`, `execute_crypto_signal`
+- `shared/allocator.py`: `_execute_one` (BUY/REDUCE/EXIT)
+- `exit-monitor/monitor.py`: `place_emergency_close`
+- `options-exit-monitor/monitor.py`: `place_sell_to_close`
+
+**Migration from `state.json::tickers`**: `shared/learning_state.py::is_ticker_enabled`
+now consults `instrument_windows.json` first, falls back to `state.json::tickers`
+for backwards compatibility. New tickers go to `instrument_windows.json`.
+
+### 10.2 Whitelist groups
+
 Current whitelist groups (see `.claude/rules/tickers-whitelist.md`):
 
 - Mega-cap US: AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA

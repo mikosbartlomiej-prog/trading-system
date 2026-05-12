@@ -130,6 +130,18 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         print(f"  bracket reject: bad side '{side}'")
         return None
 
+    # Per-instrument trading window gate (final guard right before POST).
+    # Most callers also gate upstream in execute_stock_signal — this is the
+    # belt-and-braces check that catches direct callers (allocator, etc.).
+    try:
+        from instrument_windows import can_trade_now
+    except ImportError:
+        from shared.instrument_windows import can_trade_now
+    ok, reason = can_trade_now(symbol, asset_class="us_equity")
+    if not ok:
+        print(f"  bracket reject {symbol}: trade-window — {reason}")
+        return None
+
     # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
     # block the trade; soft warnings are logged but don't reject. Fail-soft
     # if the officer module is unavailable for any reason — proceed to place.
@@ -196,6 +208,16 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     if side not in ("buy", "sell"):
         return None
 
+    # Per-instrument trading window gate.
+    try:
+        from instrument_windows import can_trade_now
+    except ImportError:
+        from shared.instrument_windows import can_trade_now
+    ok, reason = can_trade_now(symbol, asset_class="crypto")
+    if not ok:
+        print(f"  crypto reject {symbol}: trade-window — {reason}")
+        return None
+
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
     # (Alpaca crypto = simple limit only); we pass the strategy-level
     # values so the officer can validate R:R and per-trade size.
@@ -254,6 +276,18 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
     """
     if qty < 1 or limit_price <= 0:
         return None
+
+    # Per-instrument trading window gate (options trade only during regular
+    # equity session).
+    try:
+        from instrument_windows import can_trade_now
+    except ImportError:
+        from shared.instrument_windows import can_trade_now
+    ok, reason = can_trade_now(symbol, asset_class="us_option")
+    if not ok:
+        print(f"  simple_buy reject {symbol}: trade-window — {reason}")
+        return None
+
     payload = {
         "symbol":         symbol,
         "qty":            str(int(qty)),
@@ -305,18 +339,17 @@ def execute_stock_signal(signal: dict) -> dict | None:
         print(f"  {sym}: size_usd={size_usd} -> skip")
         return None
 
-    # Pre-flight: market hours check for stock entries (24/7 monitors —
-    # defense, twitter, geo — fire signals pre-market when Alpaca bracket
-    # orders get rejected. Catch here and return early with clear log so
-    # callers can use distinct email reason instead of generic "(error)").
+    # Per-instrument trading window gate (v3.2 — single source of truth in
+    # config/instrument_windows.json). Checks (1) per-symbol pause and
+    # (2) market hours. Replaces the old inline is_us_market_open call.
     try:
-        from market_hours import is_us_market_open
-        mkt_open, mkt_reason = is_us_market_open()
-        if not mkt_open:
-            print(f"  {sym}: US market {mkt_reason} — skipping (use pre-market gate in monitor for QUEUED email)")
-            return None
+        from instrument_windows import can_trade_now
     except ImportError:
-        pass   # fail-soft if helper unavailable (tests)
+        from shared.instrument_windows import can_trade_now
+    ok, reason = can_trade_now(sym, asset_class="us_equity")
+    if not ok:
+        print(f"  {sym}: trade-window blocked — {reason}")
+        return {"deferred": True, "reason": reason, "symbol": sym}
 
     side = "buy" if action.upper() == "BUY" else "sell_short"
 
@@ -376,6 +409,17 @@ def execute_crypto_signal(signal: dict) -> dict | None:
 
     if size_usd <= 0:
         return None
+
+    # Per-instrument trading window gate. Crypto is 24/7 so default-allow,
+    # but per-symbol pause (instrument_overrides) still applies.
+    try:
+        from instrument_windows import can_trade_now
+    except ImportError:
+        from shared.instrument_windows import can_trade_now
+    ok, reason = can_trade_now(sym, asset_class="crypto")
+    if not ok:
+        print(f"  {sym}: trade-window blocked — {reason}")
+        return {"deferred": True, "reason": reason, "symbol": sym}
 
     side = "buy" if action.upper() in ("BUY", "BUY_TO_OPEN") else "sell"
 

@@ -848,11 +848,26 @@ class AccountAwareAllocator:
             self.trace.warn(f"{sym} {action}: {result['reason']}", indent=2)
             return result
 
-        # Market hours gate (stocks only — crypto trades 24/7)
         is_crypto = "/" in sym
+        ic_asset = "crypto" if is_crypto else asset_class
+
+        # Honor caller-provided market_open hint (used by tests + cron-time
+        # snapshot). Skip stocks if hint says closed; crypto bypasses.
         if not is_crypto and not market_open:
             result["reason"] = "market not open"
-            self.trace.warn(f"{sym} {action}: skipped — {result['reason']}", indent=2)
+            self.trace.warn(f"{sym} {action}: skipped — market not open", indent=2)
+            return result
+
+        # Per-instrument trading window gate (v3.2). Catches per-symbol
+        # pauses (e.g. MSTR/SMCI) even when market is open.
+        try:
+            from instrument_windows import can_trade_now
+        except ImportError:
+            from shared.instrument_windows import can_trade_now
+        ok, reason = can_trade_now(sym, asset_class=ic_asset)
+        if not ok:
+            result["reason"] = reason
+            self.trace.warn(f"{sym} {action}: skipped — {reason}", indent=2)
             return result
 
         # Quantity sanity

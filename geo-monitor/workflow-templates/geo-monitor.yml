@@ -1,0 +1,43 @@
+name: Geopolitical News Monitor — 15min scan 24/7
+
+# v3.2 schedule (2026-05-12): every 15 min around the clock. Geopolitical
+# news breaks any time — and the per-instrument trading window in
+# config/instrument_windows.json gates order placement so pre-market
+# signals don't burn Alpaca rejects, they go to [QUEUED] email.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scan-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r geo-monitor/requirements.txt
+
+      - name: Run geopolitical scan
+        env:
+          PYTHONIOENCODING:          utf-8
+          LC_ALL:                    C
+          LANG:                      C
+          FINNHUB_API_KEY:           ${{ secrets.FINNHUB_API_KEY }}
+          NEWSAPI_KEY:               ${{ secrets.NEWSAPI_KEY }}
+          ALPACA_API_KEY:            ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:         ${{ secrets.ALPACA_SECRET_KEY }}
+          CLOUDFLARE_GEO_WORKER_URL: ${{ secrets.CLOUDFLARE_GEO_WORKER_URL }}
+          GMAIL_USER:                ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:        ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:              ${{ secrets.NOTIFY_EMAIL }}
+        run: python geo-monitor/monitor.py

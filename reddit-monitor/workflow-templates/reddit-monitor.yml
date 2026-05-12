@@ -10,8 +10,12 @@ name: Reddit Monitor — sentiment + tracked-user scan
 
 on:
   schedule:
-    # During US session (~13:30-20:00 UTC), every 60 min
-    - cron: '0 13,14,15,16,17,18,19,20 * * 1-5'
+    # v3.2 (2026-05-12): every 30 min 24/7. Reddit DD posts surface around
+    # the clock; ToS-safe at 30-min cadence (~12 req/h cumulative across
+    # 6 subs, well under anonymous limit). Per-instrument trading window
+    # in shared/instrument_windows.py gates order placement, so off-hours
+    # signals route to [QUEUED] email and replay when relevant market opens.
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 # Permissions:

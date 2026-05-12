@@ -149,6 +149,20 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     bucket.
     """
     reason = decision.lower()  # "tp", "sl", "neardth", "regime"
+
+    # Per-instrument trading window gate (options trade only during regular
+    # equity session; pre-market sell would be rejected by Alpaca anyway).
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from instrument_windows import can_trade_now
+        ok, w_reason = can_trade_now(contract_symbol, asset_class="us_option")
+        if not ok:
+            print(f"  sell-to-close {contract_symbol}: trade-window blocked — {w_reason}")
+            return None
+    except ImportError:
+        pass
+
     payload: dict = {
         "symbol":          contract_symbol,
         "qty":             str(int(qty)),

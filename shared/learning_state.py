@@ -73,26 +73,79 @@ def side_bias(strategy_name: str) -> str | None:
 
 def load_ticker_state(ticker: str) -> dict:
     """
-    Returns the per-ticker override dict from state.json:
+    Returns the per-ticker override dict.
+
+    v3.2 — two sources, instrument_windows.json takes priority:
+      1. config/instrument_windows.json::instrument_overrides[ticker]  (canonical)
+      2. learning-loop/state.json::tickers[ticker]                      (legacy)
+
+    Both have the same schema:
       {
-        "enabled":      bool,           # default True if missing
-        "rationale":    "...",          # why disabled
-        "paused_until": "YYYY-MM-DD" or None,  # null = manual re-enable only
-        "evidence":     "...",          # backtest reference, etc.
+        "enabled":      bool,                  # default True if missing
+        "rationale":    "...",                 # why disabled
+        "paused_until": "YYYY-MM-DD" or null,  # null = manual re-enable only
+        "evidence":     "...",                 # backtest reference, etc.
       }
-    or {} if no override exists.
+    Empty dict {} if no override anywhere.
     """
+    # Priority 1: instrument_windows.json (single source of truth)
+    try:
+        try:
+            from instrument_windows import get_instrument_override
+        except ImportError:
+            from shared.instrument_windows import get_instrument_override
+        iw_override = get_instrument_override(ticker)
+        if iw_override:
+            return iw_override
+    except (ImportError, OSError):
+        pass
+
+    # Priority 2: learning-loop/state.json (legacy path during migration)
     return _read_state().get("tickers", {}).get(ticker, {})
 
 
 def is_ticker_enabled(ticker: str) -> bool:
-    """Convenience: True (default) when ticker is enabled or no override exists."""
-    return load_ticker_state(ticker).get("enabled", True)
+    """
+    True (default) when ticker is enabled or no override exists in either
+    source. Honors paused_until auto-resume if present.
+    """
+    from datetime import date as _date
+    ov = load_ticker_state(ticker)
+    if not ov:
+        return True
+    if ov.get("enabled", True):
+        return True
+    # enabled=false but paused_until may have expired
+    pu = ov.get("paused_until")
+    if pu:
+        try:
+            if _date.today() >= _date.fromisoformat(pu):
+                return True   # auto-resume
+        except ValueError:
+            pass
+    return False
 
 
 def disabled_tickers() -> list[str]:
-    """List of tickers explicitly disabled via state.json. Used for banner-log."""
-    return [
-        t for t, info in (_read_state().get("tickers") or {}).items()
-        if info and not info.get("enabled", True)
-    ]
+    """
+    List of tickers explicitly disabled via either source. Used for banner-log.
+    Dedup'd across instrument_windows.json + state.json.
+    """
+    disabled = set()
+
+    # Source 1: instrument_windows.json
+    try:
+        try:
+            from instrument_windows import list_paused_instruments
+        except ImportError:
+            from shared.instrument_windows import list_paused_instruments
+        disabled.update(list_paused_instruments())
+    except (ImportError, OSError):
+        pass
+
+    # Source 2: state.json
+    for t, info in (_read_state().get("tickers") or {}).items():
+        if info and not info.get("enabled", True):
+            disabled.add(t)
+
+    return sorted(disabled)

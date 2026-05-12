@@ -115,13 +115,20 @@ def notify_signal(signal: dict, alert_sent: bool, reason: str = "") -> bool:
     else:
         status = "Alert NOT sent (error)"
 
-    # Subject prefix communicates outcome at-a-glance. PENDING for queued
-    # signals (e.g. pre-market), NOT-SENT for hard failures (risk reject,
-    # API error). BUY/SELL when actually placed.
+    # Subject prefix communicates outcome at-a-glance:
+    #   BUY/SELL  — actually placed at Alpaca
+    #   QUEUED    — market closed (pre/after/weekend/holiday); signal valid, retry later
+    #   DEFERRED  — per-instrument window blocked (e.g. paused symbol like MSTR/SMCI,
+    #               or trade-window says no); same outcome as QUEUED but emphasizes
+    #               that the cause is per-instrument policy not pure market hours
+    #   NOT-SENT  — hard failure (risk-officer REJECT, API error, etc.)
+    market_closed_reasons = ("pre_market", "after_hours", "weekend", "holiday", "closed")
     if alert_sent:
         prefix = arrow
-    elif reason in ("pre_market", "after_hours", "weekend", "holiday", "closed"):
+    elif reason and any(r in reason for r in market_closed_reasons):
         prefix = "QUEUED"
+    elif reason and ("paused" in reason or "trade-window" in reason or "blocked" in reason):
+        prefix = "DEFERRED"
     elif reason:
         prefix = "NOT-SENT"
     else:

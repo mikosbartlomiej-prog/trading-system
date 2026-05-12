@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "name": "instrument_windows",
+  "updated": "2026-05-12",
+  "description": "Single source of truth for WHEN each instrument can be traded. Per-asset-class default window + per-symbol overrides. Read by shared/instrument_windows.py::can_trade_now() which gates every place_order call across all monitors. Scanning monitors keep running 24/7 (signals always emitted); only the order placement is gated.",
+
+  "default_windows": {
+    "us_equity": {
+      "days":                [1, 2, 3, 4, 5],
+      "open_utc":            "13:30",
+      "close_utc":           "20:00",
+      "respect_us_holidays": true,
+      "comment":             "NYSE/NASDAQ regular hours 09:30-16:00 ET → 13:30-20:00 UTC (winter) / 12:30-19:00 UTC (summer DST). Holiday list maintained in shared/market_hours.py::_HOLIDAYS_2026."
+    },
+    "us_option": {
+      "days":                [1, 2, 3, 4, 5],
+      "open_utc":            "13:30",
+      "close_utc":           "20:00",
+      "respect_us_holidays": true,
+      "comment":             "Options trade same hours as underlying equity. Some options have shortened sessions on half-days — not modeled (use respect_us_holidays as conservative fallback)."
+    },
+    "crypto": {
+      "days":                [0, 1, 2, 3, 4, 5, 6],
+      "open_utc":            "00:00",
+      "close_utc":           "23:59",
+      "respect_us_holidays": false,
+      "comment":             "Alpaca crypto desk trades 24/7. BTC/USD, ETH/USD + Tier 2 alts (SOL, AVAX, etc.)."
+    }
+  },
+
+  "extended_hours_opt_in": {
+    "_comment": "Symbols where we opt-in to Alpaca extended_hours=true on order. Empty by default. Add symbol → set true; alpaca_orders will pass extended_hours flag.",
+    "symbols": []
+  },
+
+  "instrument_overrides": {
+    "_comment": "Per-symbol override of enabled state. ALWAYS wins over default_windows. paused_until=null → manual re-enable only. paused_until=YYYY-MM-DD → auto-resume on that date.",
+
+    "MSTR": {
+      "enabled":      false,
+      "paused_until": null,
+      "rationale":    "DISABLED 2026-05-08 — backtest 6mo: 2 trades / 0% WR / -$2,364. BTC-with-leverage; momentum-long breakouts get gap-down-killed.",
+      "evidence":     "backtest/results/momentum-long-20260508-1201.json",
+      "review_after": "2026-06-01 OR momentum-confirm filter ships + positive backtest"
+    },
+    "SMCI": {
+      "enabled":      false,
+      "paused_until": null,
+      "rationale":    "DISABLED 2026-05-08 — backtest 6mo: 2 trades / 0% WR / -$2,109. High-beta AI single-name, hype-breakouts → earnings gap-down.",
+      "evidence":     "backtest/results/momentum-long-20260508-1201.json",
+      "review_after": "2026-06-01 OR momentum-confirm filter ships + earnings-skip"
+    }
+  },
+
+  "strategy_overrides": {
+    "_comment": "Per-strategy disabled (orthogonal to per-symbol). Mirrors learning-loop/state.json::strategies for visibility. Source of truth for enable/disable still lives in state.json so learning-loop can flip it; this config is read-only mirror documented here.",
+    "overbought-short": {
+      "enabled":      false,
+      "paused_until": null,
+      "rationale":    "DISABLED 2026-05-08 — backtest 6mo: 11% WR / -$2,065. Shorted into 8/9 trend-continuations during bull market. Needs market-regime gate.",
+      "evidence":     "backtest/results/overbought-short-20260508-1115.json",
+      "review_after": "Regime turn OR refactor with regime filter"
+    }
+  }
+}

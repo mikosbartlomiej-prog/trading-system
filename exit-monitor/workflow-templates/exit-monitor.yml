@@ -1,0 +1,46 @@
+name: Exit Monitor — dual cron (market 5min + off-hours 15min)
+
+# v3.2 schedule (2026-05-12): dual-cron split per user direction.
+#   Cron 1: */5 during US market session  → stock + crypto exits, tight rebalance
+#   Cron 2: */15 off-hours (00-13, 20-23) → crypto-only coverage; per-instrument
+#           trading window blocks stock SELL pre-market so they fall through harmlessly
+# Weekends are continuously covered by cron 2 (no exclusion).
+
+on:
+  schedule:
+    # In-session: every 5 min weekday 13:30-20:00 UTC (NYSE regular hours)
+    - cron: '*/5 13-20 * * 1-5'
+    # Off-hours: every 15 min in remaining windows (24/7 for crypto)
+    - cron: '*/15 0-12,21-23 * * *'
+    - cron: '*/15 * * * 0,6'
+  workflow_dispatch:
+
+jobs:
+  check-positions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r exit-monitor/requirements.txt
+
+      - name: Run exit monitor
+        env:
+          PYTHONIOENCODING:           utf-8
+          LC_ALL:                     C
+          LANG:                       C
+          ALPACA_API_KEY:             ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:          ${{ secrets.ALPACA_SECRET_KEY }}
+          CLOUDFLARE_EXIT_WORKER_URL: ${{ secrets.CLOUDFLARE_EXIT_WORKER_URL }}
+          GMAIL_USER:                 ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:         ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:               ${{ secrets.NOTIFY_EMAIL }}
+        run: python exit-monitor/monitor.py

@@ -9,10 +9,10 @@ name: Crypto Monitor — 11 coins predator scan (24/7)
 
 on:
   schedule:
-    # Every 30 min, 24/7 (split into two crons because GH Actions
-    # doesn't support */30 with weekend flag)
-    - cron: '0 * * * *'
-    - cron: '30 * * * *'
+    # v3.2 (2026-05-12): every 5 min 24/7 — crypto trades around the clock,
+    # short cadence catches predator-mode quick wins. Per-instrument trade
+    # window in shared/instrument_windows.py keeps everything else gated.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
