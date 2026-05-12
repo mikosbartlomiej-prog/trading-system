@@ -1,13 +1,18 @@
-name: Exit Monitor — Hourly Position Check
+name: Exit Monitor — dual cron (market 5min + off-hours 15min)
+
+# v3.2 schedule (2026-05-12): dual-cron split per user direction.
+#   Cron 1: */5 during US market session  → stock + crypto exits, tight rebalance
+#   Cron 2: */15 off-hours (00-12, 21-23) → crypto-only coverage; per-instrument
+#           trading window blocks stock SELL pre-market so they fall through harmlessly
+#   Cron 3: */15 weekend (Sat/Sun)        → crypto continues 24/7
 
 on:
   schedule:
-    # Co godzinę podczas sesji giełdowej (9:30-16:30 ET = 13:30-20:30 UTC)
-    # + godzina przed/po na crypto i pre/after-market pozycje
-    - cron: '30 12-21 * * 1-5'
-    # Crypto: dodatkowo w nocy co 2h (22:00, 00:00, 02:00 UTC)
-    - cron: '0 22,0,2 * * *'
-  # Ręczne uruchomienie (do testów)
+    # In-session: every 5 min weekday 13:30-20:00 UTC (NYSE regular hours)
+    - cron: '*/5 13-20 * * 1-5'
+    # Off-hours: every 15 min in remaining windows (24/7 for crypto)
+    - cron: '*/15 0-12,21-23 * * *'
+    - cron: '*/15 * * * 0,6'
   workflow_dispatch:
 
 jobs:
