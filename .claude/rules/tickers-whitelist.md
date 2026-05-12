@@ -3,8 +3,9 @@
 **Wersja: 2.0 (2026-05-06) — risk-on overhaul**
 Źródło prawdy: `docs/STRATEGY.md` §10.
 
-## Akcje US (mega-cap)
+## Akcje US (mega-cap + AI semis — v3.0 expansion 2026-05-12)
 AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+**v3.0 added:** AMD, AVGO (semis trinity completed)
 
 ## Financials
 JPM, V, MA, JNJ, BRK.B
@@ -14,9 +15,17 @@ SPY, QQQ, VOO, VTI, IWM, VXUS, VWO
 
 ## ETF (sektory)
 XLK, XLF, XLE, XLV, XLY
+**v3.0 added (inflation/energy bucket):** USO
 
-## Surowce ETF
+## Energia (v3.0 inflation bucket — added 2026-05-12)
+XOM, CVX, OXY
+
+## Surowce ETF + Bonds hedge (v3.0 hedge bucket)
 GLD, SLV
+**v3.0 added (hedge_bonds bucket):** TLT (20+ year Treasury — RISK_OFF defensive)
+
+## Sector semi ETF (v3.0 ai_nasdaq_semis bucket — added 2026-05-12)
+SMH
 
 ## Krypto (Alpaca) — v2.4 (2026-05-12) predator expansion
 
@@ -43,9 +52,6 @@ ITA, XAR, DFEN
 
 ## European defense ADR
 BAESY, EADSY
-
-## Energia
-XOM, CVX
 
 ## Lewarowane ETF (3×) — RISK-ON, dodane 2026-05-06
 TQQQ, SQQQ, SPXL, SPXS, UPRO, SPXU

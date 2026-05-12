@@ -24,8 +24,14 @@ import requests
 VIX_HALT_THRESHOLD    = 60.0
 VIX_CAUTION_THRESHOLD = 999.0   # effectively disabled — the CAUTION branch never fires
 
-# v2.0 account-level circuit breakers (docs/STRATEGY.md §3.1)
-DAILY_DRAWDOWN_HALT_PCT  = -12.0   # block new entries if intraday P&L <= -12%
+# v3.0 (2026-05-12) aggressive profile — values come from
+# config/aggressive_profile.json via shared/profile.py. Constants here
+# are DEFAULTS used when profile unavailable / corrupted. Read fresh
+# from profile each call so config changes take effect without restart.
+DAILY_DRAWDOWN_HALT_PCT  = -3.0    # v3.0 aggressive (was -12% in v2.0)
+WEEKLY_DRAWDOWN_HALT_PCT = -7.0    # NEW v3.0
+MAX_DRAWDOWN_DEFENSIVE_PCT = -12.0  # NEW v3.0 — trigger defensive mode
+MAX_DRAWDOWN_FULL_STOP_PCT = -20.0  # NEW v3.0 — close all (manual confirm)
 POSITION_PCT_CAP         = 40.0    # block new entries if combined pos% > 40% equity
 
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
@@ -153,29 +159,131 @@ def get_account_status() -> dict | None:
         return None
 
 
+def _profile_threshold_pct(key: str, default_pct: float) -> float:
+    """
+    Read a drawdown threshold from aggressive_profile.json::risk_limits.
+    Profile stores values as fractions (0.03 = 3%); this function returns
+    SIGNED PERCENT (so 0.03 → -3.0 for daily loss threshold).
+    """
+    try:
+        from profile import profile_value
+    except ImportError:
+        try:
+            from shared.profile import profile_value
+        except ImportError:
+            return default_pct
+    val = profile_value(f"risk_limits.{key}")
+    if val is None:
+        return default_pct
+    try:
+        # Profile stores fractional (0.03); convert to negative percent
+        return -float(val) * 100
+    except (TypeError, ValueError):
+        return default_pct
+
+
 def daily_drawdown_guard(account: dict | None = None) -> tuple[str, str]:
     """
-    Account-level circuit breaker. Should be called at the start of every
-    entry monitor's run, before VIX guard.
+    Account-level circuit breaker. Threshold from aggressive_profile.json
+    ::risk_limits.max_daily_loss_pct_equity (default -3% in v3.0 aggressive;
+    was -12% in v2.0).
 
     Returns:
-      ("HALT", reason)  when daily P&L <= DAILY_DRAWDOWN_HALT_PCT
+      ("HALT", reason)  when daily P&L <= max_daily_loss threshold
       ("OK", reason)    otherwise (including fail-open on API failure)
-
-    Pass `account` from get_account_status() to avoid duplicate API calls
-    in monitors that also need equity for position_pct() checks.
     """
     acct = account if account is not None else get_account_status()
     if not acct:
         print("  Drawdown guard: account data unavailable -> proceeding (fail-open)")
         return "OK", "fail-open"
     pl = acct["daily_pl_pct"]
-    if pl <= DAILY_DRAWDOWN_HALT_PCT:
-        msg = f"daily P&L {pl:+.1f}% <= {DAILY_DRAWDOWN_HALT_PCT}% -> HALT new entries"
+    threshold = _profile_threshold_pct("max_daily_loss_pct_equity",
+                                          DAILY_DRAWDOWN_HALT_PCT)
+    if pl <= threshold:
+        msg = f"daily P&L {pl:+.2f}% <= {threshold:+.1f}% -> HALT new entries"
         print(f"  Drawdown guard: {msg}")
         return "HALT", msg
-    print(f"  Drawdown guard: daily P&L {pl:+.1f}% -> OK")
-    return "OK", f"daily P&L {pl:+.1f}%"
+    print(f"  Drawdown guard: daily P&L {pl:+.2f}% (threshold {threshold:+.1f}%) -> OK")
+    return "OK", f"daily P&L {pl:+.2f}%"
+
+
+def weekly_drawdown_guard(account: dict | None = None,
+                            weekly_start_equity: float | None = None
+                            ) -> tuple[str, str]:
+    """
+    Weekly drawdown circuit breaker. v3.0 aggressive profile threshold
+    is -7%. Triggers `WARN` (not HALT) — operator/LLM decide whether to
+    pause; some strategies (overbought-short in falling tape) may still
+    want to fire.
+
+    `weekly_start_equity` should be the Monday open equity, persisted
+    by the workflow. If None, falls back to last_equity from /v2/account
+    (only gives intraday, NOT week — but better than nothing as a
+    safety net).
+
+    Returns:
+      ("HALT", reason)  when weekly P&L <= max_weekly_loss threshold
+      ("WARN", reason)  when within 1pp of threshold
+      ("OK", reason)    otherwise
+    """
+    acct = account if account is not None else get_account_status()
+    if not acct:
+        return "OK", "fail-open"
+    if weekly_start_equity is None:
+        # Approximation: use last_equity (yesterday's close)
+        weekly_start_equity = acct.get("last_equity")
+    if not weekly_start_equity or weekly_start_equity <= 0:
+        return "OK", "fail-open (no baseline)"
+
+    equity_now = acct["equity"]
+    week_pl_pct = (equity_now - weekly_start_equity) / weekly_start_equity * 100
+    threshold = _profile_threshold_pct("max_weekly_loss_pct_equity", WEEKLY_DRAWDOWN_HALT_PCT)
+    if week_pl_pct <= threshold:
+        msg = f"weekly P&L {week_pl_pct:+.2f}% <= {threshold:+.1f}% -> HALT"
+        print(f"  Weekly guard: {msg}")
+        return "HALT", msg
+    if week_pl_pct <= threshold + 1.0:
+        msg = f"weekly P&L {week_pl_pct:+.2f}% within 1pp of {threshold:+.1f}% -> WARN"
+        print(f"  Weekly guard: {msg}")
+        return "WARN", msg
+    return "OK", f"weekly P&L {week_pl_pct:+.2f}%"
+
+
+def max_drawdown_guard(account: dict | None = None,
+                        peak_equity: float | None = None
+                        ) -> tuple[str, str]:
+    """
+    Trailing max drawdown from peak. Two thresholds:
+      -12% (defensive mode) → returns "DEFENSIVE"
+      -20% (full stop)      → returns "FULL_STOP"
+
+    `peak_equity` should come from learning-loop/state.json::peak_equity
+    (workflow updates it each daily-learning run). Falls back to
+    last_equity (very approximate — last day's close).
+
+    Returns ("OK", reason) | ("DEFENSIVE", reason) | ("FULL_STOP", reason).
+    """
+    acct = account if account is not None else get_account_status()
+    if not acct:
+        return "OK", "fail-open"
+    if peak_equity is None:
+        peak_equity = acct.get("last_equity") or acct.get("equity")
+    if not peak_equity or peak_equity <= 0:
+        return "OK", "fail-open (no peak baseline)"
+
+    equity_now = acct["equity"]
+    dd_pct = (equity_now - peak_equity) / peak_equity * 100
+    full_stop = _profile_threshold_pct("max_drawdown_full_stop_pct", MAX_DRAWDOWN_FULL_STOP_PCT)
+    defensive = _profile_threshold_pct("max_drawdown_defensive_mode_pct", MAX_DRAWDOWN_DEFENSIVE_PCT)
+    if dd_pct <= full_stop:
+        msg = f"drawdown {dd_pct:+.2f}% <= {full_stop:+.1f}% -> FULL_STOP (manual confirm required)"
+        print(f"  Max-DD guard: {msg}")
+        return "FULL_STOP", msg
+    if dd_pct <= defensive:
+        msg = f"drawdown {dd_pct:+.2f}% <= {defensive:+.1f}% -> DEFENSIVE mode"
+        print(f"  Max-DD guard: {msg}")
+        return "DEFENSIVE", msg
+    return "OK", f"drawdown {dd_pct:+.2f}%"
 
 
 def position_pct(symbol: str, equity: float | None = None) -> float:

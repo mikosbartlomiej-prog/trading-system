@@ -16,9 +16,14 @@ try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
     from risk_guards import vix_guard, has_open_position, daily_drawdown_guard, get_account_status, concentration_ok
-    from market_data import get_daily_bars
+    from market_data import get_daily_bars, compute_reaction_metrics
     from alpaca_orders import execute_stock_signal
     from learning_state import load_strategy_state, is_ticker_enabled, disabled_tickers
+    # v3.0 (2026-05-12) Event Switch + Momentum Score
+    from regime import detect_regime, is_ticker_allowed
+    from momentum_score import score_symbol
+    from profile import load_profile, load_watchlists, profile_value
+    from defensive_mode import is_defensive_mode_active
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -28,13 +33,22 @@ except ImportError:
     def get_account_status(): return None
     def concentration_ok(_s, _n, equity=None): return (True, 0.0)
     def get_daily_bars(symbol, days=35): return None
+    def compute_reaction_metrics(_s): return None
     def execute_stock_signal(_s): return None
     def load_strategy_state(_): return {}
     def is_ticker_enabled(_): return True
     def disabled_tickers(): return []
+    def detect_regime(_=None): return {"regime":"NEUTRAL","source":"fallback",
+                                         "allowed_buckets":[],"size_multiplier":1.0,
+                                         "options_side_bias":None,"max_alt_positions":3}
+    def is_ticker_allowed(_t, _r): return (True, "stub")
+    def score_symbol(_t, _b, **kw): return {"score":0.0,"tradeable":False,"reason":"stub"}
+    def load_profile(): return {}
+    def load_watchlists(): return {}
+    def profile_value(_p, default=None): return default
+    def is_defensive_mode_active(): return False
 
 # Default execution path: AUTO_EXECUTE via Alpaca REST (no routine).
-# Set USE_ROUTINE=true to fall back to the legacy Cloudflare Worker -> routine path.
 USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
 # ─── Konfiguracja ───────────────────────────────────────────────────────────
@@ -46,24 +60,28 @@ CLOUDFLARE_WORKER_URL = os.environ.get(
 
 FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 
-# Tickery do monitorowania (long + short candidates) — v2.0 risk-on
+# v3.0 (2026-05-12): tickers come from config/watchlists.json buckets.
+# Static fallbacks here are used only when watchlists.json unavailable.
 TICKERS_LONG  = ["AAPL", "MSFT", "GOOGL", "NVDA", "META", "AMZN", "TSLA",
                  "SPY", "QQQ",
+                 "AMD", "AVGO", "SMH",                   # v3.0 ai_nasdaq_semis
+                 "XLE", "USO", "XOM", "CVX", "OXY",      # v3.0 inflation_energy
+                 "GLD", "TLT",                            # v3.0 hedge
                  "COIN", "MSTR", "ARM", "SMCI"]
 TICKERS_SHORT = ["AAPL", "MSFT", "GOOGL", "NVDA", "META", "TSLA", "AMZN"]
 
-# Lewarowane ETF — v2.0 rozszerzona lista (3x SPY/QQQ/SOX/XLF/IWM, both directions)
+# Lewarowane ETF
 TICKERS_LEVERAGED = ["TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO", "SPXU",
                      "SOXL", "SOXS", "FAS", "FAZ", "TNA", "TZA"]
 
-# Rozmiary pozycji — v2.0 RISK-ON (was: 3000/2000/1500)
-SIZE_LONG      = 10000  # USD — long momentum
-SIZE_SHORT     = 8000   # USD — short
-SIZE_LEVERAGED = 6000   # USD — lewarowane ETF
+# Rozmiary pozycji — v3.0 reads from watchlists.json::bucket.size_per_position_usd
+# Hardcoded defaults below used only as fallback (when bucket lookup fails).
+SIZE_LONG      = 10000
+SIZE_SHORT     = 8000
+SIZE_LEVERAGED = 6000
 
-# ATR multipliers — v2.0 looser to let positions breathe
-ATR_SL_MULT = 2.0   # was 1.5
-ATR_TP_MULT = 4.0   # was 2.5
+ATR_SL_MULT = 2.0
+ATR_TP_MULT = 4.0
 
 # ─── Finnhub API ─────────────────────────────────────────────────────────────
 
@@ -322,6 +340,36 @@ def is_market_open():
     return market_open <= now <= market_close
 
 
+def _build_market_signals_for_regime() -> dict:
+    """
+    Build market_signals dict for regime.detect_regime().
+    VIX + SPY 5d + XLE 5d (energy proxy) + (BTC 24h optional via crypto-monitor).
+    All optional — missing fields default to None, regime falls back to NEUTRAL.
+    """
+    sig = {}
+    # VIX — already cached in shared.risk_guards
+    try:
+        from risk_guards import get_vix
+    except ImportError:
+        from shared.risk_guards import get_vix
+    sig["vix"] = get_vix()
+    # SPY 5d return — via daily bars
+    spy = get_daily_bars("SPY", days=10)
+    if spy and spy.get("close") and len(spy["close"]) >= 6:
+        prev = spy["close"][-6]
+        curr = spy["close"][-1]
+        if prev > 0:
+            sig["spy_5d_pct"] = (curr / prev - 1) * 100
+    # Energy 5d — XLE proxy
+    xle = get_daily_bars("XLE", days=10)
+    if xle and xle.get("close") and len(xle["close"]) >= 6:
+        prev = xle["close"][-6]
+        curr = xle["close"][-1]
+        if prev > 0:
+            sig["energy_5d_pct"] = (curr / prev - 1) * 100
+    return sig
+
+
 def run_checks():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -329,7 +377,13 @@ def run_checks():
         print(f"[{now_str}] Gielda zamknieta — pomijam sprawdzenie")
         return
 
-    print(f"\n[{now_str}] === SKANOWANIE LONG + SHORT ===")
+    print(f"\n[{now_str}] === PRICE MONITOR (v3.0 Aggressive Momentum + Event Switch) ===")
+
+    # v3.0 defensive mode check — if armed, only existing exits work; no new entries
+    if is_defensive_mode_active():
+        print(f"  [DEFENSIVE MODE ACTIVE] new entries blocked. Existing exits keep working.")
+        notify_summary("Price Monitor", 0, 0)
+        return
 
     # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
     account = get_account_status()
@@ -338,40 +392,93 @@ def run_checks():
         notify_summary("Price Monitor", 0, 0)
         return
 
-    vix_status, size_mult = vix_guard()
+    vix_status, vix_size_mult = vix_guard()
     if vix_status == "HALT":
         notify_summary("Price Monitor", 0, 0)
         return
+
+    # v3.0 Event Switch — detect current market regime
+    market_signals = _build_market_signals_for_regime()
+    regime_info = detect_regime(market_signals)
+    print(f"  REGIME: {regime_info['regime']} ({regime_info['source']}) — {regime_info['reason']}")
+    print(f"    allowed_buckets: {regime_info['allowed_buckets']}")
+    print(f"    size_multiplier: {regime_info['size_multiplier']:.2f}")
+
+    # v3.0 combined size multiplier: VIX × regime
+    size_mult = vix_size_mult * regime_info['size_multiplier']
 
     equity = account["equity"] if account else 0
     signals_found = 0
     alerts_sent   = 0
 
-    # LONG signals — filter out tickers disabled in learning-loop state.json
+    # v3.0 score-based pre-ranking — rank LONG candidates by composite score,
+    # keep only top_n (focus on leaders). Score reads from config/aggressive_profile.json.
+    top_n = int(profile_value("scoring.top_n_picks", 7))
+    min_score = float(profile_value("scoring.min_score_for_entry", 0.35))
+
+    # Filter: enabled + regime-allowed bucket
+    candidates_long = []
+    for t in TICKERS_LONG:
+        if not is_ticker_enabled(t):
+            continue
+        # v3.0 regime gate: skip tickers not in allowed_buckets
+        allowed, why = is_ticker_allowed(t, regime_info)
+        if not allowed:
+            continue
+        candidates_long.append(t)
+
     paused_long = [t for t in TICKERS_LONG if not is_ticker_enabled(t)]
-    active_long = [t for t in TICKERS_LONG if is_ticker_enabled(t)]
+    regime_blocked = [t for t in TICKERS_LONG
+                       if is_ticker_enabled(t) and t not in candidates_long]
     if paused_long:
-        print(f"\n[LONG] Pominiete (paused via learning-loop state): {', '.join(paused_long)}")
-    print(f"[LONG] Sprawdzam {', '.join(active_long)}")
-    for ticker in active_long:
+        print(f"  [LONG] Paused via learning-loop state: {', '.join(paused_long)}")
+    if regime_blocked:
+        print(f"  [LONG] Regime-blocked ({regime_info['regime']}): {', '.join(regime_blocked)}")
+
+    # Score every candidate; rank by score; pick top_n
+    spy_bars = get_daily_bars("SPY", days=35)
+    qqq_bars = get_daily_bars("QQQ", days=35)
+    scored = []
+    for t in candidates_long:
+        bars = get_daily_bars(t, days=35)
+        if not bars:
+            continue
+        s = score_symbol(t, bars, spy_bars=spy_bars, qqq_bars=qqq_bars)
+        scored.append(s)
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    top_picks = scored[:top_n]
+    if top_picks:
+        print(f"  [LONG] Top {len(top_picks)} by score:")
+        for s in top_picks:
+            print(f"    {s['ticker']:6s} score={s['score']:+.3f}  {s['reason']}")
+
+    # Process top picks: only those above min_score get full check
+    print(f"  [LONG] Processing top picks with score >= {min_score:.2f}...")
+    for s in top_picks:
+        if s["score"] < min_score:
+            continue
+        ticker = s["ticker"]
         signal = check_long_signal(ticker)
         if signal:
             if has_open_position(ticker):
-                print(f"  >>> SYGNAL LONG {ticker} pominiety (otwarta pozycja)")
+                print(f"    >>> SYGNAL LONG {ticker} pominiety (otwarta pozycja)")
                 continue
             new_size = round(signal["size_usd"] * size_mult)
             ok, combined = concentration_ok(ticker, new_size, equity=equity)
             if not ok:
-                print(f"  >>> SYGNAL LONG {ticker} pominiety (concentration {combined:.1f}% > 40%)")
+                print(f"    >>> SYGNAL LONG {ticker} pominiety (concentration {combined:.1f}% > 40%)")
                 continue
             signal["size_usd"] = new_size
-            print(f"  >>> SYGNAL LONG: {ticker}! (concentration={combined:.1f}%)")
+            signal["regime"] = regime_info["regime"]
+            signal["momentum_score"] = s["score"]
+            signal["score_reason"] = s["reason"]
+            print(f"    >>> SYGNAL LONG: {ticker}! score={s['score']:+.3f} regime={regime_info['regime']} size=${new_size}")
             signals_found += 1
             sent = send_alert(signal)
             if sent:
                 alerts_sent += 1
             notify_signal(signal, sent)
-        time.sleep(0.5)
+        time.sleep(0.3)
 
     # SHORT signals — honors learning-loop state.json overbought-short.enabled
     short_state = load_strategy_state("overbought-short")

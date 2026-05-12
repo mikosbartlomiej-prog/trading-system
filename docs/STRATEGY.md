@@ -1,7 +1,7 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 2.3.4 (channel fix + 7 heuristic implementations + autonomous pipeline; supersedes 2.3.3)
-**Effective from:** 2026-05-07 LATE
+**Version:** 3.0 — Aggressive Momentum + Event Switch (supersedes 2.4)
+**Effective from:** 2026-05-12
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -10,6 +10,17 @@ Every monitor, every strategies/*.md file, every agent prompt, and every
 iron rule in CLAUDE.md must agree with the numbers here. If a number
 appears in code that contradicts this document, **the document wins** —
 update the code.
+
+**v3.0 IS A MAJOR REWRITE.** Five new modules added (`config/aggressive_profile.json`,
+`config/watchlists.json`, `shared/regime.py`, `shared/momentum_score.py`,
+`shared/defensive_mode.py`). Strategy becomes regime-aware: capital rotates
+between 4 buckets (AI/Nasdaq/Semis · Inflation/Energy · Crypto · Hedge) based
+on Event Switch state (RISK_ON / INFLATION_SHOCK / RISK_OFF / NEUTRAL).
+Tighter risk: daily loss limit -3% (was -12%), weekly -7%, max DD -12%
+triggers defensive mode. Composite momentum scoring pre-ranks tickers;
+only top 7 scanned per cron.
+
+See **§4.0 Event Switch & Buckets** below for the new regime layer.
 
 ---
 
@@ -138,6 +149,93 @@ return HALT only above 60 and OK otherwise. CAUTION mode is removed.
 
 Numbers in this section are the canonical sizing/threshold values. Code
 constants in monitors must equal these.
+
+### 4.0 Event Switch & Watchlist Buckets (v3.0 NEW)
+
+The system operates in one of **four regimes** at any time. Each regime
+restricts which watchlist buckets are eligible for new entries and how
+aggressive sizing should be.
+
+#### Regimes
+
+| Regime | When inferred | Allowed buckets | Size mult | Options bias |
+|---|---|---|---|---|
+| **RISK_ON** | VIX < 25 AND SPY 5d ≥ +1.5% | ai_nasdaq_semis, crypto | 1.0× | long |
+| **INFLATION_SHOCK** | energy_5d > +3% AND SPY 5d ≤ -2% | inflation_energy, hedge_metals | 1.0× | null |
+| **RISK_OFF** | VIX ≥ 50 OR SPY 5d ≤ -4% | hedge_metals, hedge_bonds | 0.5× | short |
+| **NEUTRAL** | else (default) | ai_nasdaq_semis, inflation_energy, crypto | 0.7× | null |
+
+Detection mode (per `config/aggressive_profile.json::regime.detection_mode`):
+- `hybrid` (default) — read manual override from `learning-loop/state.json
+  ::global_overrides.regime_override`; if null, auto-detect via rules above
+- `auto` — rules only
+- `manual` — manual only (auto returns NEUTRAL)
+
+Module: `shared/regime.py::detect_regime(market_signals)`.
+
+#### Watchlist Buckets (v3.0)
+
+Config: `config/watchlists.json`. Loaded via `shared/profile.load_watchlists()`.
+
+| Bucket | Tickers | Size per pos | SL / TP |
+|---|---|---|---|
+| `ai_nasdaq_semis` | QQQ, SMH, NVDA, AMD, AVGO, MSFT, META, GOOGL, AAPL, AMZN, TSLA | $10,000 | -6% / +18% |
+| `inflation_energy` | XLE, USO, XOM, CVX, OXY | $6,000 | -7% / +15% |
+| `crypto` | 11 coins (per crypto-monitor COIN_TIERS) | per-tier | per-tier |
+| `hedge_metals` | GLD, SLV | $8,000 | -5% / +12% |
+| `hedge_bonds` | TLT | $6,000 | -4% / +8% |
+| `leveraged_etf_bull` | TQQQ, SPXL, UPRO, SOXL, FAS, TNA | $6,000 | -8% / +20% |
+| `leveraged_etf_bear` | SQQQ, SPXS, SPXU, SOXS, FAZ, TZA | $4,000 | -8% / +18% |
+| `defense_geo` | RTX, LMT, NOC, GD, BA, KTOS, PLTR, AXON, LDOS, SAIC, CACI, ITA, XAR, DFEN | $8,000 | -6% / +15% |
+
+A ticker can be in multiple buckets implicitly (e.g. QQQ in ai_nasdaq_semis;
+the `defense_geo` ETF ITA is energy-correlated). Only `bucket_for_ticker()`
+in shared/profile.py determines the primary bucket (first match wins).
+
+#### Composite Momentum Scoring (v3.0 NEW)
+
+Module: `shared/momentum_score.py::score_symbol(ticker, bars, spy_bars, qqq_bars)`.
+
+Returns score in [-1, +1] combining (weights from
+`config/aggressive_profile.json::scoring.weights`):
+
+- 5D / 10D / 20D momentum
+- relative strength vs SPY/QQQ (stronger of the two)
+- volume expansion (today / 20d avg)
+- breakout flag (close > prev day high OR 30-min ORH)
+- trend filter (price > SMA20 > SMA50)
+- volatility penalty (high ATR/SMA20 without trend = noise)
+
+Entry gate: `score >= 0.35`. Price-monitor pre-ranks all eligible tickers,
+scans only `top_n_picks=7` per cron tick. Focuses execution on leaders;
+laggards never get checked.
+
+#### Aggressive Risk Profile
+
+Config: `config/aggressive_profile.json`. Replaces hardcoded constants.
+
+| Limit | v3.0 | v2.0 |
+|---|---|---|
+| max_single_position | **20%** equity | 20% |
+| max_sector_exposure | **55%** equity | (none) |
+| max_options_premium | **25%** equity | 25% |
+| max_crypto_exposure | **20%** equity | 25% |
+| max_gross_exposure | **1.50×** equity | ~2.5× |
+| cash_reserve | **10%** equity | 0% |
+| **max_daily_loss** | **-3%** | -12% |
+| **max_weekly_loss** | **-7%** | -25% |
+| **max_drawdown_defensive** | **-12%** | -40% (full stop) |
+| **max_drawdown_full_stop** | **-20%** | (manual) |
+
+Drawdown breach actions:
+- **-3% daily** → `daily_drawdown_guard` HALT new entries (exits keep working)
+- **-7% weekly** → WARN (operator/LLM decide pause)
+- **-12% drawdown** → `defensive_mode_armed: true` in state.json. Price-monitor
+  blocks new entries entirely. Existing exit-monitor + options-exit-monitor
+  keep closing positions normally.
+- **-20% drawdown** → `FULL_STOP` level — would close all positions IF
+  `kill_switch_armed=true` set manually in state.json (prevents accidental flat
+  on transient API blip). Default: just notify, no auto-close.
 
 ### 4.1 US Equities — Momentum LONG
 

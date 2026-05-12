@@ -1,0 +1,80 @@
+{
+  "version": "3.0",
+  "updated": "2026-05-12",
+  "description": "Bucket-organized watchlists for Aggressive Momentum + Event Switch strategy. Each bucket maps to a regime preference. Read by shared/regime.py + entry monitors via shared/profile.load_watchlists().",
+
+  "ai_nasdaq_semis": {
+    "tickers":          ["QQQ", "SMH", "NVDA", "AMD", "AVGO", "MSFT", "META",
+                         "GOOGL", "AAPL", "AMZN", "TSLA"],
+    "preferred_in":     ["RISK_ON", "NEUTRAL"],
+    "size_per_position_usd": 10000,
+    "stop_loss_pct":    0.06,
+    "take_profit_pct":  0.18,
+    "_comment":         "Mega-cap + semis leaders. RISK_ON: full size. NEUTRAL: 70% size. Avoid in RISK_OFF / INFLATION_SHOCK."
+  },
+
+  "inflation_energy": {
+    "tickers":          ["XLE", "USO", "XOM", "CVX", "OXY"],
+    "preferred_in":     ["INFLATION_SHOCK", "NEUTRAL"],
+    "size_per_position_usd": 6000,
+    "stop_loss_pct":    0.07,
+    "take_profit_pct":  0.15,
+    "_comment":         "Oil + energy + sector ETF. Trigger when CPI surprise / OPEC+ cut / geopolitical oil shock. XOM already used by geo-monitor in geo-defense bucket — that integration kept; this bucket is the price-momentum entry path."
+  },
+
+  "crypto": {
+    "tickers":          ["BTC/USD", "ETH/USD", "SOL/USD", "AVAX/USD", "LINK/USD",
+                         "DOT/USD", "MATIC/USD", "LTC/USD", "BCH/USD",
+                         "UNI/USD", "AAVE/USD"],
+    "preferred_in":     ["RISK_ON", "NEUTRAL"],
+    "size_per_position_usd": 0,
+    "_comment":         "Crypto sizing is per-tier (Tier 1 BTC/ETH vs Tier 2 alts). Already configured in crypto-monitor/monitor.py::COIN_TIERS — this list is purely the universe for regime allowlist. size_per_position_usd=0 means 'see COIN_TIERS'."
+  },
+
+  "hedge_metals": {
+    "tickers":          ["GLD", "SLV"],
+    "preferred_in":     ["INFLATION_SHOCK", "RISK_OFF", "NEUTRAL"],
+    "size_per_position_usd": 8000,
+    "stop_loss_pct":    0.05,
+    "take_profit_pct":  0.12,
+    "_comment":         "Gold/silver hedge. Smaller stop because metals less volatile. Used in INFLATION_SHOCK (inflation hedge), RISK_OFF (flight to safety)."
+  },
+
+  "hedge_bonds": {
+    "tickers":          ["TLT"],
+    "preferred_in":     ["RISK_OFF"],
+    "size_per_position_usd": 6000,
+    "stop_loss_pct":    0.04,
+    "take_profit_pct":  0.08,
+    "_comment":         "20+ year Treasury ETF. Rallies when fear spikes + Fed pivots dovish. Use only in RISK_OFF."
+  },
+
+  "leveraged_etf_bull": {
+    "tickers":          ["TQQQ", "SPXL", "UPRO", "SOXL", "FAS", "TNA"],
+    "preferred_in":     ["RISK_ON"],
+    "size_per_position_usd": 6000,
+    "stop_loss_pct":    0.08,
+    "take_profit_pct":  0.20,
+    "_comment":         "3× bull ETFs. Path-dependent (decay in chop). Use ONLY when clear directional regime confirmed by inferred regime + momentum score. NEVER in NEUTRAL."
+  },
+
+  "leveraged_etf_bear": {
+    "tickers":          ["SQQQ", "SPXS", "SPXU", "SOXS", "FAZ", "TZA"],
+    "preferred_in":     ["RISK_OFF"],
+    "size_per_position_usd": 4000,
+    "stop_loss_pct":    0.08,
+    "take_profit_pct":  0.18,
+    "_comment":         "3× bear ETFs. Tactical short-side when SPY breakdown confirmed. NEVER hold through weekend (path decay). Time-limited 24-48h."
+  },
+
+  "defense_geo": {
+    "tickers":          ["RTX", "LMT", "NOC", "GD", "BA",
+                         "KTOS", "PLTR", "AXON", "LDOS", "SAIC", "CACI",
+                         "ITA", "XAR", "DFEN"],
+    "preferred_in":     ["INFLATION_SHOCK", "RISK_OFF", "NEUTRAL"],
+    "size_per_position_usd": 8000,
+    "stop_loss_pct":    0.06,
+    "take_profit_pct":  0.15,
+    "_comment":         "Defense bucket, used by defense-monitor + geo-monitor. Surfaces in INFLATION_SHOCK (geo escalation correlates with oil shocks) and RISK_OFF (flight to government-revenue safety)."
+  }
+}

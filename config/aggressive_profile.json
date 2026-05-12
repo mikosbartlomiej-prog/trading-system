@@ -1,0 +1,121 @@
+{
+  "version": "3.0",
+  "name": "aggressive_momentum_event_switch",
+  "updated": "2026-05-12",
+  "description": "Single source of truth for all aggressive-mode risk limits, sector budgets, exit rules. Read by shared/risk_guards.py, shared/momentum_score.py, shared/regime.py, all monitors. NEVER hardcode these values in monitor code — always read via shared.profile.load_profile().",
+
+  "capital": {
+    "max_gross_exposure":              1.50,
+    "max_single_position_pct_equity":  0.20,
+    "max_sector_exposure_pct_equity":  0.55,
+    "max_options_premium_pct_equity":  0.25,
+    "max_crypto_exposure_pct_equity":  0.20,
+    "cash_reserve_pct_equity":         0.10,
+    "_comment_capital":                "max_gross 1.50 = up to 1.5× equity in gross notional (Reg-T allows 4× intraday). Single-position 20% caps any one ticker. Sector 55% caps concentrated thematic bets. Cash 10% always available for opportunistic add."
+  },
+
+  "risk_limits": {
+    "max_daily_loss_pct_equity":         0.03,
+    "max_weekly_loss_pct_equity":        0.07,
+    "max_drawdown_defensive_mode_pct":   0.12,
+    "max_drawdown_full_stop_pct":        0.20,
+    "_comment_risk":                     "Daily -3% halts new entries (existing exits keep working). Weekly -7% triggers risk-off bias for next week. Drawdown -12% enables defensive mode (close speculative positions, ban new longs). Drawdown -20% full stop, manual review required."
+  },
+
+  "exits": {
+    "stocks_etf": {
+      "stop_loss_pct":             0.06,
+      "take_profit_partial_pct":   0.10,
+      "take_profit_full_pct":      0.18,
+      "lock_profit_at_pct":        0.10,
+      "lock_profit_floor_pct":     0.02,
+      "trailing_stop_after_pct":   0.10,
+      "trailing_stop_distance":    0.05,
+      "atr_stop_multiplier":       2.0,
+      "_comment":                  "Lock profit: once +10% reached, don't let position return below +2%. Trailing after +10% peak, 5% distance."
+    },
+    "options": {
+      "max_loss_pct_premium":      0.40,
+      "partial_close_at_pct":      0.60,
+      "full_close_at_pct":         1.20,
+      "binary_event_close":        true,
+      "_comment":                  "Max loss 40% of paid premium (was -65% in v2.0; tightened). Partial close at +60%, full at +120%. Close before binary events (earnings ±1d unless explicitly allowed)."
+    },
+    "crypto": {
+      "tier1_sl_pct":  0.07,
+      "tier1_tp_pct":  0.20,
+      "tier2_sl_pct":  0.08,
+      "tier2_tp_pct":  0.10,
+      "_comment":      "Mirrors crypto-monitor v2.4 COIN_TIERS — keep in sync."
+    }
+  },
+
+  "regime": {
+    "detection_mode":          "hybrid",
+    "_comment_detection":      "hybrid = auto-detect rules + state.json manual override; auto = rules only; manual = state.json only.",
+
+    "auto_rules": {
+      "vix_risk_off_threshold":           35,
+      "vix_full_panic_threshold":         50,
+      "spy_5d_inflation_threshold":       -2.0,
+      "spy_5d_risk_off_threshold":        -4.0,
+      "spy_5d_risk_on_threshold":         1.5,
+      "btc_24h_inflation_signal_pct":     -8.0,
+      "energy_5d_inflation_signal_pct":   3.0,
+      "_comment_auto":                    "Rules-based regime inference. Order: vix>50 → RISK_OFF, spy_5d<-4 → RISK_OFF, energy_5d>+3 AND spy_5d<-2 → INFLATION_SHOCK, vix<25 AND spy_5d>+1.5 → RISK_ON, else NEUTRAL."
+    }
+  },
+
+  "buckets_per_regime": {
+    "RISK_ON": {
+      "allowed_buckets":   ["ai_nasdaq_semis", "crypto"],
+      "size_multiplier":   1.0,
+      "options_side_bias": "long",
+      "max_alt_positions": 4,
+      "_comment":          "AI/semis momentum + crypto beta. Options long calls preferred."
+    },
+    "INFLATION_SHOCK": {
+      "allowed_buckets":   ["inflation_energy", "hedge_metals"],
+      "size_multiplier":   1.0,
+      "options_side_bias": null,
+      "max_alt_positions": 2,
+      "_comment":          "Rotate into XLE/USO/XOM/CVX/OXY + GLD. Limit AI/semis exposure."
+    },
+    "RISK_OFF": {
+      "allowed_buckets":   ["hedge_metals", "hedge_bonds"],
+      "size_multiplier":   0.5,
+      "options_side_bias": "short",
+      "max_alt_positions": 0,
+      "_comment":          "Defensive: GLD + TLT. Put spreads on SPY/QQQ (if multi-leg supported). Half-size all entries. No alt longs."
+    },
+    "NEUTRAL": {
+      "allowed_buckets":   ["ai_nasdaq_semis", "inflation_energy", "crypto"],
+      "size_multiplier":   0.7,
+      "options_side_bias": null,
+      "max_alt_positions": 2,
+      "_comment":          "Hedge bets. Only top-scored momentum setups. 70% size."
+    }
+  },
+
+  "scoring": {
+    "weights": {
+      "momentum_5d":        0.20,
+      "momentum_10d":       0.20,
+      "momentum_20d":       0.15,
+      "relative_strength":  0.20,
+      "volume_expansion":   0.10,
+      "breakout_flag":      0.10,
+      "trend_filter":       0.05,
+      "volatility_penalty": -0.05
+    },
+    "min_score_for_entry":    0.35,
+    "top_n_picks":            7,
+    "_comment":               "Composite score [-1, 1]. Long entries require score >= min_score_for_entry. Pre-rank ALL whitelist tickers, scan only top_n_picks per cron tick to focus on leaders."
+  },
+
+  "kill_switch": {
+    "enabled":                    true,
+    "data_feed_failure_threshold": 3,
+    "_comment":                   "If 3+ consecutive monitor runs hit data_feed errors → trigger defensive mode. close_all_positions() invoked only on full_stop_pct breach (manual confirm via state.json::kill_switch_armed=true to prevent accidental flat)."
+  }
+}
