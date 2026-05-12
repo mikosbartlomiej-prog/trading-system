@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "name": "capital_deployment_aggressive",
+  "updated": "2026-05-12",
+  "description": "Account-aware capital deployment config. Read by shared/allocator.py POST-learning-loop. Drives daily target allocation toward 100% invested capital with regime-aware fallbacks. NEVER hardcode these values in monitor code.",
+
+  "capital_deployment": {
+    "target_invested_ratio":                1.00,
+    "min_invested_ratio":                   0.98,
+    "max_idle_cash_ratio":                  0.02,
+    "operational_cash_buffer_ratio":        0.005,
+    "rebalance_frequency":                  "daily",
+    "rebalance_after_learning_loop":        true,
+    "allow_fractional_shares":              true,
+    "use_fallback_instruments":             true,
+    "force_redeploy_idle_cash":             true,
+    "skip_full_deployment_when_kill_switch_active": true,
+
+    "max_rebalance_orders_per_day":         10,
+    "min_order_value_usd":                  100,
+    "estimated_slippage_pct":               0.001,
+    "auto_execute_rebalance":               false,
+    "_comment_auto_execute":                "Default OFF — allocator only saves daily plan to learning-loop/allocations/<date>.json. Operator reviews + manually places via Alpaca dashboard until system proves stable across 30+ rebalance cycles. Flip to true when comfortable."
+  },
+
+  "fallback_allocations": {
+    "RISK_ON":         ["QQQ", "SMH", "SPY"],
+    "INFLATION_SHOCK": ["XLE", "GLD", "USO"],
+    "RISK_OFF":        ["GLD", "SPY"],
+    "NEUTRAL":         ["SPY", "QQQ", "GLD"],
+    "_comment":        "Used when ranked momentum candidates < target_invested_ratio. Picked in order from list, sized equally up to max_single_position cap."
+  },
+
+  "sizing_rules": {
+    "primary_pick_target_weight":      0.18,
+    "max_primary_picks":               5,
+    "fallback_pick_target_weight":     0.10,
+    "max_fallback_picks":              3,
+    "min_diff_pct_to_rebalance":       0.02,
+    "_comment_sizing":                 "Primary picks (score >= min_score_for_entry from aggressive_profile) get ~18% each, max 5 = 90% target. Remaining ~8-10% from fallback at 10% each. min_diff_pct_to_rebalance = skip orders smaller than 2% of equity (cash drag preferable to micro-trades)."
+  },
+
+  "risk_overrides": {
+    "respect_aggressive_profile_limits":   true,
+    "respect_risk_officer_whitelist":      true,
+    "respect_defensive_mode":              true,
+    "respect_daily_drawdown_halt":         true,
+    "_comment_risk":                       "Full deployment NEVER overrides hard risk limits. Plan output shows skipped tickers with rationale."
+  }
+}

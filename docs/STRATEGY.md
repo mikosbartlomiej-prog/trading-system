@@ -437,6 +437,126 @@ Curated whitelist: `.claude/rules/twitter-accounts.md` (v2.0 — ~50+ accounts i
 
 For T1/T1.5/T2/T2.5/T3, **every post becomes a candidate (no keyword filter)** and **every stance is forwarded to routine + email** (not just FOLLOW). The routine receives `priority_override=true` in the payload and may choose to: (a) match pattern A-E and trade, or (b) log "no actionable pattern" with an email so the user sees the tweet anyway. This implements the policy "treat these tweets seriously even when they don't match the strategy."
 
+### 4.9 Account-Aware Capital Deployment (v3.1 NEW 2026-05-12)
+
+**Module:** `shared/allocator.py::AccountAwareAllocator`
+**Config:** `config/capital_deployment.json`
+**Hook:** runs at end of `learning-loop/analyzer.py::run()` (cron 21:00 UTC daily)
+**Output:** `learning-loop/allocations/<date>.json` — daily allocation plan
+
+Drives portfolio toward **100% invested capital** (target 1.00, min 0.98) by
+rebalancing positions next trading day based on current account state.
+
+#### Pipeline (post-learning-loop hook)
+
+```
+analyzer.run() → adapt() → save_state() → write_history_report()
+                                                     ↓
+                                          AccountAwareAllocator
+                                          .compute_daily_plan()
+                                                     ↓
+                  1. fetch account (equity, cash, buying_power)
+                  2. fetch positions (with mv, pl%, pct_equity)
+                  3. check defensive_mode / kill_switch
+                  4. detect regime (uses already-loaded today_stats)
+                  5. score allowed universe (momentum_score over allowed buckets)
+                  6. compute target weights:
+                      a. primary picks: top N scored ≥ min_score @ ~18% each
+                      b. enforce position cap (20%) + sector cap (55%)
+                      c. fallback fill from regime-specific list
+                  7. generate delta orders (BUY/SELL/REDUCE/EXIT/HOLD)
+                  8. validate against risk_officer whitelist
+                  9. cap by max_rebalance_orders_per_day (10)
+                  10. save plan → learning-loop/allocations/<date>.json
+                  11. (optional) execute via auto_execute_rebalance flag
+                       — DEFAULT OFF; plan-only until operator validates
+```
+
+#### Capital Deployment Rules
+
+| Rule | Value | Source |
+|---|---|---|
+| target_invested_ratio | 1.00 | capital_deployment.json |
+| min_invested_ratio | 0.98 | capital_deployment.json |
+| max_idle_cash_ratio | 0.02 | capital_deployment.json |
+| operational_cash_buffer | 0.005 | capital_deployment.json |
+| primary pick target weight | 18% | sizing_rules |
+| max primary picks | 5 | sizing_rules |
+| fallback pick target weight | 10% | sizing_rules |
+| max fallback picks | 3 | sizing_rules |
+| min_diff_pct_to_rebalance | 2% | sizing_rules (skip micro-trades) |
+| max_rebalance_orders_per_day | 10 | capital_deployment.json |
+
+#### Fallback Instruments per Regime
+
+When primary momentum picks don't fill target, fallback instruments
+absorb the remainder:
+
+| Regime | Fallback |
+|---|---|
+| RISK_ON | QQQ, SMH, SPY |
+| INFLATION_SHOCK | XLE, GLD, USO |
+| RISK_OFF | GLD, SPY |
+| NEUTRAL | SPY, QQQ, GLD |
+
+#### Hard Risk Constraints (NEVER overridden by deployment target)
+
+If full deployment would breach any of these, **risk wins, plan logs why
+invested_ratio < target**:
+
+- max_single_position_pct_equity (20%)
+- max_sector_exposure_pct_equity (55%) — limits single-bucket concentration;
+  realistic max in NEUTRAL/RISK_ON when picks are mostly ai_nasdaq_semis ≈ 55-65%
+- max_options_premium_pct_equity (25%)
+- max_crypto_exposure_pct_equity (20%)
+- daily_drawdown_guard HALT (-3%)
+- weekly_drawdown_guard HALT (-7%)
+- defensive_mode_active (drawdown ≤ -12% from peak)
+- full_stop_armed (drawdown ≤ -20%, requires manual confirmation)
+- risk_officer whitelist (77 tickers as of 2026-05-12)
+- Alpaca account_blocked / trading_blocked flags
+
+#### Allocation Plan Schema
+
+`learning-loop/allocations/<date>.json` contains:
+
+```json
+{
+  "date": "2026-05-13",
+  "generated_at": "2026-05-12T21:00:00Z",
+  "account_equity": 97129.09,
+  "portfolio_value": 97129.09,
+  "cash": 12500.00,
+  "buying_power": 194258.18,
+  "invested_ratio_before": 0.872,
+  "invested_ratio_after_target": 0.95,
+  "market_regime": "NEUTRAL",
+  "regime_source": "auto",
+  "defensive_mode_active": false,
+  "current_positions": [...],
+  "scored_universe": [...],
+  "target_weights": {"NVDA": 0.18, "AMD": 0.18, "MSFT": 0.18, ...},
+  "current_weights": {"GLD": 0.13, "RTX": 0.18, ...},
+  "rebalance_orders": [
+    {"symbol": "NVDA", "action": "BUY", "delta": 17_500, "qty_delta": 125,
+     "reason": "new position at target 18%"},
+    {"symbol": "GLD",  "action": "EXIT", "delta": -12_700,
+     "reason": "symbol not in target allocation"},
+    {"symbol": "AAPL", "action": "HOLD",
+     "reason": "|delta -1.2%| < min_diff 2.0%"}
+  ],
+  "risk_checks": {"passed": [...], "failed": [...], "n_orders": 4, "n_hold": 3},
+  "allocation_reason": "regime=NEUTRAL | primary_picks=5(55%) | fallback=[GLD]"
+}
+```
+
+#### Auto-Execute (Default OFF)
+
+`config.auto_execute_rebalance: false` — allocator only **saves plans**.
+Operator reviews `learning-loop/allocations/<date>.json` each morning
+and decides which orders to place via Alpaca dashboard. Flag flips to
+`true` after 30+ days of validated plans matching operator's expectations.
+
 ---
 
 ## 5. Exit Logic

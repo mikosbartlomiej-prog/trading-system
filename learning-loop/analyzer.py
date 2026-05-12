@@ -1051,6 +1051,40 @@ def run():
     append_rationale(full_rationale)
     write_history_report(date_iso, today_stats, new_state, full_rationale)
 
+    # ── Account-Aware Capital Deployment (v3.1 NEW 2026-05-12) ─────────
+    # Post-learning-loop hook: compute target allocation for next trading
+    # day, save plan to learning-loop/allocations/<date>.json. Auto-exec
+    # gated by config.auto_execute_rebalance (default OFF — plan-only).
+    try:
+        sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+        from allocator import AccountAwareAllocator  # noqa: E402
+        print("\n  [allocator] computing daily allocation plan...")
+        alloc = AccountAwareAllocator()
+        plan = alloc.compute_daily_plan(today_stats=today_stats,
+                                          new_state=new_state)
+        plan_path = alloc.save_plan(plan, date_iso)
+        if plan_path:
+            print(f"  [allocator] plan saved: {os.path.basename(plan_path)}")
+        # Summary line
+        actionable = [o for o in plan.get("rebalance_orders", [])
+                      if o.get("action") != "HOLD"]
+        print(f"  [allocator] regime={plan.get('market_regime')}, "
+              f"invested_before={plan.get('invested_ratio_before'):.2%}, "
+              f"invested_target={plan.get('invested_ratio_after_target'):.2%}, "
+              f"orders={len(actionable)} actionable, "
+              f"reason: {plan.get('allocation_reason', '?')}")
+        # Append top 3 order summaries to rationale
+        if actionable:
+            for o in sorted(actionable, key=lambda x: abs(x.get('delta', 0)), reverse=True)[:3]:
+                full_rationale.append(
+                    f"{date_iso} · allocator: {o['action']} {o['symbol']} "
+                    f"${o.get('delta', 0):+.0f} ({o.get('reason', '')})"
+                )
+        if alloc.cfg.get("auto_execute_rebalance", False):
+            alloc.execute_orders(plan["rebalance_orders"])
+    except Exception as e:
+        print(f"  [allocator] error ({type(e).__name__}: {e}) — skipped, learning loop continues")
+
     print("\n  Rationale combined (LLM + deterministic):")
     for r in full_rationale:
         print(f"    · {r}")
