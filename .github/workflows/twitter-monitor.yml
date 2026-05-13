@@ -7,7 +7,10 @@ name: Twitter Monitor — Bluesky social-graph 24/7
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    # v3.2.1 (2026-05-13): bumped 5→10 min — GH Actions budget squeeze.
+    # Bluesky posting velocity is moderate; 10 min cadence loses ~1 dupe-post
+    # vs 5 min on noisy days, gains 50% of monthly budget headroom.
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
