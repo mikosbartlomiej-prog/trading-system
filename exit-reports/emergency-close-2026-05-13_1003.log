@@ -1,0 +1,33 @@
+
+=== Emergency Close Script | 2026-05-13 10:03:19 UTC ===
+Closing 4 positions flagged CLOSE_EMERGENCY on 2026-05-12
+
+Account OK — equity $97,106.92
+
+SELL_TO_CLOSE SPY260518P00739000 × 1
+  Entry: $5.80  Current: $4.74  P&L: -18.3%
+  Order type: LIMIT  Limit: $4.40
+  → ORDER PLACED: id=c304db6d-195b-4665-b4db-8e236ac5f1d4 status=accepted
+
+SELL_TO_CLOSE SPY260518P00738000 × 1
+  Entry: $5.08  Current: $4.31  P&L: -15.2%
+  Order type: LIMIT  Limit: $4.00
+  → ORDER PLACED: id=55973971-bccf-4ef9-9116-43fb13fb2a4b status=accepted
+
+SELL_TO_CLOSE GOOGL260520P00385000 × 2
+  Entry: $7.00  Current: $5.35  P&L: -23.6%
+  Order type: LIMIT  Limit: $5.20
+  → SKIP: open SELL order already exists for GOOGL260520P00385000
+
+SELL_TO_CLOSE AAPL260520P00295000 × 1
+  Entry: $4.65  Current: $3.90  P&L: -16.1%
+  Order type: LIMIT  Limit: $3.85
+  → SKIP: open SELL order already exists for AAPL260520P00295000
+
+=== Summary ===
+  SPY260518P00739000: ✅ OK
+  SPY260518P00738000: ✅ OK
+  GOOGL260520P00385000: ✅ OK
+  AAPL260520P00295000: ✅ OK
+
+All orders submitted successfully.
