@@ -22,9 +22,13 @@ from datetime import datetime, timezone
 ALPACA_BASE = "https://paper-api.alpaca.markets"
 
 EMERGENCY_CLOSES = [
-    # SPY expiring 2026-05-18 — MARKET (5 DTE, spread risk)
-    {"symbol": "SPY260518P00739000", "qty": 1, "order_type": "market",  "limit_price": None,  "entry": 5.80, "current": 4.74, "pl_pct": -18.28},
-    {"symbol": "SPY260518P00738000", "qty": 1, "order_type": "market",  "limit_price": None,  "entry": 5.08, "current": 4.31, "pl_pct": -15.16},
+    # SPY expiring 2026-05-18 — was MARKET but Alpaca rejects options market
+    # orders pre-market. Use LIMIT slightly below mid for guaranteed-ish
+    # fill at 13:30 UTC open. 2026-05-13 first run @ 09:56 UTC: both SPY
+    # MARKETs were rejected; GOOGL+AAPL LIMITs accepted. This commit
+    # converts SPY to LIMIT so the second trigger succeeds.
+    {"symbol": "SPY260518P00739000", "qty": 1, "order_type": "limit", "limit_price": 4.40, "entry": 5.80, "current": 4.74, "pl_pct": -18.28},
+    {"symbol": "SPY260518P00738000", "qty": 1, "order_type": "limit", "limit_price": 4.00, "entry": 5.08, "current": 4.31, "pl_pct": -15.16},
     # AAPL/GOOGL expiring 2026-05-20 — LIMIT (8 DTE, use price discipline)
     {"symbol": "GOOGL260520P00385000", "qty": 2, "order_type": "limit", "limit_price": 5.20,  "entry": 7.00, "current": 5.35, "pl_pct": -23.57},
     {"symbol": "AAPL260520P00295000", "qty": 1, "order_type": "limit",  "limit_price": 3.85,  "entry": 4.65, "current": 3.90, "pl_pct": -16.13},
