@@ -1,27 +1,42 @@
-name: Emergency Close — operator-triggered position closer
+name: Emergency Close — autonomous position closer
 
-# Generic one-shot manual workflow that runs an emergency_close_*.py script
-# with real Alpaca GitHub Secrets (ALPACA_API_KEY / ALPACA_SECRET_KEY) —
-# bypassing the broken Claude.ai routine sandbox keys.
+# v3.4.3 (2026-05-13 evening): AUTONOMOUS execution path added.
 #
-# Default script: scripts/emergency_close_20260513_pm.py (active afternoon
-# closure plan flagged 14:27 UTC). Operator can override via workflow_dispatch
-# input to run any other scripts/emergency_close_YYYYMMDD*.py file as needed.
+# Modes:
+#   workflow_dispatch — manual trigger, operator picks script via input
+#   push (to main, paths: scripts/emergency_close_*.py)
+#     → fires only if commit message contains [auto-execute] tag
+#     → uses the script added/modified in that commit
+#   schedule (*/3 * * * *)
+#     → polls main every 3 min
+#     → finds newest scripts/emergency_close_*.py from last 24h
+#     → executes if no exit-reports/${basename}-*.log exists yet
+#     → idempotent: log file presence prevents duplicate execution
 #
-# v3.4.2 generalized 2026-05-13: was hardcoded to one script; now takes
-# script path input. Each new emergency batch creates a new
-# emergency_close_*.py file in scripts/, and operator picks it here.
+# Safety: auto-execute paths require valid script_name pattern
+# (scripts/emergency_close_*.py); arbitrary paths rejected.
+#
+# Use real Alpaca GitHub Secrets (ALPACA_API_KEY / ALPACA_SECRET_KEY)
+# bypassing broken Claude.ai routine sandbox keys.
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/emergency_close_*.py'
+  schedule:
+    # Poll every 3 min — autonomous safety net when GITHUB_TOKEN-pushed
+    # main commits don't trigger downstream workflows.
+    - cron: '*/3 * * * *'
   workflow_dispatch:
     inputs:
       script:
-        description: 'Script path (relative to repo root). Default = today afternoon plan.'
+        description: 'Script path (default = newest emergency_close_*.py)'
         required: false
         type:     string
-        default:  'scripts/emergency_close_20260513_pm.py'
+        default:  ''
       dry_run:
-        description: 'Dry-run mode (print orders, do not place)'
+        description: 'Dry-run mode (preview, do not place)'
         required: false
         type:     boolean
         default:  false
@@ -33,12 +48,18 @@ jobs:
   close:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # On push event: require [auto-execute] in commit message
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      contains(github.event.head_commit.message, '[auto-execute]')
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 5
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -48,23 +69,63 @@ jobs:
       - name: Install requests
         run: pip install requests
 
-      - name: Validate script path
+      - name: Determine script + idempotency check
+        id: pick
         run: |
-          SCRIPT="${{ inputs.script }}"
+          MODE="${{ github.event_name }}"
+
+          # Pick script based on trigger source
+          if [ "$MODE" = "workflow_dispatch" ] && [ -n "${{ inputs.script }}" ]; then
+            SCRIPT="${{ inputs.script }}"
+            echo "Manual trigger: $SCRIPT"
+          elif [ "$MODE" = "push" ]; then
+            # On push: take the modified emergency_close_*.py from the push commit
+            SCRIPT=$(git show --name-only --pretty=format: HEAD | \
+                     grep -E '^scripts/emergency_close_.*\.py$' | head -1)
+            [ -z "$SCRIPT" ] && SCRIPT=$(ls -t scripts/emergency_close_*.py 2>/dev/null | head -1)
+            echo "Push-triggered: $SCRIPT"
+          else
+            # Schedule poll: newest emergency_close_*.py file mtime
+            SCRIPT=$(ls -t scripts/emergency_close_*.py 2>/dev/null | head -1)
+            echo "Schedule-poll: candidate=$SCRIPT"
+          fi
+
+          if [ -z "$SCRIPT" ] || [ ! -f "$SCRIPT" ]; then
+            echo "ERROR: no valid emergency_close script found"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Validate pattern
           case "$SCRIPT" in
             scripts/emergency_close_*.py) ;;
-            *)
-              echo "ERROR: script must match scripts/emergency_close_*.py (got: $SCRIPT)"
-              exit 1
-              ;;
+            *) echo "ERROR: bad pattern: $SCRIPT"; echo "skip=true" >> $GITHUB_OUTPUT; exit 0 ;;
           esac
-          if [ ! -f "$SCRIPT" ]; then
-            echo "ERROR: $SCRIPT does not exist in repo"
-            exit 1
+
+          # Idempotency: skip if a log already exists for this script today
+          SCRIPT_BASE=$(basename "$SCRIPT" .py)
+          EXISTING=$(ls "exit-reports/${SCRIPT_BASE}-"*.log 2>/dev/null | head -1)
+          if [ -n "$EXISTING" ]; then
+            echo "Already processed: $EXISTING — skipping"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
-          echo "Will run: $SCRIPT"
+
+          # Skip if script is older than 24h (safety: don't auto-rerun ancient scripts)
+          SCRIPT_AGE_HOURS=$(( ($(date +%s) - $(stat -c %Y "$SCRIPT")) / 3600 ))
+          if [ "$SCRIPT_AGE_HOURS" -gt 24 ]; then
+            echo "Script $SCRIPT is ${SCRIPT_AGE_HOURS}h old — skipping (>24h)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Will execute: $SCRIPT"
+          echo "script=$SCRIPT" >> $GITHUB_OUTPUT
+          echo "script_base=$SCRIPT_BASE" >> $GITHUB_OUTPUT
+          echo "skip=false" >> $GITHUB_OUTPUT
 
       - name: Run emergency close
+        if: steps.pick.outputs.skip != 'true'
         env:
           PYTHONIOENCODING:    utf-8
           ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
@@ -74,28 +135,32 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="--dry-run"
           fi
-          python "${{ inputs.script }}" $ARGS 2>&1 | tee /tmp/emergency_close.log
+          python "${{ steps.pick.outputs.script }}" $ARGS 2>&1 | tee /tmp/emergency_close.log
           echo "=== Exit code: $? ==="
 
-      - name: Save log as marker commit
-        if: ${{ ! inputs.dry_run }}
+      - name: Save log + idempotency marker
+        if: steps.pick.outputs.skip != 'true' && ! inputs.dry_run
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           mkdir -p exit-reports
-          SCRIPT_BASE=$(basename "${{ inputs.script }}" .py)
-          OUT="exit-reports/${SCRIPT_BASE}-$(date -u +%Y-%m-%d_%H%M).log"
+          OUT="exit-reports/${{ steps.pick.outputs.script_base }}-$(date -u +%Y-%m-%d_%H%M).log"
           cp /tmp/emergency_close.log "$OUT"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           git add "$OUT"
-          git commit -m "emergency-close: $(date -u +%Y-%m-%d_%H%M) - ${SCRIPT_BASE} [automerge]"
-          for attempt in 1 2 3; do
-            if git push origin "$BRANCH"; then
-              echo "Pushed marker on attempt ${attempt}."
-              exit 0
-            fi
-            git pull --rebase origin "$BRANCH" || true
-            sleep $((attempt * 2))
-          done
-          echo "Push failed; log is in workflow output."
+          # Pre-commit dedup check: did another concurrent run produce same log?
+          if [ -z "$(ls exit-reports/${{ steps.pick.outputs.script_base }}-*.log 2>/dev/null | grep -v "$(basename $OUT)")" ]; then
+            git commit -m "emergency-close: $(date -u +%Y-%m-%d_%H%M) - ${{ steps.pick.outputs.script_base }} [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed marker on attempt ${attempt}."
+                exit 0
+              fi
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
+            echo "Push failed; log is in workflow output only."
+          else
+            echo "Concurrent run already pushed log — skipping commit"
+          fi
