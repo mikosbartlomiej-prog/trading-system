@@ -1,22 +1,25 @@
-name: Emergency Close — 4 stuck positions (one-shot)
+name: Emergency Close — operator-triggered position closer
 
-# One-shot manual workflow to close 4 options positions flagged
-# CLOSE_EMERGENCY by exit-monitor since 22:10 UTC 2026-05-12 but stuck
-# because the Claude.ai routine sandbox uses different (invalid) Alpaca
-# keys. This workflow uses real GitHub Secrets ALPACA_API_KEY /
-# ALPACA_SECRET_KEY which work.
+# Generic one-shot manual workflow that runs an emergency_close_*.py script
+# with real Alpaca GitHub Secrets (ALPACA_API_KEY / ALPACA_SECRET_KEY) —
+# bypassing the broken Claude.ai routine sandbox keys.
 #
-# Positions to close:
-#   - AAPL260520P00295000  (1)  LIMIT 3.85   (8 DTE, price discipline)
-#   - GOOGL260520P00385000 (2)  LIMIT 5.20   (8 DTE, price discipline)
-#   - SPY260518P00738000   (1)  MARKET       (5 DTE, theta acceleration)
-#   - SPY260518P00739000   (1)  MARKET       (5 DTE, theta acceleration)
+# Default script: scripts/emergency_close_20260513_pm.py (active afternoon
+# closure plan flagged 14:27 UTC). Operator can override via workflow_dispatch
+# input to run any other scripts/emergency_close_YYYYMMDD*.py file as needed.
 #
-# Trigger via UI: Actions tab -> Emergency Close -> Run workflow.
+# v3.4.2 generalized 2026-05-13: was hardcoded to one script; now takes
+# script path input. Each new emergency batch creates a new
+# emergency_close_*.py file in scripts/, and operator picks it here.
 
 on:
   workflow_dispatch:
     inputs:
+      script:
+        description: 'Script path (relative to repo root). Default = today afternoon plan.'
+        required: false
+        type:     string
+        default:  'scripts/emergency_close_20260513_pm.py'
       dry_run:
         description: 'Dry-run mode (print orders, do not place)'
         required: false
@@ -45,6 +48,22 @@ jobs:
       - name: Install requests
         run: pip install requests
 
+      - name: Validate script path
+        run: |
+          SCRIPT="${{ inputs.script }}"
+          case "$SCRIPT" in
+            scripts/emergency_close_*.py) ;;
+            *)
+              echo "ERROR: script must match scripts/emergency_close_*.py (got: $SCRIPT)"
+              exit 1
+              ;;
+          esac
+          if [ ! -f "$SCRIPT" ]; then
+            echo "ERROR: $SCRIPT does not exist in repo"
+            exit 1
+          fi
+          echo "Will run: $SCRIPT"
+
       - name: Run emergency close
         env:
           PYTHONIOENCODING:    utf-8
@@ -55,7 +74,7 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="--dry-run"
           fi
-          python scripts/emergency_close_20260512.py $ARGS 2>&1 | tee /tmp/emergency_close.log
+          python "${{ inputs.script }}" $ARGS 2>&1 | tee /tmp/emergency_close.log
           echo "=== Exit code: $? ==="
 
       - name: Save log as marker commit
@@ -64,12 +83,13 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           mkdir -p exit-reports
-          OUT="exit-reports/emergency-close-$(date -u +%Y-%m-%d_%H%M).log"
+          SCRIPT_BASE=$(basename "${{ inputs.script }}" .py)
+          OUT="exit-reports/${SCRIPT_BASE}-$(date -u +%Y-%m-%d_%H%M).log"
           cp /tmp/emergency_close.log "$OUT"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           git add "$OUT"
-          git commit -m "emergency-close: $(date -u +%Y-%m-%d_%H%M) - 4 positions [automerge]"
+          git commit -m "emergency-close: $(date -u +%Y-%m-%d_%H%M) - ${SCRIPT_BASE} [automerge]"
           for attempt in 1 2 3; do
             if git push origin "$BRANCH"; then
               echo "Pushed marker on attempt ${attempt}."
