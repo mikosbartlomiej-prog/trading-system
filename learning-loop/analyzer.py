@@ -636,6 +636,82 @@ def compute_rsi_snapshot() -> dict:
     return out
 
 
+# ─── Position audit (2026-05-13 — proposal from 2026-05-10) ─────────────────
+
+def compute_position_audit(positions: list[dict], orders: list[dict]) -> list[dict]:
+    """
+    Flag positions that should have exit orders but don't.
+
+    Per LLM Senior PM proposal 2026-05-10 (revisited 2026-05-13):
+      "(pnl_pct >= tp_threshold AND no exit order) OR
+       (pnl_pct <= sl_threshold AND no exit order)"
+
+    Thresholds (configurable later via aggressive_profile.json):
+      - Options: TP +80% (entry*1.80), SL -50% (entry*0.50), emergency -12%
+      - Stocks/ETFs/crypto: TP +10%, SL -8%, emergency -12%
+
+    Returns list of suspect positions:
+      [{symbol, asset_class, side, pl_pct, market_value, reason, has_exit_order, ...}]
+
+    Empty list when nothing suspicious — Senior PM ignores in payload.
+    Non-empty rationale.md gets a 'position-audit:' line per suspect.
+    """
+    if not positions:
+        return []
+
+    # Build symbol → "has open exit order" map by scanning open orders
+    open_exit_symbols = set()
+    for o in orders:
+        if o.get("status") not in ("new", "open", "accepted", "pending_new", "pending_replace"):
+            continue
+        cid = (o.get("client_order_id") or "").lower()
+        if cid.startswith("exit-"):
+            open_exit_symbols.add(o.get("symbol", ""))
+
+    audit: list[dict] = []
+    for p in positions:
+        sym       = p.get("symbol", "")
+        ac        = p.get("asset_class") or _asset_class(sym)
+        side      = p.get("side", "long")
+        try:
+            pl_pct = float(p.get("unrealized_plpc", 0) or 0)
+        except (TypeError, ValueError):
+            pl_pct = 0.0
+        mv = float(p.get("market_value", 0) or 0)
+
+        # Per-asset-class thresholds
+        if ac == "us_option":
+            tp_thresh, sl_thresh, em_thresh = 0.80, -0.50, -0.12
+        else:
+            tp_thresh, sl_thresh, em_thresh = 0.10, -0.08, -0.12
+
+        has_exit = sym in open_exit_symbols
+
+        suspect = False
+        reason  = ""
+        if pl_pct >= tp_thresh and not has_exit:
+            suspect = True
+            reason  = f"pl {pl_pct:+.1%} >= TP {tp_thresh:+.0%} but NO exit order"
+        elif pl_pct <= em_thresh and not has_exit:
+            suspect = True
+            reason  = f"pl {pl_pct:+.1%} <= emergency {em_thresh:+.0%} but NO exit order"
+        elif pl_pct <= sl_thresh and not has_exit:
+            suspect = True
+            reason  = f"pl {pl_pct:+.1%} <= SL {sl_thresh:+.0%} but NO exit order"
+
+        if suspect:
+            audit.append({
+                "symbol":          sym,
+                "asset_class":     ac,
+                "side":            side,
+                "pl_pct":          round(pl_pct, 4),
+                "market_value":    round(mv, 2),
+                "has_exit_order":  has_exit,
+                "reason":          reason,
+            })
+    return audit
+
+
 # ─── State I/O ───────────────────────────────────────────────────────────────
 
 def load_state() -> dict:
@@ -840,9 +916,37 @@ def run():
               f"{t['pnl_pct']:+.1f}% ${t['pnl_usd']:+.2f} "
               f"({t['hold_hours']:.1f}h) [{t['strategy']}]")
 
-    # Today stats (input to adapter)
+    # Today stats (input to adapter).
+    # Note 2026-05-13: many fields are 24h-window scoped — see `window_hours`
+    # field below. State.json holds lifetime ground truth — see
+    # `lifetime_from_state` field. This eliminates the Challenger Q2 critique
+    # (Senior PM round 1 confused 24h with lifetime).
+    open_positions_snapshot = []
+    try:
+        from risk_guards import get_open_positions
+        open_positions_snapshot = get_open_positions() or []
+    except Exception as _e:
+        print(f"  open_positions snapshot failed: {_e}")
+
+    # Pull lifetime numbers from prior state for the LLM payload.
+    _prior_state = load_state()
+    lifetime_from_state = {}
+    for sname, sdata in (_prior_state.get("strategies") or {}).items():
+        if isinstance(sdata, dict):
+            lifetime_from_state[sname] = {
+                "trades_lifetime":      sdata.get("trades_lifetime", 0),
+                "pnl_usd_lifetime":     sdata.get("pnl_usd_lifetime", 0),
+                "consecutive_losses":   sdata.get("consecutive_losses", 0),
+                "win_rate_lifetime":    sdata.get("win_rate_lifetime"),
+            }
+
+    # Position audit — flag positions that should have exit orders but don't.
+    # See compute_position_audit below.
+    position_audit = compute_position_audit(open_positions_snapshot, orders)
+
     today_stats = {
         "as_of":             date_iso,
+        "window_hours":      24,                             # all *_24h fields scoped here
         "equity":            equity,
         "starting_equity":   float(account.get("last_equity", equity) or equity),
         "by_strategy":       compute_strategy_stats(trades, orders, equity),
@@ -851,6 +955,10 @@ def run():
         "fill_rate":         compute_fill_rate(orders),
         "tp_hit_rate":       compute_tp_hit_rate(orders),  # 10-day data-collect for trailing-stop decision
         "rsi_snapshot":      compute_rsi_snapshot(),       # macro context for LLM "dormant vs broken" check
+        # 2026-05-13 fixes:
+        "open_positions":    open_positions_snapshot,         # full portfolio snapshot — fills "60% blind spot"
+        "lifetime_from_state": lifetime_from_state,           # ground truth vs 24h window
+        "position_audit":    position_audit,                  # SUSPECT positions missing exit orders
         "cumulative_trades": len(trades),
         "cumulative_pnl_usd": round(sum(t["pnl_usd"] for t in trades), 2),
     }
@@ -1046,6 +1154,24 @@ def run():
 
     # Merge deterministic + LLM rationale into one log entry block
     full_rationale = llm_narrative_lines + rationale
+
+    # Position audit findings → rationale (so operator + future LLM see them)
+    for s in (today_stats.get("position_audit") or []):
+        full_rationale.append(
+            f"{date_iso} · position-audit: {s['symbol']} {s['reason']} "
+            f"(mv=${s['market_value']:.0f})"
+        )
+
+    # Peak-tracker snapshot → rationale (so weekly retro sees intraday volatility)
+    try:
+        from peak_tracker import get_peak, summarize as _peak_summary
+        p = get_peak()
+        if p and p.get("peak_pl_usd", 0) >= 500:   # only log meaningful peaks
+            full_rationale.append(
+                f"{date_iso} · peak-tracker: {_peak_summary(p)}"
+            )
+    except Exception:
+        pass
 
     save_state(new_state)
     append_rationale(full_rationale)

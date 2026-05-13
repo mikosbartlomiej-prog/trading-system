@@ -97,6 +97,11 @@ def place_emergency_close(ep: dict) -> dict | None:
     # Long position closes via SELL; short position closes via BUY (cover)
     close_side = "sell" if side == "long" else "buy"
 
+    # Distinguish emergency (-12% stop) vs profit_lock (peak retrace cascade)
+    # in client_order_id so analyzer can attribute different close reasons.
+    rec = ep.get("recommendation", "CLOSE_EMERGENCY")
+    reason_tag = "profit-lock" if rec == "PROFIT_LOCK" else "emergency"
+
     ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
     safe_sym = symbol.replace("/", "").replace(" ", "")
     payload = {
@@ -105,7 +110,7 @@ def place_emergency_close(ep: dict) -> dict | None:
         "side":            close_side,
         "type":            "market",
         "time_in_force":   "gtc" if "/" in symbol else "day",
-        "client_order_id": f"exit-emergency-{safe_sym}-{ts}",
+        "client_order_id": f"exit-{reason_tag}-{safe_sym}-{ts}",
     }
     try:
         r = requests.post(
@@ -198,7 +203,30 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
     recommendation = "HOLD"
     reasons = []
 
-    if unrealized_plpc <= EXIT_THRESHOLDS["emergency_loss_pct"]:
+    # Profit-lock cascade — gdy daily P&L retraced >=50% od peak >=$1k,
+    # aggressively close winners. New since 2026-05-13 (response to
+    # 2026-05-12 disaster: +$3,173 peak → -$184 reversal).
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from peak_tracker import should_profit_lock, VERDICT_PROFIT_LOCK
+        in_lock, peak_data = should_profit_lock()
+    except (ImportError, Exception):
+        in_lock = False
+        peak_data = {}
+
+    if in_lock and unrealized_plpc >= 8.0:
+        # Aggressive harvest: any winner >=8% gets flagged. The 8% threshold
+        # is loose vs the standard CONSIDER_TP +10% because lock mode is
+        # specifically defending an already-realized peak we are retracing.
+        recommendation = "PROFIT_LOCK"
+        reasons.append(
+            f"PROFIT-LOCK active: peak ${peak_data.get('peak_pl_usd',0):+.0f}, "
+            f"retrace {peak_data.get('retrace_from_peak',0):.0%}, "
+            f"this winner {unrealized_plpc:.1f}% — harvest now"
+        )
+
+    elif unrealized_plpc <= EXIT_THRESHOLDS["emergency_loss_pct"]:
         recommendation = "CLOSE_EMERGENCY"
         reasons.append(f"strata {unrealized_plpc:.1f}% przekracza próg awaryjny")
 
@@ -297,6 +325,36 @@ def run_exit_check():
     print(f"  Otwartych pozycji: {len(positions)}")
     print(f"  Equity: ${float(account.get('equity', 0)):,.2f}")
 
+    # ── Peak tracker — update daily P&L peak + retrace verdict ───────────
+    # New 2026-05-13: solves 2026-05-12 disaster where +$3,173 peak ended
+    # at -$184 with zero protective action. update_peak() persists peak +
+    # current to state.json::daily_peak; verdict triggers profit-lock
+    # cascade in enrich_position when retrace >= 50% from peak >= $1k.
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from peak_tracker import (update_peak, summarize, alert_already_sent_today,
+                                    mark_alert_sent, VERDICT_WARN, VERDICT_PROFIT_LOCK)
+        # Pass account_status-like dict (exit-monitor's get_account_info has the fields)
+        peak = update_peak({
+            "equity":       float(account.get("equity", 0) or 0),
+            "last_equity":  float(account.get("last_equity", 0) or 0),
+        })
+        print(f"  Peak tracker: {summarize(peak)}")
+        # Email alerts (dedup per UTC day)
+        verdict = peak.get("verdict", "")
+        if verdict in (VERDICT_WARN, VERDICT_PROFIT_LOCK) and not alert_already_sent_today(verdict):
+            try:
+                from notify import notify_peak_retrace
+                ok = notify_peak_retrace(peak, level=verdict)
+                if ok:
+                    mark_alert_sent(verdict)
+                    print(f"  [PEAK-ALERT] {verdict} email sent")
+            except Exception as e:
+                print(f"  peak_tracker notify failed: {e}")
+    except Exception as e:
+        print(f"  peak_tracker unavailable ({type(e).__name__}: {e}) — skip")
+
     if not positions:
         print("  Brak otwartych pozycji — nic do sprawdzenia")
         return
@@ -322,16 +380,17 @@ def run_exit_check():
         reason = "; ".join(ep["reasons"]) if ep["reasons"] else ep["recommendation"]
         notify_exit(ep["symbol"], ep["recommendation"], reason, ep["unrealized_plpc"])
 
-    # ── EMERGENCY EXITS: bypass routine, place MARKET order directly ─────────
-    # Discovered 2026-05-09 via daily learning loop: of 5 exit-emergency
-    # orders placed by the Exit Handler routine, 4 never filled (LIMIT
-    # orders in fast-market conditions where price runs away from limit).
-    # Per LLM proposal #1, route emergency exits through Alpaca REST with
-    # type=MARKET to guarantee fill — same pattern as options-exit-monitor's
-    # SL path. Other recommendations (CLOSE_FLAT / CLOSE_DECAY / CONSIDER_TP)
-    # still go to routine (they're not time-critical).
-    emergency = [ep for ep in flagged if ep["recommendation"] == "CLOSE_EMERGENCY"]
-    other_flagged = [ep for ep in flagged if ep["recommendation"] != "CLOSE_EMERGENCY"]
+    # ── EMERGENCY + PROFIT_LOCK EXITS: bypass routine, place MARKET directly ─
+    # CLOSE_EMERGENCY: position breaches -12% stop. Time-critical.
+    # PROFIT_LOCK: daily P&L retraced 50%+ from peak >=$1k. Lock unrealized
+    #              gains now before further reversal. Treated identically:
+    #              MARKET sell, direct REST, no routine delay.
+    # Other (CLOSE_FLAT / CLOSE_DECAY / CONSIDER_TP) still go to routine.
+    direct_close = [ep for ep in flagged
+                     if ep["recommendation"] in ("CLOSE_EMERGENCY", "PROFIT_LOCK")]
+    other_flagged = [ep for ep in flagged
+                      if ep["recommendation"] not in ("CLOSE_EMERGENCY", "PROFIT_LOCK")]
+    emergency = direct_close   # alias preserved for the loop below
     closed_directly = 0
     for ep in emergency:
         result = place_emergency_close(ep)

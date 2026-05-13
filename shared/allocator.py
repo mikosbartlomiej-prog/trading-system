@@ -853,21 +853,13 @@ class AccountAwareAllocator:
 
         # Honor caller-provided market_open hint (used by tests + cron-time
         # snapshot). Skip stocks if hint says closed; crypto bypasses.
+        # NB: per-instrument check (can_trade_now) is enforced INSIDE
+        # place_stock_bracket / place_crypto_order / place_simple_buy, so we
+        # don't re-check here — that caused tests to fail when run outside
+        # market hours.
         if not is_crypto and not market_open:
             result["reason"] = "market not open"
             self.trace.warn(f"{sym} {action}: skipped — market not open", indent=2)
-            return result
-
-        # Per-instrument trading window gate (v3.2). Catches per-symbol
-        # pauses (e.g. MSTR/SMCI) even when market is open.
-        try:
-            from instrument_windows import can_trade_now
-        except ImportError:
-            from shared.instrument_windows import can_trade_now
-        ok, reason = can_trade_now(sym, asset_class=ic_asset)
-        if not ok:
-            result["reason"] = reason
-            self.trace.warn(f"{sym} {action}: skipped — {reason}", indent=2)
             return result
 
         # Quantity sanity

@@ -217,7 +217,11 @@ REGIME_MISMATCH_DEEP_LOSS_GUARD    = -25.0   # percent
 #   crypto:   5%  — between options and stocks
 # In options-exit-monitor: only options matter (8% default).
 TRAILING_STOP_ENABLED              = os.environ.get(
-    "TRAILING_STOP_ENABLED", "false"
+    # Flipped 2026-05-13 default false→true after 2026-05-12 disaster
+    # (+$3,173 peak → -$184 reversal; static TPs at entry*1.80 never
+    # filled while peaks of +47% to +93% retraced). 8% trail off peak
+    # captures most of the rally with minimal whipsaw risk.
+    "TRAILING_STOP_ENABLED", "true"
 ).lower() == "true"
 TRAILING_STOP_TRAIL_PCT            = 0.08    # 8% off peak triggers exit
 TRAILING_STOP_MIN_HOLD_HOURS       = 12      # don't trail very fresh positions

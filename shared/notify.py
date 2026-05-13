@@ -443,3 +443,73 @@ def notify_allocation_execution(plan_date: str, results: list[dict]) -> bool:
     lines.append(f"Plan source: learning-loop/allocations/{plan_date}.json")
 
     return send_email(subject, "\n".join(lines))
+
+
+def notify_peak_retrace(peak: dict, level: str = "WARN") -> bool:
+    """
+    Email alert when intraday daily P&L has retraced significantly from peak.
+    `peak` is the shared.peak_tracker dict (see peak_tracker.update_peak).
+    `level` is "WARN" (30-50% retrace) or "PROFIT_LOCK" (50%+).
+
+    Caller is responsible for dedup (use peak_tracker.alert_already_sent_today).
+    """
+    if not peak:
+        return False
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    pk_usd      = float(peak.get("peak_pl_usd", 0))
+    cur_usd     = float(peak.get("current_pl_usd", 0))
+    pk_at       = (peak.get("peak_at") or "?")[:16].replace("T", " ")
+    retrace_pct = float(peak.get("retrace_from_peak", 0))
+
+    if level == "PROFIT_LOCK":
+        subject = f"[PROFIT-LOCK] Intraday P&L retraced {retrace_pct:.0%} from peak ${pk_usd:+,.0f}"
+        urgency = "PROFIT-LOCK CASCADE ARMED — aggressive winner harvesting active"
+    else:
+        subject = f"[PEAK-WARN] Intraday P&L retraced {retrace_pct:.0%} from peak ${pk_usd:+,.0f}"
+        urgency = "WARNING — retrace approaching profit-lock threshold (50%)"
+
+    lines = [
+        "Intraday P&L peak alert",
+        "=" * 60,
+        f"Time:              {now}",
+        f"Level:             {level}",
+        f"Status:            {urgency}",
+        "",
+        f"Peak P&L:          ${pk_usd:+,.2f}",
+        f"Peak at:           {pk_at}",
+        f"Peak equity:       ${float(peak.get('peak_equity',0)):,.2f}",
+        "",
+        f"Current P&L:       ${cur_usd:+,.2f}",
+        f"Current equity:    ${float(peak.get('current_equity',0)):,.2f}",
+        f"Retrace from peak: {retrace_pct:.1%}",
+        "",
+    ]
+
+    if level == "PROFIT_LOCK":
+        lines += [
+            "What happens now:",
+            "  exit-monitor + options-exit-monitor will aggressively close",
+            "  winning positions at PEAK * 0.70 instead of waiting for static TP.",
+            "  Goal: lock 70% of unrealized gains before further retrace.",
+            "",
+            "Why this fired:",
+            "  Yesterday (2026-05-12) +$3,173 peak retraced to -$184 over",
+            "  4.5 hours with zero protective action. This alert is the fix.",
+        ]
+    else:
+        lines += [
+            "What to monitor:",
+            "  If retrace crosses 50% from peak, PROFIT-LOCK cascade arms",
+            "  and exit-monitor switches to aggressive harvest mode.",
+            "",
+            "Manual override:",
+            "  Set learning-loop/state.json::daily_peak.profit_lock_disabled=true",
+            "  if you intentionally want to ride the position through retrace.",
+        ]
+
+    lines += [
+        "",
+        f"Dashboard: https://app.alpaca.markets/paper/dashboard/overview",
+    ]
+
+    return send_email(subject, "\n".join(lines))
