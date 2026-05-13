@@ -1,0 +1,56 @@
+
+=== Emergency Close (afternoon) | 2026-05-13 15:22:23 UTC ===
+Closing 4 EMERGENCY + 2 FLAT positions
+
+Account OK — equity $95,419.28  daily P&L $-2,753.39
+
+--- CLOSE_EMERGENCY (4 positions) ---
+
+SELL_TO_CLOSE GOOGL260518P00395000 × 1
+  Entry: $6.70  Current: $5.15  P&L: -23.1%
+  LIMIT @ $5.00
+  Reason: CLOSE_EMERGENCY: strata -23.1% przekracza próg -12%. UWAGA: ta pozycja była +39.6% o 08:12 UTC — kompletny reversal.
+  → ORDER PLACED id=9323cf1b-4da3-47ae-af81-2df72509446d status=pending_new
+
+SELL_TO_CLOSE QQQ260518P00713000 × 1
+  Entry: $9.74  Current: $8.45  P&L: -13.2%
+  LIMIT @ $8.35
+  Reason: CLOSE_EMERGENCY: strata -13.2% przekracza próg -12%. DTE=5.
+  → ORDER PLACED id=2cf8b90c-3bb9-4abd-b67c-42e53611219e status=pending_new
+
+SELL_TO_CLOSE QQQ260519P00701000 × 1
+  Entry: $5.69  Current: $4.36  P&L: -23.4%
+  LIMIT @ $4.25
+  Reason: CLOSE_EMERGENCY: strata -23.4% przekracza próg -12%. DTE=6.
+  → ERROR 403: {"code":40310000,"message":"insufficient options buying power for cash-secured put (required: 69675, available: 0)","options_buying_power":"0","required_options_buying_power":"69675"}
+
+SELL_TO_CLOSE QQQ260519P00704000 × 1
+  Entry: $6.54  Current: $5.30  P&L: -19.0%
+  LIMIT @ $5.18
+  Reason: CLOSE_EMERGENCY: strata -19.0% przekracza próg -12%. DTE=6.
+  → ERROR 403: {"code":40310000,"message":"insufficient options buying power for cash-secured put (required: 69882, available: 0)","options_buying_power":"0","required_options_buying_power":"69882"}
+
+--- CLOSE_FLAT (2 positions) ---
+
+SELL_TO_CLOSE QQQ260518P00712000 × 1
+  Entry: $7.73  Current: $7.92  P&L: +2.5%
+  LIMIT @ $7.80
+  Reason: CLOSE_FLAT: +2.5% po 42.7h. Był +18.5% o 08:12 UTC — retrace 86% od szczytu. DTE=5, theta przyśpiesza.
+  → ORDER PLACED id=9a4ff079-a932-41f4-95b5-ed2ae829d0d9 status=pending_new
+
+SELL_TO_CLOSE SPY260518P00740000 × 2
+  Entry: $4.97  Current: $5.02  P&L: +1.0%
+  LIMIT @ $4.92
+  Reason: CLOSE_FLAT: +1.0% po 44.6h. Teza nie zadziałała. DTE=5.
+  → ORDER PLACED id=cb3a2770-0689-4bc6-ab8b-732d8c938eb0 status=pending_new
+
+=== Summary ===
+  ✅ GOOGL260518P00395000
+  ✅ QQQ260518P00713000
+  ❌ QQQ260519P00701000
+  ❌ QQQ260519P00704000
+  ✅ QQQ260518P00712000
+  ✅ SPY260518P00740000
+
+2 order(s) FAILED — close manually via:
+  https://app.alpaca.markets/paper/dashboard/overview
