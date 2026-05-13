@@ -139,3 +139,32 @@
   - **Sketch:** 1. Mirror `defense-monitor/monitor.py::classify_and_execute` pattern: parse priority/news/asset_map → decide ticker + side. 2. Energy news (oil/sanction/OPEC) → BUY XOM/CVX/USO/XLE. 3. Defense escalation news → BUY RTX/LMT/NOC. 4. Use `shared/alpaca_orders.execute_stock_signal` for each. 5. Per-event guards: VIX, daily-drawdown, concentration (already in shared/risk_guards). 6. Re-enable geo-xom + geo-defense + geo-gold strategies in state.json after deploy. 7. Iron rule: AUTO_EXECUTE_GEO=false default, manual flip after 1 week of email-only audit.
 
 - [x] [2026-05-13 P1] **PROFIT_LOCK cascade v3.3 wiring smoke test** ✅ VERIFIED — All imports OK (peak_tracker, notify_peak_retrace, enrich_position with profit-lock branch, analyzer.compute_position_audit). State.json daily_peak initialized empty (will populate on first exit-monitor cron tick after market open 13:30 UTC). Real production fire pending market behavior — observation 2026-05-15 per backlog.
+- [ ] [2026-05-13] **Regime gate dla PUT proposals: blokuj gdy SPY RSI>75 + SPY 5d return>+2%** _(risk: medium, effort: 2-3h, revisit: 2026-05-14)_
+  - **Rationale:** Options-monitor kupił 2 nowe PUTy (QQQ704, GOOGL385) PODCZAS rajdu z SPY RSI 82.4. RSI>72→PUT logika zakłada mean-reversion, ale bez weryfikacji czy overbought jest krótkoterminowe czy trend — staje się systematycznym fadem silnego trendu. Dziś to kosztowało dodatkową ekspozycję w złym kierunku w najgorszym możliwym momencie.
+  - **Sketch:** W options-monitor/monitor.py, w logice propozycji PUT (warunek RSI > PUT_RSI_THRESHOLD):
+1. Pobierz SPY bars via shared/market_data.py::get_daily_bars('SPY', 10)
+2. Oblicz: spy_5d_return = (bars[-1]['close'] - bars[-6]['close']) / bars[-6]['close']
+3. Oblicz spy_rsi = ostatni RSI(14) z bars
+4. Jeśli spy_rsi > 75 AND spy_5d_return > 0.02: skip PUT, log 'REGIME GATE: SPY RSI={spy_rsi:.1f} + 5d={spy_5d_return:.1%} — zbyt silny trend, PUT zablokowany'
+5. Symetrycznie: spy_rsi < 25 AND spy_5d_return < -0.02 → skip CALL
+6. Progi (75, 2%) do config/aggressive_profile.json jako put_trend_block_rsi i put_trend_block_5d_return
+7. Test cases: RSI=82 + 5d=+3.5% → 0 PUT proposals; RSI=74 + 5d=+1.8% → PUT allowed; RSI=80 + 5d=-0.5% → PUT allowed (spike bez trendu = reversal setup OK)
+- [ ] [2026-05-13] **Options side concentration hard cap: max PUT_CAP=5 PUTs i CALL_CAP=5 CALLs jednocześnie** _(risk: medium, effort: 2-3h, revisit: 2026-05-14)_
+  - **Rationale:** Dziś rano 15 otwartych PUTów = pełna jednostronna koncentracja. MAX_OPEN_OPTIONS=10 kontroluje łączną liczbę, ale nie dysproporcję call/put. Jeden silny rajd SPY wymazał cały portfel opcji naraz. Put/Call cap = hard limit na jednostronną ekspozycję niezależnie od liczby underlyings.
+  - **Sketch:** W options-monitor/monitor.py, w bloku pre-order sprawdzającym MAX_OPEN_OPTIONS:
+1. Po pobraniu otwartych pozycji US options via Alpaca /v2/positions, podziel na puts i calls
+2. PUT detection: symbol.endswith('P' + 8-digit-strike) OR OCC-format zawiera 'P'
+3. Jeśli nowa propozycja = PUT AND count(open_puts) >= PUT_CAP: skip, log 'SIDE CAP: {count} puts >= {PUT_CAP} — blokada PUT'
+4. Jeśli nowa propozycja = CALL AND count(open_calls) >= CALL_CAP: skip analogicznie
+5. PUT_CAP=5, CALL_CAP=5 do config/aggressive_profile.json (operator może tune)
+6. Note: dzisiejszy scenariusz (15 PUTs) nigdy nie byłby możliwy z tym capo — max exposure $5k * 5 = $25k jednej strony
+- [ ] [2026-05-13] **Crypto pipeline health check: 14+ dni bez transakcji → log verbose per-coin rejection reasons** _(risk: low, effort: 1h, revisit: 2026-05-20)_
+  - **Rationale:** Crypto-momentum i crypto-breakdown mają 0 trades w 14 dniach. Przy BTC RSI 64.3 to może być poprawne zachowanie — ale nie wiemy tego, bo logi nie pokazują per-coin powodów braku sygnału. Jeśli próg BTC dominance guard lub 24h bracket [3%,15%] blokuje wszystkie alts systemowo, a my tego nie wiemy, to mamy martwy monitor zjadający budżet Actions.
+  - **Sketch:** W crypto-monitor/monitor.py — per-coin rejection diagnostics:
+1. Dla każdej monety w COIN_TIERS: zaloguj RSI value + 24h_move_pct + rejection_reason
+   Format: 'BTC/USD: RSI=64.3, 24h=+1.2% → SKIP (24h_move poniżej progu 3%)'
+2. Zaloguj BTC dominance: 'BTC dominance: -0.5%/1h → PASS (guard OK)' lub 'BLOCK alt longs'
+3. Zaloguj alt_positions_open: 'Alt positions: 0/3 — slot available'
+4. Na końcu: 'Candidates: 0/11 coins passed all filters'
+5. Cel: po 1 widocznym runie diagnozy wiemy (a) thresholdy OK lub (b) systematyczna blokada lub (c) Alpaca endpoint problem
+6. Jeśli (a): zostaw, obserwuj do 2026-06-01; jeśli (b): tune thresholds; jeśli (c): fix

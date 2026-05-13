@@ -125,3 +125,21 @@
 - 2026-05-12 · crypto-momentum: SILENT — enabled but 0 trades lifetime (13 days tracked); consider disable or remove
 - 2026-05-12 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (13 days tracked); consider disable or remove
 
+- 2026-05-13 · LLM[medium] regime=risk_on: Katastrofalny dzień: equity $95,009 vs start $98,173 = -$3,163 (-3.22%), tuż przy daily stop -3% z v3.0. Rdzeń problemu: 15 otwartych PUT-ów przy SPY RSI 82.4 — system kupował nowe PUTy (RSI>72 trigger) dokładnie podczas jednego z najsilniejszych rajdów SPY w tym cyklu. Fill_rate.emergency=50% (4/8) potwierdza chaos: 2 zamówienia wygasły pre-market, 2 anulowano ręcznie. Dobra wiadomość: portfel jest teraz FLAT (open_positions=[]) — czysty reset z $95k. Pauzowanie options-momentum do 2026-05-14 to właściwa decyzja; re-enable bez regime gate przywróci ten sam wzorzec przy kolejnym silnym rajdzie.
+-   · options-momentum.size_multiplier: 0.0 -> 0.5
+-   · options-momentum.enabled: False -> False
+-   · options-momentum.side_bias: None -> None
+-   · options-momentum.rationale: Paused 2026-05-13 ~16:00 UTC after -$2,800 day on bearish PUT concentration. Today realized 4 emergency closes rano + 4 auto MARKET closes 14:27 UTC = ~$1,100 realized loss; remaining 4 LIMIT queued for fill (suma ~+$0). All 15 options positions otwartych dziś rano były PUT — zero hedging, full bearish concentration. Options-monitor RSI>72 triggered NEW 2 buy_to_open PUTs (QQQ704 $6.54, GOOGL385 $7.14) DESPITE today's reversal — pure concentration adding. LLM Senior PM + Challenger już ACCEPTED rejection PUT bias 2026-05-12 z rationale 'stress test $3,750 exceeded 2% guardrail' — dziś okazało się że Challenger miał rację. AUTO-RESUME po 21:00 UTC daily-learning 2026-05-13 widzi pełną dzienną perspektywę i decyduje. -> Pauzowane poprawnie do 2026-05-14. Pre-ustawiam size_multiplier=0.5 (nie 1.0 default) na re-enable: kara za 0% WR lifetime + brak regime gate który kosztował nas -3.22% dziś. Pierwsza runda po wznowieniu = POŁOWA standardowego rozmiaru aż do min. 5 trades z pozytywnym expectancy. side_bias=null wymuszony — żadna strona nie jest dopuszczona przy SPY RSI 82.4 bez dodatkowych warunków.
+-   · crypto-momentum.size_multiplier: 1.0 -> 1.0
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.rationale: hold (lifetime trades 0 < 10; need more sample before adapting) -> Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch.
+-   · crypto-breakdown.size_multiplier: 1.0 -> 1.0
+-   · crypto-breakdown.enabled: True -> True
+-   · crypto-breakdown.side_bias: None -> None
+-   · crypto-breakdown.rationale: hold (lifetime trades 0 < 10; need more sample before adapting) -> Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-13 · LLM edge: Brak potwierdzonej przewagi w żadnej aktywnej strategii. Options-momentum ground truth (state.json): 2 trades / -$3.47 / 0% WR — ujemny expectancy. Crypto: 14 dni / 0 transakcji przy BTC RSI 64.3 i ETH RSI 50.4 — dormant prawdopodobnie poprawnie (poniżej progów entry), ale pipeline nieweryfikowany. Fill_rate.unknown 5/5=100% sugeruje zamknięcie stock bracket-TP legs (GLD/RTX/XLE) — potencjalny ukryty zysk od stocks, strukturalnie nieprzypisany z powodu braku client_order_id prefix.
+- 2026-05-13 · crypto-momentum: SILENT — enabled but 0 trades lifetime (14 days tracked); consider disable or remove
+- 2026-05-13 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (14 days tracked); consider disable or remove
+

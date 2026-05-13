@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-13T15:30:37+00:00",
-  "days_tracked": 13,
+  "last_updated": "2026-05-13T22:16:17.398450+00:00",
+  "days_tracked": 14,
   "cumulative": {
-    "total_trades": 1,
-    "total_pnl_usd": -0.6,
-    "starting_equity": 97322.58709398
+    "total_trades": 0,
+    "total_pnl_usd": 0,
+    "starting_equity": 98172.6735419601
   },
   "strategies": {
     "overbought-short": {
@@ -31,11 +31,11 @@
       "win_rate_7d": 0.0,
       "pnl_usd_lifetime": -0.6,
       "pnl_usd_7d": -0.6,
-      "size_multiplier": 0.0,
+      "size_multiplier": 0.5,
       "enabled": false,
       "side_bias": null,
       "consecutive_losses": 1,
-      "rationale": "Paused 2026-05-13 ~16:00 UTC after -$2,800 day on bearish PUT concentration. Today realized 4 emergency closes rano + 4 auto MARKET closes 14:27 UTC = ~$1,100 realized loss; remaining 4 LIMIT queued for fill (suma ~+$0). All 15 options positions otwartych dziś rano były PUT — zero hedging, full bearish concentration. Options-monitor RSI>72 triggered NEW 2 buy_to_open PUTs (QQQ704 $6.54, GOOGL385 $7.14) DESPITE today's reversal — pure concentration adding. LLM Senior PM + Challenger już ACCEPTED rejection PUT bias 2026-05-12 z rationale 'stress test $3,750 exceeded 2% guardrail' — dziś okazało się że Challenger miał rację. AUTO-RESUME po 21:00 UTC daily-learning 2026-05-13 widzi pełną dzienną perspektywę i decyduje.",
+      "rationale": "Pauzowane poprawnie do 2026-05-14. Pre-ustawiam size_multiplier=0.5 (nie 1.0 default) na re-enable: kara za 0% WR lifetime + brak regime gate który kosztował nas -3.22% dziś. Pierwsza runda po wznowieniu = POŁOWA standardowego rozmiaru aż do min. 5 trades z pozytywnym expectancy. side_bias=null wymuszony — żadna strona nie jest dopuszczona przy SPY RSI 82.4 bez dodatkowych warunków.",
       "paused_until": "2026-05-14",
       "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
       "review_after": "2026-05-14 (post daily-learning)"
@@ -67,7 +67,7 @@
       "enabled": true,
       "side_bias": null,
       "consecutive_losses": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "rationale": "Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch.",
       "paused_until": null
     },
     "crypto-breakdown": {
@@ -81,17 +81,11 @@
       "enabled": true,
       "side_bias": null,
       "consecutive_losses": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "rationale": "Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy.",
       "paused_until": null
     }
   },
-  "asset_classes": {
-    "options": {
-      "trades_7d": 1,
-      "win_rate_7d": 0.0,
-      "pnl_usd_7d": -0.6
-    }
-  },
+  "asset_classes": {},
   "sources": {},
   "tickers": {
     "MSTR": {
