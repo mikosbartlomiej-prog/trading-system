@@ -670,7 +670,16 @@ def detect_spike_signals(per_ticker: dict, reddit_state: dict,
             skew = (agg["bull"] - agg["bear"]) / total
             if abs(skew) < SENTIMENT_THRESHOLD:
                 continue
-            side = "BUY" if skew > 0 else "SELL_SHORT"
+            # 2026-05-13: tightened SELL_SHORT classification. NVDA case
+            # 2026-05-12 had skew=-0.053 (just over 0.05 threshold) — upstream
+            # called it SELL_SHORT, Curator correctly rejected because posts
+            # were actually bullish ("'472 was a fantasy' read as bearish but
+            # context was bullish). Below |skew|=0.10 too noisy for direction;
+            # pass to Curator as UNCLEAR and let it read the post body.
+            if abs(skew) < 0.10:
+                side = "UNCLEAR"
+            else:
+                side = "BUY" if skew > 0 else "SELL_SHORT"
         else:
             # Heuristic regex couldn't classify, but post quality cleared
             # spike floor — pass to Curator with side="UNCLEAR"; Curator
@@ -749,7 +758,11 @@ def detect_user_signals(user_post_signals: list[dict]) -> list[dict]:
         total = agg["bull"] + agg["bear"]
         if total > 0:
             skew = (agg["bull"] - agg["bear"]) / total
-            side = "BUY" if skew > 0 else "SELL_SHORT"
+            # |skew|<0.10 too noisy — see #4 NVDA case 2026-05-12.
+            if abs(skew) < 0.10:
+                side = "UNCLEAR"
+            else:
+                side = "BUY" if skew > 0 else "SELL_SHORT"
         else:
             skew = None
             side = "UNCLEAR"   # Curator must determine direction

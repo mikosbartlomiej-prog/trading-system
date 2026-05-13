@@ -14,7 +14,7 @@
       "enabled": false,
       "side_bias": null,
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
       "trades_lifetime": 0,
       "trades_7d": 0,
       "win_rate_lifetime": 0,
@@ -22,7 +22,7 @@
       "pnl_usd_lifetime": 0,
       "pnl_usd_7d": 0,
       "consecutive_losses": 0,
-      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering"
+      "llm_note": "manual override (Claude + user) based on backtest evidence \u2014 pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering"
     },
     "options-momentum": {
       "trades_lifetime": 1,
@@ -46,11 +46,13 @@
       "pnl_usd_lifetime": 0,
       "pnl_usd_7d": 0,
       "size_multiplier": 1.0,
-      "enabled": true,
+      "enabled": false,
       "side_bias": null,
       "consecutive_losses": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
-      "paused_until": null
+      "rationale": "DISABLED 2026-05-13 \u2014 geo-monitor pipeline incomplete. geo-monitor wysy\u0142a payload do Cloudflare worker\u2192routine, ale routine path jest deprecated od v2.2. Brak direct execution dla geo signals. geo-xom strategy nigdy nie wygeneruje XOM trade w obecnej architekturze. Re-enable after geo-monitor direct execution ships (backlog 2026-05-20).",
+      "paused_until": null,
+      "evidence": "geo-monitor/monitor.py line 252-277 \u2014 send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
+      "review_after": "2026-05-20 (or post geo-monitor direct exec)"
     },
     "crypto-momentum": {
       "trades_lifetime": 0,
@@ -93,15 +95,15 @@
     "MSTR": {
       "enabled": false,
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
-      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
       "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
     },
     "SMCI": {
       "enabled": false,
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
-      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics \u2014 breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
       "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },

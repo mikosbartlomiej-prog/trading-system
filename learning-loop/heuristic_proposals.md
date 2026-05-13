@@ -123,3 +123,19 @@
 - [ ] [2026-05-13] **GH Actions monitor-health budget squeeze** _(risk: low, effort: 30min, revisit: 2026-05-17)_
   - **Rationale:** After repo-public flip (operator action pending), budget unlimited; we can flip cadences back. Or post-stabilization, drop monitor-health from hourly to every 6h. Saves ~600 invocations/month even on public.
   - **Sketch:** revisit po 5 dniach pełnej observability — czy faktycznie potrzebujemy hourly?
+
+<!-- ============================================================ -->
+<!-- 2026-05-13 P1 diagnostic sweep — 3 items closed, 1 new found -->
+<!-- ============================================================ -->
+
+- [x] [2026-05-13 P1] **Options-monitor zero entries diagnosis** ✅ NOT-A-BUG — `MAX_OPEN_OPTIONS=10` cap reached. Wczoraj 10+ open PUTs blokowało nowe entries. Po dzisiejszych zamknięciach 4 emergency PUTs (AAPL/GOOGL/SPY×2) sloty się zwolnią → options-monitor wróci do pracy automatycznie. NO ACTION NEEDED.
+
+- [x] [2026-05-13 P1] **NVDA Reddit pipeline diagnosis** ✅ PIPELINE WORKS — Curator LLM correctly rejected NVDA on 2026-05-12 (commits a79938c, 6fca276): skew=-0.053 was neutral (near 0), top posts actually bullish, portfel already PUT-loaded. Drobny upstream fix shipped: gdy `|skew|<0.10` classify as UNCLEAR (let Curator decide direction) zamiast SELL_SHORT. Zapobiega FOMO classifications na noisy sentiment.
+
+- [x] [2026-05-13 P1] **Geo-xom pipeline audit** ✅ STRUCTURAL FINDING — `geo-monitor` wysyła payload do Cloudflare worker → Routine, ale routine path deprecated od v2.2 (no direct execution). geo-xom strategy w state.json istniała ale **nigdy nie wykona XOM trade**. DISABLED in state.json. New backlog entry below for proper fix.
+
+- [ ] [2026-05-13] **Geo-monitor direct execution path (replaces deprecated routine)** _(risk: medium, effort: 2-3h, revisit: 2026-05-20)_
+  - **Rationale:** geo-monitor sends payload to `CLOUDFLARE_GEO_WORKER_URL` → Claude.ai Exit Handler routine. Routine path deprecated v2.2 (defense/twitter/reddit/crypto already migrated to direct REST via `shared/alpaca_orders.py`). Geo-monitor wciąż używa routine = signals never execute. geo-xom strategy disabled until this fix.
+  - **Sketch:** 1. Mirror `defense-monitor/monitor.py::classify_and_execute` pattern: parse priority/news/asset_map → decide ticker + side. 2. Energy news (oil/sanction/OPEC) → BUY XOM/CVX/USO/XLE. 3. Defense escalation news → BUY RTX/LMT/NOC. 4. Use `shared/alpaca_orders.execute_stock_signal` for each. 5. Per-event guards: VIX, daily-drawdown, concentration (already in shared/risk_guards). 6. Re-enable geo-xom + geo-defense + geo-gold strategies in state.json after deploy. 7. Iron rule: AUTO_EXECUTE_GEO=false default, manual flip after 1 week of email-only audit.
+
+- [x] [2026-05-13 P1] **PROFIT_LOCK cascade v3.3 wiring smoke test** ✅ VERIFIED — All imports OK (peak_tracker, notify_peak_retrace, enrich_position with profit-lock branch, analyzer.compute_position_audit). State.json daily_peak initialized empty (will populate on first exit-monitor cron tick after market open 13:30 UTC). Real production fire pending market behavior — observation 2026-05-15 per backlog.
