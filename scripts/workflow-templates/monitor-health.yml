@@ -1,23 +1,10 @@
 name: Monitor Health — workflow runs introspection
 
-# Queries GitHub Actions API for each monitor's recent runs, classifies
-# health (HEALTHY/STALE/FAILING/IDLE/API_ERROR), computes observed
-# cadence vs expected, writes report to learning-loop/health/<datetime>.md
-# + learning-loop/health/latest.md + learning-loop/health/latest.json.
-#
-# Cron: every 30 min so we always have fresh data ≤30 min old.
-# Manual: workflow_dispatch for on-demand checks.
-#
-# DEPLOY: copy this file via GitHub UI to .github/workflows/monitor-health.yml
-# (OAuth proxy blocks workflow pushes from agent sessions).
+# v3.4 (2026-05-13): repo public → restored 30min cadence from v3.2.1 throttle.
 
 on:
   schedule:
-    # v3.2.1 (2026-05-13): bumped 30→60 min — GH Actions budget audit.
-    # Each run hits API 14× (one per workflow) + commits + pushes; that's
-    # 1-2 min per run. Hourly is enough for ops review; manual trigger
-    # still available for ad-hoc checks.
-    - cron: '0 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:

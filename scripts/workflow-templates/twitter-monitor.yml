@@ -1,16 +1,10 @@
 name: Twitter Monitor — Bluesky social-graph 24/7
 
-# v3.2 schedule (2026-05-12): unified to every 5 min around the clock.
-# Twitter/Bluesky is global news; eskalacje zdarzają się o każdej porze.
-# Per-instrument trading window gates order placement, so off-session
-# signals route to [QUEUED] email and replay when market opens.
+# v3.4 (2026-05-13): repo public → restored 5min cadence from v3.2.1 throttle.
 
 on:
   schedule:
-    # v3.2.1 (2026-05-13): bumped 5→10 min — GH Actions budget squeeze.
-    # Bluesky posting velocity is moderate; 10 min cadence loses ~1 dupe-post
-    # vs 5 min on noisy days, gains 50% of monthly budget headroom.
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
