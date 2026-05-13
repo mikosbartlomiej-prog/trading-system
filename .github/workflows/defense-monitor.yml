@@ -8,7 +8,11 @@ name: Defense Market Monitor — 5min scan 24/7
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    # v3.2.1 (2026-05-13): bumped 5→10 min after GH Actions budget audit.
+    # 45k/month cron invocations vs 2000-min/month private-repo tier limit
+    # was throttling all workflows to ~7% expected rate. 10 min still
+    # responsive for news pickup; per-instrument gate handles execution.
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
