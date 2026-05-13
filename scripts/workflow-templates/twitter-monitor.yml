@@ -1,0 +1,47 @@
+name: Twitter Monitor — Bluesky social-graph 24/7
+
+# v3.2 schedule (2026-05-12): unified to every 5 min around the clock.
+# Twitter/Bluesky is global news; eskalacje zdarzają się o każdej porze.
+# Per-instrument trading window gates order placement, so off-session
+# signals route to [QUEUED] email and replay when market opens.
+
+on:
+  schedule:
+    # v3.2.1 (2026-05-13): bumped 5→10 min — GH Actions budget squeeze.
+    # Bluesky posting velocity is moderate; 10 min cadence loses ~1 dupe-post
+    # vs 5 min on noisy days, gains 50% of monthly budget headroom.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scan-twitter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r twitter-monitor/requirements.txt
+
+      - name: Run twitter (Bluesky) monitor
+        env:
+          PYTHONIOENCODING:                utf-8
+          LC_ALL:                          C
+          LANG:                            C
+          ALPACA_API_KEY:                  ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:               ${{ secrets.ALPACA_SECRET_KEY }}
+          FINNHUB_API_KEY:                 ${{ secrets.FINNHUB_API_KEY }}
+          BLUESKY_HANDLE:                  ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD:            ${{ secrets.BLUESKY_APP_PASSWORD }}
+          CLOUDFLARE_TWITTER_WORKER_URL:   ${{ secrets.CLOUDFLARE_TWITTER_WORKER_URL }}
+          GMAIL_USER:                      ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:              ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:                    ${{ secrets.NOTIFY_EMAIL }}
+        run: python twitter-monitor/monitor.py

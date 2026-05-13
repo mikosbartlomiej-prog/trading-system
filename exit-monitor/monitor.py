@@ -75,18 +75,21 @@ def place_emergency_close(ep: dict) -> dict | None:
     if qty <= 0 or not symbol:
         return None
 
-    # Per-instrument trading window gate. Stocks can't exit pre-market
-    # (Alpaca rejects MARKET); crypto bypasses. Emergency exits still respect
-    # the window — Alpaca would reject the order anyway; better to fail-soft
-    # here with a clear log than to spam the dashboard with rejected orders.
+    # Per-instrument trading window gate. Stocks/options can't exit pre-market
+    # (Alpaca rejects MARKET); crypto bypasses. Use _infer_asset_class so OCC
+    # option symbols (e.g. AAPL260520P00295000) correctly resolve to us_option
+    # instead of us_equity — otherwise emergency-close was silently blocked
+    # in afterhours when underlying stock gate said "pre_market" while the
+    # option session would in fact reject too (so same outcome, but the log
+    # was misleading).
     try:
         import sys, os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-        from instrument_windows import can_trade_now
-        asset_class = "crypto" if "/" in symbol else "us_equity"
+        from instrument_windows import can_trade_now, _infer_asset_class
+        asset_class = _infer_asset_class(symbol)
         ok, reason = can_trade_now(symbol, asset_class=asset_class)
         if not ok:
-            print(f"  emergency-close {symbol}: trade-window blocked — {reason}")
+            print(f"  emergency-close {symbol} ({asset_class}): trade-window blocked — {reason}")
             return None
     except ImportError:
         pass

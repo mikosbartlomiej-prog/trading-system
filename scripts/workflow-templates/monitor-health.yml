@@ -13,7 +13,11 @@ name: Monitor Health — workflow runs introspection
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # v3.2.1 (2026-05-13): bumped 30→60 min — GH Actions budget audit.
+    # Each run hits API 14× (one per workflow) + commits + pushes; that's
+    # 1-2 min per run. Hourly is enough for ops review; manual trigger
+    # still available for ad-hoc checks.
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:

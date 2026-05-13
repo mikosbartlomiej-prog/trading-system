@@ -1,0 +1,81 @@
+name: Emergency Close — 4 stuck positions (one-shot)
+
+# One-shot manual workflow to close 4 options positions flagged
+# CLOSE_EMERGENCY by exit-monitor since 22:10 UTC 2026-05-12 but stuck
+# because the Claude.ai routine sandbox uses different (invalid) Alpaca
+# keys. This workflow uses real GitHub Secrets ALPACA_API_KEY /
+# ALPACA_SECRET_KEY which work.
+#
+# Positions to close:
+#   - AAPL260520P00295000  (1)  LIMIT 3.85   (8 DTE, price discipline)
+#   - GOOGL260520P00385000 (2)  LIMIT 5.20   (8 DTE, price discipline)
+#   - SPY260518P00738000   (1)  MARKET       (5 DTE, theta acceleration)
+#   - SPY260518P00739000   (1)  MARKET       (5 DTE, theta acceleration)
+#
+# Trigger via UI: Actions tab -> Emergency Close -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run mode (print orders, do not place)'
+        required: false
+        type:     boolean
+        default:  false
+
+permissions:
+  contents: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Run emergency close
+        env:
+          PYTHONIOENCODING:    utf-8
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          python scripts/emergency_close_20260512.py $ARGS 2>&1 | tee /tmp/emergency_close.log
+          echo "=== Exit code: $? ==="
+
+      - name: Save log as marker commit
+        if: ${{ ! inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p exit-reports
+          OUT="exit-reports/emergency-close-$(date -u +%Y-%m-%d_%H%M).log"
+          cp /tmp/emergency_close.log "$OUT"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add "$OUT"
+          git commit -m "emergency-close: $(date -u +%Y-%m-%d_%H%M) - 4 positions [automerge]"
+          for attempt in 1 2 3; do
+            if git push origin "$BRANCH"; then
+              echo "Pushed marker on attempt ${attempt}."
+              exit 0
+            fi
+            git pull --rebase origin "$BRANCH" || true
+            sleep $((attempt * 2))
+          done
+          echo "Push failed; log is in workflow output."
