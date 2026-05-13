@@ -85,13 +85,18 @@ jobs:
       - name: Commit + push (skip on dry-run)
         if: ${{ ! inputs.dry_run }}
         run: |
-          if git diff --quiet .github/workflows/; then
-            echo "No diff after sync — nothing to commit."
-            exit 0
-          fi
+          # BUG FIX 2026-05-13 21:50: git diff --quiet ignores untracked
+          # files, so new workflow files (e.g. daily-learning-watchdog.yml)
+          # were silently dropped during sync. Always `git add` first, then
+          # check diff against HEAD via --cached. This catches both
+          # modifications AND new files.
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/workflows/
+          if git diff --cached --quiet HEAD -- .github/workflows/; then
+            echo "No diff after sync — nothing to commit."
+            exit 0
+          fi
           git commit -m "workflow-sync: propagate templates $(date -u +%Y-%m-%d_%H%M) [automerge]"
           for attempt in 1 2 3; do
             if git push origin main; then
