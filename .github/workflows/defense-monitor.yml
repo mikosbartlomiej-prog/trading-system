@@ -1,18 +1,11 @@
 name: Defense Market Monitor — 5min scan 24/7
 
-# v3.2 schedule (2026-05-12): every 5 min around the clock so news pickup
-# is fast regardless of market hours. The per-instrument trading window
-# (config/instrument_windows.json + shared/instrument_windows.py) gates
-# order placement — pre-market signals go to [QUEUED] / [DEFERRED] email,
-# not to Alpaca.
+# v3.4 (2026-05-13): repo flipped to public → unlimited GH Actions budget.
+# Restored aggressive cadence from v3.2.1 throttle workaround.
 
 on:
   schedule:
-    # v3.2.1 (2026-05-13): bumped 5→10 min after GH Actions budget audit.
-    # 45k/month cron invocations vs 2000-min/month private-repo tier limit
-    # was throttling all workflows to ~7% expected rate. 10 min still
-    # responsive for news pickup; per-instrument gate handles execution.
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
