@@ -1,0 +1,12 @@
+{
+  "narrative": "Jeden kandydat AMD — spike_ratio=99 to artefakt matematyczny (rolling_avg_7d=0, pierwsze pojawienie się w historii), realne mentions=2, oba posty traktują AMD jako bohatera pobocznego: post 1 wymienia AMD z listy fab-clients argumentując o RAM-demand w AI, post 2 to teza na PLAB (fotomask), gdzie AMD pojawia się jako klient. Zero świeżego katalizatora <24h specyficznie dla AMD. Portfel ma 16 otwartych pozycji z ciężkim nachyleniem bearish (QQQ/SPY/GOOGL/AAPL puty), VIX=17 nie sprzyja nowym wpisom. Brak akcji.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AMD",
+      "reason": "spike_ratio=99 artefakt (rolling_avg_7d=0 → dzielenie przez zero); 2 wzmianki tangencjalne (AMD jako element listy chipmakerów, nie thesis ticker); brak świeżego named catalyst <24h dla AMD; bullish skew=1.0 na bazie 2 wzmianek bez twardego DD; stary konsensus AI-demand = zero edge"
+    }
+  ],
+  "macro_context": "VIX=17, portfel mocno obciążony bearish putami (QQQ/SPY/GOOGL/AAPL), reżim wygląda na risk-on/niską zmienność — niekorzystne środowisko dla nowych wpisów długich na spekulatywne AI-plays bez konkretnego katalizatora",
+  "confidence_in_curation": "high"
+}
