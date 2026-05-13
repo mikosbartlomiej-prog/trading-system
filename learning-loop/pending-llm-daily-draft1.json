@@ -1,0 +1,60 @@
+{
+  "narrative": "Katastrofalny dzień: equity $95,009 vs start $98,173 = -$3,163 (-3.22%), tuż przy daily stop -3% z v3.0. Rdzeń problemu: 15 otwartych PUT-ów przy SPY RSI 82.4 — system kupował nowe PUTy (RSI>72 trigger) dokładnie podczas jednego z najsilniejszych rajdów SPY w tym cyklu. Fill_rate.emergency=50% (4/8) potwierdza chaos: 2 zamówienia wygasły pre-market, 2 anulowano ręcznie. Dobra wiadomość: portfel jest teraz FLAT (open_positions=[]) — czysty reset z $95k. Pauzowanie options-momentum do 2026-05-14 to właściwa decyzja; re-enable bez regime gate przywróci ten sam wzorzec przy kolejnym silnym rajdzie.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Brak potwierdzonej przewagi w żadnej aktywnej strategii. Options-momentum ground truth (state.json): 2 trades / -$3.47 / 0% WR — ujemny expectancy. Crypto: 14 dni / 0 transakcji przy BTC RSI 64.3 i ETH RSI 50.4 — dormant prawdopodobnie poprawnie (poniżej progów entry), ale pipeline nieweryfikowany. Fill_rate.unknown 5/5=100% sugeruje zamknięcie stock bracket-TP legs (GLD/RTX/XLE) — potencjalny ukryty zysk od stocks, strukturalnie nieprzypisany z powodu braku client_order_id prefix.",
+  "state_overrides": {
+    "strategies": {
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "enabled": false,
+        "side_bias": null,
+        "rationale": "Pauzowane poprawnie do 2026-05-14. Pre-ustawiam size_multiplier=0.5 (nie 1.0 default) na re-enable: kara za 0% WR lifetime + brak regime gate który kosztował nas -3.22% dziś. Pierwsza runda po wznowieniu = POŁOWA standardowego rozmiaru aż do min. 5 trades z pozytywnym expectancy. side_bias=null wymuszony — żadna strona nie jest dopuszczona przy SPY RSI 82.4 bez dodatkowych warunków."
+      },
+      "crypto-momentum": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch."
+      },
+      "crypto-breakdown": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Regime gate dla PUT proposals: blokuj gdy SPY RSI>75 + SPY 5d return>+2%",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Options-monitor kupił 2 nowe PUTy (QQQ704, GOOGL385) PODCZAS rajdu z SPY RSI 82.4. RSI>72→PUT logika zakłada mean-reversion, ale bez weryfikacji czy overbought jest krótkoterminowe czy trend — staje się systematycznym fadem silnego trendu. Dziś to kosztowało dodatkową ekspozycję w złym kierunku w najgorszym możliwym momencie.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-14",
+      "implementation_sketch": "W options-monitor/monitor.py, w logice propozycji PUT (warunek RSI > PUT_RSI_THRESHOLD):\n1. Pobierz SPY bars via shared/market_data.py::get_daily_bars('SPY', 10)\n2. Oblicz: spy_5d_return = (bars[-1]['close'] - bars[-6]['close']) / bars[-6]['close']\n3. Oblicz spy_rsi = ostatni RSI(14) z bars\n4. Jeśli spy_rsi > 75 AND spy_5d_return > 0.02: skip PUT, log 'REGIME GATE: SPY RSI={spy_rsi:.1f} + 5d={spy_5d_return:.1%} — zbyt silny trend, PUT zablokowany'\n5. Symetrycznie: spy_rsi < 25 AND spy_5d_return < -0.02 → skip CALL\n6. Progi (75, 2%) do config/aggressive_profile.json jako put_trend_block_rsi i put_trend_block_5d_return\n7. Test cases: RSI=82 + 5d=+3.5% → 0 PUT proposals; RSI=74 + 5d=+1.8% → PUT allowed; RSI=80 + 5d=-0.5% → PUT allowed (spike bez trendu = reversal setup OK)"
+    },
+    {
+      "title": "Options side concentration hard cap: max PUT_CAP=5 PUTs i CALL_CAP=5 CALLs jednocześnie",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Dziś rano 15 otwartych PUTów = pełna jednostronna koncentracja. MAX_OPEN_OPTIONS=10 kontroluje łączną liczbę, ale nie dysproporcję call/put. Jeden silny rajd SPY wymazał cały portfel opcji naraz. Put/Call cap = hard limit na jednostronną ekspozycję niezależnie od liczby underlyings.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-14",
+      "implementation_sketch": "W options-monitor/monitor.py, w bloku pre-order sprawdzającym MAX_OPEN_OPTIONS:\n1. Po pobraniu otwartych pozycji US options via Alpaca /v2/positions, podziel na puts i calls\n2. PUT detection: symbol.endswith('P' + 8-digit-strike) OR OCC-format zawiera 'P'\n3. Jeśli nowa propozycja = PUT AND count(open_puts) >= PUT_CAP: skip, log 'SIDE CAP: {count} puts >= {PUT_CAP} — blokada PUT'\n4. Jeśli nowa propozycja = CALL AND count(open_calls) >= CALL_CAP: skip analogicznie\n5. PUT_CAP=5, CALL_CAP=5 do config/aggressive_profile.json (operator może tune)\n6. Note: dzisiejszy scenariusz (15 PUTs) nigdy nie byłby możliwy z tym capo — max exposure $5k * 5 = $25k jednej strony"
+    },
+    {
+      "title": "Crypto pipeline health check: 14+ dni bez transakcji → log verbose per-coin rejection reasons",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Crypto-momentum i crypto-breakdown mają 0 trades w 14 dniach. Przy BTC RSI 64.3 to może być poprawne zachowanie — ale nie wiemy tego, bo logi nie pokazują per-coin powodów braku sygnału. Jeśli próg BTC dominance guard lub 24h bracket [3%,15%] blokuje wszystkie alts systemowo, a my tego nie wiemy, to mamy martwy monitor zjadający budżet Actions.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-20",
+      "implementation_sketch": "W crypto-monitor/monitor.py — per-coin rejection diagnostics:\n1. Dla każdej monety w COIN_TIERS: zaloguj RSI value + 24h_move_pct + rejection_reason\n   Format: 'BTC/USD: RSI=64.3, 24h=+1.2% → SKIP (24h_move poniżej progu 3%)'\n2. Zaloguj BTC dominance: 'BTC dominance: -0.5%/1h → PASS (guard OK)' lub 'BLOCK alt longs'\n3. Zaloguj alt_positions_open: 'Alt positions: 0/3 — slot available'\n4. Na końcu: 'Candidates: 0/11 coins passed all filters'\n5. Cel: po 1 widocznym runie diagnozy wiemy (a) thresholdy OK lub (b) systematyczna blokada lub (c) Alpaca endpoint problem\n6. Jeśli (a): zostaw, obserwuj do 2026-06-01; jeśli (b): tune thresholds; jeśli (c): fix"
+    }
+  ],
+  "confidence": "medium"
+}
