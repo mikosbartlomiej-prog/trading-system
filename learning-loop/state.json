@@ -196,11 +196,11 @@
     "peak_pl_pct": 0.0,
     "peak_at": "2026-05-13T14:27:25Z",
     "peak_equity": 95892.77,
-    "current_pl_usd": -3132.6735419601027,
-    "current_equity": 95040.0,
+    "current_pl_usd": -3097.1235419601,
+    "current_equity": 95075.55,
     "retrace_from_peak": 0.0,
     "verdict": "NORMAL",
-    "verdict_at": "2026-05-13T17:53:00Z",
+    "verdict_at": "2026-05-13T19:55:00Z",
     "alerts_sent": {}
   }
 }
