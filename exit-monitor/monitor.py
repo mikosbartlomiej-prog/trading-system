@@ -57,31 +57,36 @@ def alpaca_get(endpoint: str) -> dict | list:
 
 def place_emergency_close(ep: dict) -> dict | None:
     """
-    Place a MARKET order to close an emergency-flagged position.
+    Close an exit-flagged position via Alpaca direct REST.
 
-    Bypasses the Exit Handler routine for emergency exits because LIMIT
-    orders chronically fail to fill in fast-market conditions (4/5 unfilled
-    in 2026-05-08 daily report). MARKET trades a few cents of slippage for
-    a guaranteed fill, which is the right tradeoff when we've already
-    crossed the -12% emergency threshold.
+    Strategy (v3.4.3, 2026-05-13):
+      1. PRIMARY: DELETE /v2/positions/{symbol} — canonical close endpoint
+         that bypasses options buying-power checks (the failure mode that
+         hit QQQ260518P00714000 today: "insufficient options buying power
+         for cash-secured put" returned 403 on POST /v2/orders sell_to_close).
+         DELETE explicitly references existing position → no buying-power
+         requirement → reliable closure.
+      2. FALLBACK: POST /v2/orders MARKET sell — used when DELETE returns
+         non-2xx (e.g. position already closed by concurrent run).
+
+    Bypasses the Claude.ai routine path entirely because the routine
+    sandbox uses different (invalid) Alpaca keys that return 401.
 
     `ep` is the enriched-position dict from `enrich_position()`. Returns
-    the Alpaca order JSON on success, None on any failure (caller logs
-    + falls back to routine path).
+    the Alpaca order JSON on success, None on failure.
+
+    Reason tag in client_order_id:
+      profit-lock | emergency | flat | decay
+    (so analyzer can attribute close reasons separately).
     """
+    import urllib.parse
     symbol = ep.get("symbol", "")
     qty    = abs(float(ep.get("qty", 0)))
     side   = ep.get("side", "long")
     if qty <= 0 or not symbol:
         return None
 
-    # Per-instrument trading window gate. Stocks/options can't exit pre-market
-    # (Alpaca rejects MARKET); crypto bypasses. Use _infer_asset_class so OCC
-    # option symbols (e.g. AAPL260520P00295000) correctly resolve to us_option
-    # instead of us_equity — otherwise emergency-close was silently blocked
-    # in afterhours when underlying stock gate said "pre_market" while the
-    # option session would in fact reject too (so same outcome, but the log
-    # was misleading).
+    # Per-instrument trading window gate.
     try:
         import sys, os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
@@ -94,40 +99,68 @@ def place_emergency_close(ep: dict) -> dict | None:
     except ImportError:
         pass
 
-    # Long position closes via SELL; short position closes via BUY (cover)
-    close_side = "sell" if side == "long" else "buy"
-
-    # Distinguish emergency (-12% stop) vs profit_lock (peak retrace cascade)
-    # in client_order_id so analyzer can attribute different close reasons.
+    # Reason tag for client_order_id (analyzer attribution).
     rec = ep.get("recommendation", "CLOSE_EMERGENCY")
-    reason_tag = "profit-lock" if rec == "PROFIT_LOCK" else "emergency"
-
+    reason_tag = {
+        "PROFIT_LOCK":     "profit-lock",
+        "CLOSE_EMERGENCY": "emergency",
+        "CLOSE_FLAT":      "flat",
+        "CLOSE_DECAY":     "decay",
+    }.get(rec, "emergency")
     ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
     safe_sym = symbol.replace("/", "").replace(" ", "")
+    client_order_id = f"exit-{reason_tag}-{safe_sym}-{ts}"
+
+    headers = {
+        "APCA-API-KEY-ID":     ALPACA_API_KEY,
+        "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY,
+    }
+
+    # PRIMARY: DELETE /v2/positions/{symbol} — bypasses buying-power bug
+    enc_sym = urllib.parse.quote(symbol, safe="")
+    try:
+        r = requests.delete(
+            f"{ALPACA_BASE_URL}/v2/positions/{enc_sym}",
+            headers=headers,
+            timeout=15,
+        )
+        if r.status_code in (200, 201, 207):
+            body = r.json()
+            print(f"  {reason_tag}-close DELETE OK: {symbol} → order_id={body.get('id','?')}")
+            # Annotate body with our intended client_order_id for downstream parsing
+            body["_client_order_intent"] = client_order_id
+            return body
+        if r.status_code == 404:
+            print(f"  {reason_tag}-close DELETE 404: {symbol} not in positions (already closed)")
+            return None
+        # Non-success — log and try fallback
+        print(f"  {reason_tag}-close DELETE error {r.status_code}: {r.text[:200]} — trying POST fallback")
+    except Exception as e:
+        print(f"  {reason_tag}-close DELETE exception: {e} — trying POST fallback")
+
+    # FALLBACK: POST /v2/orders MARKET sell (original v3.3 path)
+    close_side = "sell" if side == "long" else "buy"
     payload = {
         "symbol":          symbol,
         "qty":             str(int(qty)) if qty == int(qty) else str(qty),
         "side":            close_side,
         "type":            "market",
         "time_in_force":   "gtc" if "/" in symbol else "day",
-        "client_order_id": f"exit-{reason_tag}-{safe_sym}-{ts}",
+        "client_order_id": client_order_id,
     }
     try:
         r = requests.post(
             f"{ALPACA_BASE_URL}/v2/orders",
-            headers={
-                "APCA-API-KEY-ID":     ALPACA_API_KEY,
-                "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY,
-            },
+            headers=headers,
             json=payload,
             timeout=15,
         )
         if r.status_code in (200, 201):
             return r.json()
-        print(f"  emergency-close error {r.status_code}: {r.text[:200]}")
+        print(f"  {reason_tag}-close POST error {r.status_code}: {r.text[:200]}")
         return None
     except Exception as e:
-        print(f"  emergency-close exception: {e}")
+        print(f"  {reason_tag}-close POST exception: {e}")
         return None
 
 
@@ -383,33 +416,35 @@ def run_exit_check():
     # ── EMERGENCY + PROFIT_LOCK EXITS: bypass routine, place MARKET directly ─
     # CLOSE_EMERGENCY: position breaches -12% stop. Time-critical.
     # PROFIT_LOCK: daily P&L retraced 50%+ from peak >=$1k. Lock unrealized
-    #              gains now before further reversal. Treated identically:
-    #              MARKET sell, direct REST, no routine delay.
-    # Other (CLOSE_FLAT / CLOSE_DECAY / CONSIDER_TP) still go to routine.
-    direct_close = [ep for ep in flagged
-                     if ep["recommendation"] in ("CLOSE_EMERGENCY", "PROFIT_LOCK")]
-    other_flagged = [ep for ep in flagged
-                      if ep["recommendation"] not in ("CLOSE_EMERGENCY", "PROFIT_LOCK")]
-    emergency = direct_close   # alias preserved for the loop below
+    #              gains now before further reversal.
+    # CLOSE_FLAT: long-hold flat position — close to free margin.
+    # CLOSE_DECAY: leveraged ETF / crypto past time-decay window.
+    # All four → direct REST via place_emergency_close (DELETE primary,
+    # POST fallback). Routine ONLY used for CONSIDER_TP (less critical;
+    # LLM evaluates if profit worth taking now or letting run).
+    direct_recs = ("CLOSE_EMERGENCY", "PROFIT_LOCK", "CLOSE_FLAT", "CLOSE_DECAY")
+    direct_close = [ep for ep in flagged if ep["recommendation"] in direct_recs]
+    other_flagged = [ep for ep in flagged if ep["recommendation"] not in direct_recs]
+    emergency = direct_close
     closed_directly = 0
     for ep in emergency:
         result = place_emergency_close(ep)
         if result:
-            print(f"  EMERGENCY MARKET close placed: {ep['symbol']} qty={ep['qty']} "
-                  f"id={result.get('id')}")
+            print(f"  {ep['recommendation']} closed directly: {ep['symbol']} qty={ep['qty']} "
+                  f"id={result.get('id', '?')}")
             closed_directly += 1
         else:
-            print(f"  EMERGENCY close FAILED for {ep['symbol']} — "
+            print(f"  {ep['recommendation']} close FAILED for {ep['symbol']} — "
                   f"falling back to routine")
-            other_flagged.append(ep)  # let routine try as backup
+            other_flagged.append(ep)  # routine as last resort
 
-    # Routine call only for non-emergency flagged positions
+    # Routine call only for non-emergency flagged positions (mostly CONSIDER_TP)
     if other_flagged:
         print(f"\n  Wysyłam do Claude Routine Exit Handler ({len(other_flagged)} flagged, "
-              f"{closed_directly} emergency closed directly)...")
+              f"{closed_directly} closed directly)...")
         send_to_routine(enriched, account)
     elif emergency:
-        print(f"\n  {closed_directly} emergency closed directly via REST — "
+        print(f"\n  {closed_directly} closed directly via REST — "
               f"no routine call needed")
     else:
         print(f"\n  Wszystkie pozycje HOLD — pomijam routine call (oszczędzam budget).")
