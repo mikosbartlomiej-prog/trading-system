@@ -130,16 +130,33 @@ jobs:
           PYTHONIOENCODING:    utf-8
           ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
+        id: run_script
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="--dry-run"
           fi
+          set +e
           python "${{ steps.pick.outputs.script }}" $ARGS 2>&1 | tee /tmp/emergency_close.log
-          echo "=== Exit code: $? ==="
+          EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$EXIT" >> $GITHUB_OUTPUT
+          echo "=== Exit code: $EXIT ==="
+          # Determine success: exit 0 AND machine-readable result shows failed=0
+          if [ "$EXIT" = "0" ] && grep -q '"failed": 0' /tmp/emergency_close.log 2>/dev/null; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Save log + idempotency marker
-        if: steps.pick.outputs.skip != 'true' && ! inputs.dry_run
+      - name: Save log + idempotency marker (ONLY on success)
+        # v3.4.4 idempotency fix 2026-05-13 22:05: previously workflow always
+        # wrote log file regardless of script outcome → idempotency check
+        # blocked retries even after failed runs. Now log is committed ONLY
+        # when script reports zero failures (success=true). Market-closed
+        # failures will NOT block next cron tick from retrying when market
+        # reopens.
+        if: steps.pick.outputs.skip != 'true' && ! inputs.dry_run && steps.run_script.outputs.success == 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
