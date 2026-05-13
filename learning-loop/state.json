@@ -187,5 +187,18 @@
       }
     }
   },
-  "trailing_state": {}
+  "trailing_state": {},
+  "daily_peak": {
+    "date": "2026-05-13",
+    "peak_pl_usd": 0.0,
+    "peak_pl_pct": 0.0,
+    "peak_at": "2026-05-13T14:27:25Z",
+    "peak_equity": 95892.77,
+    "current_pl_usd": -2279.9035419600987,
+    "current_equity": 95892.77,
+    "retrace_from_peak": 0.0,
+    "verdict": "NEW_DAY",
+    "verdict_at": "2026-05-13T14:27:25Z",
+    "alerts_sent": {}
+  }
 }
