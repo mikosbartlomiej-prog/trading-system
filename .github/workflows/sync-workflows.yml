@@ -28,6 +28,14 @@ on:
     paths:
       - 'scripts/workflow-templates/*.yml'
       - 'scripts/workflow-templates/*.yaml'
+  schedule:
+    # Safety-net cron 2026-05-13: push events from auto-merge.yml (uses
+    # GITHUB_TOKEN) do NOT trigger dependent workflows (GH anti-recursion).
+    # Without this cron, agent's template edits never auto-propagate when
+    # arriving via [automerge] PR — sync only triggers on direct user push.
+    # Every 15 min is plenty: idempotent (diff-based), zero cost when no
+    # changes (early-exit). Recovers any missed template update within 15min.
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
