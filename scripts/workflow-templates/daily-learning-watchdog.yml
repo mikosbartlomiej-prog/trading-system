@@ -1,0 +1,77 @@
+name: Daily Learning — Watchdog (re-trigger if missed)
+
+# v3.4.3 (2026-05-13 evening): autonomous safety-net for daily-learning.
+#
+# Background: daily-learning.yml has cron '0 21 * * *' but GitHub Actions
+# scheduled events can be delayed 15-60 min during high load. Tonight
+# (2026-05-13 21:00 UTC) daily-learning didn't fire — first observable
+# miss. Without a daily run we lose: state.json adapter pass + LLM Senior
+# PM + Challenger review + position_audit + window/lifetime annotations.
+#
+# Watchdog mechanism:
+#   - Cron 22:30 UTC and 23:30 UTC daily — generous retry window
+#   - Checks if today's learning-loop/history/<date>.md exists
+#   - If NOT: triggers daily-learning.yml via workflow_dispatch using
+#     WORKFLOW_PAT secret (PAT-issued dispatch DOES count as user-event,
+#     so it bypasses anti-recursion that blocks GITHUB_TOKEN cross-fire)
+#   - If YES: no-op (daily-learning already ran)
+#
+# Idempotent: history file presence is the source of truth.
+# Self-limited: only 2 retries per day (cron schedule).
+
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 22:30 UTC — 1h30m after planned 21:00
+    - cron: '30 23 * * *'   # 23:30 UTC — last chance before midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions:  write     # required to dispatch daily-learning.yml
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if today's learning history exists
+        id: check
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          HIST="learning-loop/history/${TODAY}.md"
+          if [ -f "$HIST" ]; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+            echo "Today's learning history exists: $HIST — no action needed"
+          else
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "MISSING: $HIST — will trigger daily-learning"
+          fi
+
+      - name: Trigger daily-learning via API
+        if: steps.check.outputs.ok == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}
+          REPO:     ${{ github.repository }}
+        run: |
+          # workflow_dispatch via REST. PAT-issued dispatches count as
+          # user events (unlike GITHUB_TOKEN), so dependent workflows
+          # see them as legitimate triggers.
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPO}/actions/workflows/daily-learning.yml/dispatches" \
+            -d '{"ref":"main"}'
+          echo ""
+          echo "daily-learning.yml workflow_dispatch sent at $(date -u +%H:%M:%S)Z"
+          # Brief sleep to let GH register the run, then poll for status
+          sleep 30
+          curl -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/actions/workflows/daily-learning.yml/runs?per_page=2" \
+            | python3 -c "import sys, json; d=json.load(sys.stdin); [print(f'  Run {r[\"run_number\"]}: {r[\"status\"]} / {r.get(\"conclusion\",\"-\")} ({r.get(\"event\",\"-\")})') for r in d.get('workflow_runs', [])[:2]]"
