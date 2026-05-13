@@ -1,0 +1,34 @@
+
+=== Emergency Close Script | 2026-05-13 22:53:33 UTC ===
+Closing 4 positions flagged CLOSE_EMERGENCY on 2026-05-12
+
+Account OK — equity $95,017.13
+
+SELL_TO_CLOSE SPY260518P00739000 × 1
+  Entry: $5.80  Current: $4.74  P&L: -18.3%
+  Order type: LIMIT  Limit: $4.40
+  → ORDER PLACED: id=c32ec672-fa5d-43f5-be5e-d5170c8aa7d0 status=accepted
+
+SELL_TO_CLOSE SPY260518P00738000 × 1
+  Entry: $5.08  Current: $4.31  P&L: -15.2%
+  Order type: LIMIT  Limit: $4.00
+  → ERROR 403: {"code":40310000,"message":"insufficient options buying power for cash-secured put (required: 73400, available: 0)","options_buying_power":"0","required_options_buying_power":"73400"}
+
+SELL_TO_CLOSE GOOGL260520P00385000 × 2
+  Entry: $7.00  Current: $5.35  P&L: -23.6%
+  Order type: LIMIT  Limit: $5.20
+  → ERROR 403: {"code":40310000,"message":"insufficient options buying power for cash-secured put (required: 75960, available: 0)","options_buying_power":"0","required_options_buying_power":"75960"}
+
+SELL_TO_CLOSE AAPL260520P00295000 × 1
+  Entry: $4.65  Current: $3.90  P&L: -16.1%
+  Order type: LIMIT  Limit: $3.85
+  → ERROR 403: {"code":40310000,"message":"insufficient options buying power for cash-secured put (required: 29115, available: 0)","options_buying_power":"0","required_options_buying_power":"29115"}
+
+=== Summary ===
+  SPY260518P00739000: ✅ OK
+  SPY260518P00738000: ❌ FAILED
+  GOOGL260520P00385000: ❌ FAILED
+  AAPL260520P00295000: ❌ FAILED
+
+3 order(s) failed — close manually via dashboard:
+  https://app.alpaca.markets/paper/dashboard/overview
