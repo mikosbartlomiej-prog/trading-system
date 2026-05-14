@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*)"
+      "Bash(*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "TodoWrite",
+      "Skill",
+      "Monitor",
+      "mcp__claude_ai_Alpaca__*"
     ]
   }
 }
