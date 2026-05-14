@@ -642,9 +642,7 @@ Whitelist now includes 12 leveraged ETFs + 4 high-beta single names
 - **PROFIT-LOCK (v3.3)** → intraday daily P&L peak ≥$1k AND retrace ≥50% from peak → harvest all winners ≥+8% via MARKET sell (tag `exit-profit-lock-*`)
 - **WARN (v3.3)**        → peak ≥$1k AND retrace 30-50% → email alert (no auto action yet)
 - **Trailing stop (v3.3)** → every options position: 8% trail off intraday peak, 12h min-hold (tag `exit-trail-*`)
-- **PDT-LOCKED (v3.7)**  → buying_power=$0 OR daytrade_count≥limit → BLOCK all new entries + non-emergency closes; emergencies (SL/PROFIT_LOCK/governor) HONOURED
-- **PDT-RESTRICTED (v3.7)** → daytrade_count=3 → BLOCK same-day intraday close of today-opened position unless emergency; allow OPEN (overnight hold expected); allow close of overnight positions
-- **PDT-CAUTION (v3.7)** → daytrade_count=2 OR BP<5%·equity → email warning + favour overnight holds
+- **PDT v3.8 (intent-aware)** → daytrade_count drives 4 modes: OK(0) / CAUTION(1) / RESTRICTED(2) / LOCKED(≥3). **OPEN NEVER blocked by PDT count** (opens don't consume budget); only BP-insufficient or RESTRICTED+intraday-intent triggers DEFER on opens. CLOSE: crypto + overnight positions always ALLOW; same-day discretionary blocked only in RESTRICTED/LOCKED. Emergency closes (SL/PROFIT_LOCK/governor/NEARDTH/REGIME/TRAIL) ALWAYS honored. Intent enum: `swing` (default) / `intraday` / `emergency`. LOCKED state = "no intraday churn for 5 days", NOT "no trading" — can still open swing positions, trade crypto, close overnight winners, emergency-exit losers.
 - **ROUTINE-BUDGET (v3.7)** → 15/day Anthropic cap; tiers P0(4)/P1(5)/P2(5); when remaining ≤3 → email alert; Curators (P2) refuse before P0 (daily-learning) risks starvation
 
 ### Forbidden

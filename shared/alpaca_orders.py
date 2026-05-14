@@ -154,18 +154,27 @@ def _intraday_governor_gate(symbol: str, side: str, size_usd: float,
 
 
 def _pdt_gate(symbol: str, side: str, size_usd: float,
-              asset_class: str) -> tuple[bool, str]:
+              asset_class: str, intent: str = "swing") -> tuple[bool, str]:
     """
-    PDT pre-trade gate. Returns (allow, reason).
+    PDT pre-trade gate v3.8 — intent-aware. Returns (allow, reason).
 
-    Logic for entry orders:
-      - LOCKED       → BLOCK (broker would reject anyway)
-      - RESTRICTED   → ALLOW with overnight-hint (caller should not flip same day)
-      - CAUTION / OK → ALLOW
+    Default intent="swing" means caller intends to hold ≥1 session. This
+    matches every entry-monitor's default behavior (price-monitor opens
+    swing positions, options-monitor's contracts hold 7-30 DTE, crypto
+    is exempt regardless). Callers doing planned same-day flips MUST
+    explicitly pass intent="intraday" so the guard can DEFER in
+    RESTRICTED+ states (where the planned close would burn the saved
+    DT budget).
+
+    Logic for OPEN actions:
+      - LOCKED with BP OK + swing intent  → ALLOW (no DT impact)
+      - LOCKED with BP insufficient       → BLOCK (broker would reject)
+      - RESTRICTED + intraday intent      → DEFER (planned close = DT)
+      - All other combinations            → ALLOW
 
     Emits non-ALLOW decisions to journal/autonomy/. Fail-open if module
-    unavailable — this layer is preventive, risk_officer downstream still
-    catches the absolute case (BP < size_usd).
+    unavailable — layered above risk_officer which catches absolute BP-
+    insufficient case anyway.
     """
     try:
         try:
@@ -175,13 +184,14 @@ def _pdt_gate(symbol: str, side: str, size_usd: float,
         action = "OPEN"  # all calls to this gate are entry-side
         verdict = evaluate_order(
             action=action, symbol=symbol, side=side, size_usd=size_usd,
-            is_emergency=False,
+            intent=intent, is_emergency=False,
         )
         decision = verdict.get("decision", "ALLOW")
         reason   = verdict.get("reason", "")
         if decision != "ALLOW":
             record_decision(verdict, action=action, symbol=symbol,
-                            extra={"asset_class": asset_class, "size_usd": size_usd})
+                            extra={"asset_class": asset_class, "size_usd": size_usd,
+                                    "intent": intent})
         return (decision == "ALLOW"), reason
     except Exception as e:  # pragma: no cover
         return True, f"pdt-guard unavailable ({type(e).__name__}: {e})"

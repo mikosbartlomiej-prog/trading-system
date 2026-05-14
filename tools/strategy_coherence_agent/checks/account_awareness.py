@@ -160,8 +160,11 @@ def run(root: Path) -> list[Finding]:
             evidence=[Evidence(file=str(rel(alloc)))],
         ))
 
-    # 7. PDT-aware sizing — verifies shared/pdt_guard.py is present and
-    # wired into order paths. Added v3.7 (2026-05-14).
+    # 7. PDT-aware sizing — v3.8 intent-aware Pattern-Day-Trader protection.
+    # Verifies shared/pdt_guard.py implements the v3.8 decision matrix
+    # (OPEN never blocked by PDT count; CLOSE budget-aware with crypto
+    # exemption + overnight-position bypass) and is wired into all order
+    # paths with explicit intent.
     pdt_path = root / "shared" / "pdt_guard.py"
     if not pdt_path.exists():
         out.append(Finding(
@@ -175,36 +178,65 @@ def run(root: Path) -> list[Finding]:
         ))
     else:
         pdt_text = read_text(pdt_path)
-        # Check for the 4 mode names (deterministic classification)
+        # 4 mode names — deterministic classification
         modes_present = all(m in pdt_text for m in ("OK", "CAUTION", "RESTRICTED", "LOCKED"))
-        # Check for evaluate_order entry point (single gate)
+        # Public API — single gate
         api_present = "def evaluate_order" in pdt_text
-        # Check wired into alpaca_orders
-        alpaca_text = read_text(root / "shared" / "alpaca_orders.py")
-        wired_alpaca = "pdt_guard" in alpaca_text or "_pdt_gate" in alpaca_text
-        # Check wired into allocator
+        # v3.8 features
+        intent_aware = "INTENT_SWING" in pdt_text and "INTENT_INTRADAY" in pdt_text and "INTENT_EMERGENCY" in pdt_text
+        crypto_exempt = "_is_crypto" in pdt_text and "crypto exempt" in pdt_text
+        # OPEN never blocked by PDT count (the v3.8 key fix)
+        open_not_blocked = '"OPEN allowed"' in pdt_text or "OPEN allowed in" in pdt_text
+        # Wiring into all 5 order paths
+        alpaca_text     = read_text(root / "shared" / "alpaca_orders.py")
+        wired_alpaca    = "pdt_guard" in alpaca_text or "_pdt_gate" in alpaca_text
         wired_allocator = "pdt_guard" in text or "_pdt_eval" in text
+        em_path         = root / "exit-monitor" / "monitor.py"
+        wired_exit      = em_path.exists() and "pdt_guard" in read_text(em_path)
+        oem_path        = root / "options-exit-monitor" / "monitor.py"
+        wired_options_exit = oem_path.exists() and "pdt_guard" in read_text(oem_path)
+        # Callers pass intent
+        intent_in_alpaca = "intent=" in alpaca_text or "intent =" in alpaca_text
+        intent_in_exit   = em_path.exists() and ("intent=" in read_text(em_path) or "close_intent" in read_text(em_path))
+        intent_in_oem    = oem_path.exists() and ("intent=" in read_text(oem_path) or "close_intent" in read_text(oem_path))
 
-        if modes_present and api_present and wired_alpaca and wired_allocator:
+        all_ok = (modes_present and api_present and intent_aware and crypto_exempt
+                  and open_not_blocked and wired_alpaca and wired_allocator
+                  and wired_exit and wired_options_exit
+                  and intent_in_alpaca and intent_in_exit and intent_in_oem)
+
+        if all_ok:
             out.append(Finding(
                 id="AA_PDT_GUARD_OK",
                 category=CATEGORY, severity="PASS", status="PASS",
                 principle=PRINCIPLE,
-                message="pdt_guard present with 4 modes + evaluate_order + wired "
-                        "into alpaca_orders + allocator.",
+                message="pdt_guard v3.8: 4 modes + intent enum + crypto exempt + "
+                        "OPEN never blocks on PDT count + wired into 5 order paths "
+                        "(alpaca_orders, allocator, exit-monitor, options-exit-monitor) "
+                        "with explicit intent at every call site.",
             ))
         else:
             details = []
-            if not modes_present:    details.append("missing modes (OK/CAUTION/RESTRICTED/LOCKED)")
-            if not api_present:      details.append("no evaluate_order() entry point")
-            if not wired_alpaca:     details.append("not referenced in shared/alpaca_orders.py")
-            if not wired_allocator:  details.append("not referenced in allocator")
+            if not modes_present:        details.append("missing modes")
+            if not api_present:          details.append("no evaluate_order()")
+            if not intent_aware:         details.append("missing INTENT_* enum (v3.8 design)")
+            if not crypto_exempt:        details.append("crypto not exempt")
+            if not open_not_blocked:     details.append("OPEN still blocked by PDT count (v3.7 anti-pattern)")
+            if not wired_alpaca:         details.append("not wired in alpaca_orders")
+            if not wired_allocator:      details.append("not wired in allocator")
+            if not wired_exit:           details.append("not wired in exit-monitor")
+            if not wired_options_exit:   details.append("not wired in options-exit-monitor")
+            if not intent_in_alpaca:     details.append("alpaca_orders missing intent= argument")
+            if not intent_in_exit:       details.append("exit-monitor missing intent=/close_intent")
+            if not intent_in_oem:        details.append("options-exit-monitor missing intent=/close_intent")
             out.append(Finding(
                 id="AA_PDT_GUARD_INCOMPLETE",
                 category=CATEGORY, severity="WARN", status="WARN",
                 principle=PRINCIPLE,
                 message=f"pdt_guard.py present but: {', '.join(details)}.",
-                recommendation="Complete pdt_guard wiring; PDT gate must run before risk_officer in every order path.",
+                recommendation="Complete pdt_guard v3.8 wiring; all 5 order paths must "
+                               "pass intent= and the engine must NOT block OPEN actions "
+                               "on PDT count alone.",
                 evidence=[Evidence(file=str(rel(pdt_path)))],
             ))
 

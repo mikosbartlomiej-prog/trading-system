@@ -163,22 +163,24 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     except ImportError:
         pass
 
-    # PDT pre-close gate. SL / NEARDTH / GOVERNOR / REGIME / TRAIL are
-    # emergencies (defensive — bypass DEFER). Plain TP is discretionary
-    # (we picked the price; we can wait one more day to avoid DTMC).
+    # PDT pre-close gate v3.8. SL / NEARDTH / GOVERNOR / REGIME / TRAIL are
+    # emergencies (defensive — bypass DEFER). Plain TP is discretionary —
+    # tagged intent="intraday" so the engine checks whether the contract was
+    # opened today (true day-trade) or carried over (free close).
     try:
         import sys as _sys, os as _os
         _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), '..', 'shared'))
         from pdt_guard import evaluate_order as _pdt_eval, record_decision as _pdt_audit
         is_emergency_close = decision in ("SL", "NEARDTH", "GOVERNOR", "REGIME", "TRAIL")
+        close_intent = "emergency" if is_emergency_close else "intraday"
         pdt_size = exit_price * float(qty) * 100.0  # options multiplier
         pv = _pdt_eval(
             action="CLOSE", symbol=contract_symbol, side="sell",
-            size_usd=pdt_size, is_emergency=is_emergency_close,
+            size_usd=pdt_size, intent=close_intent, is_emergency=is_emergency_close,
         )
         if pv["decision"] != "ALLOW":
             _pdt_audit(pv, action="CLOSE", symbol=contract_symbol,
-                       extra={"decision": decision, "qty": qty})
+                       extra={"decision": decision, "qty": qty, "intent": close_intent})
             print(f"  pdt-guard {pv['decision']} {contract_symbol} ({decision}): {pv['reason']}")
             return None
     except Exception as e:

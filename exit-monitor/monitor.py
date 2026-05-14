@@ -123,12 +123,18 @@ def place_emergency_close(ep: dict) -> dict | None:
         "CLOSE_DECAY":     "decay",
     }.get(rec, "emergency")
 
-    # PDT pre-close gate. CLOSE_EMERGENCY + PROFIT_LOCK are emergencies
-    # (defensive necessity — bypass DEFER). CLOSE_FLAT + CLOSE_DECAY are
-    # discretionary closes → defer if it would land a 4th day-trade.
+    # PDT pre-close gate v3.8 — recommendation → intent + emergency flag.
+    # Emergency recommendations (CLOSE_EMERGENCY, PROFIT_LOCK) bypass DEFER —
+    # defensive necessity, must always proceed. Discretionary recommendations
+    # (CLOSE_FLAT, CLOSE_DECAY) use intent="intraday" since exit-monitor is
+    # acting on same-session signals; the PDT engine then checks whether the
+    # position was opened today (true day-trade) or carried over (free close).
     asset_class = ep.get("asset_class", "")
     if asset_class != "crypto":
         is_emergency_close = rec in ("CLOSE_EMERGENCY", "PROFIT_LOCK")
+        # v3.8 intent semantics: emergency closes labeled INTENT_EMERGENCY
+        # for audit clarity; non-emergencies labeled INTENT_INTRADAY.
+        close_intent = "emergency" if is_emergency_close else "intraday"
         try:
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
             from pdt_guard import evaluate_order as _pdt_eval, record_decision as _pdt_audit
@@ -136,11 +142,12 @@ def place_emergency_close(ep: dict) -> dict | None:
             close_side = "sell" if side == "long" else "buy"
             pv = _pdt_eval(
                 action="CLOSE", symbol=symbol, side=close_side, size_usd=pdt_size,
-                is_emergency=is_emergency_close,
+                intent=close_intent, is_emergency=is_emergency_close,
             )
             if pv["decision"] != "ALLOW":
                 _pdt_audit(pv, action="CLOSE", symbol=symbol,
-                           extra={"recommendation": rec, "asset_class": asset_class})
+                           extra={"recommendation": rec, "asset_class": asset_class,
+                                   "intent": close_intent})
                 if pv["decision"] == "DEFER":
                     print(f"  pdt-guard DEFER {symbol} ({rec}): {pv['reason']}")
                 else:  # BLOCK

@@ -866,9 +866,11 @@ class AccountAwareAllocator:
 
         # PDT gate for REDUCE / EXIT (allocator rebalance closes). BUY goes
         # via alpaca_orders which already has _pdt_gate. REDUCE/EXIT POSTs
-        # directly to Alpaca and must check PDT here. Rebalance is by
-        # definition non-emergency — operator chose to rotate, not a hard
-        # SL hit. Crypto bypasses (24/7, not subject to PDT).
+        # directly to Alpaca and must check PDT here.
+        # v3.8: rebalance closes are discretionary (operator chose to rotate,
+        # not an SL hit) so is_emergency=False. PDT engine then decides:
+        # overnight position → ALLOW (no DT impact); same-day → budget-aware.
+        # Crypto bypasses (24/7, not subject to PDT).
         if action in (ORDER_REDUCE, ORDER_EXIT) and not is_crypto:
             try:
                 try:
@@ -880,11 +882,12 @@ class AccountAwareAllocator:
                 pdt_size = float(order.get("current_value") or order.get("target_value") or 0)
                 pv = _pdt_eval(
                     action="CLOSE", symbol=sym, side="sell", size_usd=pdt_size,
+                    intent="intraday",   # rebalance is a discretionary same-session close
                     is_emergency=False,
                 )
                 if pv["decision"] != "ALLOW":
                     _pdt_audit(pv, action="CLOSE", symbol=sym,
-                               extra={"allocator_action": action})
+                               extra={"allocator_action": action, "intent": "intraday"})
                     if pv["decision"] == "DEFER":
                         result["status"] = "deferred"
                         result["reason"] = f"PDT defer: {pv['reason']}"

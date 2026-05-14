@@ -186,12 +186,13 @@
   },
 
   "pdt_protection": {
-    "enabled":            true,
-    "dt_limit":           3,
-    "dt_caution_at":      2,
-    "dt_restricted_at":   3,
-    "bp_floor_pct":       0.05,
-    "bp_hard_floor_usd":  100.0,
-    "_comment":           "Pattern-Day-Trader proactive gate. Sub-$25k account is limited to 3 day-trades per 5 business days; 4th = DTMC lockout. Mode classification: OK (0-1 DTs) → CAUTION (2 DTs, favour overnight) → RESTRICTED (3 DTs, defer non-emergency closes) → LOCKED (DT limit hit OR BP exhausted). Emergency closes (CLOSE_EMERGENCY / PROFIT_LOCK / governor force / SL hit) always bypass DEFER — positions must be allowed to die regardless of PDT state. Crypto is exempt (24/7 market, not subject to PDT). Read by shared/pdt_guard.py."
+    "enabled":              true,
+    "dt_limit":             3,
+    "dt_caution_at":        1,
+    "dt_restricted_at":     2,
+    "bp_floor_pct":         0.05,
+    "bp_hard_floor_usd":    100.0,
+    "swing_max_pct_equity": 0.20,
+    "_comment":             "v3.8 (2026-05-14): intent-aware PDT guard. Sub-$25k FINRA rule restricts 4+ day-trades/5-business-days; Alpaca paper bug zeros BP at dt=4. Mode = OK (dt=0) / CAUTION (dt=1) / RESTRICTED (dt=2, save last slot) / LOCKED (dt>=3). CRITICAL design change vs v3.7: OPEN actions are NEVER blocked by daytrade_count (opens don't consume budget — only future same-day closes do). RESTRICTED+ defers OPEN only when intent=intraday (planned same-day flip). CLOSE decisions are budget-aware: overnight positions always ALLOW, crypto always ALLOW, same-day non-emergency in RESTRICTED → DEFER (save slot), in LOCKED → BLOCK. Emergency closes (SL / PROFIT_LOCK / governor / NEARDTH / REGIME / TRAIL) ALWAYS bypass DEFER/BLOCK. swing_max_pct_equity (0.20) is an advisory cap for callers biasing toward fewer larger swing trades when DT budget is tight."
   }
 }

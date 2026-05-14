@@ -1327,29 +1327,61 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 - state['peak_equity'] = max(prior, today_eq) updated each daily-learning run
 - max_drawdown_guard uses this as -12%/-20% baseline (not last_equity proxy)
 
-### PDT protection (v3.7, 2026-05-14)
-- shared/pdt_guard.py classifies account into 4 modes (OK/CAUTION/RESTRICTED/LOCKED)
-  from (daytrade_count, pattern_day_trader, buying_power, equity, size_usd)
-- Mode thresholds: OK (0-1 DTs) → CAUTION (2 DTs OR BP<5% equity) → RESTRICTED (3 DTs)
-  → LOCKED (BP=0 OR DT limit hit)
-- evaluate_order() wired into all 5 entry/exit paths:
-  - alpaca_orders.place_stock_bracket / place_crypto_order / place_simple_buy
-  - allocator._execute_one for REDUCE/EXIT
-  - exit-monitor.place_emergency_close
-  - options-exit-monitor.place_sell_to_close
-- Decisions:
-  - LOCKED + OPEN          → BLOCK (broker would reject anyway)
-  - LOCKED + non-emergency → BLOCK; emergency close always ALLOWED
-  - RESTRICTED + OPEN      → ALLOW with overnight-hold expectation
-  - RESTRICTED + non-emerg → DEFER if would be day-trade, ALLOW if overnight
-  - RESTRICTED + emergency → ALLOW
-  - CAUTION                → ALLOW + warning
-  - OK                     → ALLOW
-- Emergency close override (NEVER deferred): CLOSE_EMERGENCY, PROFIT_LOCK,
-  GOVERNOR force, SL hit, NEARDTH, REGIME, TRAIL
-- Crypto exempt (24/7 market, not subject to PDT regulation)
-- All non-ALLOW decisions emit JSONL to journal/autonomy/YYYY-MM-DD.jsonl
-- Snapshot persisted to learning-loop/runtime_state.json::pdt_status
+### PDT protection (v3.8, 2026-05-14 intent-aware redesign)
+**Core insight (v3.7 was too restrictive):**
+> A day-trade is OPEN + CLOSE of the SAME SYMBOL in the SAME SESSION.
+> Opens alone NEVER consume daytrade_count budget. Only closes do — and
+> only when the position was opened today. Crypto is fully exempt.
+
+**Mode thresholds (corrected v3.8):**
+- OK         — daytrade_count = 0  (full budget)
+- CAUTION    — daytrade_count = 1  (heads up; favour overnight holds)
+- RESTRICTED — daytrade_count = 2  (save last slot for emergency)
+- LOCKED     — daytrade_count ≥ 3  (DT limit hit OR BP exhausted)
+
+**Intent enum (callers pass to influence decision):**
+- `swing`     — held ≥1 session (DEFAULT — all entry monitors)
+- `intraday`  — planned same-day flip (allocator REDUCE/EXIT; exit-monitor
+                  CLOSE_FLAT/CLOSE_DECAY rebalance signals)
+- `emergency` — SL hit, PROFIT_LOCK, governor force-close, NEARDTH, REGIME,
+                  TRAIL — ALWAYS bypass DEFER/BLOCK
+
+**Decision matrix:**
+
+| Action | Asset | Same-day? | Intent | Mode | Decision |
+|---|---|---|---|---|---|
+| OPEN | * | — | * | * | ALLOW if BP ≥ size (PDT count NEVER blocks opens) |
+| OPEN | stock/opt | — | intraday | RESTRICTED+ | DEFER (planned close = burn slot) |
+| OPEN | * | — | * | BP < size | BLOCK (broker would reject) |
+| CLOSE | crypto | — | * | * | ALLOW (PDT-exempt) |
+| CLOSE | stock | NO (overnight) | * | * | ALLOW (no DT impact) |
+| CLOSE | stock | YES | emergency | * | ALLOW (always honored) |
+| CLOSE | stock | YES | discretionary | OK | ALLOW |
+| CLOSE | stock | YES | discretionary | CAUTION | ALLOW + warn |
+| CLOSE | stock | YES | discretionary | RESTRICTED | DEFER (save last slot) |
+| CLOSE | stock | YES | discretionary | LOCKED | BLOCK (unless emergency) |
+
+**Wiring (v3.8 explicit intent at all 5 sites):**
+- `alpaca_orders.place_stock_bracket` — `intent="swing"` default
+- `alpaca_orders.place_crypto_order`  — `intent="swing"` (crypto exempt anyway)
+- `alpaca_orders.place_simple_buy`    — `intent="swing"` (options 7-30 DTE)
+- `allocator._execute_one` REDUCE/EXIT — `intent="intraday"` (rebalance same-session)
+- `exit-monitor.place_emergency_close` — `intent="emergency"` if CLOSE_EMERGENCY/PROFIT_LOCK else `"intraday"`
+- `options-exit-monitor.place_sell_to_close` — `intent="emergency"` if SL/NEARDTH/GOVERNOR/REGIME/TRAIL else `"intraday"` (plain TP)
+
+**Profit-maximizing behavior (v3.8 key change):**
+- Account at dt=4 LOCKED can STILL:
+  - Open new SWING stock positions (must hold overnight — normal swing trading)
+  - Buy any crypto freely (no PDT impact)
+  - Close yesterday's positions (no DT impact)
+  - Emergency-exit anything (SL/governor honored)
+- Only blocked: discretionary intraday round-trips during 5-day rolling window
+- LOCKED is "no intraday churn", NOT "no trading"
+
+**Persistence + audit:**
+- Snapshot in `learning-loop/runtime_state.json::pdt_status`
+- Non-ALLOW decisions emit JSONL to `journal/autonomy/YYYY-MM-DD.jsonl`
+- Config tunable via `config/aggressive_profile.json::pdt_protection`
 
 ### Anthropic Routine budget (v3.7, 2026-05-14)
 - shared/routine_budget.py tracks daily LLM Routine calls (hard cap 15/day)
