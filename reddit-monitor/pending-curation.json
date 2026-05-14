@@ -1,0 +1,32 @@
+{
+  "narrative": "Zero emisji. Dominujący sygnał pochodzi z jednego viral gain-porn posta (9415 ups) wymieniającego 8 tickerów — to emerytura kolesia który trafił NVDA w 2016, nie trading signal. Spike_ratio=99 dla AVGO/GOOGL/QQQ to artefakt rolling_avg_7d=0 (pierwszy dzień historii), nie prawdziwy spike; NVDA ratio 1.5× z trzema postami 'mam 1240% zysku boję się crashu' — brak katalizatora. SPY short ma koherentną tezę geopolityczną (Hormuz, szczyt 14-15 maja) ale 178 ups i ratio 2× to za mało żeby kontrować +30% momentum QQQ, a konto siedzi już na tracących QQQ putach (-23%) — ta sama zakładka bez nowego edge.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AVGO",
+      "reason": "Spike_ratio=99 to artefakt rolling_avg_7d=0; jedyna wzmianka w viral gain-porn poście wychodzącego tradera — brak świeżego katalizatora dla AVGO."
+    },
+    {
+      "ticker": "GOOGL",
+      "reason": "Post o 100× zysku na LEAPS kupionych rok temu to retrospektywne gain porn — autor trzyma i wierzy w spółkę, ale to nie jest sygnał wejścia dziś; brak nowego katalizatora."
+    },
+    {
+      "ticker": "QQQ",
+      "reason": "Spike_ratio=99 to artefakt (rolling_avg_7d=0); jeden z postów jawnie ostrzega 'QQQ up 30% w 30 dniach, SOXX najdroższy w historii na weekly' — wchodzić teraz to definicja FOMO; konto ma już otwartego tracącego QQQ put (-23%)."
+    },
+    {
+      "ticker": "AMZN",
+      "reason": "Ratio 2× (bez spiku); VRT put-spread DD używa AMZN jako hiperscaler mogący ciąć capex AI — kontekst neutralny do lekko bearish, zero bullish katalizatora."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "178 ups za mały engagement, ratio 2×, teza geopolityczna spekulatywna (wynik szczytu 14-15 maja nieznany); konto ma już tracące QQQ puts (-23%) — ta sama zakładka directional short bez nowego edge."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "Spike_ratio 1.5× (poniżej progu 3×), skew +0.286 słaby; wszystkie 3 posty to 'mam 1240% zysku boję się' / 'znalazłem zapomniany rachunek' / gain porn — brak konkretnego katalizatora, sentyment to niepewność długoterminowych hodlerów."
+    }
+  ],
+  "macro_context": "Risk-on: VIX 17, QQQ +30% w 30 dniach — rynek ignoruje geopolitykę (Hormuz); RTX/XLE/XOM w portfelu już grają defensywny i energy edge; brak świeżego Reddit sygnału uzasadniającego nową pozycję w tym środowisku.",
+  "confidence_in_curation": "high"
+}
