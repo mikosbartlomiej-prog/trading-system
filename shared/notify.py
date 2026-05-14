@@ -399,7 +399,7 @@ def notify_allocation_plan(plan: dict) -> bool:
         # 2026-05-14: This branch is now informational only — system is meant
         # to run with auto_execute_rebalance=true. If you're seeing this in
         # production, it means a deployment regression has occurred — fix the
-        # config rather than treat this as an "approval needed" prompt.
+        # config; no operator action expected.
         lines.append("  AUTO-EXECUTE is currently DISABLED (regression detected).")
         lines.append(f"  Plan saved at: learning-loop/allocations/{plan.get('date','?')}.json")
         lines.append("  Re-enable by setting capital_deployment.auto_execute_rebalance=true.")
@@ -623,6 +623,145 @@ def notify_intraday_state(snapshot: dict | object, level: str) -> bool:
         "",
         "Dashboard: https://app.alpaca.markets/paper/dashboard/overview",
         "Audit log: journal/autonomy/ (one JSONL line per FSM transition)",
+    ]
+
+    return send_email(subject, "\n".join(lines))
+
+
+def notify_pdt_state(snapshot: dict, transition: str = "ENTER") -> bool:
+    """
+    Email audit when the PDT guard transitions between modes (OK →
+    CAUTION → RESTRICTED → LOCKED). Dedup is caller's responsibility.
+
+    `snapshot` is a PDTSnapshot.to_dict() result. `transition` is "ENTER"
+    when entering the new state, "EXIT" when leaving (mode improved).
+
+    Subject prefix maps to severity:
+      OK         → [PDT-OK]          (informational only)
+      CAUTION    → [PDT-CAUTION]     (1-2 day-trades used)
+      RESTRICTED → [PDT-RESTRICTED]  (one DT away from DTMC)
+      LOCKED     → [PDT-LOCKED]      (BP=0 or DTMC active)
+    """
+    if not snapshot:
+        return False
+
+    mode      = snapshot.get("mode", "UNKNOWN")
+    dt_used   = int(snapshot.get("daytrade_count", 0))
+    dt_limit  = int(snapshot.get("dt_limit", 3))
+    dt_remain = int(snapshot.get("dt_remaining", 0))
+    bp        = float(snapshot.get("buying_power", 0))
+    equity    = float(snapshot.get("equity", 0))
+    bp_pct    = float(snapshot.get("bp_pct_equity", 0))
+    reason    = snapshot.get("reason", "")
+    ts        = (snapshot.get("classified_at") or "")[:16].replace("T", " ")
+
+    prefix_map = {
+        "OK":         ("[PDT-OK]",         "PDT mode improved to OK"),
+        "CAUTION":    ("[PDT-CAUTION]",    f"PDT CAUTION — daytrade {dt_used}/{dt_limit} used"),
+        "RESTRICTED": ("[PDT-RESTRICTED]", f"PDT RESTRICTED — one DT from DTMC ({dt_used}/{dt_limit})"),
+        "LOCKED":     ("[PDT-LOCKED]",     f"PDT LOCKED — BP=$0 or DTMC active"),
+    }
+    prefix, summary = prefix_map.get(mode, ("[PDT]", f"PDT mode={mode}"))
+    subject = f"{prefix} {summary}"
+
+    lines = [
+        f"PDT-guard {transition} {mode}",
+        "=" * 60,
+        f"Time:               {ts}",
+        f"Mode:               {mode}",
+        f"Reason:             {reason}",
+        "",
+        f"Daytrade count:     {dt_used}/{dt_limit} used (remaining {dt_remain})",
+        f"Buying power:       ${bp:,.0f} ({bp_pct:.1f}% of equity)",
+        f"Equity:             ${equity:,.0f}",
+        "",
+    ]
+
+    if mode == "LOCKED":
+        lines += [
+            "Behaviour:",
+            "  - All new BUY/SELL_SHORT orders BLOCKED (broker would reject).",
+            "  - Non-emergency intraday closes BLOCKED.",
+            "  - Emergency closes (CLOSE_EMERGENCY / PROFIT_LOCK / SL hit /",
+            "    governor force-close) HONOURED — positions can always die.",
+            "",
+            "Recovery path:",
+            "  - Wait for 5-business-day rolling window to expire (PDT count drops).",
+            "  - OR close existing positions to free buying_power.",
+        ]
+    elif mode == "RESTRICTED":
+        lines += [
+            "Behaviour:",
+            "  - New BUYs ALLOWED but the position MUST be held overnight",
+            "    (closing same day would trip DTMC).",
+            "  - Non-emergency intraday closes DEFERRED to next session.",
+            "  - Emergency closes HONOURED.",
+        ]
+    elif mode == "CAUTION":
+        lines += [
+            "Behaviour:",
+            "  - All orders ALLOWED (warning level only).",
+            "  - System favours overnight holds at this level.",
+        ]
+    else:
+        lines += [
+            "Behaviour:",
+            "  - Normal operations. No PDT-driven order restrictions.",
+        ]
+
+    lines += [
+        "",
+        f"Dashboard: https://app.alpaca.markets/paper/dashboard/overview",
+        f"Audit log: journal/autonomy/ (one JSONL line per blocked/deferred order)",
+    ]
+
+    return send_email(subject, "\n".join(lines))
+
+
+def notify_routine_budget_low(state: dict, threshold: int = 3) -> bool:
+    """
+    Email warning when remaining routine call budget drops below
+    `threshold` (default 3). Caller (typically learning-loop analyzer
+    end-of-run) decides when to fire. Dedup is caller's responsibility.
+
+    `state` is the dict returned by routine_budget.get_state():
+      {total_used, daily_limit, remaining_total, by_tier, remaining_by_tier, ...}
+    """
+    if not state:
+        return False
+
+    used      = int(state.get("total_used", 0))
+    limit     = int(state.get("daily_limit", 15))
+    remaining = int(state.get("remaining_total", 0))
+    by_tier   = state.get("by_tier", {}) or {}
+    remain_t  = state.get("remaining_by_tier", {}) or {}
+
+    if remaining > threshold:
+        return False  # Not low enough to alert.
+
+    subject = f"[ROUTINE-BUDGET-LOW] {remaining} of {limit} calls remaining today"
+
+    lines = [
+        "Anthropic Routines daily budget warning",
+        "=" * 60,
+        f"Total used today:    {used}/{limit}",
+        f"Remaining (incl buffer): {remaining}",
+        "",
+        "By tier:",
+    ]
+    for tname in ("P0_essential", "P1_important", "P2_optional"):
+        used_t = int(by_tier.get(tname, 0))
+        rem_t  = int(remain_t.get(tname, 0))
+        lines.append(f"  {tname:18s} used={used_t}  remaining={rem_t}")
+
+    lines += [
+        "",
+        "Behaviour going forward (deterministic):",
+        "  - P0 (daily-learning) is reserved — calls go through up to cap.",
+        "  - P2 (Reddit/Crypto Curators) start refusing with 'budget BLOCK'.",
+        "  - Monitor still emits heuristic signals; only LLM enrichment skipped.",
+        "",
+        "Reset: automatic at next UTC midnight.",
     ]
 
     return send_email(subject, "\n".join(lines))

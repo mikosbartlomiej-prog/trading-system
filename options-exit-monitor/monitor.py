@@ -163,6 +163,27 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     except ImportError:
         pass
 
+    # PDT pre-close gate. SL / NEARDTH / GOVERNOR / REGIME / TRAIL are
+    # emergencies (defensive — bypass DEFER). Plain TP is discretionary
+    # (we picked the price; we can wait one more day to avoid DTMC).
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), '..', 'shared'))
+        from pdt_guard import evaluate_order as _pdt_eval, record_decision as _pdt_audit
+        is_emergency_close = decision in ("SL", "NEARDTH", "GOVERNOR", "REGIME", "TRAIL")
+        pdt_size = exit_price * float(qty) * 100.0  # options multiplier
+        pv = _pdt_eval(
+            action="CLOSE", symbol=contract_symbol, side="sell",
+            size_usd=pdt_size, is_emergency=is_emergency_close,
+        )
+        if pv["decision"] != "ALLOW":
+            _pdt_audit(pv, action="CLOSE", symbol=contract_symbol,
+                       extra={"decision": decision, "qty": qty})
+            print(f"  pdt-guard {pv['decision']} {contract_symbol} ({decision}): {pv['reason']}")
+            return None
+    except Exception as e:
+        print(f"  pdt-guard unavailable for {contract_symbol} ({type(e).__name__}: {e}) — proceeding")
+
     payload: dict = {
         "symbol":          contract_symbol,
         "qty":             str(int(qty)),

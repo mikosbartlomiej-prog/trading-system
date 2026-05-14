@@ -122,6 +122,32 @@ def place_emergency_close(ep: dict) -> dict | None:
         "CLOSE_FLAT":      "flat",
         "CLOSE_DECAY":     "decay",
     }.get(rec, "emergency")
+
+    # PDT pre-close gate. CLOSE_EMERGENCY + PROFIT_LOCK are emergencies
+    # (defensive necessity — bypass DEFER). CLOSE_FLAT + CLOSE_DECAY are
+    # discretionary closes → defer if it would land a 4th day-trade.
+    asset_class = ep.get("asset_class", "")
+    if asset_class != "crypto":
+        is_emergency_close = rec in ("CLOSE_EMERGENCY", "PROFIT_LOCK")
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+            from pdt_guard import evaluate_order as _pdt_eval, record_decision as _pdt_audit
+            pdt_size = abs(float(ep.get("market_value") or 0)) or qty * float(ep.get("current_price") or 0)
+            close_side = "sell" if side == "long" else "buy"
+            pv = _pdt_eval(
+                action="CLOSE", symbol=symbol, side=close_side, size_usd=pdt_size,
+                is_emergency=is_emergency_close,
+            )
+            if pv["decision"] != "ALLOW":
+                _pdt_audit(pv, action="CLOSE", symbol=symbol,
+                           extra={"recommendation": rec, "asset_class": asset_class})
+                if pv["decision"] == "DEFER":
+                    print(f"  pdt-guard DEFER {symbol} ({rec}): {pv['reason']}")
+                else:  # BLOCK
+                    print(f"  pdt-guard BLOCK {symbol} ({rec}): {pv['reason']}")
+                return None
+        except Exception as e:
+            print(f"  pdt-guard unavailable for {symbol} ({type(e).__name__}: {e}) — proceeding")
     ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
     safe_sym = symbol.replace("/", "").replace(" ", "")
     client_order_id = f"exit-{reason_tag}-{safe_sym}-{ts}"

@@ -864,6 +864,40 @@ class AccountAwareAllocator:
             self.trace.warn(f"{sym} {action}: skipped — market not open", indent=2)
             return result
 
+        # PDT gate for REDUCE / EXIT (allocator rebalance closes). BUY goes
+        # via alpaca_orders which already has _pdt_gate. REDUCE/EXIT POSTs
+        # directly to Alpaca and must check PDT here. Rebalance is by
+        # definition non-emergency — operator chose to rotate, not a hard
+        # SL hit. Crypto bypasses (24/7, not subject to PDT).
+        if action in (ORDER_REDUCE, ORDER_EXIT) and not is_crypto:
+            try:
+                try:
+                    from pdt_guard import evaluate_order as _pdt_eval, record_decision as _pdt_audit
+                except ImportError:
+                    from shared.pdt_guard import (    # type: ignore
+                        evaluate_order as _pdt_eval, record_decision as _pdt_audit,
+                    )
+                pdt_size = float(order.get("current_value") or order.get("target_value") or 0)
+                pv = _pdt_eval(
+                    action="CLOSE", symbol=sym, side="sell", size_usd=pdt_size,
+                    is_emergency=False,
+                )
+                if pv["decision"] != "ALLOW":
+                    _pdt_audit(pv, action="CLOSE", symbol=sym,
+                               extra={"allocator_action": action})
+                    if pv["decision"] == "DEFER":
+                        result["status"] = "deferred"
+                        result["reason"] = f"PDT defer: {pv['reason']}"
+                        self.trace.warn(f"{sym} {action}: PDT DEFER — {pv['reason']}", indent=2)
+                    else:  # BLOCK
+                        result["status"] = "skipped"
+                        result["reason"] = f"PDT block: {pv['reason']}"
+                        self.trace.warn(f"{sym} {action}: PDT BLOCK — {pv['reason']}", indent=2)
+                    return result
+            except Exception as e:
+                # Fail-soft: never let PDT-tracking break the allocator.
+                self.trace.warn(f"{sym} {action}: pdt-guard unavailable ({e}) — proceeding", indent=2)
+
         # Quantity sanity.
         # BUGFIX 2026-05-14: _build_order sets qty_delta=None for NEW BUYs
         # (no current position → current_price=0 → fallback). Previously this

@@ -7,10 +7,10 @@ full_stop (-20%), this module coordinates:
   - persist `defensive_mode_armed: true` in state.json
   - (optionally) close speculative positions via Alpaca REST
 
-CAREFUL: close_all_positions() is GATED behind manual confirmation
+CAREFUL: close_all_positions() requires the deterministic kill-switch
 flag `kill_switch_armed=true` in state.json to prevent accidental
-flat-everything on a transient API blip. Operator must consciously
-opt in.
+flat-everything on a transient API blip. The flag is set explicitly by
+the operator via state-policy maintenance — never by signal-time code.
 
 Entry monitors read `is_defensive_mode_active()` and skip new entries
 when True. Existing exit monitors keep working (closes are always
@@ -50,7 +50,7 @@ def is_defensive_mode_active() -> bool:
 
 
 def is_full_stop_armed() -> bool:
-    """Manual confirmation flag for close-all-positions execution."""
+    """Deterministic kill-switch flag for close-all-positions execution."""
     s = _read_state()
     return bool((s.get("defensive_mode") or {}).get("full_stop_armed", False))
 

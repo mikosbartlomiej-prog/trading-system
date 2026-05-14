@@ -22,12 +22,19 @@ FORBIDDEN_PATTERNS = (
 )
 
 # Strings allowed in docs (operator runbook) and in the agent's own modules.
+# Audit tools themselves contain the literal patterns as regex strings for
+# matching — exempting them avoids self-referential false positives.
 EXEMPT_PATHS = (
     "docs/",
     "tests/",
     "tools/system_consistency_agent/",
+    "tools/strategy_coherence_agent/",
+    "tools/e2e_system_test_agent/",
     "scripts/audit_workflows.py",
     "scripts/secret_scan_light.py",
+    "scripts/system_consistency_agent.py",
+    "scripts/strategy_coherence_agent.py",
+    "scripts/e2e_system_test_agent.py",
     "learning-loop/patch_validator.py",
     "CLAUDE.md",
     "shared/autonomy.py",

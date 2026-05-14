@@ -1326,6 +1326,48 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 ### Persistence baseline (v3.4.5)
 - state['peak_equity'] = max(prior, today_eq) updated each daily-learning run
 - max_drawdown_guard uses this as -12%/-20% baseline (not last_equity proxy)
+
+### PDT protection (v3.7, 2026-05-14)
+- shared/pdt_guard.py classifies account into 4 modes (OK/CAUTION/RESTRICTED/LOCKED)
+  from (daytrade_count, pattern_day_trader, buying_power, equity, size_usd)
+- Mode thresholds: OK (0-1 DTs) → CAUTION (2 DTs OR BP<5% equity) → RESTRICTED (3 DTs)
+  → LOCKED (BP=0 OR DT limit hit)
+- evaluate_order() wired into all 5 entry/exit paths:
+  - alpaca_orders.place_stock_bracket / place_crypto_order / place_simple_buy
+  - allocator._execute_one for REDUCE/EXIT
+  - exit-monitor.place_emergency_close
+  - options-exit-monitor.place_sell_to_close
+- Decisions:
+  - LOCKED + OPEN          → BLOCK (broker would reject anyway)
+  - LOCKED + non-emergency → BLOCK; emergency close always ALLOWED
+  - RESTRICTED + OPEN      → ALLOW with overnight-hold expectation
+  - RESTRICTED + non-emerg → DEFER if would be day-trade, ALLOW if overnight
+  - RESTRICTED + emergency → ALLOW
+  - CAUTION                → ALLOW + warning
+  - OK                     → ALLOW
+- Emergency close override (NEVER deferred): CLOSE_EMERGENCY, PROFIT_LOCK,
+  GOVERNOR force, SL hit, NEARDTH, REGIME, TRAIL
+- Crypto exempt (24/7 market, not subject to PDT regulation)
+- All non-ALLOW decisions emit JSONL to journal/autonomy/YYYY-MM-DD.jsonl
+- Snapshot persisted to learning-loop/runtime_state.json::pdt_status
+
+### Anthropic Routine budget (v3.7, 2026-05-14)
+- shared/routine_budget.py tracks daily LLM Routine calls (hard cap 15/day)
+- 3 priority tiers (config/routine_budget.json):
+  - P0_essential (cap 4): daily-learning Senior PM + Challenger + revise + 1 buffer
+  - P1_important (cap 5): weekly-retro Sundays (3 calls) + legacy fallbacks
+  - P2_optional  (cap 5): Reddit Curator + Crypto Curator + twitter-curator
+  - Total = 14 calls; 1 hard buffer for re-tries on 429
+- Pre-call gate in 3 sites:
+  - learning-loop/llm_client.py::call_routine (resolves tier from payload_type + worker)
+  - reddit-monitor/llm_curator.py::curate (P2)
+  - crypto-monitor/llm_curator.py::curate (P2)
+- BLOCK decisions: P0 calls protected — Curators (P2) refuse with "budget BLOCK"
+  before P0 is at risk
+- Daily auto-reset at UTC midnight
+- All decisions audited to journal/autonomy/YYYY-MM-DD.jsonl
+- State in learning-loop/runtime_state.json::routine_budget
+- Email alert via notify_routine_budget_low when remaining ≤ 3
 ```
 
 ---

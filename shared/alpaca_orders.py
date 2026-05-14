@@ -153,6 +153,40 @@ def _intraday_governor_gate(symbol: str, side: str, size_usd: float,
         return True, f"intraday-governor unavailable ({type(e).__name__}: {e})"
 
 
+def _pdt_gate(symbol: str, side: str, size_usd: float,
+              asset_class: str) -> tuple[bool, str]:
+    """
+    PDT pre-trade gate. Returns (allow, reason).
+
+    Logic for entry orders:
+      - LOCKED       → BLOCK (broker would reject anyway)
+      - RESTRICTED   → ALLOW with overnight-hint (caller should not flip same day)
+      - CAUTION / OK → ALLOW
+
+    Emits non-ALLOW decisions to journal/autonomy/. Fail-open if module
+    unavailable — this layer is preventive, risk_officer downstream still
+    catches the absolute case (BP < size_usd).
+    """
+    try:
+        try:
+            from pdt_guard import evaluate_order, record_decision
+        except ImportError:
+            from shared.pdt_guard import evaluate_order, record_decision  # type: ignore
+        action = "OPEN"  # all calls to this gate are entry-side
+        verdict = evaluate_order(
+            action=action, symbol=symbol, side=side, size_usd=size_usd,
+            is_emergency=False,
+        )
+        decision = verdict.get("decision", "ALLOW")
+        reason   = verdict.get("reason", "")
+        if decision != "ALLOW":
+            record_decision(verdict, action=action, symbol=symbol,
+                            extra={"asset_class": asset_class, "size_usd": size_usd})
+        return (decision == "ALLOW"), reason
+    except Exception as e:  # pragma: no cover
+        return True, f"pdt-guard unavailable ({type(e).__name__}: {e})"
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -281,6 +315,17 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         print(f"  INTRADAY-GOVERNOR BLOCK {symbol}: {ig_reason}")
         return None
 
+    # PDT gate — preventive layer above risk_officer's BP check. Blocks new
+    # entries when account is in LOCKED state (BP < required) so monitors
+    # don't keep spamming Alpaca with 403-bound orders.
+    pdt_ok, pdt_reason = _pdt_gate(
+        symbol=symbol, side=side, size_usd=qty * entry_price,
+        asset_class="us_equity",
+    )
+    if not pdt_ok:
+        print(f"  PDT-GUARD BLOCK {symbol}: {pdt_reason}")
+        return None
+
     # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
     # block the trade; soft warnings are logged but don't reject. Fail-soft
     # if the officer module is unavailable for any reason — proceed to place.
@@ -379,6 +424,17 @@ def place_crypto_order(symbol: str, side: str, qty: float,
         print(f"  INTRADAY-GOVERNOR BLOCK {symbol}: {ig_reason}")
         return None
 
+    # PDT gate (crypto exempt from PDT rule, but BP-locked state still
+    # blocks here when buying_power < size_usd). Allows clean refusal
+    # before broker 403s.
+    pdt_ok, pdt_reason = _pdt_gate(
+        symbol=symbol, side=side, size_usd=qty * limit_price,
+        asset_class="crypto",
+    )
+    if not pdt_ok:
+        print(f"  PDT-GUARD BLOCK {symbol}: {pdt_reason}")
+        return None
+
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
     # (Alpaca crypto = simple limit only); we pass the strategy-level
     # values so the officer can validate R:R and per-trade size.
@@ -465,6 +521,17 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
     )
     if not ig_ok:
         print(f"  INTRADAY-GOVERNOR BLOCK {symbol} (options): {ig_reason}")
+        return None
+
+    # PDT gate — options ARE subject to PDT and burn day-trade count fast.
+    # When account is RESTRICTED, opening options is allowed but the
+    # exit-monitor will defer same-day closes via its own pdt_guard check.
+    pdt_ok, pdt_reason = _pdt_gate(
+        symbol=symbol, side="buy", size_usd=qty * limit_price,
+        asset_class="us_option",
+    )
+    if not pdt_ok:
+        print(f"  PDT-GUARD BLOCK {symbol} (options): {pdt_reason}")
         return None
 
     payload = {

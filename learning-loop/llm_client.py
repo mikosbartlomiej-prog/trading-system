@@ -117,7 +117,34 @@ def _git_pull(branch: str) -> bool:
     return True
 
 
-def call_routine(payload: dict, worker_url: str | None = None) -> dict | None:
+# Map (payload_type, is_challenger_worker) → routine_name + priority.
+# Used to resolve a stable routine identity for the budget tracker so
+# tier caps work correctly regardless of which helper invokes us.
+_ROUTINE_NAME_MAP = {
+    ("daily_learning_annotation", False): ("daily-learning-pm",          "P0_essential"),
+    ("challenger_review",         True):  ("daily-learning-challenger", "P0_essential"),
+    ("daily_revise",              False): ("daily-learning-revise",     "P0_essential"),
+    ("weekly_retrospective",      False): ("weekly-retro-pm",           "P1_important"),
+    ("weekly_retrospective",      True):  ("weekly-retro-challenger",   "P1_important"),
+    ("weekly_revise",             False): ("weekly-retro-revise",       "P1_important"),
+}
+
+
+def _resolve_routine_identity(payload_type: str, target_url: str) -> tuple[str, str]:
+    """Return (routine_name, priority) for the budget tracker."""
+    is_challenger = bool(target_url) and target_url == CHALLENGER_WORKER_URL
+    key = (payload_type, is_challenger)
+    if key in _ROUTINE_NAME_MAP:
+        return _ROUTINE_NAME_MAP[key]
+    # Unknown type defaults to P1 important (conservative — could be a new
+    # call site; we'd rather throttle than starve, since P1 has more
+    # headroom than P2).
+    return (f"unknown-{payload_type}", "P1_important")
+
+
+def call_routine(payload: dict, worker_url: str | None = None,
+                 routine_name: str | None = None,
+                 priority: str | None = None) -> dict | None:
     """
     Trigger the learning routine and wait for its JSON output to appear
     as a committed file in the repo.
@@ -132,6 +159,9 @@ def call_routine(payload: dict, worker_url: str | None = None) -> dict | None:
     routine) to invoke. Defaults to the Senior PM worker
     (`CLOUDFLARE_LEARNING_WORKER_URL`).
 
+    `routine_name` / `priority` are passed to the budget tracker. Default
+    resolution uses (payload_type, worker_url) lookup.
+
     Returns parsed dict on success, None on any failure (fail-soft).
     """
     if not USE_LLM:
@@ -145,6 +175,26 @@ def call_routine(payload: dict, worker_url: str | None = None) -> dict | None:
     payload_type = payload.get("type", "daily_learning_annotation")
     pending_path = _pending_path(payload_type)
     branch       = payload.get("target_branch") or _current_branch()
+
+    # Anthropic Routines daily budget gate. Resolves routine identity
+    # from (payload_type, worker_url), checks tier + total caps,
+    # records the call on ALLOW. Fail-soft if budget module unavailable.
+    if routine_name is None or priority is None:
+        rname, rprio = _resolve_routine_identity(payload_type, target_url)
+        routine_name = routine_name or rname
+        priority     = priority or rprio
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from routine_budget import check_and_record as _budget_check
+        ok, b_reason, _b_state = _budget_check(routine_name, priority=priority)
+        if not ok:
+            print(f"  LLM: routine budget gate BLOCK ({routine_name}/{priority}) — {b_reason}")
+            return None
+        print(f"  LLM: routine budget OK ({routine_name}/{priority}) — {b_reason}")
+    except Exception as e:
+        # Fail-soft: budget tracking must never break the call path.
+        print(f"  LLM: routine budget unavailable ({type(e).__name__}: {e}) — proceeding")
 
     # git author identity — needed if analyzer pulls / commits before workflow's
     # final step sets it. Idempotent; failures are non-fatal.

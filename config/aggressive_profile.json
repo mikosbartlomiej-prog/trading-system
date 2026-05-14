@@ -183,5 +183,15 @@
     "close_options_first_under_profit_lock": true,
     "options_first_options_only_in_defend_day": true,
     "_comment":                             "Aggressive paper defaults. 25% of equity can be in options premium (notional much higher). At-risk = 8% of equity is the actual P&L exposure given typical 35-65% drawdown profile. Each option capped at -40% premium loss. Under PROFIT_LOCK/DEFEND_DAY options are closed before stocks/ETFs (premium decays fastest)."
+  },
+
+  "pdt_protection": {
+    "enabled":            true,
+    "dt_limit":           3,
+    "dt_caution_at":      2,
+    "dt_restricted_at":   3,
+    "bp_floor_pct":       0.05,
+    "bp_hard_floor_usd":  100.0,
+    "_comment":           "Pattern-Day-Trader proactive gate. Sub-$25k account is limited to 3 day-trades per 5 business days; 4th = DTMC lockout. Mode classification: OK (0-1 DTs) → CAUTION (2 DTs, favour overnight) → RESTRICTED (3 DTs, defer non-emergency closes) → LOCKED (DT limit hit OR BP exhausted). Emergency closes (CLOSE_EMERGENCY / PROFIT_LOCK / governor force / SL hit) always bypass DEFER — positions must be allowed to die regardless of PDT state. Crypto is exempt (24/7 market, not subject to PDT). Read by shared/pdt_guard.py."
   }
 }

@@ -90,4 +90,78 @@ def run(root: Path) -> list[Finding]:
             blocking=needs_llm,
         ))
 
+    # 5. Anthropic Routine budget gate present (v3.7, 2026-05-14)
+    # Verifies shared/routine_budget.py exists and is wired into all
+    # known routine call sites so the 15/day Anthropic limit cannot be
+    # silently breached.
+    budget = root / "shared" / "routine_budget.py"
+    if not budget.exists():
+        findings.append(Finding(
+            id="FREE_ROUTINE_BUDGET_MISSING",
+            category=CATEGORY, severity="WARN", status="WARN",
+            principle=PRINCIPLE,
+            message="No shared/routine_budget.py — daily Anthropic 15-call cap not enforced.",
+            recommendation="Implement routine_budget.py with priority-tiered cap.",
+        ))
+    else:
+        b_text = read_text(budget)
+        # Required surface area
+        has_can_call    = "def can_call" in b_text
+        has_record_call = "def record_call" in b_text
+        has_tiers       = "P0_essential" in b_text and "P1_important" in b_text and "P2_optional" in b_text
+        # Call sites
+        llm_client = root / "learning-loop" / "llm_client.py"
+        reddit_curator = root / "reddit-monitor" / "llm_curator.py"
+        crypto_curator = root / "crypto-monitor" / "llm_curator.py"
+        wired = []
+        unwired = []
+        for site in [llm_client, reddit_curator, crypto_curator]:
+            if not site.exists():
+                continue
+            t = read_text(site)
+            if "routine_budget" in t or "check_and_record" in t:
+                wired.append(str(rel(site)))
+            else:
+                unwired.append(str(rel(site)))
+
+        passed = has_can_call and has_record_call and has_tiers and not unwired
+        findings.append(Finding(
+            id="FREE_ROUTINE_BUDGET_WIRED",
+            category=CATEGORY,
+            severity="PASS" if passed else "WARN",
+            status="PASS" if passed else "WARN",
+            principle=PRINCIPLE,
+            message=(
+                f"routine_budget present with 3 tiers; wired in: {wired}"
+                if passed else
+                f"routine_budget gaps: "
+                f"can_call={has_can_call}, record_call={has_record_call}, "
+                f"tiers={has_tiers}, unwired sites={unwired}"
+            ),
+            recommendation=(
+                "" if passed else
+                "Wire shared.routine_budget.check_and_record() into every Routine "
+                "POST site so the 15/day Anthropic cap is enforced client-side."
+            ),
+        ))
+
+        # Config file present
+        cfg = root / "config" / "routine_budget.json"
+        findings.append(Finding(
+            id="FREE_ROUTINE_BUDGET_CONFIG",
+            category=CATEGORY,
+            severity="PASS" if cfg.exists() else "WARN",
+            status="PASS" if cfg.exists() else "WARN",
+            principle=PRINCIPLE,
+            message=(
+                "config/routine_budget.json present (tier caps configurable)."
+                if cfg.exists() else
+                "config/routine_budget.json missing — caps hardcoded in module."
+            ),
+            recommendation=(
+                "" if cfg.exists() else
+                "Add config/routine_budget.json so operators can adjust tier caps without code change."
+            ),
+        ))
+
     return findings

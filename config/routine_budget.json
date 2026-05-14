@@ -1,0 +1,42 @@
+{
+  "_doc": "Daily Anthropic Routine call budget (hard cap 15/day per Anthropic limit). Tiers gate routine calls by priority — essential calls never starve.",
+  "daily_limit": 15,
+  "buffer": 1,
+  "tiers": {
+    "P0_essential": {
+      "_doc": "Daily learning pipeline — never starve. Senior PM round 1 + Challenger + revise = 3 calls/day. 1 buffer for re-tries on transient timeout.",
+      "cap": 4,
+      "routines": [
+        "daily-learning-pm",
+        "daily-learning-challenger",
+        "daily-learning-revise"
+      ]
+    },
+    "P1_important": {
+      "_doc": "Weekly retro (3 calls Sundays) + occasional exit-monitor legacy fallback. Run rarely; budget covers worst-case Sunday plus 2 ad-hoc.",
+      "cap": 5,
+      "routines": [
+        "weekly-retro-pm",
+        "weekly-retro-challenger",
+        "weekly-retro-revise",
+        "exit-monitor-fallback",
+        "geo-monitor-fallback"
+      ]
+    },
+    "P2_optional": {
+      "_doc": "Curators (Reddit, Crypto). Fail-soft if budget exhausted — pipeline already uses heuristic fallback when LLM unavailable.",
+      "cap": 5,
+      "routines": [
+        "reddit-curator",
+        "crypto-curator",
+        "twitter-curator"
+      ]
+    }
+  },
+  "_notes": [
+    "Caps sum to 14 (= daily_limit 15 - buffer 1). The buffer absorbs unexpected calls (e.g. retried routine that briefly hits 429).",
+    "P0 has highest priority — even if P1/P2 are exhausted, P0 calls still go through up to its cap.",
+    "When tier cap reached, callers receive (False, reason) and fall back to deterministic / heuristic paths.",
+    "Reset is automatic at UTC midnight (counts keyed by ISO date)."
+  ]
+}

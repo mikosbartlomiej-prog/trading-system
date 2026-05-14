@@ -160,4 +160,52 @@ def run(root: Path) -> list[Finding]:
             evidence=[Evidence(file=str(rel(alloc)))],
         ))
 
+    # 7. PDT-aware sizing — verifies shared/pdt_guard.py is present and
+    # wired into order paths. Added v3.7 (2026-05-14).
+    pdt_path = root / "shared" / "pdt_guard.py"
+    if not pdt_path.exists():
+        out.append(Finding(
+            id="AA_PDT_GUARD_MISSING",
+            category=CATEGORY, severity="WARN", status="WARN",
+            principle=PRINCIPLE,
+            message="No shared/pdt_guard.py — sub-$25k account has no proactive "
+                    "Pattern-Day-Trader protection.",
+            recommendation="Implement pdt_guard.py with daytrade_count classification "
+                           "and wire into alpaca_orders / allocator / exit-monitor.",
+        ))
+    else:
+        pdt_text = read_text(pdt_path)
+        # Check for the 4 mode names (deterministic classification)
+        modes_present = all(m in pdt_text for m in ("OK", "CAUTION", "RESTRICTED", "LOCKED"))
+        # Check for evaluate_order entry point (single gate)
+        api_present = "def evaluate_order" in pdt_text
+        # Check wired into alpaca_orders
+        alpaca_text = read_text(root / "shared" / "alpaca_orders.py")
+        wired_alpaca = "pdt_guard" in alpaca_text or "_pdt_gate" in alpaca_text
+        # Check wired into allocator
+        wired_allocator = "pdt_guard" in text or "_pdt_eval" in text
+
+        if modes_present and api_present and wired_alpaca and wired_allocator:
+            out.append(Finding(
+                id="AA_PDT_GUARD_OK",
+                category=CATEGORY, severity="PASS", status="PASS",
+                principle=PRINCIPLE,
+                message="pdt_guard present with 4 modes + evaluate_order + wired "
+                        "into alpaca_orders + allocator.",
+            ))
+        else:
+            details = []
+            if not modes_present:    details.append("missing modes (OK/CAUTION/RESTRICTED/LOCKED)")
+            if not api_present:      details.append("no evaluate_order() entry point")
+            if not wired_alpaca:     details.append("not referenced in shared/alpaca_orders.py")
+            if not wired_allocator:  details.append("not referenced in allocator")
+            out.append(Finding(
+                id="AA_PDT_GUARD_INCOMPLETE",
+                category=CATEGORY, severity="WARN", status="WARN",
+                principle=PRINCIPLE,
+                message=f"pdt_guard.py present but: {', '.join(details)}.",
+                recommendation="Complete pdt_guard wiring; PDT gate must run before risk_officer in every order path.",
+                evidence=[Evidence(file=str(rel(pdt_path)))],
+            ))
+
     return out

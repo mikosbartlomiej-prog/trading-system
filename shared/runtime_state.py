@@ -103,4 +103,6 @@ INTRADAY_SECTIONS = frozenset({
     "intraday_governor",   # IntradayProfitGovernor FSM snapshot
     "position_mfe",        # per-position MFE/retrace tracker
     "options_exit_trail",  # options-exit-monitor trailing peaks (migrated from state.json)
+    "pdt_status",          # last classified PDT mode (read by all monitors)
+    "routine_budget",      # daily Anthropic routine call tally (15/day cap)
 })

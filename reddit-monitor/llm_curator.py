@@ -100,6 +100,21 @@ def curate(candidates: list[dict], account_context: dict) -> dict | None:
         print("  Curator: 0 candidates — no point calling LLM")
         return None
 
+    # Anthropic Routines daily budget gate (P2 optional tier). Reddit
+    # Curator is fail-soft by design — caller already handles None via
+    # heuristic fallback when budget exhausted.
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(REPO_ROOT, "shared"))
+        from routine_budget import check_and_record as _budget_check
+        ok, b_reason, _b_state = _budget_check("reddit-curator", priority="P2_optional")
+        if not ok:
+            print(f"  Curator: routine budget BLOCK — {b_reason} → heuristic fallback")
+            return None
+        print(f"  Curator: routine budget OK — {b_reason}")
+    except Exception as e:
+        print(f"  Curator: routine budget unavailable ({type(e).__name__}: {e}) — proceeding")
+
     branch = os.environ.get("GITHUB_REF_NAME") or _current_branch()
     payload = {
         "type":            "reddit_curate",
