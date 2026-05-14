@@ -194,7 +194,7 @@
         "qty": 2,
         "side": "sell",
         "type": "limit",
-        "limit_price": 5.80,
+        "limit_price": 5.8,
         "time_in_force": "day",
         "asset_class": "us_option",
         "client_order_id": "exit-emergency-QQQ260518P00714000-20260514-0508",
@@ -211,11 +211,11 @@
     "peak_pl_pct": 0.0,
     "peak_at": "2026-05-14T05:05:41Z",
     "peak_equity": 95043.72,
-    "current_pl_usd": -3128.9535419601016,
-    "current_equity": 95043.72,
+    "current_pl_usd": -3137.8735419601,
+    "current_equity": 95034.8,
     "retrace_from_peak": 0.0,
-    "verdict": "NEW_DAY",
-    "verdict_at": "2026-05-14T05:05:41Z",
+    "verdict": "NORMAL",
+    "verdict_at": "2026-05-14T08:03:53Z",
     "alerts_sent": {}
   }
 }
