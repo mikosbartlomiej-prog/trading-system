@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-13T22:16:17.398450+00:00",
-  "days_tracked": 14,
+  "last_updated": "2026-05-14T01:24:14.777976+00:00",
+  "days_tracked": 15,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
@@ -35,7 +35,7 @@
       "enabled": false,
       "side_bias": null,
       "consecutive_losses": 1,
-      "rationale": "Pauzowane poprawnie do 2026-05-14. Pre-ustawiam size_multiplier=0.5 (nie 1.0 default) na re-enable: kara za 0% WR lifetime + brak regime gate który kosztował nas -3.22% dziś. Pierwsza runda po wznowieniu = POŁOWA standardowego rozmiaru aż do min. 5 trades z pozytywnym expectancy. side_bias=null wymuszony — żadna strona nie jest dopuszczona przy SPY RSI 82.4 bez dodatkowych warunków.",
+      "rationale": "PRZEDŁUŻAM PAUZĘ mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought — identyczny reżim co wczorajsza strata -$3,120. Re-enable w tym środowisku = powtórka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostają jako kara za 0% WR lifetime.",
       "paused_until": "2026-05-14",
       "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
       "review_after": "2026-05-14 (post daily-learning)"
@@ -185,16 +185,16 @@
   },
   "trailing_state": {},
   "daily_peak": {
-    "date": "2026-05-14",
+    "date": "2026-05-13",
     "peak_pl_usd": 0.0,
     "peak_pl_pct": 0.0,
-    "peak_at": "2026-05-14T01:25:08Z",
-    "peak_equity": 95052.34,
-    "current_pl_usd": -3120.3335419601062,
-    "current_equity": 95052.34,
+    "peak_at": "2026-05-13T14:27:25Z",
+    "peak_equity": 95892.77,
+    "current_pl_usd": -3160.3335419601062,
+    "current_equity": 95012.34,
     "retrace_from_peak": 0.0,
-    "verdict": "NEW_DAY",
-    "verdict_at": "2026-05-14T01:25:08Z",
+    "verdict": "NORMAL",
+    "verdict_at": "2026-05-13T23:20:55Z",
     "alerts_sent": {}
   }
 }
