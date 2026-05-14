@@ -1,6 +1,15 @@
 name: Emergency Close — autonomous position closer
 
-# v3.4.3 (2026-05-13 evening): AUTONOMOUS execution path added.
+# v3.4.5 (2026-05-14): script-picker bug fix.
+#   Bug (v3.4.3-v3.4.4): `ls -t scripts/emergency_close_*.py | head -1`
+#   ordered by mtime, which on a fresh GH Actions runner checkout assigns
+#   similar timestamps to all files — falls back to filesystem/alpha order,
+#   non-deterministic. Caused 22:53 UTC 2026-05-13 to pick May 12 script
+#   (targets already closed) instead of May 13 evening script.
+#   Fix: pick by FILENAME DATE SUFFIX (lexicographic descending sort works
+#   because emergency_close_YYYYMMDD[_suffix].py format keeps YYYYMMDD as
+#   the dominating prefix). Highest YYYYMMDD wins, with _suffix variants
+#   beating bare YYYYMMDD on the same day (because `_` > `.`).
 #
 # Modes:
 #   workflow_dispatch — manual trigger, operator picks script via input
@@ -9,7 +18,7 @@ name: Emergency Close — autonomous position closer
 #     → uses the script added/modified in that commit
 #   schedule (*/3 * * * *)
 #     → polls main every 3 min
-#     → finds newest scripts/emergency_close_*.py from last 24h
+#     → finds emergency_close_*.py with highest filename-date suffix
 #     → executes if no exit-reports/${basename}-*.log exists yet
 #     → idempotent: log file presence prevents duplicate execution
 #
@@ -74,7 +83,14 @@ jobs:
         run: |
           MODE="${{ github.event_name }}"
 
-          # Pick script based on trigger source
+          # Pick script based on trigger source.
+          # IMPORTANT: schedule + push-fallback use FILENAME-DATE sort
+          # (lexicographic descending), NOT mtime (`ls -t`) — mtime is
+          # non-deterministic on fresh runner checkout.
+          pick_by_filename_date() {
+            ls scripts/emergency_close_*.py 2>/dev/null | sort -r | head -1
+          }
+
           if [ "$MODE" = "workflow_dispatch" ] && [ -n "${{ inputs.script }}" ]; then
             SCRIPT="${{ inputs.script }}"
             echo "Manual trigger: $SCRIPT"
@@ -82,12 +98,12 @@ jobs:
             # On push: take the modified emergency_close_*.py from the push commit
             SCRIPT=$(git show --name-only --pretty=format: HEAD | \
                      grep -E '^scripts/emergency_close_.*\.py$' | head -1)
-            [ -z "$SCRIPT" ] && SCRIPT=$(ls -t scripts/emergency_close_*.py 2>/dev/null | head -1)
+            [ -z "$SCRIPT" ] && SCRIPT=$(pick_by_filename_date)
             echo "Push-triggered: $SCRIPT"
           else
-            # Schedule poll: newest emergency_close_*.py file mtime
-            SCRIPT=$(ls -t scripts/emergency_close_*.py 2>/dev/null | head -1)
-            echo "Schedule-poll: candidate=$SCRIPT"
+            # Schedule poll: filename-date sort (highest YYYYMMDD wins).
+            SCRIPT=$(pick_by_filename_date)
+            echo "Schedule-poll: candidate=$SCRIPT (filename-date sort)"
           fi
 
           if [ -z "$SCRIPT" ] || [ ! -f "$SCRIPT" ]; then
@@ -111,12 +127,21 @@ jobs:
             exit 0
           fi
 
-          # Skip if script is older than 24h (safety: don't auto-rerun ancient scripts)
-          SCRIPT_AGE_HOURS=$(( ($(date +%s) - $(stat -c %Y "$SCRIPT")) / 3600 ))
-          if [ "$SCRIPT_AGE_HOURS" -gt 24 ]; then
-            echo "Script $SCRIPT is ${SCRIPT_AGE_HOURS}h old — skipping (>24h)"
-            echo "skip=true" >> $GITHUB_OUTPUT
-            exit 0
+          # Safety: don't auto-run scripts whose FILENAME date is >2 days old.
+          # Compare YYYYMMDD-in-filename to today (UTC). mtime is unreliable
+          # on fresh runner checkouts (everything looks freshly created).
+          SCRIPT_DATE=$(echo "$SCRIPT" | sed -nE 's|.*emergency_close_([0-9]{8}).*\.py$|\1|p')
+          TODAY=$(date -u +%Y%m%d)
+          if [ -n "$SCRIPT_DATE" ]; then
+            AGE_DAYS=$(( ($(date -u -d "$TODAY" +%s) - $(date -u -d "$SCRIPT_DATE" +%s)) / 86400 ))
+            if [ "$AGE_DAYS" -gt 2 ]; then
+              echo "Script $SCRIPT filename-date is ${AGE_DAYS}d old — skipping (>2d)"
+              echo "skip=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            echo "Script filename-date OK: ${AGE_DAYS}d old"
+          else
+            echo "WARN: couldn't parse YYYYMMDD from $SCRIPT — proceeding anyway"
           fi
 
           echo "Will execute: $SCRIPT"
