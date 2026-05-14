@@ -21,6 +21,10 @@ on:
     - cron: '*/15 * * * 0,6'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -69,13 +73,11 @@ jobs:
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           # runtime_state.json  : IntradayProfitGovernor FSM + position MFE
           # journal/autonomy/   : audit JSONL written by emit_audit()
-          # state.json          : LEGACY — kept for back-compat readers (peak_tracker
-          #                       shim still translates), but writes route to
-          #                       runtime_state.json now. Including the path covers
-          #                       the rare manual-maintenance write here.
+          # NOTE: state.json is NOT committed here per spec rule C —
+          # exit-monitor must never write the daily-learning snapshot.
+          # peak_tracker shim routes all v3.5 writes to runtime_state.json.
           git add learning-loop/runtime_state.json 2>/dev/null || true
           git add journal/autonomy/ 2>/dev/null || true
-          git add learning-loop/state.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No state changes to commit (no peak update / no transitions this tick)."
           else

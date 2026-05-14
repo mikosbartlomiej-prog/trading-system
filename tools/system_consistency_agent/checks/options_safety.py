@@ -15,21 +15,36 @@ PRINCIPLE = "OPTIONS_SAFETY"
 def run(root: Path) -> list[Finding]:
     findings: list[Finding] = []
 
-    # 1. OPTIONS_ENABLED default false in runtime_config
+    # 1. OPTIONS_ENABLED default false in runtime_config.
+    # v3.5 update: options_enabled() is now profile-driven —
+    # AGGRESSIVE_PAPER → True (paper-only invariant + IntradayProfitGovernor
+    # protects giveback), other profiles → False by default. Either pattern
+    # is acceptable as long as the profile-gated logic is explicit.
     rc = root / "shared" / "runtime_config.py"
     if rc.exists():
         text = read_text(rc)
+        # v3.4 pattern: hard False default
         default_false = '_bool("OPTIONS_ENABLED", False)' in text
+        # v3.5 pattern: profile-driven default
+        profile_driven = (
+            "profile_default = (risk_profile() == \"AGGRESSIVE_PAPER\")" in text
+            and '_bool("OPTIONS_ENABLED", profile_default)' in text
+        )
+        ok = default_false or profile_driven
         findings.append(Finding(
             id="OPTIONS_DEFAULT_DISABLED",
             category=CATEGORY,
-            severity="PASS" if default_false else "FAIL",
-            status="PASS" if default_false else "FAIL",
-            message="OPTIONS_ENABLED defaults to False." if default_false
-                    else "OPTIONS_ENABLED default not clearly false.",
+            severity="PASS" if ok else "FAIL",
+            status="PASS" if ok else "FAIL",
+            message=(
+                "OPTIONS_ENABLED has profile-driven default (AGGRESSIVE_PAPER → True, others → False)."
+                if profile_driven else
+                ("OPTIONS_ENABLED defaults to False." if default_false
+                 else "OPTIONS_ENABLED default not clearly false or profile-driven.")
+            ),
             principle=PRINCIPLE,
-            recommendation="Make OPTIONS_ENABLED default False in runtime_config." if not default_false else "",
-            blocking=not default_false,
+            recommendation="Make OPTIONS_ENABLED default False, or profile-driven via risk_profile()." if not ok else "",
+            blocking=not ok,
         ))
 
     # 2. options-monitor has OPTIONS_ENABLED gate + liquidity check

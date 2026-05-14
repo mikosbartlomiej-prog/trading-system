@@ -81,23 +81,36 @@ def run(root: Path) -> list[Finding]:
             recommendation="Restore validate_state + bounds." if not has_required else "",
         ))
 
-    # 3. exit-monitor + reddit-monitor workflows do NOT commit state.json
+    # 3. exit-monitor + reddit-monitor workflows do NOT commit state.json.
+    # v3.5 explicit exception: exit-monitor + options-exit-monitor MAY commit
+    # learning-loop/runtime_state.json (intraday FSM snapshot — different file).
+    # Check only `git add` / `git commit` invocations, ignoring comment lines.
+    import re as _re_sp
+    _GIT_ADD_RE = _re_sp.compile(
+        r"^[^#]*?\bgit\s+add\b[^\n]*?learning-loop/state\.json", _re_sp.M,
+    )
+    _GIT_COMMIT_RE = _re_sp.compile(
+        r"^[^#]*?\bgit\s+commit\b", _re_sp.M,
+    )
     for wf_name in ("exit-monitor.yml", "reddit-monitor.yml"):
         wf = root / ".github" / "workflows" / wf_name
         if not wf.exists():
             continue
         text = read_text(wf)
-        commits_state = "git add learning-loop/state.json" in text or \
-                        "git commit" in text and "state.json" in text
+        # Strip comments before analysis — yaml `#` comments + heredoc context
+        # don't reflect runtime behaviour.
+        code_lines = [ln for ln in text.splitlines() if not ln.lstrip().startswith("#")]
+        code_only = "\n".join(code_lines)
+        commits_daily_state = bool(_GIT_ADD_RE.search(code_only))
         findings.append(Finding(
             id=f"STATE_POLICY_WORKFLOW_NO_STATE_COMMIT_{wf_name.replace('.yml','').upper()}",
             category=CATEGORY,
-            severity="FAIL" if commits_state else "PASS",
-            status="FAIL" if commits_state else "PASS",
-            message=f"{wf_name} commits state.json on every tick." if commits_state
-                    else f"{wf_name} does NOT commit state.json (correct).",
+            severity="FAIL" if commits_daily_state else "PASS",
+            status="FAIL" if commits_daily_state else "PASS",
+            message=f"{wf_name} commits state.json on every tick." if commits_daily_state
+                    else f"{wf_name} does NOT commit state.json (runtime_state.json is allowed per v3.5).",
             principle=PRINCIPLE,
-            recommendation=f"Remove state.json commit step from {wf_name}." if commits_state else "",
+            recommendation=f"Remove state.json commit step from {wf_name}." if commits_daily_state else "",
         ))
 
     return findings

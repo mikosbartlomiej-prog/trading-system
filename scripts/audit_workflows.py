@@ -45,6 +45,12 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     "sync-workflows.yml",
     "monitor-health.yml",
     "autonomous-code-loop.yml",
+    # v3.5 IntradayProfitGovernor — exit-monitor + options-exit-monitor
+    # commit learning-loop/runtime_state.json each tick so FSM state
+    # persists across 5-min runs. Allowed write scope = ONLY that file
+    # (enforced by workflow's `git add` line, not by audit).
+    "exit-monitor.yml",
+    "options-exit-monitor.yml",
 }
 
 # Workflows allowed to create PRs.
@@ -57,6 +63,10 @@ PR_WRITE_ALLOWLIST: set[str] = {
 ACTIONS_WRITE_ALLOWLIST: set[str] = {
     "daily-learning-watchdog.yml",
     "sync-workflows.yml",
+    # v3.6 entry-monitors-watchdog retriggers stale price-monitor /
+    # options-monitor when their last run is > 10 min old (defends
+    # against GitHub Actions cron-skip seen during 2026-05-13/14 push event).
+    "entry-monitors-watchdog.yml",
 }
 
 
@@ -173,10 +183,15 @@ def audit_workflow(path: Path) -> list[str]:
             f"(spec §B.4)"
         )
 
-    # 3. git commit/push requires contents: write
-    if writes_git_in_run(text) and contents_perm != "write":
+    # 3. git commit/push requires contents: write — UNLESS the push is
+    # done with a personal access token (PAT, e.g. WORKFLOW_PAT) which
+    # supplies its own write scope. sync-workflows.yml uses WORKFLOW_PAT
+    # for the push so GITHUB_TOKEN's contents: read is correct.
+    uses_pat = re.search(r"\$\{\{\s*secrets\.WORKFLOW_PAT\s*\}\}", text) is not None
+    if writes_git_in_run(text) and contents_perm != "write" and not uses_pat:
         issues.append(
-            f"{name}: uses `git commit`/`git push` but no `contents: write` permission"
+            f"{name}: uses `git commit`/`git push` but no `contents: write` permission "
+            f"(and no WORKFLOW_PAT detected — set one or grant contents:write)"
         )
 
     # 4. secret-leak heuristics

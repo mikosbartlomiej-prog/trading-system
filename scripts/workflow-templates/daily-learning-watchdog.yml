@@ -25,6 +25,10 @@ on:
     - cron: '30 23 * * *'   # 23:30 UTC — last chance before midnight UTC
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   actions:  write     # required to dispatch daily-learning.yml

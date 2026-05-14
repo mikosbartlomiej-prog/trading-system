@@ -36,13 +36,20 @@ def run(root: Path) -> list[Finding]:
     git_write_without_contents: list[str] = []
     workflow_count = 0
 
+    # Workflows that legitimately push via PAT (e.g. sync-workflows.yml uses
+    # WORKFLOW_PAT) don't need GITHUB_TOKEN's contents: write — the PAT
+    # supplies its own scope.
+    import re as _re_workflows
+    _RE_PAT = _re_workflows.compile(r"\$\{\{\s*secrets\.WORKFLOW_PAT\s*\}\}")
+
     for wf in list_workflows(root):
         workflow_count += 1
         text = read_text(wf)
         name = wf.name
         if _has_schedule(text) and not _has_concurrency(text):
             schedule_missing_concurrency.append(name)
-        if _writes_git(text) and not _has_contents_write(text):
+        uses_pat = bool(_RE_PAT.search(text))
+        if _writes_git(text) and not _has_contents_write(text) and not uses_pat:
             git_write_without_contents.append(name)
 
     findings.append(Finding(
