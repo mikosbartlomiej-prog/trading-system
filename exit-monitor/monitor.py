@@ -55,6 +55,30 @@ def alpaca_get(endpoint: str) -> dict | list:
     return resp.json()
 
 
+def _emergency_close_window_ok(ep: dict) -> bool:
+    """
+    True iff this position's asset class is currently tradeable.
+
+    Pulled out so callers can DEFER (skip routine fallback) instead of
+    routing market-closed cases to a routine that can't trade either —
+    avoiding noisy "auth fail" reports when the real reason is "market
+    closed, retry after open".
+    """
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from instrument_windows import can_trade_now, _infer_asset_class
+        symbol = ep.get("symbol", "")
+        asset_class = _infer_asset_class(symbol)
+        ok, reason = can_trade_now(symbol, asset_class=asset_class)
+        if not ok:
+            print(f"  emergency-close {symbol} ({asset_class}): deferred — {reason}")
+            return False
+        return True
+    except ImportError:
+        return True
+
+
 def place_emergency_close(ep: dict) -> dict | None:
     """
     Close an exit-flagged position via Alpaca direct REST.
@@ -86,18 +110,9 @@ def place_emergency_close(ep: dict) -> dict | None:
     if qty <= 0 or not symbol:
         return None
 
-    # Per-instrument trading window gate.
-    try:
-        import sys, os
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-        from instrument_windows import can_trade_now, _infer_asset_class
-        asset_class = _infer_asset_class(symbol)
-        ok, reason = can_trade_now(symbol, asset_class=asset_class)
-        if not ok:
-            print(f"  emergency-close {symbol} ({asset_class}): trade-window blocked — {reason}")
-            return None
-    except ImportError:
-        pass
+    # Note: trade-window check is done by caller via _emergency_close_window_ok
+    # so blocked positions can be DEFERRED (skip routine fallback). Kept here
+    # as a defensive no-op safety in case the helper is bypassed.
 
     # Reason tag for client_order_id (analyzer attribution).
     rec = ep.get("recommendation", "CLOSE_EMERGENCY")
@@ -422,12 +437,26 @@ def run_exit_check():
     # All four → direct REST via place_emergency_close (DELETE primary,
     # POST fallback). Routine ONLY used for CONSIDER_TP (less critical;
     # LLM evaluates if profit worth taking now or letting run).
+    #
+    # v3.4.5 (2026-05-14): trade-window-blocked positions are DEFERRED
+    # (not routed to routine). The routine sandbox uses different Alpaca
+    # keys (401 auth fail) and also cannot trade options outside market
+    # hours — so falling back produces noisy "auth fail" reports without
+    # accomplishing anything. Better to log "deferred" and let next cron
+    # tick (post-market-open) retry.
     direct_recs = ("CLOSE_EMERGENCY", "PROFIT_LOCK", "CLOSE_FLAT", "CLOSE_DECAY")
     direct_close = [ep for ep in flagged if ep["recommendation"] in direct_recs]
     other_flagged = [ep for ep in flagged if ep["recommendation"] not in direct_recs]
     emergency = direct_close
     closed_directly = 0
+    deferred_count = 0
     for ep in emergency:
+        # Trade-window pre-check: skip both DELETE and routine fallback if
+        # market closed for this instrument's asset class (e.g. options
+        # outside 13:30-20:00 UTC).
+        if not _emergency_close_window_ok(ep):
+            deferred_count += 1
+            continue
         result = place_emergency_close(ep)
         if result:
             print(f"  {ep['recommendation']} closed directly: {ep['symbol']} qty={ep['qty']} "
@@ -441,11 +470,11 @@ def run_exit_check():
     # Routine call only for non-emergency flagged positions (mostly CONSIDER_TP)
     if other_flagged:
         print(f"\n  Wysyłam do Claude Routine Exit Handler ({len(other_flagged)} flagged, "
-              f"{closed_directly} closed directly)...")
+              f"{closed_directly} closed directly, {deferred_count} deferred)...")
         send_to_routine(enriched, account)
     elif emergency:
-        print(f"\n  {closed_directly} closed directly via REST — "
-              f"no routine call needed")
+        print(f"\n  {closed_directly} closed directly via REST, "
+              f"{deferred_count} deferred (market closed) — no routine call needed")
     else:
         print(f"\n  Wszystkie pozycje HOLD — pomijam routine call (oszczędzam budget).")
 
