@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-14T15:22:06.694272+00:00",
-  "days_tracked": 16,
+  "last_updated": "2026-05-14T15:23:49.971665+00:00",
+  "days_tracked": 17,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
@@ -117,9 +117,7 @@
       "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },
-  "next_actions": [
-    "options-momentum: paused_until -> 2026-05-15 (SPY-overbought gate)"
-  ],
+  "next_actions": [],
   "global_overrides": {
     "options_side_bias": null,
     "max_open_options": null,
@@ -267,5 +265,5 @@
     "verdict_at": "2026-05-14T12:17:46Z",
     "alerts_sent": {}
   },
-  "peak_equity": 94606.47
+  "peak_equity": 94616.44
 }

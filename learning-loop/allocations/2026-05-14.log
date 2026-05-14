@@ -1,0 +1,47 @@
+[15:23:50 INFO] ============================================================
+[15:23:50 INFO] AccountAwareAllocator — daily plan 2026-05-14
+[15:23:50 INFO] ============================================================
+[15:23:50 INFO] ── Step 1: fetching account state ──
+[15:23:50 INFO]   equity=$  94616.44  cash=$ -47308.22  buying_power=$      0.00
+[15:23:50 INFO] ── Step 2: fetching open positions ──
+[15:23:50 INFO]   5 positions, invested_ratio=0.1914 (target=1.00, min=0.98)
+[15:23:50 DBG ]     BTCUSD     long  qty=0.0505 mv=$  4089.91  pct_eq=4.32%  pl=+0.72%
+[15:23:50 DBG ]     GLD        long  qty=3.0000 mv=$  1290.21  pct_eq=1.36%  pl=+2.69%
+[15:23:50 DBG ]     RTX        long  qty=34.0000 mv=$  6016.13  pct_eq=6.36%  pl=+0.33%
+[15:23:50 DBG ]     XLE        long  qty=111.0000 mv=$  6410.25  pct_eq=6.77%  pl=+2.90%
+[15:23:50 DBG ]     XOM        long  qty=2.0000 mv=$   303.93  pct_eq=0.32%  pl=+4.88%
+[15:23:50 INFO] ── Step 3: defensive mode check ──
+[15:23:50 INFO]   defensive_mode OFF → proceed with deployment
+[15:23:50 INFO] ── Step 4: regime detection ──
+[15:23:50 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[15:23:50 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
+[15:23:50 INFO] ── Step 5: scoring allowed universe ──
+[15:23:51 DBG ]     AMD      score=+0.637  bucket=ai_nasdaq_semis
+[15:23:51 DBG ]     SMH      score=+0.562  bucket=ai_nasdaq_semis
+[15:23:51 DBG ]     NVDA     score=+0.517  bucket=ai_nasdaq_semis
+[15:23:51 DBG ]     TSLA     score=+0.329  bucket=ai_nasdaq_semis
+[15:23:51 DBG ]     QQQ      score=+0.299  bucket=ai_nasdaq_semis
+[15:23:51 INFO] ── Step 6: target weight construction ──
+[15:23:51 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
+[15:23:51 INFO]   target_invested_ratio_after_plan = 0.7500
+[15:23:51 DBG ]     AMD        target_weight=0.1547 ($14637.16)
+[15:23:51 DBG ]     SMH        target_weight=0.1547 ($14637.16)
+[15:23:51 DBG ]     NVDA       target_weight=0.1547 ($14637.16)
+[15:23:51 DBG ]     SPY        target_weight=0.1000 ($9461.64)
+[15:23:51 DBG ]     QQQ        target_weight=0.0859 ($8127.55)
+[15:23:51 DBG ]     GLD        target_weight=0.1000 ($9461.64)
+[15:23:51 INFO] ── Step 7: rebalance order generation ──
+[15:23:51 INFO]     AMD      BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
+[15:23:51 INFO]     SMH      BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
+[15:23:51 INFO]     NVDA     BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
+[15:23:51 INFO]     SPY      BUY     current=$     0.00 target=$  9461.64 delta=$ +9461.64  -- new position at target 10.0%
+[15:23:51 INFO]     GLD      BUY     current=$  1290.21 target=$  9461.64 delta=$ +8171.43  -- add $8171 to reach target 10.0%
+[15:23:51 INFO]     QQQ      BUY     current=$     0.00 target=$  8127.55 delta=$ +8127.55  -- new position at target 8.6%
+[15:23:51 INFO]     XLE      EXIT    current=$  6410.25 target=$     0.00 delta=$ -6410.25  -- symbol not in target allocation
+[15:23:51 INFO]     RTX      EXIT    current=$  6016.13 target=$     0.00 delta=$ -6016.13  -- symbol not in target allocation
+[15:23:51 INFO]     XOM      EXIT    current=$   303.93 target=$     0.00 delta=$  -303.93  -- symbol not in target allocation
+[15:23:51 INFO]     BTCUSD   HOLD    current=$  4089.91 target=$     0.00 delta=$ -4089.91  -- BLOCKED (BTCUSD not on risk_officer whitelist)
+[15:23:51 INFO]   summary: 9 actionable + 1 hold; passed=9  failed=1
+[15:23:51 WARN]     order check failed: BTCUSD:EXIT — BTCUSD not on risk_officer whitelist
+[15:23:51 INFO] ── Step 8: plan complete ──
+[15:23:51 INFO]   auto_execute=False  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)

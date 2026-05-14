@@ -162,3 +162,9 @@
 - 2026-05-14 · options-momentum: SPY-overbought gate · SPY RSI 82.6 > 75 — overbought regime, options-momentum pause extended
 - 2026-05-14 · peak_equity advanced $0 -> $94,606
 
+- 2026-05-14 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-14 · pruned 1 UUID artifact strategy keys (cda058d6-1d5f-4b67)
+- 2026-05-14 · crypto-momentum: SILENT — enabled but 0 trades lifetime (17 days tracked); consider disable or remove
+- 2026-05-14 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (17 days tracked); consider disable or remove
+- 2026-05-14 · peak_equity advanced $94,606 -> $94,616
+
