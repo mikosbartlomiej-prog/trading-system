@@ -1,132 +1,68 @@
 {
-  "version": "1.0",
-  "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-14T15:23:49.971665+00:00",
-  "days_tracked": 17,
-  "cumulative": {
-    "total_trades": 0,
-    "total_pnl_usd": 0,
-    "starting_equity": 94978.78901517414
-  },
-  "strategies": {
-    "overbought-short": {
-      "size_multiplier": 1.0,
-      "enabled": false,
-      "side_bias": null,
-      "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
-      "trades_lifetime": 0,
-      "trades_7d": 0,
-      "win_rate_lifetime": 0,
-      "win_rate_7d": 0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
-      "consecutive_losses": 0,
-      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering"
-    },
-    "options-momentum": {
-      "trades_lifetime": 1,
-      "trades_7d": 1,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": -0.6,
-      "pnl_usd_7d": -0.6,
-      "size_multiplier": 0.5,
-      "enabled": false,
-      "side_bias": null,
-      "consecutive_losses": 1,
-      "rationale": "PRZEDŁUŻAM PAUZĘ mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought — identyczny reżim co wczorajsza strata -$3,120. Re-enable w tym środowisku = powtórka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostają jako kara za 0% WR lifetime.",
-      "paused_until": "2026-05-15",
-      "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
-      "review_after": "2026-05-14 (post daily-learning)"
-    },
-    "geo-xom": {
-      "trades_lifetime": 0,
-      "trades_7d": 0,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
-      "size_multiplier": 1.0,
-      "enabled": false,
-      "side_bias": null,
-      "consecutive_losses": 0,
-      "rationale": "DISABLED 2026-05-13 — geo-monitor pipeline incomplete. geo-monitor wysyła payload do Cloudflare worker→routine, ale routine path jest deprecated od v2.2. Brak direct execution dla geo signals. geo-xom strategy nigdy nie wygeneruje XOM trade w obecnej architekturze. Re-enable after geo-monitor direct execution ships (backlog 2026-05-20).",
-      "paused_until": null,
-      "evidence": "geo-monitor/monitor.py line 252-277 — send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
-      "review_after": "2026-05-20 (or post geo-monitor direct exec)"
-    },
-    "crypto-momentum": {
-      "trades_lifetime": 0,
-      "trades_7d": 0,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
-      "size_multiplier": 1.0,
-      "enabled": true,
-      "side_bias": null,
-      "consecutive_losses": 0,
-      "rationale": "Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch.",
-      "paused_until": null
-    },
-    "crypto-breakdown": {
-      "trades_lifetime": 0,
-      "trades_7d": 0,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
-      "size_multiplier": 1.0,
-      "enabled": true,
-      "side_bias": null,
-      "consecutive_losses": 0,
-      "rationale": "Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy.",
-      "paused_until": null
-    },
-    "cda058d6-1d5f-4b67": {
-      "trades_lifetime": 0,
-      "trades_7d": 0,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
-      "size_multiplier": 1.0,
-      "enabled": true,
-      "side_bias": null,
-      "consecutive_losses": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
-      "paused_until": null
-    }
-  },
   "asset_classes": {},
-  "sources": {},
-  "tickers": {
-    "MSTR": {
-      "enabled": false,
-      "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
-      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
-      "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
-    },
-    "SMCI": {
-      "enabled": false,
-      "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
-      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
-      "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
-    }
+  "cumulative": {
+    "starting_equity": 94978.78901517414,
+    "total_pnl_usd": 0,
+    "total_trades": 0
   },
-  "next_actions": [],
+  "daily_peak": {
+    "alerts_sent": {},
+    "current_equity": 94598.14,
+    "current_pl_usd": -380.64901517414546,
+    "date": "2026-05-14",
+    "peak_at": "2026-05-14T10:32:50Z",
+    "peak_equity": 95034.87,
+    "peak_pl_pct": 0.0005904579896980027,
+    "peak_pl_usd": 56.080984825850464,
+    "retrace_from_peak": 7.78748806491511,
+    "verdict": "NORMAL",
+    "verdict_at": "2026-05-14T17:20:57Z"
+  },
+  "days_tracked": 17,
   "global_overrides": {
-    "options_side_bias": null,
+    "max_concurrent_per_strategy": {},
     "max_open_options": null,
-    "max_concurrent_per_strategy": {}
+    "options_side_bias": null
+  },
+  "last_updated": "2026-05-14T15:23:49.971665+00:00",
+  "last_validated_at": "2026-05-14T20:48:01.824866+00:00",
+  "last_write_reason": "Cleared QQQ260518P00714000 pending_emergency_close after Alpaca-confirmed fill",
+  "last_writer": "manual-maintenance",
+  "next_actions": [],
+  "peak_equity": 94616.44,
+  "pending_emergency_close": {
+    "prior_pending": {
+      "created_at": "2026-05-14T05:08:00Z",
+      "created_by": "exit-monitor-routine",
+      "execute_at_open": "2026-05-14T13:30:00Z",
+      "orders": [
+        {
+          "asset_class": "us_option",
+          "client_order_id": "exit-emergency-QQQ260518P00714000-20260514-0508",
+          "limit_price": 5.8,
+          "note": "Zlec z 01:26 UTC nieweryfikowalne. Jesli nie aktywne - wykonac przez emergency-close-positions.yml",
+          "prior_order_id_01": "e2969770-2d67-44d3-8356-2f2114b1fc2a",
+          "qty": 2,
+          "side": "sell",
+          "symbol": "QQQ260518P00714000",
+          "time_in_force": "day",
+          "type": "limit"
+        }
+      ],
+      "reason": "CLOSE_EMERGENCY: strata -23.24% > prog awaryjny -12%; daily P&L -3.19% (v3.0 defensive mode)",
+      "status": "PENDING_EXECUTION"
+    },
+    "resolution": "QQQ260518P00714000 closed via emergency-close workflow run 25884045856 (commit b19c83c) at 2026-05-14T14:44:21Z. Alpaca order d6499c2c filled @ $3.71 \u00d7 2 contracts. Realized P&L: entry $7.83 -> exit $3.71 = -$824 (-52.6%) on 2 contracts. Cleared 2026-05-14T20:48 UTC by v3.7 session.",
+    "resolved_at": "2026-05-14T20:48:01.822046+00:00",
+    "resolved_by": "manual-maintenance",
+    "status": "RESOLVED"
   },
   "reddit_state": {
-    "SOXL": {
+    "AMD": {
       "mentions_per_day": {
-        "2026-05-09": 1
+        "2026-05-12": 2,
+        "2026-05-13": 1,
+        "2026-05-14": 1
       }
     },
     "AMZN": {
@@ -137,81 +73,9 @@
         "2026-05-14": 2
       }
     },
-    "SPY": {
-      "mentions_per_day": {
-        "2026-05-09": 1,
-        "2026-05-12": 1,
-        "2026-05-13": 1,
-        "2026-05-14": 2
-      }
-    },
-    "META": {
-      "mentions_per_day": {
-        "2026-05-09": 3,
-        "2026-05-11": 1,
-        "2026-05-12": 1,
-        "2026-05-13": 1,
-        "2026-05-14": 1
-      }
-    },
-    "MSTR": {
-      "mentions_per_day": {
-        "2026-05-09": 3
-      }
-    },
-    "PLTR": {
-      "mentions_per_day": {
-        "2026-05-09": 3,
-        "2026-05-12": 1,
-        "2026-05-13": 1,
-        "2026-05-14": 3
-      }
-    },
-    "TSLA": {
-      "mentions_per_day": {
-        "2026-05-09": 3,
-        "2026-05-11": 3,
-        "2026-05-12": 2
-      }
-    },
-    "MSFT": {
-      "mentions_per_day": {
-        "2026-05-11": 3,
-        "2026-05-12": 1,
-        "2026-05-13": 1,
-        "2026-05-14": 1
-      }
-    },
-    "NVDA": {
-      "mentions_per_day": {
-        "2026-05-11": 1,
-        "2026-05-12": 8,
-        "2026-05-13": 5,
-        "2026-05-14": 7
-      }
-    },
-    "AMD": {
-      "mentions_per_day": {
-        "2026-05-12": 2,
-        "2026-05-13": 1,
-        "2026-05-14": 1
-      }
-    },
-    "SMCI": {
-      "mentions_per_day": {
-        "2026-05-12": 1,
-        "2026-05-13": 1,
-        "2026-05-14": 1
-      }
-    },
     "AVGO": {
       "mentions_per_day": {
         "2026-05-14": 1
-      }
-    },
-    "QQQ": {
-      "mentions_per_day": {
-        "2026-05-14": 4
       }
     },
     "BTC": {
@@ -228,42 +92,188 @@
       "mentions_per_day": {
         "2026-05-14": 2
       }
+    },
+    "META": {
+      "mentions_per_day": {
+        "2026-05-09": 3,
+        "2026-05-11": 1,
+        "2026-05-12": 1,
+        "2026-05-13": 1,
+        "2026-05-14": 1
+      }
+    },
+    "MSFT": {
+      "mentions_per_day": {
+        "2026-05-11": 3,
+        "2026-05-12": 1,
+        "2026-05-13": 1,
+        "2026-05-14": 1
+      }
+    },
+    "MSTR": {
+      "mentions_per_day": {
+        "2026-05-09": 3
+      }
+    },
+    "NVDA": {
+      "mentions_per_day": {
+        "2026-05-11": 1,
+        "2026-05-12": 8,
+        "2026-05-13": 5,
+        "2026-05-14": 7
+      }
+    },
+    "PLTR": {
+      "mentions_per_day": {
+        "2026-05-09": 3,
+        "2026-05-12": 1,
+        "2026-05-13": 1,
+        "2026-05-14": 3
+      }
+    },
+    "QQQ": {
+      "mentions_per_day": {
+        "2026-05-14": 4
+      }
+    },
+    "SMCI": {
+      "mentions_per_day": {
+        "2026-05-12": 1,
+        "2026-05-13": 1,
+        "2026-05-14": 1
+      }
+    },
+    "SOXL": {
+      "mentions_per_day": {
+        "2026-05-09": 1
+      }
+    },
+    "SPY": {
+      "mentions_per_day": {
+        "2026-05-09": 1,
+        "2026-05-12": 1,
+        "2026-05-13": 1,
+        "2026-05-14": 2
+      }
+    },
+    "TSLA": {
+      "mentions_per_day": {
+        "2026-05-09": 3,
+        "2026-05-11": 3,
+        "2026-05-12": 2
+      }
+    }
+  },
+  "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
+  "sources": {},
+  "state_version": 1,
+  "strategies": {
+    "cda058d6-1d5f-4b67": {
+      "consecutive_losses": 0,
+      "enabled": true,
+      "paused_until": null,
+      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "side_bias": null,
+      "size_multiplier": 1.0,
+      "trades_7d": 0,
+      "trades_lifetime": 0,
+      "win_rate_7d": 0.0,
+      "win_rate_lifetime": 0.0
+    },
+    "crypto-breakdown": {
+      "consecutive_losses": 0,
+      "enabled": true,
+      "paused_until": null,
+      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "rationale": "Hold \u2014 analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wy\u0142\u0105czymy.",
+      "side_bias": null,
+      "size_multiplier": 1.0,
+      "trades_7d": 0,
+      "trades_lifetime": 0,
+      "win_rate_7d": 0.0,
+      "win_rate_lifetime": 0.0
+    },
+    "crypto-momentum": {
+      "consecutive_losses": 0,
+      "enabled": true,
+      "paused_until": null,
+      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "rationale": "Hold \u2014 brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poni\u017cej prog\u00f3w wej\u015bcia). Nie wy\u0142\u0105czam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny \u2260 dead \u2014 czekamy na ruch.",
+      "side_bias": null,
+      "size_multiplier": 1.0,
+      "trades_7d": 0,
+      "trades_lifetime": 0,
+      "win_rate_7d": 0.0,
+      "win_rate_lifetime": 0.0
+    },
+    "geo-xom": {
+      "consecutive_losses": 0,
+      "enabled": false,
+      "evidence": "geo-monitor/monitor.py line 252-277 \u2014 send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
+      "paused_until": null,
+      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "rationale": "DISABLED 2026-05-13 \u2014 geo-monitor pipeline incomplete. geo-monitor wysy\u0142a payload do Cloudflare worker\u2192routine, ale routine path jest deprecated od v2.2. Brak direct execution dla geo signals. geo-xom strategy nigdy nie wygeneruje XOM trade w obecnej architekturze. Re-enable after geo-monitor direct execution ships (backlog 2026-05-20).",
+      "review_after": "2026-05-20 (or post geo-monitor direct exec)",
+      "side_bias": null,
+      "size_multiplier": 1.0,
+      "trades_7d": 0,
+      "trades_lifetime": 0,
+      "win_rate_7d": 0.0,
+      "win_rate_lifetime": 0.0
+    },
+    "options-momentum": {
+      "consecutive_losses": 1,
+      "enabled": false,
+      "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
+      "paused_until": "2026-05-15",
+      "pnl_usd_7d": -0.6,
+      "pnl_usd_lifetime": -0.6,
+      "rationale": "PRZED\u0141U\u017bAM PAUZ\u0118 mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought \u2014 identyczny re\u017cim co wczorajsza strata -$3,120. Re-enable w tym \u015brodowisku = powt\u00f3rka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostaj\u0105 jako kara za 0% WR lifetime.",
+      "review_after": "2026-05-14 (post daily-learning)",
+      "side_bias": null,
+      "size_multiplier": 0.5,
+      "trades_7d": 1,
+      "trades_lifetime": 1,
+      "win_rate_7d": 0.0,
+      "win_rate_lifetime": 0.0
+    },
+    "overbought-short": {
+      "consecutive_losses": 0,
+      "enabled": false,
+      "llm_note": "manual override (Claude + user) based on backtest evidence \u2014 pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering",
+      "paused_until": null,
+      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": 0,
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "side_bias": null,
+      "size_multiplier": 1.0,
+      "trades_7d": 0,
+      "trades_lifetime": 0,
+      "win_rate_7d": 0,
+      "win_rate_lifetime": 0
+    }
+  },
+  "tickers": {
+    "MSTR": {
+      "enabled": false,
+      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
+    },
+    "SMCI": {
+      "enabled": false,
+      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "paused_until": null,
+      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics \u2014 breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },
   "trailing_state": {},
-  "pending_emergency_close": {
-    "created_at": "2026-05-14T05:08:00Z",
-    "created_by": "exit-monitor-routine",
-    "reason": "CLOSE_EMERGENCY: strata -23.24% > prog awaryjny -12%; daily P&L -3.19% (v3.0 defensive mode)",
-    "orders": [
-      {
-        "symbol": "QQQ260518P00714000",
-        "qty": 2,
-        "side": "sell",
-        "type": "limit",
-        "limit_price": 5.8,
-        "time_in_force": "day",
-        "asset_class": "us_option",
-        "client_order_id": "exit-emergency-QQQ260518P00714000-20260514-0508",
-        "prior_order_id_01": "e2969770-2d67-44d3-8356-2f2114b1fc2a",
-        "note": "Zlec z 01:26 UTC nieweryfikowalne. Jesli nie aktywne - wykonac przez emergency-close-positions.yml"
-      }
-    ],
-    "status": "PENDING_EXECUTION",
-    "execute_at_open": "2026-05-14T13:30:00Z"
-  },
-  "daily_peak": {
-    "date": "2026-05-14",
-    "peak_pl_usd": 56.080984825850464,
-    "peak_pl_pct": 0.0005904579896980027,
-    "peak_at": "2026-05-14T10:32:50Z",
-    "peak_equity": 95034.87,
-    "current_pl_usd": -380.64901517414546,
-    "current_equity": 94598.14,
-    "retrace_from_peak": 7.78748806491511,
-    "verdict": "NORMAL",
-    "verdict_at": "2026-05-14T17:20:57Z",
-    "alerts_sent": {}
-  },
-  "peak_equity": 94616.44
+  "version": "1.0"
 }

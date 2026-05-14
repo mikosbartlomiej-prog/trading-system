@@ -1,21 +1,26 @@
 name: Entry Monitors — Watchdog (re-trigger if missed)
 
-# 2026-05-14: autonomous safety-net for price-monitor + options-monitor.
+# 2026-05-14: autonomous safety-net for all schedule-based monitors.
 #
-# Background: their cron is `*/5 13-20 * * 1-5` (every 5 min during US
-# session, weekdays). GitHub Actions hour-restricted crons can silently
-# skip after large push events (queue overflow) — observed 2026-05-14
-# where neither monitor fired from 21:08 UTC 05-13 until manual retrigger.
-# Other monitors with unrestricted `*/5 * * * *` cron (crypto, defense,
-# twitter) kept firing fine, confirming the issue is hour-restriction-
-# specific.
+# Background: 5-min crons can silently skip under GitHub Actions queue
+# pressure (observed 2026-05-13/14 multi-hour drift on price + options
+# monitors during a big push event). v3.7 expanded coverage: same drift
+# pattern now seen on crypto, defense, twitter, reddit monitors despite
+# their unrestricted `*/5 * * * *` cron — confirmed in monitor-health
+# 19:17 UTC snapshot showing 4 monitors STALE with 20-25x observed
+# vs expected interval.
 #
 # Mechanism:
-#   - Cron `*/15 13-20 * * 1-5` (every 15 min during session — 3 chances
-#     between each expected price-monitor run; max 15 min staleness).
-#   - For each watched workflow, fetch last completed schedule run.
-#   - If last run > 10 min ago, fire workflow_dispatch via WORKFLOW_PAT.
-#   - Idempotent: workflow itself has concurrency cancel-in-progress.
+#   - Cron `*/15 * * * *` (every 15 min, 24/7 — most non-price monitors
+#     are 24/7; price + options only fire during session so they're
+#     a free retrigger budget the rest of the day).
+#   - For each watched workflow, fetch last completed run.
+#   - If last run > per-workflow staleness threshold, fire
+#     workflow_dispatch via WORKFLOW_PAT.
+#   - Per-workflow thresholds (matrix `staleness_minutes`):
+#       price/options/crypto/defense/twitter (5-min crons): 12 min
+#       reddit (30-min cron):                                40 min
+#   - Idempotent: workflow has concurrency cancel-in-progress.
 #
 # Why PAT vs GITHUB_TOKEN: dispatched workflows via GITHUB_TOKEN don't
 # count as user events (anti-recursion), so dependent triggers downstream
@@ -23,7 +28,7 @@ name: Entry Monitors — Watchdog (re-trigger if missed)
 
 on:
   schedule:
-    - cron: '*/15 13-20 * * 1-5'   # every 15 min during US session
+    - cron: '*/15 * * * *'   # every 15 min, 24/7
   workflow_dispatch:
 
 concurrency:
@@ -40,10 +45,27 @@ jobs:
     timeout-minutes: 3
 
     strategy:
+      fail-fast: false
       matrix:
-        workflow:
-          - price-monitor.yml
-          - options-monitor.yml
+        include:
+          - workflow: price-monitor.yml
+            staleness_minutes: 12
+            session_only: true
+          - workflow: options-monitor.yml
+            staleness_minutes: 12
+            session_only: true
+          - workflow: crypto-monitor.yml
+            staleness_minutes: 12
+            session_only: false
+          - workflow: defense-monitor.yml
+            staleness_minutes: 12
+            session_only: false
+          - workflow: twitter-monitor.yml
+            staleness_minutes: 12
+            session_only: false
+          - workflow: reddit-monitor.yml
+            staleness_minutes: 40
+            session_only: true
 
     steps:
       - name: Check ${{ matrix.workflow }} last run age
@@ -52,7 +74,22 @@ jobs:
           GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}
           REPO:     ${{ github.repository }}
           WORKFLOW: ${{ matrix.workflow }}
+          THRESHOLD: ${{ matrix.staleness_minutes }}
+          SESSION_ONLY: ${{ matrix.session_only }}
         run: |
+          # Session-only workflows only get retriggered during US session
+          # (13:00-20:00 UTC weekdays). Outside session their cron doesn't
+          # fire by design — STALE is expected.
+          NOW_UTC_HOUR=$(date -u +%H)
+          NOW_UTC_DOW=$(date -u +%u)   # 1=Mon..7=Sun
+          if [ "$SESSION_ONLY" = "true" ]; then
+            if [ "$NOW_UTC_DOW" -gt 5 ] || [ "$NOW_UTC_HOUR" -lt 13 ] || [ "$NOW_UTC_HOUR" -ge 20 ]; then
+              echo "  $WORKFLOW: outside US session (hour=$NOW_UTC_HOUR dow=$NOW_UTC_DOW) — no action"
+              echo "stale=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
           # Fetch last 5 runs (mix of schedule + workflow_dispatch) and
           # pick the most recent completed one regardless of trigger.
           NOW_TS=$(date -u +%s)
@@ -73,8 +110,8 @@ jobs:
                     python3 -c "from datetime import datetime; print(int(datetime.strptime('$LAST_AT', '%Y-%m-%dT%H:%M:%SZ').timestamp()))")
           AGE_S=$((NOW_TS - LAST_TS))
           AGE_M=$((AGE_S / 60))
-          echo "  $WORKFLOW last completed run: $LAST_AT ($AGE_M min ago)"
-          if [ "$AGE_M" -gt 10 ]; then
+          echo "  $WORKFLOW last completed run: $LAST_AT ($AGE_M min ago, threshold=$THRESHOLD min)"
+          if [ "$AGE_M" -gt "$THRESHOLD" ]; then
             echo "stale=true" >> $GITHUB_OUTPUT
             echo "  STALE — will retrigger"
           else
