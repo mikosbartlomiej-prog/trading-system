@@ -27,6 +27,7 @@
 15. [Powiadomienia email](#15-powiadomienia-email)
 16. [Operacje i runbook](#16-operacje-i-runbook)
 17. [Zmienne środowiskowe i sekrety](#17-zmienne-środowiskowe-i-sekrety)
+18. [Migration notes — vNext (2026-05-14)](#18-migration-notes--vnext-2026-05-14-super-session)
 
 ---
 
@@ -1500,7 +1501,123 @@ Run all: `python3 -m unittest discover -s tests -v && (cd learning-loop && pytho
 | v3.3 | 2026-05-13 | Peak tracker + PROFIT_LOCK + trailing stops |
 | v3.4 | 2026-05-13 | Repo public + PAT-based workflow auto-sync |
 | **v3.4.5** | **2026-05-14** | **Emergency-close picker fix + SPY RSI gate + monitor-health OFF_HOURS + Lane 2 CI + peak_equity persistence** |
+| **vNext** | **2026-05-14** | **ARCHITECTURE_VNEXT** — see §17 for migration. Full autonomy contract + code-autonomy loop + system_consistency_agent (99.1/100) + e2e_system_test_agent (220 tests). |
 
 ---
 
-*Dokument wygenerowany 2026-05-14. Source of truth dla decyzji architektonicznych: `docs/STRATEGY.md`. Dla zmian dnia-do-dnia: `CLAUDE.md`. Dla LLM personas: `learning-loop/routine-prompts.md` + `challenger-prompts.md` + `*/curator-prompts.md`.*
+## 18. Migration notes — vNext (2026-05-14 super-session)
+
+Architectural changes introduced in a single multi-iteration session.
+Earlier sections describe v3.4.5 conventions; vNext supersedes them.
+
+### 18.1 What changed
+
+| Layer | Before | After |
+|---|---|---|
+| **LLM kill switch** | env-var per workflow | `shared/runtime_config.py::llm_enabled()` — default **False** |
+| **OPTIONS kill switch** | always-on with AUTO_EXECUTE | `OPTIONS_ENABLED=false` by default; options-monitor safe no-op when off |
+| **Risk profile** | hardcoded "v2.0 risk-on" | env `RISK_PROFILE`: SAFE_FREE / **BALANCED_PAPER (default)** / AGGRESSIVE_PAPER |
+| **State writes** | every monitor could commit state.json | `state_policy.assert_can_write_state(actor)` enforces allowlist (daily-learning / daily-report / weekly-retro / manual-maintenance) |
+| **State schema** | implicit | `state_schema.validate_state()` clamps + drops hallucinated keys |
+| **Portfolio risk** | per-symbol cap only | `portfolio_risk.evaluate_portfolio_risk()` with 7 correlated buckets + gross/net/options-premium/cash caps |
+| **Signal confirmation** | news/social could trigger directly | `signal_confirmation.confirm_event_signal()` requires price+volume+dedupe+cooldown+freshness |
+| **Emergency close** | manual `scripts/emergency_close_<date>.py` | `shared/emergency_engine.py::scan_emergency_conditions()` + `execute_emergency_close()` autoselect |
+| **Approval emails** | `[OPTIONS APPROVAL NEEDED]` + 6-step Alpaca runbook | `[OPTIONS REJECTED]` audit-trail-only; no human in lifecycle |
+| **Panic close** | `CONFIRM_PANIC_CLOSE_OPTIONS=true` operator-only | also `AUTONOMOUS_PANIC_CLOSE_OPTIONS=true` for autonomous remediation |
+| **Code autonomy** | manual review | `patch_validator.py` + `code_autonomy.py` + `autonomous-code-loop.yml` daily; deterministic LOW/MEDIUM/HIGH_RISK validator |
+| **Audit** | `journal/trades-*.md` daily | + `journal/autonomy/YYYY-MM-DD.jsonl` + `learning-loop/code-autonomy/history/YYYY-MM-DD.{jsonl,md}` |
+
+### 18.2 New deliverables (highlights)
+
+**Foundation (shared/):** `runtime_config.py`, `state_policy.py`,
+`state_schema.py`, `portfolio_risk.py`, `signal_confirmation.py`,
+`autonomy.py`, `audit.py`, `emergency_engine.py`, `remediation.py`.
+
+**Learning loop:** `validation.py`, `patch_validator.py`,
+`code_autonomy.py`.
+
+**Scripts:** `audit_workflows.py`, `secret_scan_light.py`,
+`trading_health.py`, `panic_close_options.py`,
+`autonomous_remediation.py`, `autonomous_code_review.py`,
+`system_consistency_agent.py`, `e2e_system_test_agent.py`.
+
+**Workflows:** `autonomous-code-loop.yml`,
+`autonomous-remediation.yml`, `security-audit.yml`,
+`system-consistency-audit.yml`, `e2e-system-tests.yml`.
+
+**Two autonomous agents** (full guide:
+`docs/AGENTS_DOCUMENTATION.md`):
+
+- `tools/system_consistency_agent/` — 15 categories, 74 checks; first
+  run on this repo: **99.1/100 (WARN, 8/8 principles PASS)**.
+- `tools/e2e_system_test_agent/` — 8 fake clients, 40-capability map,
+  65 E2E tests; first run: **PASS, 220 tests green, 28/40 capabilities
+  fully covered**.
+
+**Test harness:** `tests/architecture_vnext/` (155 tests),
+`tests/e2e/` (65 tests with no-network conftest), `pytest.ini` with
+markers.
+
+**Configuration:** `config/autonomy_bounds.json` — bounds for
+self-modification (daily step / patch cap / loosening forbidden).
+
+**Documentation:** `docs/ARCHITECTURE_VNEXT.md`,
+`docs/AUTONOMY_CONTRACT.md`, `docs/CODE_AUTONOMY_CONTRACT.md`,
+`docs/RISK_PROFILE.md`, `docs/FREE_TIER_LIMITS.md`,
+`docs/OPERATIONS_RUNBOOK.md` (extended),
+`docs/SYSTEM_CONSISTENCY_AGENT.md`,
+`docs/E2E_SYSTEM_TEST_AGENT.md`,
+`docs/AGENTS_DOCUMENTATION.md`.
+
+### 18.3 Operator implications
+
+- **Default trade behaviour is conservative**: LLM_ENABLED=false,
+  OPTIONS_ENABLED=false, RISK_PROFILE=BALANCED_PAPER. Operators
+  upgrading from v3.4.5 must explicitly opt in to LLM and options via
+  workflow env vars.
+- **No operator approval is ever required** in the trading lifecycle
+  (verified by `tools/system_consistency_agent/`). The old `[OPTIONS
+  APPROVAL NEEDED]` email is gone — every signal ends APPROVE or
+  REJECT automatically; emails are audit-trail only.
+- **Emergency close** no longer requires hand-rolled
+  `scripts/emergency_close_<date>.py`. `emergency_engine` selects
+  targets autonomously; `autonomous-remediation.yml` executes them
+  every 15 minutes during session.
+- **Code self-improvement** is part of the system —
+  `autonomous-code-loop.yml` runs daily 21:30 UTC, validates candidate
+  patches deterministically, auto-merges LOW_RISK without review.
+
+### 18.4 First-run agent results
+
+System Consistency Agent (`scripts/system_consistency_agent.py`):
+- Overall: **WARN** (score 99.1/100)
+- Principles: 8/8 PASS
+- Findings: 72 PASS + 2 WARN (signal_confirmation monitor wiring
+  backlog; options-exit dedup statically unobservable) + 0 FAIL
+
+E2E System Test Agent (`scripts/e2e_system_test_agent.py`):
+- Overall: **PASS**
+- Tests: 220 green (155 architecture_vnext + 65 e2e)
+- Coverage: 28/40 fully covered + 9 partial + 3 uncovered
+- Network: blocked in tests
+
+### 18.5 Backlog after vNext
+
+| Priority | Item | Effort |
+|---|---|---|
+| P1 | Wire `signal_confirmation.confirm_event_signal()` into defense/geo/twitter/reddit monitors (5 lines × 4 files) → closes SIGCONF_MONITORS_WIRED WARN | 2h |
+| P1 | Add `tests/e2e/test_exit_lifecycle_e2e.py` covering standalone exit-monitor decisions → closes 1 of 3 UNCOVERED capabilities | 2h |
+| P2 | Migrate `peak_tracker` `daily_peak` + `trailing_state` to `learning-loop/runtime_state.json` + separate workflow with `STATE_WRITE_ACTOR=manual-maintenance` | 3h |
+| P2 | Tighten `OPTIONS_EXIT_DEDUP` static check regex to recognise the existing dedup pattern → closes second WARN | 30 min |
+| P3 | Workflow dispatcher consolidation (21 cron workflows → 6 dispatcher workflows) | 1 day |
+| P3 | `from __future__ import annotations` in `shared/instrument_windows.py` + `shared/peak_tracker.py` for Python 3.9 local-test parity | 5 min |
+| P3 | `tests/e2e/test_workflow_introspection_e2e.py` — verify all schedule workflows pass static checks → closes second UNCOVERED capability | 1h |
+
+---
+
+*Dokument zaktualizowany 2026-05-14 (vNext). Source of truth:
+`docs/STRATEGY.md` (strategia) + `docs/ARCHITECTURE_VNEXT.md`
+(architektura) + `docs/AGENTS_DOCUMENTATION.md` (agenty). Dla zmian
+dnia-do-dnia: `CLAUDE.md`. Dla LLM personas:
+`learning-loop/routine-prompts.md` + `challenger-prompts.md` +
+`*/curator-prompts.md`.*
