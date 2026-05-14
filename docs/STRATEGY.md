@@ -1,7 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.0 — Aggressive Momentum + Event Switch (supersedes 2.4)
-**Effective from:** 2026-05-12
+**Version:** 3.4.5 — current (post-emergency-close fix + SPY RSI gate + monitor-health OFF_HOURS)
+**Major rewrite:** 3.0 — Aggressive Momentum + Event Switch (2026-05-12) supersedes 2.4
+**Effective from:** 2026-05-14 (v3.4.5 increment)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -97,22 +98,36 @@ The total can exceed 100% (margin) up to ~250% in aggressive periods.
 
 ## 3. Risk Budget
 
-### 3.1 Drawdown circuit breakers
+### 3.1 Drawdown circuit breakers (v3.0 tightened)
 
-| Trigger | Action |
-|---|---|
-| Single trade SL hit | Position closes (per-strategy SL price), system continues |
-| **Daily P&L ≤ -12%** | New entries blocked till next day; exits keep working |
-| **Weekly P&L ≤ -25%** | All monitors paused (workflows disabled); manual review required before resuming |
-| **Monthly P&L ≤ -40%** | Full stop. Strategy review and parameter reset before any new trade |
-| VIX > 60 | New entries blocked (only-catastrophic-volatility halt) |
+Source of truth: `config/aggressive_profile.json::risk_limits`.
 
-Old breakers that are **REMOVED**:
-- ~~Daily -3% stop~~ → relaxed to -12%
-- ~~No trading when VIX > 35~~ → relaxed to VIX > 60
-- ~~5% per-trade cap~~ → relaxed to 20%
-- ~~5% cash floor~~ → 0%
-- ~~15% per-ticker cap~~ → 40%
+| Trigger | Action | Enforcement |
+|---|---|---|
+| Single trade SL hit | Position closes (per-strategy SL price), system continues | Bracket SL leg |
+| **Daily P&L ≤ -3%** (was -12% in v2.0) | New entries blocked till next day; exits keep working | `daily_drawdown_guard` |
+| **Weekly P&L ≤ -7%** (NEW v3.0) | New entries blocked; manual review | `weekly_drawdown_guard` |
+| **Drawdown from peak ≤ -12%** (NEW v3.0) | DEFENSIVE mode — entries blocked, exits prioritized | `max_drawdown_guard` |
+| **Drawdown from peak ≤ -20%** (NEW v3.0) | FULL_STOP — manual confirm required to resume | `max_drawdown_guard` |
+| VIX > 60 | New entries blocked (only-catastrophic-volatility halt) | `vix_guard` |
+| **PROFIT_LOCK** (NEW v3.3) — intraday peak ≥$1k AND retrace ≥50% | Harvest winners ≥+8% via MARKET sell with `exit-profit-lock-*` tag | `peak_tracker` + `exit-monitor` |
+| **PEAK_WARN** (NEW v3.3) — intraday peak ≥$1k AND retrace 30-50% | Email alert (no auto-action yet) | `peak_tracker` + `notify_peak_retrace` |
+
+**peak_equity baseline** (v3.4.5, 2026-05-14): the `-12%/-20%` defensive
+and full-stop checks now baseline against `state['peak_equity']`
+persisted by `learning-loop/analyzer.py` (max of prior + today's equity
+each daily-learning run). Previously the guard silently fell back to
+`acct.last_equity` (yesterday's close) as proxy — masking real lifetime
+drawdowns. See `shared/risk_guards.py::max_drawdown_guard`.
+
+Old v2.0 breakers that are **REMOVED**:
+- ~~Daily -12% (relaxed)~~ → tightened to -3% in v3.0
+- ~~Weekly -25%~~ → tightened to -7%
+- ~~Monthly -40%~~ → replaced by drawdown-from-peak (-12% / -20%)
+- ~~No trading when VIX > 35~~ → relaxed to VIX > 60 (unchanged from v2.0)
+- ~~5% per-trade cap~~ → relaxed to 20% (unchanged from v2.0)
+- ~~5% cash floor~~ → 0% (unchanged from v2.0)
+- ~~15% per-ticker cap~~ → 40% (unchanged from v2.0)
 
 ### 3.2 Per-strategy stop-loss (mandatory, every entry)
 
@@ -129,6 +144,36 @@ options-exit-monitor for options.
 | Defense / geo / sector | entry × (1 ∓ 5%) |
 | Options | premium × 0.35 (-65%) |
 | Reddit sentiment | entry × (1 - 6%) |
+
+### 3.2.5 Regime-aware strategy gates (v3.4.5)
+
+Beyond per-trade SL, two **regime-aware gates** prevent re-engaging a
+losing strategy under the same market conditions that caused the loss:
+
+#### SPY-overbought options-momentum gate (Lane 2 PR #4, 2026-05-14)
+
+When `today_stats.rsi_snapshot.SPY.today > 75`, `learning-loop/adapter.py`
+forces `options-momentum.enabled=False` and `paused_until=tomorrow`
+**regardless of pre-existing paused_until expiry**. Codifies the
+2026-05-13 Senior PM rationale: $3,120 loss occurred in SPY RSI 82+
+regime; auto-resume under same conditions would repeat the mistake.
+
+Implementation: `heuristic_spy_overbought_options_block(today_stats)`.
+Re-enable conditions:
+- SPY RSI < 70 for 3 consecutive sessions, **OR**
+- `options-monitor.py` itself reads regime gate (not just adapter post-hoc)
+
+#### Stale-exit-emergency detector (Lane 2 PR #3, 2026-05-09 → wired 2026-05-14)
+
+Surfaces stuck close attempts in `rationale.md` daily log. Trigger:
+`fill_rate['exit-emergency']: placed >= 2 AND filled == 0 AND canceled == 0`.
+
+Implementation: `heuristic_stale_exit_emergency(fill_stats)`. Realised
+trigger 2026-05-13/14: QQQ260518P00714000 had 4 close attempts all
+returning paper API "insufficient options buying power for cash-secured
+put" errors; standing LIMIT @$5.80 sat unfilled. Detector fires →
+operator runs `cancel-stale-emergency-orders.yml` + creates fresh
+emergency script.
 
 ### 3.3 VIX policy
 
@@ -643,9 +688,58 @@ else:
 De-dup: skip if `/v2/orders?status=open&symbols={contract}` already
 shows a SELL order, so the next 5-min tick doesn't stack a duplicate.
 
+### 5.3 Trailing stop (v3.3, ENABLED by default)
+
+Flag `TRAILING_STOP_ENABLED=true` (default 2026-05-13). Applies to every
+open us_option position once held ≥12 hours:
+
+```
+trail_pct = 8% off intraday peak premium
+peak tracking: state.json::trailing_state[symbol] = {peak, peak_at}
+exit decision: current < peak × (1 - 0.08)  →  MARKET sell
+client_order_id tag: exit-trail-{strategy}-{contract}-{ts}
+```
+
+Decision precedence in `options-exit-monitor`: TP → SL → NEARDTH → TRAIL → REGIME mismatch → HOLD.
+
+### 5.4 NEARDTH (near-expiry capitulation)
+
+DTE ≤ 5 days **AND** current loss > 40% from entry → MARKET sell with
+`exit-neardth-*` tag. Prevents theta-crush deathspiral on positions
+that won't recover before expiry.
+
+### 5.5 Regime mismatch PUT exit (LLM proposal, 2026-05-11)
+
+When `state.options_side_bias == "long"` AND position is a PUT AND
+P&L ≤ -15% AND SPY 5d return ≥ +1.5% → MARKET sell with `exit-regime-*`
+tag. Catches "wrong side of regime" before NEARDTH hits.
+
+### 5.6 Trend monitoring + PROFIT_LOCK cascade (v3.3, 2026-05-13)
+
+**Problem solved:** 2026-05-12 daily P&L peaked +$3,173 then reversed to
+-$184 in 4.5 hours — all gains gone without harvest. Static TP wouldn't
+fire (below threshold); SL wouldn't fire (no individual position breached
+emergency). Needed intraday peak tracker.
+
+**Solution:** `shared/peak_tracker.py::update_peak()` runs on every
+exit-monitor tick:
+
+| State | Definition | Action |
+|---|---|---|
+| NORMAL | peak < $1k OR retrace < 30% | Nothing |
+| **WARN** | peak ≥ $1k AND retrace 30-50% | `notify_peak_retrace` email (dedup per day) |
+| **PROFIT_LOCK** | peak ≥ $1k AND retrace ≥ 50% | exit-monitor harvests ALL winners ≥+8% via MARKET sell with `exit-profit-lock-*` tag |
+
+Daily peak resets at UTC midnight. State persists in
+`state.json::daily_peak` (commit per exit-monitor run via dedicated
+state-commit step added 2026-05-13).
+
+PROFIT_LOCK takes **priority over CLOSE_EMERGENCY** so winning positions
+are harvested first; losing positions handled by their own SL leg.
+
 ---
 
-## 5.5 Execution Architecture (v2.2 — direct Alpaca REST)
+## 5.7 Execution Architecture (v2.2 — direct Alpaca REST)
 
 **Decision (2026-05-07 EOD):** monitors place orders directly via Alpaca
 REST, bypassing the Anthropic Routines path. This was prompted by a
@@ -702,7 +796,47 @@ old Cloudflare Worker → routine path for that monitor. Useful for:
 
 ---
 
-## 5.6 Daily + Weekly Learning Loop (v2.3.3 — three-lane LLM proposal architecture)
+## 5.8 Emergency-close infrastructure (v3.4.5, 2026-05-14)
+
+**Problem solved:** When `place_emergency_close` returns non-2xx (paper
+API options buying-power bug, market closed, etc.) AND the standing
+LIMIT sell sits unfilled, positions can hang in CLOSE_EMERGENCY state
+for hours/days. The 2026-05-13 episode left 4 PUTs stuck overnight.
+
+**Solution stack:**
+
+1. **`exit-monitor` defer (v3.4.5)** — `_emergency_close_window_ok(ep)`
+   pre-checks `instrument_windows.can_trade_now()` BEFORE attempting
+   close. Market-closed cases are deferred (not routed to broken routine
+   path) — eliminates overnight "API auth fail" noise.
+
+2. **Canonical DELETE close** — `place_emergency_close` uses
+   `DELETE /v2/positions/{symbol}` as PRIMARY path. Bypasses Alpaca paper
+   "insufficient options buying power for cash-secured put" bug that
+   affects sell-to-close on options. Fallback to POST MARKET sell on
+   non-2xx DELETE response.
+
+3. **Per-day emergency-close scripts** — operator/agent creates
+   `scripts/emergency_close_YYYYMMDD.py` with explicit TARGETS list.
+   Workflow `emergency-close-positions.yml` (cron `*/3`) auto-discovers
+   and runs:
+   - **Script picker (v3.4.5):** `ls scripts/emergency_close_*.py | sort -r | head -1` (lexicographic descending — filename YYYYMMDD prefix dominates; mtime-based `ls -t` was non-deterministic on fresh runner checkout and caused 2026-05-13 22:53 UTC to pick wrong script).
+   - **Age check:** uses YYYYMMDD-in-filename vs `date -u +%Y%m%d`; skip if > 2 days old. Filename-based, not mtime (mtime is unreliable on fresh checkout).
+   - **Idempotency:** skip if `exit-reports/${script_basename}-*.log` exists.
+   - **Commit log ONLY on success** (`failed == 0` in MACHINE_READABLE_RESULT) — failed runs don't block retries.
+
+4. **Operator override:** `cancel-stale-emergency-orders.yml` manual
+   trigger cancels unfilled `exit-emergency-*` LIMIT orders > X hours
+   old. Detected by `heuristic_stale_exit_emergency` in daily-learning.
+
+5. **Trade-window aware everywhere:** all 8 enforcement points
+   (`alpaca_orders.place_*`, `allocator._execute_one`,
+   `exit-monitor.place_emergency_close`,
+   `options-exit-monitor.place_sell_to_close`) gate through
+   `can_trade_now()`. Output: `[QUEUED]` / `[DEFERRED]` / `[NOT-SENT]`
+   email subjects (v3.2) — never falsely `[ERROR]`.
+
+## 5.9 Daily + Weekly Learning Loop (v2.3.3 — three-lane LLM proposal architecture)
 
 **Decision (2026-05-07, extended 2026-05-08):** the system reads its own
 Alpaca order history once per day, computes per-strategy performance,
@@ -1126,31 +1260,35 @@ Explicitly **not** on the whitelist:
 
 ---
 
-## 11. Iron Rules Summary (post-2026-05-06)
+## 11. Iron Rules Summary (current — v3.4.5, post-2026-05-14)
 
-These are reflected verbatim in `CLAUDE.md`:
+These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
+`config/aggressive_profile.json`.
 
 ```
 ### Position sizing
 - Max single trade:     20% of equity (~$20k)
 - Max ticker exposure:  40% of equity (~$40k)
-- Cash reserve:         0% (full deployment)
-- Daily loss STOP:      -12% intraday  -> block new entries
+- Max sector exposure:  55% of equity (~$55k) — v3.0
+- Cash reserve:         10% target (~$10k) — v3.0 (was 0% v2.0)
+- Margin usage target:  1.5×-2.5× gross
 
 ### Asset class soft caps (gross, advisory)
-- Stocks momentum:   60% gross
-- Leveraged ETFs:    25% gross
-- Crypto:            25% gross
-- Defense / geo:     35% gross
-- Options premium:   25% (notional can be much higher)
-- Reddit:            10%
+- AI/Nasdaq/Semis:    full size when RISK_ON, 70% when NEUTRAL — v3.0
+- Inflation/Energy:   prefers INFLATION_SHOCK regime — v3.0
+- Crypto (BTC+ETH+alts): 20% gross cap — v3.0 (Tier 1 + Tier 2)
+- Defense / geo:      35% gross
+- Options premium:    25% (notional can be much higher)
+- Hedge (TLT):        active in RISK_OFF regime — v3.0
 
 ### Order rules
-- LIMIT orders only (never MARKET)
+- LIMIT orders only (never MARKET) — except emergency close (MARKET allowed)
 - Stocks: bracket entry + SL + TP whenever possible
-- Options: simple LIMIT BUY (Alpaca paper limitation)
+- Options: simple LIMIT BUY (Alpaca paper limitation); exit via LIMIT (TP) or MARKET (SL/NEARDTH/TRAIL/REGIME)
+- Emergency close: DELETE /v2/positions (bypasses paper buying-power bug)
 - Time-in-force: DAY (unless strategy specifies otherwise)
 - Stop-loss is mandatory on every entry
+- can_trade_now() gates every order placement (instrument_windows.json)
 
 ### Forbidden
 - Live trading (this is paper-only)
@@ -1158,11 +1296,25 @@ These are reflected verbatim in `CLAUDE.md`:
 - Trading off-whitelist
 - Options ±1 day around earnings
 - Trading when VIX > 60 (catastrophic only)
+- Options-momentum re-enable when SPY RSI > 75 (v3.4.5 codified)
 
-### Daily / weekly / monthly circuit breakers
-- -12% intraday  -> block new entries until next session
-- -25% weekly    -> pause all monitors, manual review
-- -40% monthly   -> full stop, strategy reset
+### Circuit breakers (v3.0 tightened + v3.3/v3.4.5 additions)
+- Daily P&L ≤ -3%      → block new entries (was -12% in v2.0)
+- Weekly P&L ≤ -7%     → block new entries + manual review
+- DD from peak ≤ -12%  → DEFENSIVE mode (entries blocked, exits prioritized)
+- DD from peak ≤ -20%  → FULL_STOP (manual confirm required)
+- VIX > 60             → block new entries
+- PROFIT_LOCK (v3.3)   → intraday peak ≥$1k + retrace ≥50% → harvest winners ≥+8% MARKET
+- PEAK_WARN (v3.3)     → peak ≥$1k + retrace 30-50% → email alert
+- Trailing stop (v3.3) → 8% trail off peak per option position, 12h min-hold
+- NEARDTH (v3.4)       → DTE ≤ 5 + loss > 40% → MARKET sell (theta capitulation)
+- Regime mismatch (v3.4) → side_bias=long AND PUT AND pl≤-15% AND SPY 5d≥+1.5% → MARKET sell
+- SPY-overbought gate (v3.4.5) → SPY RSI > 75 → options-momentum paused +1 day
+- Stale-exit-emergency detector (v3.4.5) → placed≥2 / filled=0 / canceled=0 → surface in rationale
+
+### Persistence baseline (v3.4.5)
+- state['peak_equity'] = max(prior, today_eq) updated each daily-learning run
+- max_drawdown_guard uses this as -12%/-20% baseline (not last_equity proxy)
 ```
 
 ---
@@ -1181,6 +1333,14 @@ These are reflected verbatim in `CLAUDE.md`:
 | **2.3.2** | **2026-05-08 (early)** | **Poll-based routine response + close-detection fix + emergency MARKET** | Anthropic Routines trigger is fire-and-forget — receipt comes back in <1s but the actual model JSON is async. Architecture: routine self-commits its JSON output to `learning-loop/pending-llm-{daily,weekly}.json` and pushes; `llm_client.call_routine` polls origin/<branch> for that file (180s → 300s after first nightly cron timeout). Closes "free LLM augmentation, no Anthropic API key needed" requirement. Plus 3 LLM-proposed bug fixes from the first augmented run: (a) `_is_close()` was always False — fixed to detect `exit-*` prefix AND Alpaca bracket child `*_take_profit`/`*_stop_loss` suffix; (b) `options-exit-monitor` SL exits switched LIMIT→MARKET (guaranteed fill in panic); (c) `compute_tp_hit_rate` metric for trailing-stop decision (10-day data collect). |
 | **2.3.3** | **2026-05-08 (afternoon)** | **Three-lane architecture for LLM proposals** | Resolves "auto-implementation of LLM lessons learned" backlog item. Three-lane proposal routing: Lane 1 = state_overrides whitelist (existing, auto-applied), Lane 2 = auto-PR for new heuristics in `learning-loop/adapter.py` (NEW — lane2_pr.py validates + creates branch + opens PR via gh CLI, max 1/day, CI-gated by test_adapter.py), Lane 3 = structured backlog entries with risk/effort/revisit metadata (NEW — auto-appended to heuristic_proposals.md). Routine system prompt extended with strict lane classification rules. New: `learning-loop/test_adapter.py` (19 tests, baseline CI gate), `learning-loop/lane2_pr.py`, `shared/notify.py::notify_pr_open`. Workflow updated with `pull-requests: write` permission + `GH_TOKEN`. User-side: re-paste new system prompt into Learning Loop Strategist routine. |
 | **2.3.4** | **2026-05-09** | **Channel fix (auto-merge.yml) + lane2 worktree isolation + 7 LLM-proposed implementations + 4 stale orders cancelled** | Massive cleanup day. Channel fix: `.github/workflows/auto-merge.yml` triggers on push to `claude/**` with `[automerge]` tag in commit message, uses `GITHUB_TOKEN` (different scope than OAuth proxy that blocks main pushes from agent sessions) to fast-forward merge into main. Lane 2 worktree isolation: `lane2_pr.py` does all branch work in `tempfile.mkdtemp()` git worktree so analyzer's working tree is never corrupted (was the bug behind run #4 lost-state). LLM timeout 300→480s + 30s grace pickup for race conditions. Workflow `git rm -f --ignore-unmatch pending-llm-*.json` for orphan cleanup. gh-pr-create label fallback when labels don't exist. New heuristics in `adapter.py`: `heuristic_fill_rate_size_cut`, `heuristic_fill_rate_alert`, `heuristic_options_chronic_fill` — all wired into adapt() and emit rationale lines + size scaling. options-exit-monitor: NEARDTH decision (DTE≤5 + loss>40% → MARKET sell with `exit-neardth-*` prefix) saves theta-crush positions like QQQ260514P00699. options-monitor: `_compute_buy_limit_price()` uses bid/ask midpoint+5% via `/v1beta1/options/snapshots/` instead of close*1.05; close*1.20 fallback. analyzer single-leg attribution: `compute_strategy_stats` now reads raw orders too (not just completed trades), tracks `open_positions_7d` per strategy so by_strategy is non-empty even when nothing closes. `scripts/cancel_stale_emergency_orders.py` + workflow cancelled 4 stale exit-emergency LIMIT orders left from before MARKET patch (idempotent script, MACHINE_READABLE_RESULT in log). 15/15 LLM proposals from 2026-05-07/08/09 closed (1 calendar-deferred to 2026-05-17 trailing-stop). Pipeline production-ready autonomous; nightly cron runs without operator intervention. |
+| **2.4** | **2026-05-12** | **Crypto Predator (11 coins) + LLM Curator** | Refactor crypto-monitor from 2 → 11 coins. Tier 1 (BTC, ETH): preserved v2.0 sizing $8k/$4k, TP +20% / SL -7%. Tier 2 (SOL, AVAX, LINK, DOT, MATIC, LTC, BCH, UNI, AAVE — all /USD): quick-win mode $2.5k each, TP +10% / SL -8%, vol expansion 3.0×, R:R ~1.25. Predator filters: 24h momentum bracket [3%, 15%], BTC dominance guard (-3% in 1h blocks alt longs, cached per-run), max 3 simultaneous Tier 2 positions. Combined cap $25k. LLM Curator (`crypto-monitor/llm_curator.py` + `curator-prompts.md`): predator on-chain trader persona with encyclopedic knowledge (BTC dominance dynamics, altseason vs winter, per-coin beta, ETH gas cycles, memecoin rotation, liquidation cascades, supply unlocks). 5-step process: HUNT → VALIDATE → RANK → SIZE (0.5-1.5×) → OUTPUT 0-3. Fail-soft. New: claude.ai routine "Crypto Signal Curator" + Cloudflare Worker `crypto-curator-proxy` + GitHub secret `CLOUDFLARE_CRYPTO_CURATOR_WORKER_URL`. Plus 3 LLM proposals shipped same commit: TP attribution fix (`exit-{reason}-{strategy}-{contract}-{ts}`), `compute_rsi_snapshot()` per-symbol RSI(14) for SPY/BTC/ETH, fill_rate breakdown expired vs manually_canceled. |
+| **3.0** | **2026-05-12** | **Aggressive Momentum + Event Switch (MAJOR REWRITE)** | New 4-state regime FSM (RISK_ON / NEUTRAL / RISK_OFF / INFLATION_SHOCK) drives universe rotation between 8 buckets (`config/watchlists.json`). 5 new shared modules: `shared/profile.py` (single source of truth loader), `shared/regime.py` (hybrid manual + auto detect via VIX/SPY 5d/XLE 5d), `shared/momentum_score.py` (composite [-1,+1] = mom_5d/10d/20d + RS vs SPY/QQQ + vol expansion + breakout + trend), `shared/defensive_mode.py` (kill-switch coordinator). 2 new config JSONs: `config/aggressive_profile.json` + `config/watchlists.json`. Tightened risk: daily -3% (was -12%), weekly -7% (NEW), defensive mode -12% (NEW), full-stop -20% (NEW). Universe expansion (+7 tickers): AMD, AVGO, SMH (semis), USO, CVX, OXY (energy), TLT (bonds hedge). price-monitor refactored: regime detection → bucket-allowlist filter → score-based pre-rank → top 7 scanned → only score ≥ 0.35 emitted; defensive_mode_active blocks all entries; combined size_mult = vix_mult × regime_size_multiplier. STRATEGY.md §4.0 documents Event Switch + buckets table. 46/46 tests green. |
+| **3.1** | **2026-05-12 EOD** | **Account-aware allocator (plan generation)** | `shared/allocator.py::AccountAwareAllocator.compute_plan()` runs post-learning-loop. Reads `config/capital_deployment.json::target_invested_ratio=1.00`. Computes per-bucket target % equity allocation, current positions diff → BUY/REDUCE/EXIT actions. Saves `learning-loop/allocations/<date>.json`. Email `[allocator PLAN]` always sends. |
+| **3.1.1** | **2026-05-12 EOD** | **Full execute_orders + verbose trace + morning executor** | Closure of v3.1 stub. `shared/allocator.py` +428 LOC (TraceLogger class, 8 step markers, full execute_orders with routing: BUY+stock→bracket / BUY+crypto→simple / REDUCE→LIMIT sell / EXIT→MARKET sell). New `morning-allocator.yml` workflow cron `35 13 * * 1-5` reads pending plan + auto-execute flag check. Default `auto_execute_rebalance=false`. 53/53 tests green. |
+| **3.2** | **2026-05-12 EOD** | **Per-instrument trading windows (two-layer architecture)** | User direction: "ścisła kontrola nad każdym instrumentem kiedy można nim tradeować" + "skanowanie newsów, forum i platform społecznościowych powinno odbywać się na okrągło". Layer A — cron: news/social scanners 24/7 (defense `*/5`, geo `*/15`, twitter `*/5`, reddit `*/30`, crypto `*/5`); trading-only market-bounded (price/options/options-exit `*/5 13-20 1-5`). Layer B — code gate: `shared/instrument_windows.py::can_trade_now(symbol, asset_class)` reads `config/instrument_windows.json` (asset-class default windows + per-symbol overrides). Wired into 8 enforcement points. notify.py distinguishes `[QUEUED]` (market closed) vs `[DEFERRED]` (per-symbol pause) vs `[NOT-SENT]` (hard fail). MSTR/SMCI migrated from state.json → instrument_windows.json as single source of truth. 79/79 tests green. |
+| **3.3** | **2026-05-13** | **Trend monitoring + emergency rescue + trailing stops** | Answer to 2026-05-12 reversal +$3,173 peak → -$184 (-4.5h to lose all gains). New `shared/peak_tracker.py` tracks intraday daily P&L peak in `state.json::daily_peak`, computes retrace_from_peak_pct, emits verdict NORMAL/WARN/PROFIT_LOCK (thresholds: peak ≥$1000, WARN at 30% retrace, PROFIT_LOCK at 50% retrace). Auto-reset at UTC midnight. `notify_peak_retrace` email per verdict. exit-monitor wired: PROFIT_LOCK priority over CLOSE_EMERGENCY, harvests winners ≥+8% via MARKET with `exit-profit-lock-*` tag. **Trailing stop ENABLED** (`TRAILING_STOP_ENABLED` default false→true) — 8% trail off peak per options position, 12h min-hold, `exit-trail-*` tag. Plus 4 LLM proposals shipped: `compute_position_audit()`, `open_positions` snapshot, `window_hours`+`lifetime_from_state` annotation, peak entry in rationale. Plus emergency-close-positions.yml workflow + script (rescue 4 stuck PUTs from 2026-05-12 with API 401 issue). 93/93 tests green. |
+| **3.4** | **2026-05-13 (afternoon)** | **Repo public + PAT-based workflow auto-sync** | User flipped repo to public → unlimited GitHub Actions. Built `scripts/workflow-templates/sync-workflows.yml` — every */15 mirrors `scripts/workflow-templates/*.yml` → `.github/workflows/*.yml` using **Classic PAT** (NOT fine-grained — only Classic has `workflow` scope) + `WORKFLOW_PAT` secret. Solves: OAuth proxy refuses `.github/workflows/` writes; downstream workflows after auto-merge use GITHUB_TOKEN (anti-recursion → don't trigger). Now agent edits template → push → sync auto-propagates. End-to-end verified. Default workflow cadences restored to aggressive post-public-repo. PAT rotates 90-day (next 2026-08-11). |
+| **3.4.5** | **2026-05-14** | **Emergency-close picker fix + SPY RSI gate + monitor-health OFF_HOURS + Lane 2 CI + peak_equity persistence + product docs** | Eight commits closing the audit findings: (I) Emergency-close script picker (`ls -t` non-deterministic on fresh GH runner checkout → filename-date `sort -r`) + `emergency_close_20260514.py` (canonical DELETE bypassing paper API options buying-power bug) + age check uses YYYYMMDD-in-filename. (II) exit-monitor `_emergency_close_window_ok()` — defer trade-window-blocked closes instead of routing to broken routine (zero overnight noise). (III) Wired Lane 2 PR #4 (`heuristic_spy_overbought_options_block` — SPY RSI > 75 → options-momentum paused +1 day regardless of paused_until expiry) + cherry-picked PR #3 (`heuristic_stale_exit_emergency` — surface stuck close attempts in rationale). (IV) monitor-health `_in_active_cron_window()` + new `OFF_HOURS` verdict eliminates false STALE for 6 market-hours-bounded workflows. (V) New `scripts/workflow-templates/learning-loop-ci.yml` — Lane 2 PR CI workflow runs `test_adapter` on every PR to `learning-loop/{adapter,test_adapter,llm_client,analyzer}.py`. (VI) v3.0 TODO #1 closed: `analyzer.py` persists `state['peak_equity'] = max(prior, today_eq)` after each daily-learning run → `max_drawdown_guard` stops fallback to `last_equity` proxy. (VII) Deleted 3 superseded emergency scripts → deterministic picker even pre-sync. (VIII) New `docs/PRODUCT.md` 1506-line product+architecture documentation (17 sections + 3 appendices). PR #3 + PR #4 auto-closed via force-push branches to main HEAD. 127/127 tests green. 8/8 E2E tests passed. HEAD: `fb5c36c`. |
 
 ---
 
