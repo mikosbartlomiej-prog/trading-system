@@ -1173,6 +1173,25 @@ def run():
     except Exception:
         pass
 
+    # Lifetime peak_equity persistence (v3.0 TODO #1, 2026-05-14):
+    # max_drawdown_guard reads state['peak_equity'] as the baseline for
+    # -12% defensive / -20% full-stop thresholds. Previously this key was
+    # never written, so the guard fell back to acct.last_equity (yesterday's
+    # close) — a fast moving baseline that masks real lifetime drawdowns.
+    # Update each daily-learning run: peak_equity = max(prior, today's equity).
+    try:
+        today_eq = float(account.get("equity") or 0)
+        prior_peak = float(old_state.get("peak_equity") or 0)
+        new_peak = max(prior_peak, today_eq)
+        if new_peak > 0:
+            new_state["peak_equity"] = new_peak
+            if new_peak > prior_peak + 0.01:
+                full_rationale.append(
+                    f"{date_iso} · peak_equity advanced ${prior_peak:,.0f} -> ${new_peak:,.0f}"
+                )
+    except Exception:
+        pass
+
     save_state(new_state)
     append_rationale(full_rationale)
     write_history_report(date_iso, today_stats, new_state, full_rationale)
