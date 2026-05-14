@@ -60,3 +60,18 @@
 [15:33:50 ERR ]     GLD BUY failed
 [15:33:50 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
 [15:33:50 INFO]   execution complete: 3 placed, 5 skipped, 1 failed
+
+[15:58:07 INFO] ============================================================
+[15:58:07 INFO] execute_orders() — auto-execute path
+[15:58:07 INFO] ============================================================
+[15:58:07 INFO]   market_status: open=True reason=open
+[15:58:07 ERR ]     XLE EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6616.28","message":"insufficient buying power"}
+[15:58:07 ERR ]     RTX EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6177.88","message":"insufficient buying power"}
+[15:58:07 ERR ]     XOM EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"313.49","message":"insufficient buying power"}
+[15:58:07 WARN]     AMD BUY: skipped — qty_delta is zero or unknown
+[15:58:07 WARN]     SMH BUY: skipped — qty_delta is zero or unknown
+[15:58:07 WARN]     NVDA BUY: skipped — qty_delta is zero or unknown
+[15:58:07 WARN]     SPY BUY: skipped — qty_delta is zero or unknown
+[15:58:08 ERR ]     GLD BUY failed
+[15:58:08 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
+[15:58:08 INFO]   execution complete: 0 placed, 5 skipped, 4 failed
