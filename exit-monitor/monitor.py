@@ -251,29 +251,89 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
     recommendation = "HOLD"
     reasons = []
 
-    # Profit-lock cascade — gdy daily P&L retraced >=50% od peak >=$1k,
-    # aggressively close winners. New since 2026-05-13 (response to
-    # 2026-05-12 disaster: +$3,173 peak → -$184 reversal).
+    # IntradayProfitGovernor (v3.5, 2026-05-14) — replaces ad-hoc peak_tracker
+    # consult with the full 7-state FSM. Pulls last-persisted snapshot
+    # (run_exit_check() refreshes it via shared.intraday_governor.update()
+    # right at the top of every cron tick).
     try:
         import sys, os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-        from peak_tracker import should_profit_lock, VERDICT_PROFIT_LOCK
-        in_lock, peak_data = should_profit_lock()
+        from intraday_governor import (
+            get_snapshot,
+            STATE_PROFIT_LOCK, STATE_DEFEND_DAY, STATE_RED_DAY_AFTER_GREEN,
+            STATE_GIVEBACK_WARN,
+            position_mfe_action,
+        )
+        _ig = get_snapshot()
+        _ig_state = _ig.pnl_state
+        _ig_peak  = _ig.intraday_peak_pnl
+        _ig_giveback = _ig.giveback_pct_of_peak
     except (ImportError, Exception):
-        in_lock = False
-        peak_data = {}
+        _ig = None
+        _ig_state = ""
+        _ig_peak = 0.0
+        _ig_giveback = 0.0
+        STATE_PROFIT_LOCK = "PROFIT_LOCK"          # type: ignore[assignment]
+        STATE_DEFEND_DAY = "DEFEND_DAY"            # type: ignore[assignment]
+        STATE_RED_DAY_AFTER_GREEN = "RED_DAY_AFTER_GREEN"  # type: ignore[assignment]
+        STATE_GIVEBACK_WARN = "GIVEBACK_WARN"      # type: ignore[assignment]
+        position_mfe_action = lambda _p: {"action": "HOLD", "reduce_pct": 0.0, "reason": "", "mfe_peak": 0.0, "mfe_retrace": 0.0}  # type: ignore[assignment]
 
-    if in_lock and unrealized_plpc >= 8.0:
-        # Aggressive harvest: any winner >=8% gets flagged. The 8% threshold
-        # is loose vs the standard CONSIDER_TP +10% because lock mode is
-        # specifically defending an already-realized peak we are retracing.
+    asset_class = (pos.get("asset_class") or "us_equity").lower()
+    is_option   = asset_class == "us_option"
+
+    # Position-level MFE → harvest decision (independent of portfolio state,
+    # but fires AT LEAST as aggressively when portfolio is already retracing).
+    mfe_decision = position_mfe_action({
+        "symbol":         symbol,
+        "unrealized_plpc": unrealized_plpc / 100.0,  # decimal for governor
+    })
+
+    if _ig_state == STATE_RED_DAY_AFTER_GREEN:
+        # Day already turned red after green peak — close every intraday
+        # position aggressively. Options first (premium decays fastest),
+        # then anything else not explicitly held as a hedge.
+        recommendation = "PROFIT_LOCK"  # reuses existing direct-close router below
+        reasons.append(
+            f"RED_DAY_AFTER_GREEN: peak ${_ig_peak:+.0f} → current "
+            f"${(_ig.current_intraday_pnl if _ig else 0):+.0f} ({_ig_giveback:.0%} giveback) — "
+            f"close intraday positions"
+        )
+    elif _ig_state == STATE_DEFEND_DAY:
+        # Defend day: harvest winners ≥+5% (loose), close weak positions,
+        # options first.
+        if is_option or unrealized_plpc >= 5.0 or mfe_decision["action"] in ("REDUCE", "HARVEST"):
+            recommendation = "PROFIT_LOCK"
+            reasons.append(
+                f"DEFEND_DAY: peak ${_ig_peak:+.0f} retrace {_ig_giveback:.0%} — "
+                f"flatten this {'option' if is_option else 'position'} now"
+            )
+    elif _ig_state == STATE_PROFIT_LOCK and (unrealized_plpc >= 8.0 or is_option):
+        # Aggressive harvest: any winner >=8% gets flagged. Options always
+        # flagged (premium decays faster than stocks; even small green
+        # options should be locked).
         recommendation = "PROFIT_LOCK"
         reasons.append(
-            f"PROFIT-LOCK active: peak ${peak_data.get('peak_pl_usd',0):+.0f}, "
-            f"retrace {peak_data.get('retrace_from_peak',0):.0%}, "
+            f"PROFIT_LOCK: peak ${_ig_peak:+.0f} retrace {_ig_giveback:.0%}, "
             f"this winner {unrealized_plpc:.1f}% — harvest now"
         )
+    elif _ig_state == STATE_GIVEBACK_WARN and mfe_decision["action"] == "HARVEST":
+        # WARN tier: tighten stops by harvesting positions whose own MFE
+        # already says "take it" (per-position rule wins).
+        recommendation = "PROFIT_LOCK"
+        reasons.append(
+            f"GIVEBACK_WARN + position MFE harvest ({mfe_decision['reason']})"
+        )
+    elif mfe_decision["action"] == "HARVEST":
+        # Position-level harvest even if portfolio is calm — a single
+        # position that peaked +20% and gave back 25% is a strict-win
+        # turning into a partial-win, lock it.
+        recommendation = "PROFIT_LOCK"
+        reasons.append(f"position MFE: {mfe_decision['reason']}")
 
+    if recommendation == "PROFIT_LOCK":
+        # Done — skip the legacy heuristics below.
+        pass
     elif unrealized_plpc <= EXIT_THRESHOLDS["emergency_loss_pct"]:
         recommendation = "CLOSE_EMERGENCY"
         reasons.append(f"strata {unrealized_plpc:.1f}% przekracza próg awaryjny")
@@ -373,35 +433,82 @@ def run_exit_check():
     print(f"  Otwartych pozycji: {len(positions)}")
     print(f"  Equity: ${float(account.get('equity', 0)):,.2f}")
 
-    # ── Peak tracker — update daily P&L peak + retrace verdict ───────────
-    # New 2026-05-13: solves 2026-05-12 disaster where +$3,173 peak ended
-    # at -$184 with zero protective action. update_peak() persists peak +
-    # current to state.json::daily_peak; verdict triggers profit-lock
-    # cascade in enrich_position when retrace >= 50% from peak >= $1k.
+    # ── IntradayProfitGovernor — full 7-state FSM update ─────────────────
+    # v3.5 (2026-05-14) supersedes v3.3 peak_tracker. The new module stores
+    # state in learning-loop/runtime_state.json (separate from state.json so
+    # this 5-min monitor can finally persist across cron ticks via a small
+    # post-step in the workflow YAML — `contents: write` + `git push` of
+    # ONLY runtime_state.json with GITHUB_TOKEN; no proxy block).
+    #
+    # Solves the +$5,000 → -$2,000 giveback pattern: as retrace ratchets
+    # through the FSM tiers, this loop adds DEFEND_DAY and RED_DAY_AFTER_
+    # GREEN actions that block new entries, harvest winners and close
+    # options first. See docs/INTRADAY_PROTECTION.md for the contract.
+    intraday_snap = None
     try:
         import sys, os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-        from peak_tracker import (update_peak, summarize, alert_already_sent_today,
-                                    mark_alert_sent, VERDICT_WARN, VERDICT_PROFIT_LOCK)
+        from intraday_governor import (
+            update as ig_update,
+            summarize as ig_summarize,
+            mark_alert_sent as ig_mark_alert_sent,
+            alert_already_sent as ig_alert_already_sent,
+            STATE_GIVEBACK_WARN, STATE_PROFIT_LOCK,
+            STATE_DEFEND_DAY, STATE_RED_DAY_AFTER_GREEN,
+        )
         # Pass account_status-like dict (exit-monitor's get_account_info has the fields)
-        peak = update_peak({
+        intraday_snap = ig_update({
             "equity":       float(account.get("equity", 0) or 0),
             "last_equity":  float(account.get("last_equity", 0) or 0),
         })
-        print(f"  Peak tracker: {summarize(peak)}")
-        # Email alerts (dedup per UTC day)
-        verdict = peak.get("verdict", "")
-        if verdict in (VERDICT_WARN, VERDICT_PROFIT_LOCK) and not alert_already_sent_today(verdict):
+        print(f"  {ig_summarize(intraday_snap)}")
+
+        # Email alerts at each level — dedup per UTC day. Each level sends
+        # at most once: WARN → PROFIT_LOCK → DEFEND_DAY → RED_DAY_AFTER_GREEN.
+        state = intraday_snap.pnl_state
+        notify_levels = []
+        if state in (STATE_GIVEBACK_WARN, STATE_PROFIT_LOCK,
+                     STATE_DEFEND_DAY, STATE_RED_DAY_AFTER_GREEN):
+            notify_levels.append(state)
+        # Legacy alias so existing notify_peak_retrace WARN/PROFIT_LOCK
+        # subscribers (operators with email filters) keep working.
+        legacy_level = (
+            "PROFIT_LOCK" if state in (STATE_PROFIT_LOCK, STATE_DEFEND_DAY,
+                                         STATE_RED_DAY_AFTER_GREEN)
+            else "WARN"   if state == STATE_GIVEBACK_WARN
+            else None
+        )
+        for level in notify_levels:
+            if ig_alert_already_sent(level):
+                continue
             try:
-                from notify import notify_peak_retrace
-                ok = notify_peak_retrace(peak, level=verdict)
+                from notify import notify_intraday_state, notify_peak_retrace
+                ok = notify_intraday_state(intraday_snap, level=level)
+                # Send the legacy peak-retrace email exactly once per session
+                # at the first WARN/LOCK crossing, so existing inbox filters
+                # don't go quiet.
+                if ok and legacy_level and not ig_alert_already_sent(f"legacy:{legacy_level}"):
+                    try:
+                        # Synthesise legacy peak dict from snapshot for back-compat
+                        legacy_peak = {
+                            "peak_pl_usd":       intraday_snap.intraday_peak_pnl,
+                            "current_pl_usd":    intraday_snap.current_intraday_pnl,
+                            "peak_at":           intraday_snap.peak_at,
+                            "peak_equity":       intraday_snap.intraday_peak_equity,
+                            "current_equity":    intraday_snap.current_equity,
+                            "retrace_from_peak": intraday_snap.giveback_pct_of_peak,
+                        }
+                        notify_peak_retrace(legacy_peak, level=legacy_level)
+                        ig_mark_alert_sent(f"legacy:{legacy_level}")
+                    except Exception as e:
+                        print(f"  legacy peak-retrace email skipped: {e}")
                 if ok:
-                    mark_alert_sent(verdict)
-                    print(f"  [PEAK-ALERT] {verdict} email sent")
+                    ig_mark_alert_sent(level)
+                    print(f"  [INTRADAY-ALERT] {level} email sent")
             except Exception as e:
-                print(f"  peak_tracker notify failed: {e}")
+                print(f"  intraday_governor notify failed: {e}")
     except Exception as e:
-        print(f"  peak_tracker unavailable ({type(e).__name__}: {e}) — skip")
+        print(f"  intraday_governor unavailable ({type(e).__name__}: {e}) — skip")
 
     if not positions:
         print("  Brak otwartych pozycji — nic do sprawdzenia")

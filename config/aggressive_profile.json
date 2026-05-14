@@ -10,8 +10,12 @@
     "max_sector_exposure_pct_equity":  0.55,
     "max_options_premium_pct_equity":  0.25,
     "max_crypto_exposure_pct_equity":  0.20,
-    "cash_reserve_pct_equity":         0.10,
-    "_comment_capital":                "max_gross 1.50 = up to 1.5× equity in gross notional (Reg-T allows 4× intraday). Single-position 20% caps any one ticker. Sector 55% caps concentrated thematic bets. Cash 10% always available for opportunistic add."
+    "cash_reserve_pct_equity":         0.00,
+    "target_invested_ratio":           1.00,
+    "min_invested_ratio":              0.98,
+    "max_idle_cash_ratio":             0.02,
+    "operational_cash_buffer_ratio":   0.005,
+    "_comment_capital":                "AGGRESSIVE: 98-100% of capital deployed at all times unless kill-switch / defensive_mode / RED_DAY_AFTER_GREEN active, or account state unavailable. Cash reserve 0 (was 10%). Operational buffer 0.5% covers fees + tiny slippage. max_gross 1.50 = up to 1.5× equity in gross notional (Reg-T allows 4× intraday). Single-position 20% caps any one ticker. Sector 55% caps concentrated thematic bets. Intraday governor may TEMPORARILY clamp gross down to 0.25 after RED_DAY_AFTER_GREEN — full deployment resumes on the next session plan from daily-learning."
   },
 
   "risk_limits": {
@@ -116,6 +120,68 @@
   "kill_switch": {
     "enabled":                    true,
     "data_feed_failure_threshold": 3,
-    "_comment":                   "If 3+ consecutive monitor runs hit data_feed errors → trigger defensive mode. close_all_positions() invoked only on full_stop_pct breach (manual confirm via state.json::kill_switch_armed=true to prevent accidental flat)."
+    "_comment":                   "If 3+ consecutive monitor runs hit data_feed errors → trigger defensive mode. close_all_positions() invoked only on full_stop_pct breach (autonomous when state.json::kill_switch_armed=true, set deterministically by remediation engine)."
+  },
+
+  "intraday_profit_protection": {
+    "enabled":                              true,
+    "check_frequency":                      "every_exit_monitor_run",
+    "min_profit_to_arm_usd":                1000,
+    "min_profit_to_arm_pct":                0.01,
+    "strong_profit_usd":                    3000,
+    "strong_profit_pct":                    0.03,
+    "major_profit_usd":                     5000,
+    "major_profit_pct":                     0.05,
+    "giveback_warn_pct_of_peak":            0.25,
+    "profit_lock_pct_of_peak":              0.35,
+    "defend_day_pct_of_peak":               0.50,
+    "red_after_green_pct_of_peak":          0.60,
+    "block_new_entries_on_defend_day":      true,
+    "block_new_entries_on_red_after_green": true,
+    "reduce_options_first":                 true,
+    "reduce_weak_positions_first":          true,
+    "allow_hedges_during_defend_day":       true,
+    "profit_lock_min_score_override":       0.65,
+    "persist_state":                        true,
+    "audit_all_actions":                    true,
+    "mfe_tier1_peak_pct":                   0.08,
+    "mfe_tier1_retrace_pct":                0.40,
+    "mfe_tier1_reduce_pct":                 0.50,
+    "mfe_tier2_peak_pct":                   0.12,
+    "mfe_tier2_retrace_pct":                0.35,
+    "mfe_tier2_reduce_pct":                 0.75,
+    "mfe_tier3_peak_pct":                   0.20,
+    "mfe_tier3_retrace_pct":                0.25,
+    "mfe_tier3_reduce_pct":                 1.00,
+    "_comment":                             "Intraday profit governor (shared/intraday_governor.py). Defends a large intraday P&L peak so a day that hits +$5,000 cannot end -$2,000 without deterministic action firing first. State machine FLAT→GREEN→STRONG_GREEN→GIVEBACK_WARN→PROFIT_LOCK→DEFEND_DAY→RED_DAY_AFTER_GREEN ratchets one-way. Each advanced state has its own gross-exposure cap (see intraday_exposure_reduction), entry-block rule, and position MFE harvest rules. State persisted in learning-loop/runtime_state.json (separate from state.json so 5-min monitors don't churn git). Audit events written to journal/autonomy/ for every transition."
+  },
+
+  "profit_floor": {
+    "enabled":                              true,
+    "tier_1_peak_usd":                      1000,
+    "tier_1_lock_ratio":                    0.25,
+    "tier_2_peak_usd":                      3000,
+    "tier_2_lock_ratio":                    0.40,
+    "tier_3_peak_usd":                      5000,
+    "tier_3_lock_ratio":                    0.50,
+    "_comment":                             "Once intraday peak crosses a tier, the floor = peak × lock_ratio. exit-monitor uses this as the minimum acceptable EOD result; if current PnL approaches the floor with no further upside, governor pushes the FSM into GIVEBACK_WARN/PROFIT_LOCK. Tier 3 means a +$5k day must end no worse than +$2.5k or the system has failed its own contract."
+  },
+
+  "intraday_exposure_reduction": {
+    "normal_max_gross":                     1.50,
+    "giveback_warn_max_gross":              1.25,
+    "profit_lock_max_gross":                1.00,
+    "defend_day_max_gross":                 0.50,
+    "red_after_green_max_gross":            0.25,
+    "_comment":                             "Dynamic gross-exposure ceiling driven by intraday governor state. portfolio_risk consults this on every pre-trade gate. Caps shrink monotonically as we ratchet through profit-protection states."
+  },
+
+  "options_intraday": {
+    "max_options_premium_deployed_pct":     0.25,
+    "max_options_premium_at_risk_pct":      0.08,
+    "max_loss_per_option_position_pct_of_premium": 0.40,
+    "close_options_first_under_profit_lock": true,
+    "options_first_options_only_in_defend_day": true,
+    "_comment":                             "Aggressive paper defaults. 25% of equity can be in options premium (notional much higher). At-risk = 8% of equity is the actual P&L exposure given typical 35-65% drawdown profile. Each option capped at -40% premium loss. Under PROFIT_LOCK/DEFEND_DAY options are closed before stocks/ETFs (premium decays fastest)."
   }
 }

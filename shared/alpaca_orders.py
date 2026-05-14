@@ -102,6 +102,57 @@ def _portfolio_risk_gate(symbol: str, side: str, size_usd: float,
         return True, [], [f"portfolio-risk unavailable ({type(e).__name__}: {e})"]
 
 
+def _intraday_governor_gate(symbol: str, side: str, size_usd: float,
+                            asset_class: str,
+                            score: float | None = None) -> tuple[bool, str]:
+    """
+    IntradayProfitGovernor pre-trade gate. Returns (allow, reason).
+
+    Logic:
+      - RED_DAY_AFTER_GREEN / DEFEND_DAY     → BLOCK (deterministic giveback protection)
+      - PROFIT_LOCK + score < override       → BLOCK (high-score override is ratchet exit)
+      - Account state unavailable            → BLOCK (spec §G fail-closed for new entries)
+      - else                                 → ALLOW
+
+    Audit-only: emits a BLOCK_NEW_ENTRIES_INTRADAY event when blocking.
+    Fail-open on import error so the governor module being unavailable
+    cannot freeze trading (defence in depth: this is layered on top of
+    risk_officer + portfolio_risk_gate).
+    """
+    try:
+        try:
+            from runtime_config import intraday_protection_enabled
+        except ImportError:
+            from shared.runtime_config import intraday_protection_enabled  # type: ignore
+        if not intraday_protection_enabled():
+            return True, "intraday_protection_disabled"
+        try:
+            from intraday_governor import (
+                block_new_entries, emit_audit, get_snapshot,
+                EVENT_BLOCK_NEW_ENTRIES_INTRADAY,
+            )
+        except ImportError:
+            from shared.intraday_governor import (   # type: ignore
+                block_new_entries, emit_audit, get_snapshot,
+                EVENT_BLOCK_NEW_ENTRIES_INTRADAY,
+            )
+        block, reason = block_new_entries(symbol=symbol, score=score)
+        if block:
+            try:
+                emit_audit(
+                    EVENT_BLOCK_NEW_ENTRIES_INTRADAY,
+                    get_snapshot(),
+                    action="reject_entry",
+                    reason=reason,
+                    affected_symbols=[symbol],
+                )
+            except Exception:  # pragma: no cover
+                pass
+        return (not block), reason
+    except Exception as e:  # pragma: no cover
+        return True, f"intraday-governor unavailable ({type(e).__name__}: {e})"
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -218,6 +269,18 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     for w in pr_warns:
         print(f"  portfolio-risk warn: {w}")
 
+    # IntradayProfitGovernor gate (spec §11 entry-monitor gating). Blocks
+    # new entries during DEFEND_DAY / RED_DAY_AFTER_GREEN and below-score
+    # entries during PROFIT_LOCK. Audit event written if blocked.
+    ig_score = None  # caller may pass score via kwargs (future); see place_simple_buy
+    ig_ok, ig_reason = _intraday_governor_gate(
+        symbol=symbol, side=side, size_usd=qty * entry_price,
+        asset_class="us_equity", score=ig_score,
+    )
+    if not ig_ok:
+        print(f"  INTRADAY-GOVERNOR BLOCK {symbol}: {ig_reason}")
+        return None
+
     # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
     # block the trade; soft warnings are logged but don't reject. Fail-soft
     # if the officer module is unavailable for any reason — proceed to place.
@@ -304,6 +367,18 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     for w in pr_warns:
         print(f"  portfolio-risk warn: {w}")
 
+    # IntradayProfitGovernor gate — same contract as stocks. Crypto trades
+    # 24/7 so this is especially important after a red close on Friday
+    # ratcheted us into DEFEND_DAY: weekend crypto entries would otherwise
+    # silently rebuild exposure we just spent the session reducing.
+    ig_ok, ig_reason = _intraday_governor_gate(
+        symbol=symbol, side=side, size_usd=qty * limit_price,
+        asset_class="crypto", score=None,
+    )
+    if not ig_ok:
+        print(f"  INTRADAY-GOVERNOR BLOCK {symbol}: {ig_reason}")
+        return None
+
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
     # (Alpaca crypto = simple limit only); we pass the strategy-level
     # values so the officer can validate R:R and per-trade size.
@@ -355,10 +430,16 @@ def place_crypto_order(symbol: str, side: str, qty: float,
 
 
 def place_simple_buy(symbol: str, qty: int, limit_price: float,
-                     strategy: str = "auto") -> dict | None:
+                     strategy: str = "auto",
+                     score: float | None = None) -> dict | None:
     """
     Simple limit BUY for instruments that don't support brackets.
     Used by options-monitor (Alpaca paper rejects bracket on options).
+
+    `score` is the entry signal's composite score [0..1]. When the intraday
+    governor is in PROFIT_LOCK, scores below profit_lock_min_score_override
+    (default 0.65) are blocked — only very high-conviction setups punch
+    through. Pass score=None to be treated as "low conviction" (blocked).
     """
     if qty < 1 or limit_price <= 0:
         return None
@@ -372,6 +453,18 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
     ok, reason = can_trade_now(symbol, asset_class="us_option")
     if not ok:
         print(f"  simple_buy reject {symbol}: trade-window — {reason}")
+        return None
+
+    # IntradayProfitGovernor gate. Options are reduced FIRST in PROFIT_LOCK
+    # cascade so new options entries during a giveback are particularly
+    # contraindicated (they bleed fast and worsen the very state we're
+    # protecting against).
+    ig_ok, ig_reason = _intraday_governor_gate(
+        symbol=symbol, side="buy", size_usd=qty * limit_price,
+        asset_class="us_option", score=score,
+    )
+    if not ig_ok:
+        print(f"  INTRADAY-GOVERNOR BLOCK {symbol} (options): {ig_reason}")
         return None
 
     payload = {

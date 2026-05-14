@@ -1,9 +1,18 @@
 name: Exit Monitor — dual cron (market 5min + off-hours 15min)
 
-# v3.4.1 (2026-05-13): added commit step to persist peak_tracker state.
-# Without this, shared/peak_tracker.py writes state.json on the runner
-# but changes are discarded — daily_peak/trailing_state never persist
-# across cron ticks, so PROFIT_LOCK + trailing stop are silently broken.
+# v3.5 (2026-05-14): runtime_state.json now custodies the IntradayProfit-
+# Governor FSM and per-position MFE peaks. state.json continues to hold
+# daily-learning's adapter snapshot (NOT touched here).
+#
+# Why two files: 5-min monitors mustn't commit state.json (rule C); doing
+# so race-conditions daily-learning's writes and burns the OAuth proxy
+# quota. runtime_state.json is the cron-scoped runtime store — exit-
+# monitor is the natural custodian because it already polls every 5 min
+# and is the consumer of the data. STATE_WRITE_ACTOR=intraday-monitor
+# satisfies shared.state_policy.RUNTIME_STATE_ACTORS.
+#
+# v3.4.1 (2026-05-13) note kept for history: the commit step exists at all
+# because peak_tracker silently lost its state every tick before this fix.
 
 on:
   schedule:
@@ -40,6 +49,10 @@ jobs:
           PYTHONIOENCODING:           utf-8
           LC_ALL:                     C
           LANG:                       C
+          # IntradayProfitGovernor writes to learning-loop/runtime_state.json.
+          # This actor name unlocks shared.state_policy.can_write_runtime_state.
+          STATE_WRITE_ACTOR:          intraday-monitor
+          INTRADAY_PROTECTION_ENABLED: 'true'
           ALPACA_API_KEY:             ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY:          ${{ secrets.ALPACA_SECRET_KEY }}
           CLOUDFLARE_EXIT_WORKER_URL: ${{ secrets.CLOUDFLARE_EXIT_WORKER_URL }}
@@ -48,25 +61,32 @@ jobs:
           NOTIFY_EMAIL:               ${{ secrets.NOTIFY_EMAIL }}
         run: python exit-monitor/monitor.py
 
-      - name: Commit peak_tracker + trailing_state if changed
+      - name: Commit runtime_state.json + audit JSONL if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
-          # state.json holds: daily_peak (peak_tracker), trailing_state (options peaks)
+          # runtime_state.json  : IntradayProfitGovernor FSM + position MFE
+          # journal/autonomy/   : audit JSONL written by emit_audit()
+          # state.json          : LEGACY — kept for back-compat readers (peak_tracker
+          #                       shim still translates), but writes route to
+          #                       runtime_state.json now. Including the path covers
+          #                       the rare manual-maintenance write here.
+          git add learning-loop/runtime_state.json 2>/dev/null || true
+          git add journal/autonomy/ 2>/dev/null || true
           git add learning-loop/state.json 2>/dev/null || true
           if git diff --cached --quiet; then
-            echo "No state changes to commit (no peak update this tick)."
+            echo "No state changes to commit (no peak update / no transitions this tick)."
           else
-            git commit -m "exit-monitor: state $(date -u +%Y-%m-%d_%H%M) [automerge]"
+            git commit -m "exit-monitor: runtime_state $(date -u +%Y-%m-%d_%H%M) [automerge]"
             for attempt in 1 2 3; do
               if git push origin "$BRANCH"; then
-                echo "Pushed state on attempt ${attempt}."
+                echo "Pushed runtime state on attempt ${attempt}."
                 exit 0
               fi
               git pull --rebase origin "$BRANCH" || true
               sleep $((attempt * 2))
             done
-            echo "Push failed after 3 attempts; state still in this run's logs."
+            echo "Push failed after 3 attempts; runtime state visible in this run's logs."
           fi

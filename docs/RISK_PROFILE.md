@@ -30,10 +30,17 @@ Three profiles ship; **default is `BALANCED_PAPER`**.
   paper-account usage: ~10 active positions, moderate gross exposure,
   small options allocation. Conservative on the upside, opinionated
   on diversification (35% correlated-bucket cap).
-- **AGGRESSIVE_PAPER** — preserved for backward compatibility with the
-  v2.0/v2.3 "risk-on" sizing the system shipped with in May 2026. Use
-  with caution; the system can take 20% single-trade positions and
-  carry 200% gross via margin.
+- **AGGRESSIVE_PAPER** — current production mode (v3.5). 98-100% of
+  capital is deployed at all times (`target_invested_ratio: 1.00`,
+  `cash_reserve_pct_equity: 0.00`); the safety net is the deterministic
+  IntradayProfitGovernor (`docs/INTRADAY_PROTECTION.md`) rather than
+  idle cash. Single-trade cap 20%, gross 200%, options always-on by
+  default (`options_enabled_default=true`). When the governor enters
+  PROFIT_LOCK / DEFEND_DAY / RED_DAY_AFTER_GREEN, the **effective**
+  max_gross_exposure shrinks to 1.00 / 0.50 / 0.25× equity even though
+  the profile's nominal ceiling is 2.00. Full deployment resumes only
+  on the next session plan from `daily-learning` — never intraday
+  redeploy after a risk event.
 
 ## Correlated buckets (all profiles)
 

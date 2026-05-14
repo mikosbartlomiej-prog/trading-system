@@ -170,7 +170,12 @@ def place_sell_to_close(contract_symbol: str, qty: int,
         "time_in_force":   "day",
         "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
-    if decision in ("SL", "NEARDTH", "REGIME", "TRAIL"):
+    # MARKET exit for any close that prioritises guaranteed fill over
+    # price discipline. GOVERNOR (intraday profit protection) joins the
+    # MARKET set because options-first reduction during DEFEND_DAY /
+    # RED_DAY_AFTER_GREEN cannot afford to sit in a limit queue while
+    # the giveback widens.
+    if decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR"):
         payload["type"] = "market"
     else:
         payload["type"]        = "limit"
@@ -426,19 +431,83 @@ NEAR_DTH_DTE_THRESHOLD = 5      # days
 NEAR_DTH_LOSS_THRESHOLD = -40.0 # percent loss (more liberal than SL=-50%)
 
 
+def _intraday_governor_decision(pos: dict, pl_pct: float
+                                  ) -> tuple[str, str] | None:
+    """
+    If IntradayProfitGovernor is in PROFIT_LOCK / DEFEND_DAY / RED_DAY_AFTER_
+    GREEN, return ("GOVERNOR", reason). Reduces options FIRST per
+    `reduce_options_first` config. Tagged `exit-governor-*` so analyzer can
+    attribute the close.
+
+    Tie to MFE: if the position already triggered an MFE HARVEST/REDUCE
+    threshold, escalate to GOVERNOR even in milder states (GIVEBACK_WARN).
+
+    Returns None if no governor-driven action is required.
+    """
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from intraday_governor import (
+            get_snapshot, position_mfe_action,
+            STATE_PROFIT_LOCK, STATE_DEFEND_DAY, STATE_RED_DAY_AFTER_GREEN,
+            STATE_GIVEBACK_WARN,
+        )
+    except ImportError:
+        return None
+
+    snap = get_snapshot()
+    state = snap.pnl_state
+    mfe = position_mfe_action({
+        "symbol":         pos.get("symbol", ""),
+        "unrealized_plpc": pl_pct / 100.0,
+    })
+
+    # State-driven options-first reductions.
+    if state == STATE_RED_DAY_AFTER_GREEN:
+        return ("GOVERNOR",
+                f"RED_DAY_AFTER_GREEN: close option immediately "
+                f"(peak ${snap.intraday_peak_pnl:+.0f} -> current ${snap.current_intraday_pnl:+.0f})")
+    if state == STATE_DEFEND_DAY:
+        # Defend day → close all options regardless of P/L (premium decays
+        # fastest; freeing buying power matters more than the next 5% on
+        # the remaining contracts).
+        return ("GOVERNOR",
+                f"DEFEND_DAY: options-first reduction "
+                f"(peak ${snap.intraday_peak_pnl:+.0f}, retrace {snap.giveback_pct_of_peak:.0%})")
+    if state == STATE_PROFIT_LOCK:
+        # Profit lock → close winners (>=+8%) and harvest any position
+        # whose own MFE crossed a threshold.
+        if pl_pct >= 8.0 or mfe["action"] in ("REDUCE", "HARVEST"):
+            return ("GOVERNOR",
+                    f"PROFIT_LOCK option harvest: pl {pl_pct:+.1f}% "
+                    f"(peak ${snap.intraday_peak_pnl:+.0f}, retrace {snap.giveback_pct_of_peak:.0%})")
+    if state == STATE_GIVEBACK_WARN and mfe["action"] == "HARVEST":
+        return ("GOVERNOR",
+                f"GIVEBACK_WARN + MFE harvest: {mfe['reason']}")
+    # Position-level MFE harvest fires independently of portfolio state —
+    # an individual option that peaked +60% and gave back 25% should be
+    # locked even if the portfolio is calm.
+    if mfe["action"] == "HARVEST":
+        return ("GOVERNOR", f"position MFE harvest: {mfe['reason']}")
+    return None
+
+
 def evaluate(pos: dict, trailing_state: dict | None = None
               ) -> tuple[str, float | None, float, str]:
     """
     Returns (decision, exit_limit_price, pl_pct, reason).
-    decision: "TP" | "SL" | "NEARDTH" | "HOLD"
+    decision: "GOVERNOR" | "REGIME" | "NEARDTH" | "TRAIL" | "TP" | "SL" | "HOLD"
 
-    Order of checks:
-      1. NEARDTH — DTE <= 5 AND loss > 40% (theta acceleration regime;
-         takes priority over normal SL because non-linear decay below 5
-         days makes static SL too slow). Tagged "exit-neardth-*".
-      2. TP — current >= entry * 1.80 (80% gain target).
-      3. SL — current <= entry * 0.50 (50% loss stop, MARKET).
-      4. HOLD — within window.
+    Order of checks (highest precedence first):
+      1. GOVERNOR — IntradayProfitGovernor demands a faster close than the
+         static TP/SL would offer. Options are reduced FIRST in
+         PROFIT_LOCK/DEFEND_DAY/RED_DAY_AFTER_GREEN. Position-level MFE
+         HARVEST also fires here. Tagged "exit-governor-*", MARKET sell.
+      2. REGIME — long-bias regime + PUT position bleeding.
+      3. NEARDTH — DTE ≤ 5 AND loss > 40%.
+      4. TRAIL — 8% off intraday peak (after min hold).
+      5. TP — current ≥ entry × 1.80.
+      6. SL — current ≤ entry × 0.50.
+      7. HOLD — within window.
     """
     try:
         qty     = abs(float(pos.get("qty", 0)))
@@ -456,7 +525,13 @@ def evaluate(pos: dict, trailing_state: dict | None = None
     sl_lvl = entry * SL_PREMIUM_MULT
     dte = _occ_dte(pos.get("symbol", ""))
 
-    # Regime mismatch — proactive PUT close when learning-loop says
+    # 1. IntradayProfitGovernor (highest precedence). Options-first
+    # reduction during the FSM's protected states.
+    gov = _intraday_governor_decision(pos, pl_pct)
+    if gov is not None:
+        return (gov[0], current, pl_pct, gov[1])
+
+    # 2. Regime mismatch — proactive PUT close when learning-loop says
     # options_side_bias=long and SPY is in risk-on rally (proposal 2026-
     # 05-09). Sits ABOVE NEARDTH because regime mismatch should fire
     # earlier (before theta acceleration) when conditions are right.
@@ -464,7 +539,7 @@ def evaluate(pos: dict, trailing_state: dict | None = None
     if rm_fire:
         return ("REGIME", current, pl_pct, rm_reason)
 
-    # Near-expiry accelerated close
+    # 3. Near-expiry accelerated close
     if dte is not None and dte <= NEAR_DTH_DTE_THRESHOLD and pl_pct <= NEAR_DTH_LOSS_THRESHOLD:
         return ("NEARDTH", current, pl_pct,
                 f"DTE={dte}d (<={NEAR_DTH_DTE_THRESHOLD}) + pl {pl_pct:+.1f}% (<={NEAR_DTH_LOSS_THRESHOLD}%) "
@@ -531,10 +606,24 @@ def run_exit_check():
         qty   = abs(float(pos["qty"]))
         order = place_sell_to_close(symbol, qty, decision, exit_price)
         if order:
-            order_type = "MARKET" if decision in ("SL", "NEARDTH", "REGIME", "TRAIL") else "LIMIT"
+            order_type = "MARKET" if decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR") else "LIMIT"
             print(f"    SELL placed ({order_type}): id={order.get('id')} status={order.get('status')}")
             closed += 1
             notify_exit(symbol, f"SELL_TO_CLOSE_{decision}", reason, pl_pct)
+            # Emit governor audit when intraday protection caused the close
+            if decision == "GOVERNOR":
+                try:
+                    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+                    from intraday_governor import (
+                        emit_audit, get_snapshot,
+                        EVENT_POSITION_MFE_TRAIL_EXIT,
+                    )
+                    emit_audit(EVENT_POSITION_MFE_TRAIL_EXIT, get_snapshot(),
+                               action="options_market_close",
+                               reason=reason,
+                               affected_symbols=[symbol])
+                except Exception:
+                    pass
         else:
             # Sell rejected — surface via summary anyway
             print(f"    SELL ODRZUCONY przez Alpaca")

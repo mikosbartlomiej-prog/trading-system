@@ -10,22 +10,49 @@ no operator approval** — see `docs/AUTONOMY_CONTRACT.md`.
 | Check if the system can trade right now | `python scripts/trading_health.py` |
 | See today's autonomous decisions | `cat journal/autonomy/$(date -u +%F).jsonl` |
 | See today's code-autonomy decisions | `cat learning-loop/code-autonomy/history/$(date -u +%F).md` |
+| **Inspect intraday governor state** | `python -c "import sys; sys.path.insert(0,'shared'); from intraday_governor import summarize; print(summarize())"` |
+| **See intraday peak / current PnL / floor** | `python -c "import sys,json; sys.path.insert(0,'shared'); from runtime_state import read_section; print(json.dumps(read_section('intraday_governor'), indent=2))"` |
+| **Reset intraday governor (operator override)** | Edit `learning-loop/runtime_state.json` → clear `intraday_governor` section; next exit-monitor cron re-initialises |
+| **Disable intraday protection (testing only)** | `export INTRADAY_PROTECTION_ENABLED=false` — production must keep this on |
 | Manually run autonomous remediation | `python scripts/autonomous_remediation.py` |
 | Review a candidate patch | `python scripts/autonomous_code_review.py path/to/patch.diff` |
 | Audit workflows for issues | `python scripts/audit_workflows.py` |
 | Scan for accidental secret leaks | `python scripts/secret_scan_light.py` |
 | Run all vNext tests | `python -m unittest discover -s tests/architecture_vnext` |
+| Run intraday governor tests | `python -m unittest tests.test_intraday_governor tests.test_intraday_governor_integration tests.test_peak_tracker` |
 | Run system consistency audit | `python scripts/system_consistency_agent.py` |
 | Audit one category only | `python scripts/system_consistency_agent.py --category paper_only` |
 | Strict audit (WARN→exit 1) | `python scripts/system_consistency_agent.py --strict` |
 | See what options would be closed (dry-run) | `python scripts/panic_close_options.py` |
 | Trigger autonomous panic-close (paper) | `AUTONOMOUS_PANIC_CLOSE_OPTIONS=true python scripts/panic_close_options.py` |
 | Disable LLM globally | `export LLM_ENABLED=false` (or unset — that's the default) |
-| Disable options entries | `export OPTIONS_ENABLED=false` (default) |
+| Disable options entries | `export OPTIONS_ENABLED=false` (overrides AGGRESSIVE_PAPER default of true) |
 | Disable autonomous code loop | GitHub Actions → autonomous-code-loop → Disable workflow |
 | Block all new entries (emergency) | Toggle health to BLOCKED OR set every strategy `enabled=false` in `state.json` |
 | Switch to safer risk profile | `export RISK_PROFILE=SAFE_FREE` |
 | Trigger daily learning manually | GitHub Actions → daily-learning → Run workflow |
+
+### Intraday Profit Governor (v3.5, 2026-05-14)
+
+The system actively defends intraday peak P&L via a 7-state FSM
+(`shared/intraday_governor.py`). See `docs/INTRADAY_PROTECTION.md` for
+the full contract. Key operator points:
+
+- **State persistence:** `learning-loop/runtime_state.json` (separate from
+  `state.json`). Custodied by exit-monitor with `contents: write` + a
+  post-step git push. Do not edit while a cron run is in flight.
+- **Email subjects to watch:** `[INTRADAY-WARN]` (25% retrace from peak ≥ $1k),
+  `[INTRADAY-PROFIT-LOCK]` (35% retrace), `[INTRADAY-DEFEND]` (50% retrace,
+  exposure clamped to 0.50× equity), `[INTRADAY-RED-AFTER-GREEN]` (60%+
+  retrace OR cur ≤ 0 after green peak — exposure clamped to 0.25×, all
+  new entries blocked until next UTC day).
+- **Audit trail:** every transition + every gate block writes a JSONL
+  line to `journal/autonomy/YYYY-MM-DD.jsonl`. Useful filter:
+  `grep -E "PROFIT_LOCK_TRIGGERED|DEFEND_DAY_TRIGGERED|RED_DAY_AFTER_GREEN" journal/autonomy/*.jsonl | tail`.
+- **Contract:** a day that peaked ≥ $5,000 cannot end ≤ -$2,000 without
+  the cascade firing — see the walk-through table in
+  `docs/INTRADAY_PROTECTION.md` and the regression test
+  `tests/test_intraday_governor.py::TestPlus5000ToMinus2000Scenario::test_full_giveback_cascade`.
 
 ## Daily checklist (operator, ~5 min)
 

@@ -236,8 +236,9 @@ def scan_repo_for_forbidden(
         ".git", ".venv", "__pycache__", "node_modules",
         "tests/architecture_vnext",   # tests intentionally reference forbidden strings
         "tests/e2e",                  # E2E tests intentionally reference forbidden strings
-        "tools/e2e_system_test_agent",  # agent docstrings reference the rule
+        "tools/e2e_system_test_agent",   # agent docstrings reference the rule
         "tools/system_consistency_agent",  # consistency-agent docstrings reference the rule
+        "tools/strategy_coherence_agent",  # strategy-coherence-agent docstrings reference the rule
         "docs",                       # docs may explain that these states do NOT exist
         "reports",                    # generated audit reports
     ),

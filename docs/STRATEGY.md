@@ -1,8 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.4.5 — current (post-emergency-close fix + SPY RSI gate + monitor-health OFF_HOURS)
+**Version:** 3.5 — IntradayProfitGovernor (2026-05-14 LATE)
 **Major rewrite:** 3.0 — Aggressive Momentum + Event Switch (2026-05-12) supersedes 2.4
-**Effective from:** 2026-05-14 (v3.4.5 increment)
+**Effective from:** 2026-05-14 (v3.5 increment)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -11,6 +11,13 @@ Every monitor, every strategies/*.md file, every agent prompt, and every
 iron rule in CLAUDE.md must agree with the numbers here. If a number
 appears in code that contradicts this document, **the document wins** —
 update the code.
+
+**v3.5 (2026-05-14 LATE) adds intraday profit protection** — a 7-state
+FSM (`shared/intraday_governor.py`) that defends intraday peak P&L.
+Full deployment of capital (98–100% invested) is now the contract, with
+the safety net being deterministic giveback protection rather than idle
+cash. The +$5,000 → -$2,000 disaster pattern cannot recur without
+deterministic action firing first. Detailed contract: `docs/INTRADAY_PROTECTION.md`.
 
 **v3.0 IS A MAJOR REWRITE.** Five new modules added (`config/aggressive_profile.json`,
 `config/watchlists.json`, `shared/regime.py`, `shared/momentum_score.py`,
@@ -110,8 +117,12 @@ Source of truth: `config/aggressive_profile.json::risk_limits`.
 | **Drawdown from peak ≤ -12%** (NEW v3.0) | DEFENSIVE mode — entries blocked, exits prioritized | `max_drawdown_guard` |
 | **Drawdown from peak ≤ -20%** (NEW v3.0) | FULL_STOP — manual confirm required to resume | `max_drawdown_guard` |
 | VIX > 60 | New entries blocked (only-catastrophic-volatility halt) | `vix_guard` |
-| **PROFIT_LOCK** (NEW v3.3) — intraday peak ≥$1k AND retrace ≥50% | Harvest winners ≥+8% via MARKET sell with `exit-profit-lock-*` tag | `peak_tracker` + `exit-monitor` |
-| **PEAK_WARN** (NEW v3.3) — intraday peak ≥$1k AND retrace 30-50% | Email alert (no auto-action yet) | `peak_tracker` + `notify_peak_retrace` |
+| **GIVEBACK_WARN** (v3.5) — intraday peak ≥$1k AND retrace 25-35% | Email + tighten stops; new entries still allowed | `intraday_governor` |
+| **PROFIT_LOCK** (v3.5; tightened from v3.3 50% → 35%) — retrace 35-50% | Email + harvest winners ≥+8% + close ALL options first + clamp gross to 1.00× equity + block entries with score < 0.65 | `intraday_governor` + `exit-monitor` + `alpaca_orders` gate |
+| **DEFEND_DAY** (NEW v3.5) — retrace 50-60% | Clamp gross to 0.50× equity + flatten weak positions + close ALL options first + **block ALL new entries** | `intraday_governor` cascade |
+| **RED_DAY_AFTER_GREEN** (NEW v3.5) — retrace ≥60% OR (peak ≥$1k AND current ≤ 0) OR (peak ≥$5k AND current ≤$2k) | Clamp gross to 0.25× equity + close every intraday position + **block entries until next session** + keep only explicit hedges | `intraday_governor` ratchet |
+| Profit floor (NEW v3.5) — `floor = peak × lock_ratio` (0.25/0.40/0.50 per $1k/$3k/$5k peak tier) | Floor armed on each tier crossing; surfaced to operator in audit log | `intraday_governor.profit_floor_usd` |
+| Position-level MFE (NEW v3.5) — peak ≥+8%/+12%/+20% × retrace ≥40/35/25% | Per-position REDUCE 50%/75%/HARVEST 100% (independent of portfolio state) | `intraday_governor.position_mfe_action` |
 
 **peak_equity baseline** (v3.4.5, 2026-05-14): the `-12%/-20%` defensive
 and full-stop checks now baseline against `state['peak_equity']`

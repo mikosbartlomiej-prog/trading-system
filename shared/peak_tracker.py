@@ -1,221 +1,156 @@
 """
-shared/peak_tracker.py — intraday daily P&L peak + retrace detector.
+shared/peak_tracker.py — legacy compatibility shim for IntradayProfitGovernor.
 
 Built 2026-05-13 in response to 2026-05-12 disaster:
   +$3,173 peak P&L at 17:56 UTC → -$184 by 22:18 UTC.
   Full reversal of intraday gains; ZERO reaction from system.
-  Winners (PUTs +47% to +93%) never had TPs hit because static
-  TP=entry*1.80 was too far; trailing stop was disabled.
 
-This module fixes the blind spot:
-  1. Every cron call updates state.daily_peak_pl with max(prev, current)
-  2. Computes retrace_from_peak_pct = (peak - current) / peak
-  3. Exposes "profit-lock cascade" verdict:
-       NORMAL              — peak < $1000 OR retrace < 30%
-       WARN                — peak >= $1000 AND retrace in [30%, 50%)
-       PROFIT_LOCK         — peak >= $1000 AND retrace >= 50%
-  4. Auto-resets at UTC midnight (new trading day = fresh peak).
+The original v3.3 implementation persisted state into
+`learning-loop/state.json::daily_peak`, but the 5-minute workflows that
+need this data (exit-monitor, price-monitor) cannot commit state.json
+under the architecture vNext rule C (`contents: read`). In production
+the writes silently disappeared and the cascade never armed.
 
-Consumers:
-  - exit-monitor: on PROFIT_LOCK, replaces standard TP/SL evaluation
-    with "close winners at peak * 0.70" mode (aggressive harvest).
-  - notify.py: WARN/PROFIT_LOCK trigger email alerts so operator
-    sees the regime change in real time.
+Refactored 2026-05-14 (this iteration):
+  - State storage moves to `learning-loop/runtime_state.json` via
+    shared/runtime_state.py (custodied by exit-monitor with
+    `contents: write` + a tiny post-step git push of that single file).
+  - Logic is owned by shared/intraday_governor.py — a 7-state FSM with
+    explicit DEFEND_DAY / RED_DAY_AFTER_GREEN tiers, position-level MFE
+    harvest, profit floor, dynamic gross-exposure cap, and audit events.
+  - This file becomes a thin shim that preserves the old public API
+    (update_peak, get_peak, should_profit_lock, harvest_threshold_usd,
+    mark_alert_sent, alert_already_sent_today, summarize, plus VERDICT_*
+    constants). Existing callers in exit-monitor + tests continue to
+    work unchanged; new code should consume intraday_governor directly.
 
-State lives in `learning-loop/state.json::daily_peak`:
-  {
-    "date":               "YYYY-MM-DD",
-    "peak_pl_usd":        3173.48,
-    "peak_pl_pct":        0.0326,
-    "peak_at":            "2026-05-12T17:56:00Z",
-    "peak_equity":        100496.07,
-    "current_pl_usd":     -186.40,
-    "current_equity":     97136.00,
-    "retrace_from_peak":  1.06,
-    "verdict":            "PROFIT_LOCK",
-    "verdict_at":         "2026-05-13T08:12:00Z",
-    "alerts_sent": {"WARN": "...", "PROFIT_LOCK": "..."}   # dedup
-  }
+Legacy 3-verdict mapping ← new 7-state FSM:
+  governor STATE_NEW_DAY                            → VERDICT_NEW_DAY
+  governor STATE_FLAT / GREEN / STRONG_GREEN        → VERDICT_NORMAL
+  governor STATE_GIVEBACK_WARN                      → VERDICT_WARN
+  governor STATE_PROFIT_LOCK / DEFEND_DAY / RED_DAY → VERDICT_PROFIT_LOCK
 """
 
-import json
-import os
-from datetime import datetime, timezone
+from __future__ import annotations
+
 from typing import Any
 
-_REPO_ROOT  = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-_STATE_PATH = os.path.join(_REPO_ROOT, "learning-loop", "state.json")
+try:
+    from intraday_governor import (
+        update as _gov_update,
+        get_snapshot as _gov_get_snapshot,
+        mark_alert_sent as _gov_mark_alert_sent,
+        alert_already_sent as _gov_alert_already_sent,
+        summarize as _gov_summarize,
+        STATE_NEW_DAY, STATE_FLAT, STATE_GREEN, STATE_STRONG_GREEN,
+        STATE_GIVEBACK_WARN, STATE_PROFIT_LOCK, STATE_DEFEND_DAY,
+        STATE_RED_DAY_AFTER_GREEN,
+    )
+except ImportError:                                              # pragma: no cover
+    from shared.intraday_governor import (                       # type: ignore
+        update as _gov_update,
+        get_snapshot as _gov_get_snapshot,
+        mark_alert_sent as _gov_mark_alert_sent,
+        alert_already_sent as _gov_alert_already_sent,
+        summarize as _gov_summarize,
+        STATE_NEW_DAY, STATE_FLAT, STATE_GREEN, STATE_STRONG_GREEN,
+        STATE_GIVEBACK_WARN, STATE_PROFIT_LOCK, STATE_DEFEND_DAY,
+        STATE_RED_DAY_AFTER_GREEN,
+    )
 
-# Thresholds (mirror docs/STRATEGY.md). Stored as constants — promote to
-# config/aggressive_profile.json if operator wants per-regime tuning.
-MIN_PEAK_FOR_LOCK_USD   = 1000.0   # Below this, retrace is just noise — don't trigger
-WARN_RETRACE_PCT        = 0.30     # 30% retrace from peak → WARN
-PROFIT_LOCK_RETRACE_PCT = 0.50     # 50% retrace from peak → PROFIT_LOCK
-HARVEST_MULTIPLIER      = 0.70     # On PROFIT_LOCK, close winners at peak × this
+
+# ─── Legacy constants (kept for back-compat with exit-monitor + tests) ───────
+
+MIN_PEAK_FOR_LOCK_USD   = 1000.0
+WARN_RETRACE_PCT        = 0.25   # was 0.30 — synced to GIVEBACK_WARN threshold
+PROFIT_LOCK_RETRACE_PCT = 0.35   # was 0.50 — synced to PROFIT_LOCK threshold
+HARVEST_MULTIPLIER      = 0.70
 
 VERDICT_NORMAL      = "NORMAL"
 VERDICT_WARN        = "WARN"
 VERDICT_PROFIT_LOCK = "PROFIT_LOCK"
-VERDICT_NEW_DAY     = "NEW_DAY"   # First call of a new UTC day
+VERDICT_NEW_DAY     = "NEW_DAY"
+
+# Tests patch this attribute to redirect persistence. We forward to the
+# governor's runtime_state file; tests that need an isolated path should
+# monkeypatch shared.runtime_state.RUNTIME_STATE_PATH instead.
+import os as _os
+_REPO_ROOT  = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), ".."))
+_STATE_PATH = _os.path.join(_REPO_ROOT, "learning-loop", "state.json")  # legacy hint
 
 
-def _load_state() -> dict:
-    try:
-        with open(_STATE_PATH) as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+# ─── Internal mapping ────────────────────────────────────────────────────────
 
-
-def _save_state(state: dict) -> None:
-    try:
-        with open(_STATE_PATH, "w") as f:
-            json.dump(state, f, indent=2, ensure_ascii=False)
-    except OSError as e:
-        print(f"  peak_tracker: save state failed: {e}")
-
-
-def _utcnow_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _today_iso() -> str:
-    return datetime.now(timezone.utc).date().isoformat()
-
-
-def update_peak(account: dict | None = None) -> dict:
-    """
-    Update the daily peak tracker from current account state.
-
-    `account` optional — if None, fetches via shared.risk_guards.get_account_status.
-    For tests, pass an explicit dict {equity, last_equity, daily_pl_pct}.
-
-    Returns the updated daily_peak dict (with `verdict` field set).
-    """
-    if account is None:
-        try:
-            from risk_guards import get_account_status
-        except ImportError:
-            from shared.risk_guards import get_account_status
-        account = get_account_status() or {}
-
-    equity      = float(account.get("equity", 0) or 0)
-    last_equity = float(account.get("last_equity", 0) or 0)
-    daily_pl    = equity - last_equity if last_equity > 0 else 0.0
-    daily_pl_pct = (daily_pl / last_equity) if last_equity > 0 else 0.0
-    now_iso = _utcnow_iso()
-    today   = _today_iso()
-
-    state = _load_state()
-    peak = state.get("daily_peak") or {}
-
-    # New trading day → reset peak
-    if peak.get("date") != today:
-        peak = {
-            "date":              today,
-            "peak_pl_usd":       max(0.0, daily_pl),   # don't track negative as "peak"
-            "peak_pl_pct":       max(0.0, daily_pl_pct),
-            "peak_at":           now_iso,
-            "peak_equity":       equity,
-            "current_pl_usd":    daily_pl,
-            "current_equity":    equity,
-            "retrace_from_peak": 0.0,
-            "verdict":           VERDICT_NEW_DAY,
-            "verdict_at":        now_iso,
-            "alerts_sent":       {},
-        }
-        state["daily_peak"] = peak
-        _save_state(state)
-        return peak
-
-    # Update peak if current is higher
-    if daily_pl > peak.get("peak_pl_usd", 0):
-        peak["peak_pl_usd"]   = daily_pl
-        peak["peak_pl_pct"]   = daily_pl_pct
-        peak["peak_at"]       = now_iso
-        peak["peak_equity"]   = equity
-
-    # Always update current
-    peak["current_pl_usd"]  = daily_pl
-    peak["current_equity"]  = equity
-
-    # Compute retrace from peak
-    pk = peak.get("peak_pl_usd", 0)
-    if pk > 0:
-        peak["retrace_from_peak"] = max(0.0, (pk - daily_pl) / pk)
-    else:
-        peak["retrace_from_peak"] = 0.0
-
-    # Verdict
-    peak["verdict"]    = _compute_verdict(peak)
-    peak["verdict_at"] = now_iso
-
-    state["daily_peak"] = peak
-    _save_state(state)
-    return peak
-
-
-def _compute_verdict(peak: dict) -> str:
-    pk      = peak.get("peak_pl_usd", 0)
-    retrace = peak.get("retrace_from_peak", 0)
-    if pk < MIN_PEAK_FOR_LOCK_USD:
-        return VERDICT_NORMAL
-    if retrace >= PROFIT_LOCK_RETRACE_PCT:
+def _verdict_from_state(state: str) -> str:
+    if state in (STATE_PROFIT_LOCK, STATE_DEFEND_DAY, STATE_RED_DAY_AFTER_GREEN):
         return VERDICT_PROFIT_LOCK
-    if retrace >= WARN_RETRACE_PCT:
+    if state == STATE_GIVEBACK_WARN:
         return VERDICT_WARN
+    if state == STATE_NEW_DAY:
+        return VERDICT_NEW_DAY
     return VERDICT_NORMAL
 
 
+def _snap_to_legacy_dict(snap) -> dict:
+    """Translate IntradaySnapshot → legacy daily_peak dict shape."""
+    return {
+        "date":              snap.date,
+        "peak_pl_usd":       snap.intraday_peak_pnl,
+        "peak_pl_pct":       snap.intraday_peak_pnl_pct,
+        "peak_at":           snap.peak_at,
+        "peak_equity":       snap.intraday_peak_equity,
+        "current_pl_usd":    snap.current_intraday_pnl,
+        "current_equity":    snap.current_equity,
+        "retrace_from_peak": snap.giveback_pct_of_peak,
+        "verdict":           _verdict_from_state(snap.pnl_state),
+        "verdict_at":        snap.last_update_at,
+        "alerts_sent":       dict(snap.alerts_sent or {}),
+        # Bonus: surface the richer FSM state for new callers without
+        # breaking old ones (they only read the keys above).
+        "pnl_state":         snap.pnl_state,
+        "max_gross_target":  snap.max_gross_target,
+        "profit_floor_usd":  snap.profit_floor_usd,
+        "block_new_entries": snap.block_new_entries,
+    }
+
+
+# ─── Public API (unchanged surface) ──────────────────────────────────────────
+
+def update_peak(account: dict | None = None) -> dict:
+    """Update the intraday governor + return legacy daily_peak dict."""
+    snap = _gov_update(account=account)
+    return _snap_to_legacy_dict(snap)
+
+
 def get_peak() -> dict:
-    """Read-only access; does not fetch account. Returns {} if no state."""
-    return _load_state().get("daily_peak") or {}
+    """Read-only legacy daily_peak dict."""
+    snap = _gov_get_snapshot()
+    return _snap_to_legacy_dict(snap)
 
 
 def should_profit_lock() -> tuple[bool, dict]:
-    """
-    Convenience: True iff verdict == PROFIT_LOCK. Returns (bool, full_peak_dict).
-    Caller can use peak dict to compute harvest_threshold = peak_pl_usd * HARVEST_MULTIPLIER.
-    """
-    p = get_peak()
-    return p.get("verdict") == VERDICT_PROFIT_LOCK, p
+    """True iff legacy verdict == PROFIT_LOCK (includes DEFEND_DAY + RED_DAY)."""
+    snap = _gov_get_snapshot()
+    legacy = _snap_to_legacy_dict(snap)
+    return legacy["verdict"] == VERDICT_PROFIT_LOCK, legacy
 
 
 def harvest_threshold_usd() -> float | None:
-    """
-    Threshold in $ from which exit-monitor's profit-lock cascade starts
-    aggressively closing winning options. Returns None if not in lock mode.
-    """
-    p = get_peak()
-    if p.get("verdict") != VERDICT_PROFIT_LOCK:
+    """Peak × 0.70 when in profit-lock cascade, else None."""
+    snap = _gov_get_snapshot()
+    if _verdict_from_state(snap.pnl_state) != VERDICT_PROFIT_LOCK:
         return None
-    return float(p.get("peak_pl_usd", 0)) * HARVEST_MULTIPLIER
+    return float(snap.intraday_peak_pnl) * HARVEST_MULTIPLIER
 
 
 def mark_alert_sent(level: str) -> None:
-    """Persist that an alert at `level` (WARN / PROFIT_LOCK) was emailed, for dedup."""
-    state = _load_state()
-    peak = state.get("daily_peak") or {}
-    alerts = peak.get("alerts_sent") or {}
-    alerts[level] = _utcnow_iso()
-    peak["alerts_sent"] = alerts
-    state["daily_peak"] = peak
-    _save_state(state)
+    _gov_mark_alert_sent(level)
 
 
 def alert_already_sent_today(level: str) -> bool:
-    """True iff we already emailed at this level today."""
-    p = get_peak()
-    return level in (p.get("alerts_sent") or {})
+    return _gov_alert_already_sent(level)
 
 
-def summarize(p: dict) -> str:
-    """One-line human summary for logs."""
-    if not p:
-        return "(no peak data yet today)"
-    return (
-        f"peak=${p.get('peak_pl_usd',0):+.0f} at {p.get('peak_at','?')[-9:-1]}  "
-        f"current=${p.get('current_pl_usd',0):+.0f}  "
-        f"retrace={p.get('retrace_from_peak',0):.1%}  "
-        f"verdict={p.get('verdict','?')}"
-    )
+def summarize(peak: dict[str, Any] | None = None) -> str:
+    """One-line log summary. `peak` arg accepted for back-compat; ignored."""
+    return _gov_summarize()

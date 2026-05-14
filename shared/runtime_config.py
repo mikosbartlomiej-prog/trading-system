@@ -66,8 +66,23 @@ def llm_execution_influence_enabled() -> bool:
 
 
 def options_enabled() -> bool:
-    """Options entries (options-monitor). Off by default per spec E."""
-    return _bool("OPTIONS_ENABLED", False)
+    """Options entries (options-monitor).
+
+    Default is profile-driven: AGGRESSIVE_PAPER → True (paper account, full
+    options-level access, IntradayProfitGovernor protects giveback), other
+    profiles → False unless explicitly opted in via OPTIONS_ENABLED=true.
+    """
+    profile_default = (risk_profile() == "AGGRESSIVE_PAPER")
+    return _bool("OPTIONS_ENABLED", profile_default)
+
+
+def intraday_protection_enabled() -> bool:
+    """IntradayProfitGovernor — defends intraday P&L peaks.
+
+    Default True. Set INTRADAY_PROTECTION_ENABLED=false to bypass (testing /
+    backtest replay only — production should always run with this ON).
+    """
+    return _bool("INTRADAY_PROTECTION_ENABLED", True)
 
 
 def risk_profile() -> RiskProfile:
