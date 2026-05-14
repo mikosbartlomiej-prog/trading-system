@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "schema_url": "https://github.com/mikosbartlomiej-prog/trading-system/blob/main/learning-loop/README.md",
-  "last_updated": "2026-05-14T01:24:14.777976+00:00",
-  "days_tracked": 15,
+  "last_updated": "2026-05-14T15:22:06.694272+00:00",
+  "days_tracked": 16,
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
-    "starting_equity": 98172.6735419601
+    "starting_equity": 94978.78901517414
   },
   "strategies": {
     "overbought-short": {
@@ -36,7 +36,7 @@
       "side_bias": null,
       "consecutive_losses": 1,
       "rationale": "PRZEDŁUŻAM PAUZĘ mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought — identyczny reżim co wczorajsza strata -$3,120. Re-enable w tym środowisku = powtórka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostają jako kara za 0% WR lifetime.",
-      "paused_until": "2026-05-14",
+      "paused_until": "2026-05-15",
       "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
       "review_after": "2026-05-14 (post daily-learning)"
     },
@@ -83,6 +83,20 @@
       "consecutive_losses": 0,
       "rationale": "Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy.",
       "paused_until": null
+    },
+    "cda058d6-1d5f-4b67": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
     }
   },
   "asset_classes": {},
@@ -103,7 +117,9 @@
       "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },
-  "next_actions": [],
+  "next_actions": [
+    "options-momentum: paused_until -> 2026-05-15 (SPY-overbought gate)"
+  ],
   "global_overrides": {
     "options_side_bias": null,
     "max_open_options": null,
@@ -250,5 +266,6 @@
     "verdict": "NORMAL",
     "verdict_at": "2026-05-14T12:17:46Z",
     "alerts_sent": {}
-  }
+  },
+  "peak_equity": 94606.47
 }

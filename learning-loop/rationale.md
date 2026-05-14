@@ -155,3 +155,10 @@
 - 2026-05-14 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (15 days tracked); consider disable or remove
 - 2026-05-14 · fill-rate alert [emergency]: fill rate 44% below 50% (4 canceled / 9 placed) — limits too tight or quote stale
 
+- 2026-05-14 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-14 · crypto-momentum: SILENT — enabled but 0 trades lifetime (16 days tracked); consider disable or remove
+- 2026-05-14 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (16 days tracked); consider disable or remove
+- 2026-05-14 · fill-rate alert [emergency]: fill rate 0% below 50% (4 canceled / 5 placed) — limits too tight or quote stale
+- 2026-05-14 · options-momentum: SPY-overbought gate · SPY RSI 82.6 > 75 — overbought regime, options-momentum pause extended
+- 2026-05-14 · peak_equity advanced $0 -> $94,606
+
