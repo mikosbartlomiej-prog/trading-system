@@ -1,0 +1,50 @@
+{
+  "_comment": "Bounds for autonomous self-modification of trading parameters. Each field documents how the autonomy layer may move it. Loosening beyond these caps is HIGH_RISK and is rejected by patch_validator.",
+  "size_multiplier": {
+    "min": 0.30,
+    "max": 2.00,
+    "max_daily_step_up_ratio":   1.20,
+    "max_daily_step_down_ratio": 0.50,
+    "increase_min_sample_7d":    20,
+    "comment": "Daily learning may step size up by at most 20% per run, decrease by up to half. Sample-size enforcement lives in learning-loop/validation.py."
+  },
+  "strategy_enabled": {
+    "auto_pause_allowed": true,
+    "auto_resume_allowed": true,
+    "resume_cooldown_hours": 24,
+    "resume_min_health_ok_consecutive": 3,
+    "resume_requires_recent_risk_resolved": true,
+    "comment": "Strategies can autonomously pause on risk/failure. Resume requires cooldown + N consecutive OK health checks + risk condition resolved."
+  },
+  "options": {
+    "auto_disable_allowed": true,
+    "auto_enable_allowed": true,
+    "auto_enable_requires_options_enabled_flag": true,
+    "auto_enable_requires_safety_tests_pass": true,
+    "auto_enable_requires_liquidity_ok": true,
+    "paper_only_required": true,
+    "comment": "OPTIONS_ENABLED env still gates everything. Autonomy can disable freely; enabling requires the operator's env to be set AND the safety gates to pass."
+  },
+  "exposure_caps": {
+    "tightening_allowed_autonomously": true,
+    "loosening_allowed_autonomously":  false,
+    "loosening_requires_high_risk_backlog": true,
+    "comment": "Autonomy may make the system safer (tighter caps). Loosening exposure caps beyond the active profile's limits is HIGH_RISK and never auto-merged."
+  },
+  "llm_role": {
+    "may_propose_overrides":      true,
+    "may_raise_risk_bounds":      false,
+    "may_enable_live_trading":    false,
+    "may_bypass_sample_size":     false,
+    "may_modify_own_safety_contract": false,
+    "comment": "LLM is untrusted input. Validators (state_schema + validation + patch_validator) decide what survives."
+  },
+  "code_loop": {
+    "auto_merge_low_risk":        true,
+    "auto_merge_medium_risk_via_pr": true,
+    "auto_merge_high_risk":       false,
+    "auto_rollback_on_health_regression": true,
+    "max_patches_per_day":        3,
+    "comment": "Code self-improvement is bounded by the validator + CI + post-merge health check. Daily cap stops a runaway loop."
+  }
+}
