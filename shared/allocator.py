@@ -756,7 +756,9 @@ class AccountAwareAllocator:
         Execute approved BUY/REDUCE/EXIT orders via Alpaca REST.
 
         GATED: only runs when config.auto_execute_rebalance=true (or force=True
-        for testing). Default OFF — operator reviews plan first.
+        for testing). Default ON since 2026-05-14 — system is fully autonomous;
+        plan + execution happen in the same daily-learning → morning-allocator
+        chain with no human in the loop.
 
         Pre-flight gates (per order, fail-soft):
           1. action != HOLD (skip silently)

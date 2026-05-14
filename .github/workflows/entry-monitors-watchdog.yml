@@ -1,0 +1,99 @@
+name: Entry Monitors — Watchdog (re-trigger if missed)
+
+# 2026-05-14: autonomous safety-net for price-monitor + options-monitor.
+#
+# Background: their cron is `*/5 13-20 * * 1-5` (every 5 min during US
+# session, weekdays). GitHub Actions hour-restricted crons can silently
+# skip after large push events (queue overflow) — observed 2026-05-14
+# where neither monitor fired from 21:08 UTC 05-13 until manual retrigger.
+# Other monitors with unrestricted `*/5 * * * *` cron (crypto, defense,
+# twitter) kept firing fine, confirming the issue is hour-restriction-
+# specific.
+#
+# Mechanism:
+#   - Cron `*/15 13-20 * * 1-5` (every 15 min during session — 3 chances
+#     between each expected price-monitor run; max 15 min staleness).
+#   - For each watched workflow, fetch last completed schedule run.
+#   - If last run > 10 min ago, fire workflow_dispatch via WORKFLOW_PAT.
+#   - Idempotent: workflow itself has concurrency cancel-in-progress.
+#
+# Why PAT vs GITHUB_TOKEN: dispatched workflows via GITHUB_TOKEN don't
+# count as user events (anti-recursion), so dependent triggers downstream
+# (auto-merge, etc.) wouldn't fire. PAT issued by an operator does count.
+
+on:
+  schedule:
+    - cron: '*/15 13-20 * * 1-5'   # every 15 min during US session
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions:  write     # required to read run history + dispatch
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    strategy:
+      matrix:
+        workflow:
+          - price-monitor.yml
+          - options-monitor.yml
+
+    steps:
+      - name: Check ${{ matrix.workflow }} last run age
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}
+          REPO:     ${{ github.repository }}
+          WORKFLOW: ${{ matrix.workflow }}
+        run: |
+          # Fetch last 5 runs (mix of schedule + workflow_dispatch) and
+          # pick the most recent completed one regardless of trigger.
+          NOW_TS=$(date -u +%s)
+          RESPONSE=$(curl -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=5&status=completed")
+          LAST_AT=$(echo "$RESPONSE" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          runs = d.get('workflow_runs', [])
+          if not runs:
+              print('1970-01-01T00:00:00Z')
+          else:
+              print(runs[0].get('updated_at') or '1970-01-01T00:00:00Z')
+          ")
+          LAST_TS=$(date -u -d "$LAST_AT" +%s 2>/dev/null || \
+                    python3 -c "from datetime import datetime; print(int(datetime.strptime('$LAST_AT', '%Y-%m-%dT%H:%M:%SZ').timestamp()))")
+          AGE_S=$((NOW_TS - LAST_TS))
+          AGE_M=$((AGE_S / 60))
+          echo "  $WORKFLOW last completed run: $LAST_AT ($AGE_M min ago)"
+          if [ "$AGE_M" -gt 10 ]; then
+            echo "stale=true" >> $GITHUB_OUTPUT
+            echo "  STALE — will retrigger"
+          else
+            echo "stale=false" >> $GITHUB_OUTPUT
+            echo "  Fresh — no action"
+          fi
+
+      - name: Retrigger ${{ matrix.workflow }}
+        if: steps.check.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}
+          REPO:     ${{ github.repository }}
+          WORKFLOW: ${{ matrix.workflow }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches" \
+            -d '{"ref":"main"}'
+          echo ""
+          echo "  ${WORKFLOW} workflow_dispatch sent at $(date -u +%H:%M:%S)Z"

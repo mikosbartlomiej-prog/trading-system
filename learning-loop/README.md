@@ -80,7 +80,7 @@ behavior.
 | 7d P&L > +3% of equity | size_multiplier *= 1.05 (modest warm-up) |
 | 5 consecutive losers | enabled = false (3-day pause) |
 | Options long P&L negative AND short P&L positive | side_bias = "short" |
-| Lifetime ROI < -10% | enabled = false (manual review required) |
+| Lifetime ROI < -10% | enabled = false (auto-disabled; no operator action expected) |
 
 Bounds:
 - `0.3 ≤ size_multiplier ≤ 2.0`

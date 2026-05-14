@@ -116,7 +116,8 @@ def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
         new["paused_until"] = (datetime.now(timezone.utc).date()).isoformat()
         new["rationale"] = (
             f"DISABLED — lifetime ROI {lifetime_roi:.1f}% < {LIFETIME_ROI_DISABLE_PCT}%; "
-            f"manual review required (clear paused_until in state.json to re-enable)"
+            f"auto-disabled by adapter (next daily-learning will keep it off "
+            f"unless paused_until is cleared in state.json; no operator action expected)"
         )
         return new
 

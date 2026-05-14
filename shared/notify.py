@@ -389,15 +389,20 @@ def notify_allocation_plan(plan: dict) -> bool:
             lines.append(f"  - {f}")
         lines.append("")
 
-    lines.append("Next step:")
+    lines.append("Status:")
     if auto_x:
-        lines.append("  Morning executor will place orders shortly after 13:35 UTC.")
-        lines.append("  Watch inbox for [allocator EXEC] follow-up.")
+        lines.append("  AUTO-EXECUTE active. Morning executor (13:35 UTC) will fire orders")
+        lines.append("  through deterministic risk gates (risk_officer + portfolio_risk +")
+        lines.append("  intraday_governor + instrument_windows + buying_power).")
+        lines.append("  No manual action required. Watch inbox for [allocator EXEC] report.")
     else:
-        lines.append("  Auto-execute is OFF. Review plan in repo:")
-        lines.append(f"  learning-loop/allocations/{plan.get('date','?')}.json")
-        lines.append("  To enable: set capital_deployment.auto_execute_rebalance=true")
-        lines.append("  in config/capital_deployment.json and commit.")
+        # 2026-05-14: This branch is now informational only — system is meant
+        # to run with auto_execute_rebalance=true. If you're seeing this in
+        # production, it means a deployment regression has occurred — fix the
+        # config rather than treat this as an "approval needed" prompt.
+        lines.append("  AUTO-EXECUTE is currently DISABLED (regression detected).")
+        lines.append(f"  Plan saved at: learning-loop/allocations/{plan.get('date','?')}.json")
+        lines.append("  Re-enable by setting capital_deployment.auto_execute_rebalance=true.")
     lines.append("")
     lines.append("Trace log: learning-loop/allocations/" + str(plan.get("date", "?")) + ".log")
     lines.append("Dashboard: https://app.alpaca.markets/paper/dashboard/overview")
@@ -510,6 +515,114 @@ def notify_peak_retrace(peak: dict, level: str = "WARN") -> bool:
     lines += [
         "",
         f"Dashboard: https://app.alpaca.markets/paper/dashboard/overview",
+    ]
+
+    return send_email(subject, "\n".join(lines))
+
+
+def notify_intraday_state(snapshot: dict | object, level: str) -> bool:
+    """
+    Email audit when IntradayProfitGovernor enters one of the protected
+    states (GIVEBACK_WARN, PROFIT_LOCK, DEFEND_DAY, RED_DAY_AFTER_GREEN).
+
+    `snapshot` is an IntradaySnapshot dataclass OR its dict form. `level`
+    is one of those state names. Subject is prefixed `[INTRADAY-PROTECTION]`.
+
+    Body lists peak, current, giveback, max-gross target, what actions
+    just fired, and the affected symbols (if reduced/closed positions
+    were passed via `top_giveback_symbols`).
+
+    Dedup is the caller's responsibility (mark_alert_sent in governor).
+    """
+    if hasattr(snapshot, "to_dict"):
+        snap = snapshot.to_dict()
+    else:
+        snap = dict(snapshot or {})
+    if not snap:
+        return False
+
+    now      = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    peak_usd = float(snap.get("intraday_peak_pnl", 0))
+    cur_usd  = float(snap.get("current_intraday_pnl", 0))
+    peak_eq  = float(snap.get("intraday_peak_equity", 0))
+    cur_eq   = float(snap.get("current_equity", 0))
+    retrace  = float(snap.get("giveback_pct_of_peak", 0))
+    peak_at  = (snap.get("peak_at") or "?")[:16].replace("T", " ")
+    floor    = float(snap.get("profit_floor_usd", 0))
+    max_gx   = float(snap.get("max_gross_target", 1.50))
+    affected = snap.get("top_giveback_symbols") or []
+    action   = snap.get("last_action") or "-"
+
+    headers = {
+        "GIVEBACK_WARN":       ("[INTRADAY-WARN]",        "WARN — retrace > 25% of intraday peak"),
+        "PROFIT_LOCK":         ("[INTRADAY-PROFIT-LOCK]", "PROFIT-LOCK ARMED — winners harvested, options closed first"),
+        "DEFEND_DAY":          ("[INTRADAY-DEFEND]",      "DEFEND-DAY — exposure cut to 50%, weak positions flattened, new entries blocked"),
+        "RED_DAY_AFTER_GREEN": ("[INTRADAY-RED-AFTER-GREEN]", "RED AFTER GREEN — intraday flat-mode, entries blocked until next session"),
+    }
+    prefix, urgency = headers.get(level, ("[INTRADAY]", level))
+    subject = f"{prefix} peak ${peak_usd:+,.0f} → current ${cur_usd:+,.0f} ({retrace:.0%} giveback)"
+
+    lines = [
+        "Intraday profit governor state change",
+        "=" * 60,
+        f"Time:                {now}",
+        f"State:               {level}",
+        f"Action:              {urgency}",
+        f"Action codename:     {action}",
+        "",
+        f"Peak P&L:            ${peak_usd:+,.2f}",
+        f"Peak equity:         ${peak_eq:,.2f}",
+        f"Peak at:             {peak_at}",
+        "",
+        f"Current P&L:         ${cur_usd:+,.2f}",
+        f"Current equity:      ${cur_eq:,.2f}",
+        f"Giveback from peak:  {retrace:.1%}",
+        f"Profit floor:        " + (f"${floor:,.2f}" if floor > 0 else "(not armed)"),
+        f"Max gross target:    {max_gx:.2f}× equity",
+        "",
+    ]
+
+    if level == "RED_DAY_AFTER_GREEN":
+        lines += [
+            "What just happened (deterministic):",
+            "  exit-monitor will close all options momentum positions and",
+            "  any non-hedge intraday positions. alpaca_orders.py will reject",
+            "  every new entry until the next session.",
+            "",
+            "Why this fired:",
+            "  A day that peaked at +$5,000 or more cannot be allowed to end",
+            "  flat-or-negative without protective action. The +5000 → -2000",
+            "  scenario from prior sessions ends here.",
+        ]
+    elif level == "DEFEND_DAY":
+        lines += [
+            "What just happened:",
+            "  Gross exposure clamped to 0.50×. New entries are blocked.",
+            "  Weak intraday positions and options flagged for flattening.",
+            "  Hedges (TLT / GLD) are allowed to remain open.",
+        ]
+    elif level == "PROFIT_LOCK":
+        lines += [
+            "What just happened:",
+            "  Winners ≥+8% (and ALL options) are flagged for direct close.",
+            "  Gross exposure clamped to 1.00× equity. Below-threshold new",
+            "  entries blocked; only signals with score ≥ 0.65 punch through.",
+        ]
+    else:
+        lines += [
+            "What to watch:",
+            "  Trailing stops tightened. No automated exits yet — but if",
+            "  retrace crosses 35% the system advances to PROFIT_LOCK.",
+        ]
+
+    if affected:
+        lines += ["", "Top giveback contributors:"]
+        lines += [f"  - {s}" for s in affected[:8]]
+
+    lines += [
+        "",
+        "Dashboard: https://app.alpaca.markets/paper/dashboard/overview",
+        "Audit log: journal/autonomy/ (one JSONL line per FSM transition)",
     ]
 
     return send_email(subject, "\n".join(lines))

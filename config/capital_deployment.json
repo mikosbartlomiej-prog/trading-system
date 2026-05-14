@@ -19,8 +19,8 @@
     "max_rebalance_orders_per_day":         10,
     "min_order_value_usd":                  100,
     "estimated_slippage_pct":               0.001,
-    "auto_execute_rebalance":               false,
-    "_comment_auto_execute":                "Default OFF — allocator only saves daily plan to learning-loop/allocations/<date>.json. Operator reviews + manually places via Alpaca dashboard until system proves stable across 30+ rebalance cycles. Flip to true when comfortable."
+    "auto_execute_rebalance":               true,
+    "_comment_auto_execute":                "2026-05-14: FLIPPED TO TRUE. System is fully autonomous now — allocator both generates the daily plan AND fires the orders via Alpaca REST. Deterministic risk gates (risk_officer + portfolio_risk + intraday_governor + instrument_windows + buying_power) still apply per order; failures are logged + skipped, not surfaced as approval requests. Paper-only invariant enforced upstream in shared/autonomy.py::assert_paper_only."
   },
 
   "fallback_allocations": {
