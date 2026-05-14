@@ -8,6 +8,10 @@ on:
     - cron: '0 22 * * 0'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 # Required so the job can commit + push the new retro file + any state
 # overrides applied by the strategist (state.json / rationale.md).
 permissions:

@@ -9,6 +9,10 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   scan-crypto:
     runs-on: ubuntu-latest
@@ -46,16 +50,8 @@ jobs:
           NOTIFY_EMAIL:                 ${{ secrets.NOTIFY_EMAIL }}
         run: python crypto-monitor/monitor.py
 
-      - name: Cleanup pending Curator file if survived
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
-          git rm -f --ignore-unmatch crypto-monitor/pending-curation.json 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No pending Curator file to clean up."
-          else
-            git commit -m "crypto-monitor: cleanup pending-curation $(date -u +%Y-%m-%d_%H%M)"
-            git push origin "$BRANCH"
-          fi
+      # Cleanup of pending-curation.json removed per spec §C — monitors must
+      # not commit runtime state. Curator hand-off is now a runner-local
+      # ephemeral artifact (lives only for the duration of the run).
+      # If the file accidentally survives in the repo it is benign and will
+      # be picked up by the manual-maintenance script.

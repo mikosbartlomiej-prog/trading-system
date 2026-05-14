@@ -7,19 +7,22 @@ name: Reddit Monitor — sentiment + tracked-user scan
 #   Lane A: top.json scan over curated subs (.claude/rules/reddit-subs.md)
 #   Lane B: per-user submitted.json over tracked DD writers
 #           (.claude/rules/reddit-users.md)
+#
+# v3.5 (vNext): per spec §C, reddit-monitor no longer commits state.json
+# on every tick. Curator handoff files live in reddit-monitor/ as
+# ephemeral runner artifacts and are NOT committed.
 
 on:
   schedule:
-    # v3.2 (2026-05-12): every 30 min 24/7. Reddit DD posts surface around
-    # the clock; ToS-safe at 30-min cadence (~12 req/h cumulative across
-    # 6 subs, well under anonymous limit). Per-instrument trading window
-    # in shared/instrument_windows.py gates order placement, so off-hours
-    # signals route to [QUEUED] email and replay when relevant market opens.
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   scan:
@@ -29,8 +32,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -56,19 +57,3 @@ jobs:
           CLOUDFLARE_REDDIT_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_CURATOR_WORKER_URL }}
           USE_REDDIT_CURATOR:      'true'
         run: python reddit-monitor/monitor.py
-
-      - name: Commit reddit_state if changed
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
-          git rm -f --ignore-unmatch reddit-monitor/pending-curation.json 2>/dev/null || true
-          git add learning-loop/state.json 2>/dev/null || true
-          git add -u reddit-monitor/ 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No reddit_state changes."
-          else
-            git commit -m "reddit-monitor: rolling state $(date -u +%Y-%m-%d_%H%M)"
-            git push origin "$BRANCH"
-          fi

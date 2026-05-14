@@ -8,6 +8,10 @@ on:
   # Możliwość ręcznego uruchomienia z GitHuba
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   check-prices:
     runs-on: ubuntu-latest

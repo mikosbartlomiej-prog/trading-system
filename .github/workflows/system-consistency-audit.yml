@@ -1,0 +1,58 @@
+name: System Consistency Audit — autonomy / safety / free / coherence
+
+# Runs the system_consistency_agent on every push, PR, and daily.
+# Fails CI on BLOCKED (and on FAIL when --strict, configurable via input).
+#
+# Paper-only invariant guard. No paid deps. Read-only against the tree.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '15 6 * * *'   # daily 06:15 UTC
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: Fail on WARN as well
+        required: false
+        default: 'false'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run system consistency agent
+        run: |
+          STRICT_FLAG=""
+          if [ "${{ inputs.strict }}" = "true" ]; then STRICT_FLAG="--strict"; fi
+          python3 scripts/system_consistency_agent.py \
+            --output-dir reports/system-consistency \
+            $STRICT_FLAG
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-consistency-report
+          path: reports/system-consistency/
+          retention-days: 30

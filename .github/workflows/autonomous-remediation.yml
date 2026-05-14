@@ -1,0 +1,65 @@
+name: Autonomous Remediation — health-driven self-heal
+
+# Runs every 15 minutes during US session + half-hourly off-hours.
+# Reads trading_health output, hands it to shared/remediation.py, and
+# triggers emergency_engine for positions matching deterministic criteria.
+#
+# Paper-only. Zero human approval. Audit JSONL is written into
+# journal/autonomy/YYYY-MM-DD.jsonl by shared/audit.py.
+
+on:
+  schedule:
+    - cron: '*/15 13-20 * * 1-5'   # session
+    - cron: '*/30 0-12,21-23 * * *'
+    - cron: '*/30 * * * 0,6'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Plan only; do not call Alpaca
+        required: false
+        default: 'false'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read   # remediation never commits — audit is append-only to journal/
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Run remediation
+        env:
+          PYTHONIOENCODING:                    utf-8
+          LC_ALL:                              C
+          LANG:                                C
+          ALPACA_API_KEY:                      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:                   ${{ secrets.ALPACA_SECRET_KEY }}
+          GMAIL_USER:                          ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:                  ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:                        ${{ secrets.NOTIFY_EMAIL }}
+          AUTONOMOUS_PANIC_CLOSE_OPTIONS:      'true'
+          REMEDIATION_DRY_RUN:                 ${{ inputs.dry_run || 'false' }}
+        run: |
+          DRY_FLAG=""
+          if [ "$REMEDIATION_DRY_RUN" = "true" ]; then DRY_FLAG="--dry-run"; fi
+          python3 scripts/autonomous_remediation.py $DRY_FLAG --out-json /tmp/remediation.json || true
+          echo "=== summary ==="
+          cat /tmp/remediation.json || echo "no summary file written"

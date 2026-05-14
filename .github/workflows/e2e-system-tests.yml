@@ -1,0 +1,67 @@
+name: E2E System Tests — no network, no real orders
+
+# Runs the full E2E test suite + the e2e_system_test_agent. No secrets,
+# no network, no real Alpaca. Pure paper, pure fakes, deterministic.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '45 6 * * *'   # daily 06:45 UTC (after system-consistency-audit)
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests (only dependency)
+        run: pip install requests
+
+      - name: Run unit + architecture_vnext suite
+        env:
+          NO_NETWORK: '1'
+          LLM_ENABLED: 'false'
+        run: python3 -m unittest discover -s tests/architecture_vnext -p "test_*.py" -v
+
+      - name: Run E2E suite
+        env:
+          NO_NETWORK: '1'
+          LLM_ENABLED: 'false'
+        run: python3 -m unittest discover -s tests/e2e -p "test_*.py" -v
+
+      - name: Run e2e_system_test_agent
+        env:
+          NO_NETWORK: '1'
+          LLM_ENABLED: 'false'
+        run: |
+          python3 scripts/e2e_system_test_agent.py \
+            --output-dir reports/e2e \
+            --no-network
+
+      - name: Upload E2E reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-system-report
+          path: reports/e2e/
+          retention-days: 30

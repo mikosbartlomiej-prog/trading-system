@@ -1,0 +1,95 @@
+name: Autonomous Code Loop — patch validator + auto-merge
+
+# Runs after daily-learning. Reads candidate patches from a staging path
+# (AUTONOMOUS_PATCH_PATH) or from workflow_dispatch inputs, runs the
+# deterministic validator (scripts/autonomous_code_review.py), and — if
+# APPROVE_AUTO_MERGE — pushes the change to a branch via learning-loop/
+# code_autonomy.py.
+#
+# Operator never approves anything. The validator's verdict is the only
+# gate. CI tests still run (security-audit.yml on the PR/push).
+#
+# Paper-only invariant: this workflow does NOT touch trading state. It
+# only edits code per the patch_validator allowlist.
+
+on:
+  schedule:
+    - cron: '30 21 * * *'   # 30 min after daily-learning (21:00 UTC)
+  workflow_dispatch:
+    inputs:
+      patch_path:
+        description: Path to candidate diff (in repo)
+        required: false
+        default: ''
+      dry_run:
+        description: Validate only; do not commit
+        required: false
+        default: 'true'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false   # do NOT cancel mid-merge
+
+permissions:
+  contents: write          # may push autonomous/ branches
+  pull-requests: write     # may open PRs for medium-risk patches
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for revert
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run validator
+        env:
+          AUTONOMOUS_PATCH_PATH:    ${{ inputs.patch_path }}
+          AUTONOMOUS_PATCH_DRY_RUN: ${{ inputs.dry_run || 'true' }}
+        run: |
+          # If no candidate patch is provided, the loop still runs
+          # identify_candidates() and exits 0 — that's by design.
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, "learning-loop")
+          sys.path.insert(0, "shared")
+          from code_autonomy import run_once
+          patch_path = os.environ.get("AUTONOMOUS_PATCH_PATH") or ""
+          dry_run = (os.environ.get("AUTONOMOUS_PATCH_DRY_RUN") or "true") == "true"
+          summary = run_once(dry_run=dry_run)
+          print("=== summary ===")
+          import json; print(json.dumps(summary, indent=2, default=str))
+          PY
+
+      - name: Workflow audit + secret scan
+        run: |
+          python3 scripts/audit_workflows.py
+          python3 scripts/secret_scan_light.py
+
+      - name: Run vNext tests
+        run: |
+          python3 -m unittest discover -s tests/architecture_vnext -p "test_*.py"
+
+      - name: Push autonomous branch if created
+        if: success() && env.AUTONOMOUS_PATCH_DRY_RUN == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Detect any local branch named autonomous/code-*.
+          BRANCHES=$(git branch --list 'autonomous/code-*' | sed 's/^[ *]*//' || true)
+          if [ -z "$BRANCHES" ]; then
+            echo "No autonomous branch produced."
+            exit 0
+          fi
+          for B in $BRANCHES; do
+            echo "Pushing $B..."
+            git push origin "$B" || echo "push of $B failed (continuing)"
+          done

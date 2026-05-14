@@ -1,0 +1,49 @@
+name: Security Audit — workflows + secret scan + new tests
+
+# Runs on every push to main + on every PR. Blocks merge if any of:
+#   - scripts/audit_workflows.py reports issues
+#   - scripts/secret_scan_light.py finds potential secrets
+#   - tests/ for new shared modules fail
+# Zero-cost: pure-Python, no paid scanners.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Workflow audit
+        run: python scripts/audit_workflows.py
+
+      - name: Secret scan (light)
+        run: python scripts/secret_scan_light.py
+
+      - name: Run new-module tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/shared:${{ github.workspace }}/learning-loop
+        run: |
+          # New modules — these MUST pass on every PR.
+          python -m unittest discover -s tests/architecture_vnext -p "test_*.py" -v
