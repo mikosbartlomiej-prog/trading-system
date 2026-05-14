@@ -1,97 +1,37 @@
-[15:23:50 INFO] ============================================================
-[15:23:50 INFO] AccountAwareAllocator — daily plan 2026-05-14
-[15:23:50 INFO] ============================================================
-[15:23:50 INFO] ── Step 1: fetching account state ──
-[15:23:50 INFO]   equity=$  94616.44  cash=$ -47308.22  buying_power=$      0.00
-[15:23:50 INFO] ── Step 2: fetching open positions ──
-[15:23:50 INFO]   5 positions, invested_ratio=0.1914 (target=1.00, min=0.98)
-[15:23:50 DBG ]     BTCUSD     long  qty=0.0505 mv=$  4089.91  pct_eq=4.32%  pl=+0.72%
-[15:23:50 DBG ]     GLD        long  qty=3.0000 mv=$  1290.21  pct_eq=1.36%  pl=+2.69%
-[15:23:50 DBG ]     RTX        long  qty=34.0000 mv=$  6016.13  pct_eq=6.36%  pl=+0.33%
-[15:23:50 DBG ]     XLE        long  qty=111.0000 mv=$  6410.25  pct_eq=6.77%  pl=+2.90%
-[15:23:50 DBG ]     XOM        long  qty=2.0000 mv=$   303.93  pct_eq=0.32%  pl=+4.88%
-[15:23:50 INFO] ── Step 3: defensive mode check ──
-[15:23:50 INFO]   defensive_mode OFF → proceed with deployment
-[15:23:50 INFO] ── Step 4: regime detection ──
-[15:23:50 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[15:23:50 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
-[15:23:50 INFO] ── Step 5: scoring allowed universe ──
-[15:23:51 DBG ]     AMD      score=+0.637  bucket=ai_nasdaq_semis
-[15:23:51 DBG ]     SMH      score=+0.562  bucket=ai_nasdaq_semis
-[15:23:51 DBG ]     NVDA     score=+0.517  bucket=ai_nasdaq_semis
-[15:23:51 DBG ]     TSLA     score=+0.329  bucket=ai_nasdaq_semis
-[15:23:51 DBG ]     QQQ      score=+0.299  bucket=ai_nasdaq_semis
-[15:23:51 INFO] ── Step 6: target weight construction ──
-[15:23:51 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
-[15:23:51 INFO]   target_invested_ratio_after_plan = 0.7500
-[15:23:51 DBG ]     AMD        target_weight=0.1547 ($14637.16)
-[15:23:51 DBG ]     SMH        target_weight=0.1547 ($14637.16)
-[15:23:51 DBG ]     NVDA       target_weight=0.1547 ($14637.16)
-[15:23:51 DBG ]     SPY        target_weight=0.1000 ($9461.64)
-[15:23:51 DBG ]     QQQ        target_weight=0.0859 ($8127.55)
-[15:23:51 DBG ]     GLD        target_weight=0.1000 ($9461.64)
-[15:23:51 INFO] ── Step 7: rebalance order generation ──
-[15:23:51 INFO]     AMD      BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
-[15:23:51 INFO]     SMH      BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
-[15:23:51 INFO]     NVDA     BUY     current=$     0.00 target=$ 14637.16 delta=$+14637.16  -- new position at target 15.5%
-[15:23:51 INFO]     SPY      BUY     current=$     0.00 target=$  9461.64 delta=$ +9461.64  -- new position at target 10.0%
-[15:23:51 INFO]     GLD      BUY     current=$  1290.21 target=$  9461.64 delta=$ +8171.43  -- add $8171 to reach target 10.0%
-[15:23:51 INFO]     QQQ      BUY     current=$     0.00 target=$  8127.55 delta=$ +8127.55  -- new position at target 8.6%
-[15:23:51 INFO]     XLE      EXIT    current=$  6410.25 target=$     0.00 delta=$ -6410.25  -- symbol not in target allocation
-[15:23:51 INFO]     RTX      EXIT    current=$  6016.13 target=$     0.00 delta=$ -6016.13  -- symbol not in target allocation
-[15:23:51 INFO]     XOM      EXIT    current=$   303.93 target=$     0.00 delta=$  -303.93  -- symbol not in target allocation
-[15:23:51 INFO]     BTCUSD   HOLD    current=$  4089.91 target=$     0.00 delta=$ -4089.91  -- BLOCKED (BTCUSD not on risk_officer whitelist)
-[15:23:51 INFO]   summary: 9 actionable + 1 hold; passed=9  failed=1
-[15:23:51 WARN]     order check failed: BTCUSD:EXIT — BTCUSD not on risk_officer whitelist
-[15:23:51 INFO] ── Step 8: plan complete ──
-[15:23:51 INFO]   auto_execute=False  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[15:33:48 INFO] ============================================================
-[15:33:48 INFO] execute_orders() — auto-execute path
-[15:33:48 INFO] ============================================================
-[15:33:48 INFO]   market_status: open=True reason=open
-[15:33:48 INFO]     XLE EXIT placed: EXIT MARKET 111
-[15:33:48 INFO]     RTX EXIT placed: EXIT MARKET 34
-[15:33:48 INFO]     XOM EXIT placed: EXIT MARKET 2
-[15:33:48 WARN]     AMD BUY: skipped — qty_delta is zero or unknown
-[15:33:48 WARN]     SMH BUY: skipped — qty_delta is zero or unknown
-[15:33:48 WARN]     NVDA BUY: skipped — qty_delta is zero or unknown
-[15:33:48 WARN]     SPY BUY: skipped — qty_delta is zero or unknown
-[15:33:50 ERR ]     GLD BUY failed
-[15:33:50 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
-[15:33:50 INFO]   execution complete: 3 placed, 5 skipped, 1 failed
-
-[15:58:07 INFO] ============================================================
-[15:58:07 INFO] execute_orders() — auto-execute path
-[15:58:07 INFO] ============================================================
-[15:58:07 INFO]   market_status: open=True reason=open
-[15:58:07 ERR ]     XLE EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6616.28","message":"insufficient buying power"}
-[15:58:07 ERR ]     RTX EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6177.88","message":"insufficient buying power"}
-[15:58:07 ERR ]     XOM EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"313.49","message":"insufficient buying power"}
-[15:58:07 WARN]     AMD BUY: skipped — qty_delta is zero or unknown
-[15:58:07 WARN]     SMH BUY: skipped — qty_delta is zero or unknown
-[15:58:07 WARN]     NVDA BUY: skipped — qty_delta is zero or unknown
-[15:58:07 WARN]     SPY BUY: skipped — qty_delta is zero or unknown
-[15:58:08 ERR ]     GLD BUY failed
-[15:58:08 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
-[15:58:08 INFO]   execution complete: 0 placed, 5 skipped, 4 failed
-
-[18:43:05 INFO] ============================================================
-[18:43:05 INFO] execute_orders() — auto-execute path
-[18:43:05 INFO] ============================================================
-[18:43:05 INFO]   market_status: open=True reason=open
-[18:43:07 ERR ]     XLE EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6650.58","message":"insufficient buying power"}
-[18:43:07 ERR ]     RTX EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6167.37","message":"insufficient buying power"}
-[18:43:07 ERR ]     XOM EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"314.93","message":"insufficient buying power"}
-[18:43:08 INFO]     AMD BUY: derived qty=32 from target=$14,637 @ $446.26 (no prior position)
-[18:43:09 ERR ]     AMD BUY failed
-[18:43:10 INFO]     SMH BUY: derived qty=25 from target=$14,637 @ $577.74 (no prior position)
-[18:43:10 ERR ]     SMH BUY failed
-[18:43:11 INFO]     NVDA BUY: derived qty=62 from target=$14,637 @ $235.31 (no prior position)
-[18:43:12 ERR ]     NVDA BUY failed
-[18:43:12 INFO]     SPY BUY: derived qty=12 from target=$9,462 @ $747.84 (no prior position)
-[18:43:13 ERR ]     SPY BUY failed
-[18:43:15 ERR ]     GLD BUY failed
-[18:43:15 INFO]     QQQ BUY: derived qty=11 from target=$8,128 @ $719.43 (no prior position)
-[18:43:16 ERR ]     QQQ BUY failed
-[18:43:16 INFO]   execution complete: 0 placed, 0 skipped, 9 failed
+[22:13:49 INFO] ============================================================
+[22:13:49 INFO] AccountAwareAllocator — daily plan 2026-05-14
+[22:13:49 INFO] ============================================================
+[22:13:49 INFO] ── Step 1: fetching account state ──
+[22:13:49 INFO]   equity=$  94598.14  cash=$ 299673.57  buying_power=$ 346972.64
+[22:13:49 INFO] ── Step 2: fetching open positions ──
+[22:13:49 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[22:13:49 INFO] ── Step 3: defensive mode check ──
+[22:13:49 INFO]   defensive_mode OFF → proceed with deployment
+[22:13:49 INFO] ── Step 4: regime detection ──
+[22:13:49 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:13:49 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
+[22:13:49 INFO] ── Step 5: scoring allowed universe ──
+[22:13:51 DBG ]     AMD      score=+0.642  bucket=ai_nasdaq_semis
+[22:13:51 DBG ]     SMH      score=+0.583  bucket=ai_nasdaq_semis
+[22:13:51 DBG ]     NVDA     score=+0.556  bucket=ai_nasdaq_semis
+[22:13:51 DBG ]     TSLA     score=+0.327  bucket=ai_nasdaq_semis
+[22:13:51 DBG ]     QQQ      score=+0.324  bucket=ai_nasdaq_semis
+[22:13:51 INFO] ── Step 6: target weight construction ──
+[22:13:51 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
+[22:13:51 INFO]   target_invested_ratio_after_plan = 0.7500
+[22:13:51 DBG ]     AMD        target_weight=0.1547 ($14634.33)
+[22:13:51 DBG ]     SMH        target_weight=0.1547 ($14634.33)
+[22:13:51 DBG ]     NVDA       target_weight=0.1547 ($14634.33)
+[22:13:51 DBG ]     SPY        target_weight=0.1000 ($9459.81)
+[22:13:51 DBG ]     QQQ        target_weight=0.0859 ($8125.98)
+[22:13:51 DBG ]     GLD        target_weight=0.1000 ($9459.81)
+[22:13:51 INFO] ── Step 7: rebalance order generation ──
+[22:13:51 INFO]     AMD      BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
+[22:13:51 INFO]     SMH      BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
+[22:13:51 INFO]     NVDA     BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
+[22:13:51 INFO]     SPY      BUY     current=$     0.00 target=$  9459.81 delta=$ +9459.81  -- new position at target 10.0%
+[22:13:51 INFO]     GLD      BUY     current=$     0.00 target=$  9459.81 delta=$ +9459.81  -- new position at target 10.0%
+[22:13:51 INFO]     QQQ      BUY     current=$     0.00 target=$  8125.98 delta=$ +8125.98  -- new position at target 8.6%
+[22:13:51 INFO]   summary: 6 actionable + 0 hold; passed=6  failed=0
+[22:13:51 INFO] ── Step 8: plan complete ──
+[22:13:51 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)

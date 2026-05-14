@@ -168,3 +168,8 @@
 - 2026-05-14 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (17 days tracked); consider disable or remove
 - 2026-05-14 · peak_equity advanced $94,606 -> $94,616
 
+- 2026-05-14 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-14 · pruned 1 UUID artifact strategy keys (cda058d6-1d5f-4b67)
+- 2026-05-14 · crypto-breakdown: SILENT — enabled but 0 trades lifetime (18 days tracked); consider disable or remove
+- 2026-05-14 · crypto-momentum: SILENT — enabled but 0 trades lifetime (18 days tracked); consider disable or remove
+

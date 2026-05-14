@@ -1,9 +1,9 @@
 {
   "asset_classes": {},
   "cumulative": {
-    "starting_equity": 94978.78901517414,
+    "total_trades": 0,
     "total_pnl_usd": 0,
-    "total_trades": 0
+    "starting_equity": 94978.78901517414
   },
   "daily_peak": {
     "alerts_sent": {},
@@ -18,13 +18,13 @@
     "verdict": "NORMAL",
     "verdict_at": "2026-05-14T17:20:57Z"
   },
-  "days_tracked": 17,
+  "days_tracked": 18,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-14T15:23:49.971665+00:00",
+  "last_updated": "2026-05-14T22:13:49.540972+00:00",
   "last_validated_at": "2026-05-14T20:48:01.824866+00:00",
   "last_write_reason": "Cleared QQQ260518P00714000 pending_emergency_close after Alpaca-confirmed fill",
   "last_writer": "manual-maintenance",
@@ -52,7 +52,7 @@
       "reason": "CLOSE_EMERGENCY: strata -23.24% > prog awaryjny -12%; daily P&L -3.19% (v3.0 defensive mode)",
       "status": "PENDING_EXECUTION"
     },
-    "resolution": "QQQ260518P00714000 closed via emergency-close workflow run 25884045856 (commit b19c83c) at 2026-05-14T14:44:21Z. Alpaca order d6499c2c filled @ $3.71 \u00d7 2 contracts. Realized P&L: entry $7.83 -> exit $3.71 = -$824 (-52.6%) on 2 contracts. Cleared 2026-05-14T20:48 UTC by v3.7 session.",
+    "resolution": "QQQ260518P00714000 closed via emergency-close workflow run 25884045856 (commit b19c83c) at 2026-05-14T14:44:21Z. Alpaca order d6499c2c filled @ $3.71 × 2 contracts. Realized P&L: entry $7.83 -> exit $3.71 = -$824 (-52.6%) on 2 contracts. Cleared 2026-05-14T20:48 UTC by v3.7 session.",
     "resolved_at": "2026-05-14T20:48:01.822046+00:00",
     "resolved_by": "manual-maintenance",
     "status": "RESOLVED"
@@ -168,27 +168,13 @@
   "sources": {},
   "state_version": 1,
   "strategies": {
-    "cda058d6-1d5f-4b67": {
-      "consecutive_losses": 0,
-      "enabled": true,
-      "paused_until": null,
-      "pnl_usd_7d": 0,
-      "pnl_usd_lifetime": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
-      "side_bias": null,
-      "size_multiplier": 1.0,
-      "trades_7d": 0,
-      "trades_lifetime": 0,
-      "win_rate_7d": 0.0,
-      "win_rate_lifetime": 0.0
-    },
     "crypto-breakdown": {
       "consecutive_losses": 0,
       "enabled": true,
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "Hold \u2014 analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wy\u0142\u0105czymy.",
+      "rationale": "Hold — analogicznie do crypto-momentum. 14 dni milczenia przy ETH RSI 50.4 jest zgodne z brakiem setup. Potrzebna weryfikacja pipeline zanim wyłączymy.",
       "side_bias": null,
       "size_multiplier": 1.0,
       "trades_7d": 0,
@@ -202,7 +188,7 @@
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "Hold \u2014 brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poni\u017cej prog\u00f3w wej\u015bcia). Nie wy\u0142\u0105czam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny \u2260 dead \u2014 czekamy na ruch.",
+      "rationale": "Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch.",
       "side_bias": null,
       "size_multiplier": 1.0,
       "trades_7d": 0,
@@ -213,11 +199,11 @@
     "geo-xom": {
       "consecutive_losses": 0,
       "enabled": false,
-      "evidence": "geo-monitor/monitor.py line 252-277 \u2014 send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
+      "evidence": "geo-monitor/monitor.py line 252-277 — send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "DISABLED 2026-05-13 \u2014 geo-monitor pipeline incomplete. geo-monitor wysy\u0142a payload do Cloudflare worker\u2192routine, ale routine path jest deprecated od v2.2. Brak direct execution dla geo signals. geo-xom strategy nigdy nie wygeneruje XOM trade w obecnej architekturze. Re-enable after geo-monitor direct execution ships (backlog 2026-05-20).",
+      "rationale": "DISABLED 2026-05-13 — geo-monitor pipeline incomplete. geo-monitor wysyła payload do Cloudflare worker→routine, ale routine path jest deprecated od v2.2. Brak direct execution dla geo signals. geo-xom strategy nigdy nie wygeneruje XOM trade w obecnej architekturze. Re-enable after geo-monitor direct execution ships (backlog 2026-05-20).",
       "review_after": "2026-05-20 (or post geo-monitor direct exec)",
       "side_bias": null,
       "size_multiplier": 1.0,
@@ -233,7 +219,7 @@
       "paused_until": "2026-05-15",
       "pnl_usd_7d": -0.6,
       "pnl_usd_lifetime": -0.6,
-      "rationale": "PRZED\u0141U\u017bAM PAUZ\u0118 mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought \u2014 identyczny re\u017cim co wczorajsza strata -$3,120. Re-enable w tym \u015brodowisku = powt\u00f3rka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostaj\u0105 jako kara za 0% WR lifetime.",
+      "rationale": "PRZEDŁUŻAM PAUZĘ mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought — identyczny reżim co wczorajsza strata -$3,120. Re-enable w tym środowisku = powtórka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostają jako kara za 0% WR lifetime.",
       "review_after": "2026-05-14 (post daily-learning)",
       "side_bias": null,
       "size_multiplier": 0.5,
@@ -245,32 +231,88 @@
     "overbought-short": {
       "consecutive_losses": 0,
       "enabled": false,
-      "llm_note": "manual override (Claude + user) based on backtest evidence \u2014 pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering",
+      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering",
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
       "side_bias": null,
       "size_multiplier": 1.0,
       "trades_7d": 0,
       "trades_lifetime": 0,
       "win_rate_7d": 0,
       "win_rate_lifetime": 0
+    },
+    "5e5e7366-b480-4f17": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
+    },
+    "8a12bf8b-a8b8-406f": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
+    },
+    "cda058d6-1d5f-4b67": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
+    },
+    "alloc-exit": {
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
+      "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null
     }
   },
   "tickers": {
     "MSTR": {
       "enabled": false,
-      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
       "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
     },
     "SMCI": {
       "enabled": false,
-      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics \u2014 breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
       "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },
