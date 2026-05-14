@@ -63,6 +63,12 @@ jobs:
             learning-loop/pending-llm-weekly.json 2>/dev/null || true
           git add learning-loop/state.json learning-loop/rationale.md learning-loop/history/
           git add learning-loop/heuristic_proposals.md 2>/dev/null || true
+          # BUGFIX 2026-05-14: allocator plan files are NEW untracked files
+          # in learning-loop/allocations/<date>.{json,log,execution.json}.
+          # `git add -u learning-loop/` only catches tracked files, so the
+          # plan was never committed — root cause of "no allocation plan found"
+          # in morning-allocator. Explicit add fixes this.
+          git add learning-loop/allocations/ 2>/dev/null || true
           git add -u learning-loop/ 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No state changes to commit."

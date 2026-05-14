@@ -275,6 +275,37 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
         else:
             passed.append("daily_drawdown_ok")
 
+        # ── HARD: buying-power / PDT guard (NEW 2026-05-14) ──────────────
+        # Even though guarantee covers daily_drawdown, the account can be
+        # silently maxed out (initial_margin > equity → buying_power=0)
+        # without firing drawdown. In that state, every new BUY/SHORT
+        # order will be rejected by Alpaca with "insufficient buying
+        # power" — but the monitor will keep trying every 5 min and
+        # spam-block the same signal repeatedly.
+        # Reject upfront when:
+        #   buying_power < size_usd
+        # OR account is in PDT day-trade lockout (daytrade_count >= 3 on
+        # PDT-flagged account → Day Trading Margin Call). Alpaca returns
+        # buying_power=0 in that state too.
+        try:
+            bp = float(account.get("buying_power") or 0)
+            dt_count = int(account.get("daytrade_count") or 0)
+            is_pdt = bool(account.get("pattern_day_trader"))
+            if size_usd > 0 and bp < size_usd:
+                failed.append(
+                    f"buying_power ${bp:,.0f} < size_usd ${size_usd:,.0f} "
+                    f"(account leveraged out — close existing positions to free BP)"
+                )
+            elif is_pdt and dt_count >= 3:
+                warnings.append(
+                    f"PDT day-trade count {dt_count} ≥ 3 — next intraday "
+                    f"close+open of same symbol may trigger DTMC lockout"
+                )
+            else:
+                passed.append(f"buying_power_ok (bp=${bp:,.0f}, dt={dt_count})")
+        except (TypeError, ValueError):
+            warnings.append("buying_power_check_skipped (malformed account data)")
+
     # ── HARD: VIX guard ──────────────────────────────────────────────────────
     vix_status, _ = vix_guard()
     if vix_status == "HALT":
