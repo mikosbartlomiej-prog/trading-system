@@ -1,10 +1,19 @@
-name: Options Exit Monitor — TP/SL polling
+name: Options Exit Monitor — TP/SL polling + governor-driven options-first close
+
+# v3.5 (2026-05-14): consumes IntradayProfitGovernor snapshot persisted by
+# exit-monitor. Updates per-position MFE peaks in runtime_state.json and
+# may emit POSITION_MFE_TRAIL_EXIT audit events when a governor-driven
+# close fires. STATE_WRITE_ACTOR=options-exit-monitor is in the
+# RUNTIME_STATE_ACTORS allowlist so the MFE merge is permitted.
 
 on:
   schedule:
-    # Co 5 minut podczas sesji giełdowej (9:30-16:00 ET = 13:30-20:00 UTC)
+    # Every 5 minutes during session (9:30-16:00 ET = 13:30-20:00 UTC)
     - cron: '*/5 13-20 * * 1-5'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}
@@ -18,6 +27,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -29,12 +41,42 @@ jobs:
 
       - name: Run options exit monitor
         env:
-          PYTHONIOENCODING:    utf-8
-          LC_ALL:              C
-          LANG:                C
-          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_SECRET_KEY:   ${{ secrets.ALPACA_SECRET_KEY }}
-          GMAIL_USER:          ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD:  ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:        ${{ secrets.NOTIFY_EMAIL }}
+          PYTHONIOENCODING:            utf-8
+          LC_ALL:                      C
+          LANG:                        C
+          STATE_WRITE_ACTOR:           options-exit-monitor
+          INTRADAY_PROTECTION_ENABLED: 'true'
+          TRAILING_STOP_ENABLED:       'true'
+          ALPACA_API_KEY:              ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY:           ${{ secrets.ALPACA_SECRET_KEY }}
+          GMAIL_USER:                  ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:          ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:                ${{ secrets.NOTIFY_EMAIL }}
         run: python options-exit-monitor/monitor.py
+
+      - name: Commit runtime_state.json + audit JSONL if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add learning-loop/runtime_state.json 2>/dev/null || true
+          git add journal/autonomy/ 2>/dev/null || true
+          # Legacy: trailing_state inside state.json is still touched by the
+          # old _save_trailing_state path. Once that's fully migrated to
+          # runtime_state.json this line can be dropped.
+          git add learning-loop/state.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "options-exit-monitor: runtime_state $(date -u +%Y-%m-%d_%H%M) [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed runtime state on attempt ${attempt}."
+                exit 0
+              fi
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
+            echo "Push failed after 3 attempts."
+          fi
