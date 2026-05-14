@@ -429,6 +429,26 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             rationale.append(f"{today_iso} · {line} · {cut_reason}")
             next_actions.append(line)
 
+    # SPY-overbought regime gate for options-momentum (Lane 2 PR #4, 2026-05-14):
+    # When SPY RSI > 75 we extend the options-momentum pause regardless of
+    # paused_until expiry. This codifies the LLM Senior PM's 2026-05-13
+    # rationale: -$3,120 loss occurred in identical RSI 82+ regime;
+    # auto-resume in that environment would repeat the mistake.
+    block_om, om_why = heuristic_spy_overbought_options_block(today_stats)
+    if block_om and "options-momentum" in new_state.get("strategies", {}):
+        om = new_state["strategies"]["options-momentum"]
+        # Pin paused_until to tomorrow's date so adapt re-evaluates next run.
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        until = (_dt.now(_tz.utc).date() + _td(days=1)).isoformat()
+        changed = False
+        if om.get("enabled") is not False:
+            om["enabled"] = False; changed = True
+        if om.get("paused_until") != until:
+            om["paused_until"] = until; changed = True
+        if changed:
+            rationale.append(f"{today_iso} · options-momentum: SPY-overbought gate · {om_why}")
+            next_actions.append(f"options-momentum: paused_until -> {until} (SPY-overbought gate)")
+
     if not rationale:
         rationale.append(f"{today_iso} · no parameter changes (all strategies within thresholds)")
 
@@ -550,4 +570,23 @@ def heuristic_options_chronic_fill(fill_rate_data: dict,
             f"— suggests chronic limit-pricing miscalibration (consider "
             f"pricing at midpoint+5% instead of close*1.05)"
         )
+    return False, ""
+
+
+# ─── SPY-overbought regime gate for options-momentum (Lane 2 PR #4, 2026-05-14) ─
+def heuristic_spy_overbought_options_block(today_stats: dict) -> tuple[bool, str]:
+    """
+    Block options-momentum re-enable when SPY RSI > 75 (overbought regime).
+
+    Codifies the 2026-05-13 daily-learning Senior PM rationale: $3,120
+    loss happened in SPY RSI 82+ regime; auto-resume under same conditions
+    would repeat the mistake. Heuristic is read from today_stats which is
+    populated by compute_rsi_snapshot().
+
+    Returns (block, reason). Caller (apply_heuristics) extends pause when
+    block is True.
+    """
+    spy_rsi = (today_stats or {}).get("rsi_snapshot", {}).get("SPY", {}).get("today")
+    if spy_rsi is not None and spy_rsi > 75:
+        return True, f"SPY RSI {spy_rsi:.1f} > 75 — overbought regime, options-momentum pause extended"
     return False, ""

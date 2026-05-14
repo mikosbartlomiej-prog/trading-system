@@ -191,6 +191,79 @@ def _is_manual_only(workflow_path: Path) -> bool:
     return "schedule:" not in content
 
 
+def _in_active_cron_window(workflow_path: Path, now: datetime) -> bool:
+    """
+    True iff `now` falls inside at least one cron's hour/dow window.
+
+    For STALE detection: a workflow with `cron: '*/5 13-20 * * 1-5'` is
+    expected to be silent outside US market hours. Without this, off-hours
+    reports flag price/options-monitor as STALE for ~13h every weeknight
+    and ~60h every weekend — false positives.
+
+    Returns True when:
+      - At least one cron in the workflow matches current hour AND dow,
+      - OR no cron has hour/dow restrictions (always-on monitor),
+      - OR workflow file unreadable / no crons (fall back to "active").
+    """
+    try:
+        content = workflow_path.read_text()
+    except FileNotFoundError:
+        return True
+    crons = re.findall(r"cron:\s*['\"]([^'\"]+)['\"]", content)
+    if not crons:
+        return True
+    cur_hour = now.hour
+    cur_dow = (now.weekday() + 1) % 7  # cron dow: 0=Sun..6=Sat
+    for cron in crons:
+        parts = cron.split()
+        if len(parts) < 5:
+            continue
+        h_field, dow_field = parts[1], parts[4]
+        # Hour match
+        if h_field == "*":
+            hour_ok = True
+        elif "-" in h_field:
+            try:
+                lo, hi = [int(x) for x in h_field.split("-")]
+                hour_ok = lo <= cur_hour <= hi
+            except ValueError:
+                hour_ok = True
+        elif "," in h_field:
+            try:
+                hours = [int(x) for x in h_field.split(",")]
+                hour_ok = cur_hour in hours
+            except ValueError:
+                hour_ok = True
+        elif h_field.isdigit():
+            hour_ok = cur_hour == int(h_field)
+        else:
+            hour_ok = True
+        if not hour_ok:
+            continue
+        # DOW match
+        if dow_field == "*":
+            dow_ok = True
+        elif "-" in dow_field:
+            try:
+                lo, hi = [int(x) for x in dow_field.split("-")]
+                dow_ok = lo <= cur_dow <= hi
+            except ValueError:
+                dow_ok = True
+        elif "," in dow_field:
+            try:
+                dows = [int(x) for x in dow_field.split(",")]
+                dow_ok = cur_dow in dows
+            except ValueError:
+                dow_ok = True
+        elif dow_field.isdigit():
+            dow_ok = cur_dow == int(dow_field)
+        else:
+            dow_ok = True
+        if dow_ok:
+            return True
+    return False
+
+
 # ─── Report computation ────────────────────────────────────────────────
 
 def _median(nums: list[float]) -> float:
@@ -213,12 +286,15 @@ def _classify_workflow(workflow_file: str, label: str, asset_class: str,
                         manual_only: bool,
                         now: datetime) -> dict:
     """Compute summary stats for one workflow."""
+    wf_path = _WORKFLOWS_DIR / workflow_file
+    in_window = _in_active_cron_window(wf_path, now)
     out = {
         "workflow_file":    workflow_file,
         "label":            label,
         "asset_class":      asset_class,
         "expected_cadence_min": expected_min,
         "manual_only":      manual_only,
+        "in_active_window": in_window,
         "runs_total_returned":  len(runs),
     }
 
@@ -284,11 +360,14 @@ def _classify_workflow(workflow_file: str, label: str, asset_class: str,
 
 def _verdict(s: dict) -> str:
     """
-    HEALTHY / STALE / FAILING / IDLE / MANUAL_ONLY / API_ERROR per stats:
+    HEALTHY / STALE / FAILING / IDLE / OFF_HOURS / MANUAL_ONLY / API_ERROR:
       - API_ERROR    if API failed
       - MANUAL_ONLY  workflow has no schedule (workflow_dispatch only)
       - FAILING      if last conclusion is failure
+      - OFF_HOURS    workflow's cron window is currently inactive
+                     (e.g. price-monitor `*/5 13-20 * * 1-5` at 03:00 UTC)
       - STALE        if minutes_since_last > 3x expected cadence
+                     AND we're inside the workflow's active window
       - IDLE         no runs in last 24h AND expected cadence < 1440 (sub-daily)
       - HEALTHY      otherwise (incl. daily/weekly that haven't run today)
     """
@@ -299,6 +378,11 @@ def _verdict(s: dict) -> str:
     last_conc = s.get("last_run_conclusion")
     if last_conc == "failure":
         return "FAILING"
+    # Off-hours cron window short-circuits staleness check — without this
+    # market-hours-bounded workflows (price/options/options-exit) get
+    # falsely flagged as STALE every weeknight and weekend.
+    if s.get("in_active_window") is False:
+        return "OFF_HOURS"
     exp = s.get("expected_cadence_min")
     if exp and s.get("staleness_ratio") is not None:
         if s["staleness_ratio"] > 3.0:
@@ -319,6 +403,7 @@ def _emoji(status: str) -> str:
         "FAILING":     "FAIL",
         "STALE":       "STALE",
         "IDLE":        "IDLE",
+        "OFF_HOURS":   "OFF-HRS",
         "MANUAL_ONLY": "MANUAL",
         "API_ERROR":   "ERR",
         "NO_RUNS":     "NONE",

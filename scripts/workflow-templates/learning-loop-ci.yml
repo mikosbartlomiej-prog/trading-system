@@ -1,0 +1,53 @@
+name: Learning-loop CI — adapter tests
+
+# v3.4.5 (2026-05-14): CI gate for Lane 2 auto-PRs.
+#
+# Background: Lane 2 of the LLM proposal architecture creates PRs against
+# `main` that append new heuristic functions + tests to learning-loop/
+# adapter.py + test_adapter.py. PRs sat with no CI signal — operator had
+# no automated way to verify the patch's tests pass before merging.
+#
+# This workflow fires on every PR (and push to main) that touches
+# learning-loop/{adapter,test_adapter,llm_client,analyzer}.py and runs
+# the existing test suite. PR shows green/red check next to the merge
+# button.
+#
+# Safety: read-only, no secrets, no Alpaca calls. Pure unit tests over
+# pure functions.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'learning-loop/adapter.py'
+      - 'learning-loop/test_adapter.py'
+      - 'learning-loop/llm_client.py'
+      - 'learning-loop/analyzer.py'
+      - 'learning-loop/lane2_pr.py'
+  push:
+    branches: [main]
+    paths:
+      - 'learning-loop/adapter.py'
+      - 'learning-loop/test_adapter.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run adapter unit tests
+        working-directory: learning-loop
+        run: |
+          python -m unittest test_adapter -v

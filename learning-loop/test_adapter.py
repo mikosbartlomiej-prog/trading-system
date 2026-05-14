@@ -300,3 +300,39 @@ class TestOptionsLimitTooTight(unittest.TestCase):
     def test_no_trigger_missing_strategy_key(self):
         fired, _ = heuristic_options_limit_too_tight({})
         self.assertFalse(fired)
+
+
+# ─── SPY-overbought regime gate tests (Lane 2 PR #4, 2026-05-14) ────────────
+from adapter import heuristic_spy_overbought_options_block  # noqa: E402,F401
+
+
+class TestSpyOverboughtOptionsBlock(unittest.TestCase):
+    def test_blocks_at_rsi_82(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 82.4}}}
+        fired, reason = heuristic_spy_overbought_options_block(stats)
+        self.assertTrue(fired)
+        self.assertIn("82.4", reason)
+
+    def test_no_block_at_rsi_70(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 70.0}}}
+        fired, _ = heuristic_spy_overbought_options_block(stats)
+        self.assertFalse(fired)
+
+    def test_blocks_just_above_threshold(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 75.1}}}
+        fired, _ = heuristic_spy_overbought_options_block(stats)
+        self.assertTrue(fired)
+
+    def test_no_block_at_threshold(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 75.0}}}
+        fired, _ = heuristic_spy_overbought_options_block(stats)
+        self.assertFalse(fired)
+
+    def test_no_block_missing_spy_data(self):
+        fired, _ = heuristic_spy_overbought_options_block({})
+        self.assertFalse(fired)
+
+    def test_no_block_spy_rsi_none(self):
+        stats = {"rsi_snapshot": {"SPY": {}}}
+        fired, _ = heuristic_spy_overbought_options_block(stats)
+        self.assertFalse(fired)
