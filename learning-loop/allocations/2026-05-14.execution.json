@@ -1,65 +1,65 @@
 {
   "plan_date": "2026-05-14",
-  "executed_at": "2026-05-14T15:58:08Z",
+  "executed_at": "2026-05-14T18:43:16Z",
   "n_placed": 0,
-  "n_skipped": 5,
-  "n_failed": 4,
+  "n_skipped": 0,
+  "n_failed": 9,
   "results": [
     {
       "symbol": "XLE",
       "action": "EXIT",
       "asset_class": "us_equity",
       "status": "failed",
-      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"6616.28\",\"message\":\"insufficient buying power\"}",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"6650.58\",\"message\":\"insufficient buying power\"}",
+      "attempted_at": "2026-05-14T18:43:05Z"
     },
     {
       "symbol": "RTX",
       "action": "EXIT",
       "asset_class": "us_equity",
       "status": "failed",
-      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"6177.88\",\"message\":\"insufficient buying power\"}",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"6167.37\",\"message\":\"insufficient buying power\"}",
+      "attempted_at": "2026-05-14T18:43:07Z"
     },
     {
       "symbol": "XOM",
       "action": "EXIT",
       "asset_class": "us_equity",
       "status": "failed",
-      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"313.49\",\"message\":\"insufficient buying power\"}",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "reason": "Alpaca 403: {\"buying_power\":\"0\",\"code\":40310000,\"cost_basis\":\"314.93\",\"message\":\"insufficient buying power\"}",
+      "attempted_at": "2026-05-14T18:43:07Z"
     },
     {
       "symbol": "AMD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "qty_delta is zero or unknown",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T18:43:07Z"
     },
     {
       "symbol": "SMH",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "qty_delta is zero or unknown",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T18:43:09Z"
     },
     {
       "symbol": "NVDA",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "qty_delta is zero or unknown",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T18:43:10Z"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "qty_delta is zero or unknown",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T18:43:12Z"
     },
     {
       "symbol": "GLD",
@@ -67,15 +67,15 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-14T15:58:07Z"
+      "attempted_at": "2026-05-14T18:43:13Z"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "qty_delta is zero or unknown",
-      "attempted_at": "2026-05-14T15:58:08Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T18:43:15Z"
     }
   ]
 }

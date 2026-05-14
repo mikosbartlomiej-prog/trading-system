@@ -75,3 +75,23 @@
 [15:58:08 ERR ]     GLD BUY failed
 [15:58:08 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
 [15:58:08 INFO]   execution complete: 0 placed, 5 skipped, 4 failed
+
+[18:43:05 INFO] ============================================================
+[18:43:05 INFO] execute_orders() — auto-execute path
+[18:43:05 INFO] ============================================================
+[18:43:05 INFO]   market_status: open=True reason=open
+[18:43:07 ERR ]     XLE EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6650.58","message":"insufficient buying power"}
+[18:43:07 ERR ]     RTX EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"6167.37","message":"insufficient buying power"}
+[18:43:07 ERR ]     XOM EXIT: Alpaca 403: {"buying_power":"0","code":40310000,"cost_basis":"314.93","message":"insufficient buying power"}
+[18:43:08 INFO]     AMD BUY: derived qty=32 from target=$14,637 @ $446.26 (no prior position)
+[18:43:09 ERR ]     AMD BUY failed
+[18:43:10 INFO]     SMH BUY: derived qty=25 from target=$14,637 @ $577.74 (no prior position)
+[18:43:10 ERR ]     SMH BUY failed
+[18:43:11 INFO]     NVDA BUY: derived qty=62 from target=$14,637 @ $235.31 (no prior position)
+[18:43:12 ERR ]     NVDA BUY failed
+[18:43:12 INFO]     SPY BUY: derived qty=12 from target=$9,462 @ $747.84 (no prior position)
+[18:43:13 ERR ]     SPY BUY failed
+[18:43:15 ERR ]     GLD BUY failed
+[18:43:15 INFO]     QQQ BUY: derived qty=11 from target=$8,128 @ $719.43 (no prior position)
+[18:43:16 ERR ]     QQQ BUY failed
+[18:43:16 INFO]   execution complete: 0 placed, 0 skipped, 9 failed
