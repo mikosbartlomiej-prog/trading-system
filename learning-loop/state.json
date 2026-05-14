@@ -240,15 +240,15 @@
   },
   "daily_peak": {
     "date": "2026-05-14",
-    "peak_pl_usd": 0.0,
-    "peak_pl_pct": 0.0,
-    "peak_at": "2026-05-14T05:05:41Z",
-    "peak_equity": 95043.72,
-    "current_pl_usd": -3137.8735419601,
-    "current_equity": 95034.8,
+    "peak_pl_usd": 56.080984825850464,
+    "peak_pl_pct": 0.0005904579896980027,
+    "peak_at": "2026-05-14T10:32:50Z",
+    "peak_equity": 95034.87,
+    "current_pl_usd": 56.080984825850464,
+    "current_equity": 95034.87,
     "retrace_from_peak": 0.0,
     "verdict": "NORMAL",
-    "verdict_at": "2026-05-14T08:03:53Z",
+    "verdict_at": "2026-05-14T10:32:50Z",
     "alerts_sent": {}
   }
 }
