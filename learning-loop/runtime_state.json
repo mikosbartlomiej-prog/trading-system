@@ -1,0 +1,27 @@
+{
+  "_last_writer": "intraday-monitor",
+  "intraday_governor": {
+    "account_unavailable": false,
+    "alerts_sent": {},
+    "block_new_entries": false,
+    "current_equity": 94598.14,
+    "current_intraday_pnl": -380.64901517414546,
+    "current_intraday_pnl_pct": -0.004007726557908963,
+    "date": "2026-05-14",
+    "giveback_pct_of_peak": 0.0,
+    "giveback_usd": 380.64901517414546,
+    "intraday_peak_equity": 94978.78901517414,
+    "intraday_peak_pnl": 0.0,
+    "intraday_peak_pnl_pct": 0.0,
+    "last_action": "transition_NEW_DAY_to_FLAT",
+    "last_update_at": "2026-05-14T19:16:49.510799+00:00",
+    "max_gross_target": 1.5,
+    "options_first_reduction": false,
+    "peak_at": "2026-05-14T19:16:49.510799+00:00",
+    "pnl_state": "FLAT",
+    "profit_floor_usd": 0.0,
+    "session_start_equity": 94978.78901517414,
+    "state_entered_at": "2026-05-14T19:16:49.510799+00:00",
+    "top_giveback_symbols": []
+  }
+}
