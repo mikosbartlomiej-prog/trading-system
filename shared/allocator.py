@@ -864,11 +864,50 @@ class AccountAwareAllocator:
             self.trace.warn(f"{sym} {action}: skipped — market not open", indent=2)
             return result
 
-        # Quantity sanity
+        # Quantity sanity.
+        # BUGFIX 2026-05-14: _build_order sets qty_delta=None for NEW BUYs
+        # (no current position → current_price=0 → fallback). Previously this
+        # branch silently skipped them with "qty_delta is zero or unknown",
+        # which meant every fresh BUY in the plan got dropped — 5 BUYs
+        # skipped in today's run while only EXITs filled. Fix: for BUY,
+        # derive qty from order.target_value + a fresh quote at execute time.
         if qty_delta is None or abs(qty_delta) < 1e-6:
-            result["reason"] = "qty_delta is zero or unknown"
-            self.trace.warn(f"{sym} {action}: skipped — {result['reason']}", indent=2)
-            return result
+            if action == ORDER_BUY:
+                target_value = float(order.get("target_value") or 0)
+                if target_value <= 0:
+                    result["reason"] = "BUY skipped: no target_value to size"
+                    self.trace.warn(f"{sym} BUY: {result['reason']}", indent=2)
+                    return result
+                try:
+                    if is_crypto:
+                        from alpaca_orders import get_latest_crypto_quote as _gq
+                    else:
+                        from alpaca_orders import get_latest_quote as _gq
+                except ImportError:
+                    if is_crypto:
+                        from shared.alpaca_orders import get_latest_crypto_quote as _gq
+                    else:
+                        from shared.alpaca_orders import get_latest_quote as _gq
+                q = _gq(sym)
+                px = (q or {}).get("mid") if q else None
+                if not px or px <= 0:
+                    result["status"] = "failed"
+                    result["reason"] = f"BUY failed: no fresh quote for {sym}"
+                    self.trace.err(f"{sym} BUY: {result['reason']}", indent=2)
+                    return result
+                if is_crypto:
+                    qty_delta = round(target_value / px, 6)
+                else:
+                    qty_delta = max(int(target_value / px), 1)
+                order["current_price"] = round(px, 4)
+                self.trace.info(
+                    f"{sym} BUY: derived qty={qty_delta} from target=${target_value:,.0f} "
+                    f"@ ${px:.2f} (no prior position)", indent=2,
+                )
+            else:
+                result["reason"] = "qty_delta is zero or unknown"
+                self.trace.warn(f"{sym} {action}: skipped — {result['reason']}", indent=2)
+                return result
 
         try:
             if action == ORDER_BUY:
