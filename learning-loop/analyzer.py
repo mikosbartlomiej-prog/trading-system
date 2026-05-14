@@ -1055,6 +1055,40 @@ def run():
                 print(f"    {line}")
             llm_narrative_lines.extend(applied)
 
+        # Anti-overfitting validation (spec §G): block aggressive parameter
+        # changes that aren't backed by enough trades. The validator returns
+        # a merged state where rejected fields are reset to old values. Any
+        # rejections are logged into rationale.md so future runs can see
+        # WHY the loop didn't move size/disable/bias even though the LLM
+        # proposed it.
+        try:
+            from validation import validate_adaptation  # noqa: E402
+            old_state_for_check = json.loads(json.dumps(state))  # the pre-adapter state
+            v_result = validate_adaptation(
+                old_state=old_state_for_check,
+                new_state=new_state,
+                today_stats=today_stats,
+            )
+            new_state = v_result["validated_state"]
+            if v_result["accepted"]:
+                print("  Validator accepted:")
+                for line in v_result["accepted"]:
+                    print(f"    · {line}")
+                    llm_narrative_lines.append(f"{date_iso} · validator accept: {line}")
+            if v_result["rejected"]:
+                print("  Validator REJECTED (sample-size or step-bound):")
+                for entry in v_result["rejected"]:
+                    msg = (f"{entry['strategy']}.{entry['field']} "
+                           f"{entry['old']} -> {entry['new']} :: {entry['reason']}")
+                    print(f"    · {msg}")
+                    llm_narrative_lines.append(f"{date_iso} · validator reject: {msg}")
+            if v_result.get("second_run"):
+                llm_narrative_lines.append(
+                    f"{date_iso} · validator: second daily run blocked — kept old state"
+                )
+        except Exception as e:
+            print(f"  Validator unavailable ({type(e).__name__}: {e}); applying raw overrides")
+
         # Append narrative
         narr = llm_resp.get("narrative") or ""
         regime = llm_resp.get("regime_assessment", "?")

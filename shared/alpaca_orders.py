@@ -37,6 +37,71 @@ ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 ALPACA_DATA_URL = "https://data.alpaca.markets"
 
 
+def _fetch_account() -> dict | None:
+    """Best-effort /v2/account for portfolio-risk gate. Returns None on failure."""
+    if not _headers()["APCA-API-KEY-ID"]:
+        return None
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/account", headers=_headers(), timeout=10)
+        if r.status_code == 200:
+            return r.json()
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_positions() -> list[dict]:
+    if not _headers()["APCA-API-KEY-ID"]:
+        return []
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/positions", headers=_headers(), timeout=10)
+        if r.status_code == 200:
+            return r.json() or []
+    except Exception:
+        pass
+    return []
+
+
+def _fetch_open_orders() -> list[dict]:
+    if not _headers()["APCA-API-KEY-ID"]:
+        return []
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/orders",
+                         headers=_headers(), params={"status": "open"}, timeout=10)
+        if r.status_code == 200:
+            return r.json() or []
+    except Exception:
+        pass
+    return []
+
+
+def _portfolio_risk_gate(symbol: str, side: str, size_usd: float,
+                         asset_class: str) -> tuple[bool, list[str], list[str]]:
+    """
+    Portfolio-level pre-trade gate (spec §D). Returns (ok, failed, warnings).
+    Fail-open on missing inputs — same contract as shared/risk_guards.py.
+    """
+    try:
+        try:
+            from portfolio_risk import evaluate_portfolio_risk
+        except ImportError:
+            from shared.portfolio_risk import evaluate_portfolio_risk  # type: ignore
+        verdict = evaluate_portfolio_risk(
+            proposed_trade = {
+                "symbol":      symbol,
+                "side":        side,
+                "size_usd":    size_usd,
+                "asset_class": asset_class,
+            },
+            account = _fetch_account(),
+            positions = _fetch_positions(),
+            open_orders = _fetch_open_orders(),
+        )
+        return verdict["decision"] == "APPROVE", verdict.get("failed", []), verdict.get("warnings", [])
+    except Exception as e:  # pragma: no cover
+        return True, [], [f"portfolio-risk unavailable ({type(e).__name__}: {e})"]
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -142,6 +207,17 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         print(f"  bracket reject {symbol}: trade-window — {reason}")
         return None
 
+    # Portfolio-level risk gate (spec §D). Runs BEFORE risk-officer so a
+    # symbol+bucket+gross check happens even if USE_RISK_OFFICER=false.
+    pr_ok, pr_failed, pr_warns = _portfolio_risk_gate(
+        symbol=symbol, side=side, size_usd=qty * entry_price, asset_class="us_equity",
+    )
+    if not pr_ok:
+        print(f"  PORTFOLIO-RISK REJECT {symbol}: {'; '.join(pr_failed)}")
+        return None
+    for w in pr_warns:
+        print(f"  portfolio-risk warn: {w}")
+
     # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
     # block the trade; soft warnings are logged but don't reject. Fail-soft
     # if the officer module is unavailable for any reason — proceed to place.
@@ -217,6 +293,16 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     if not ok:
         print(f"  crypto reject {symbol}: trade-window — {reason}")
         return None
+
+    # Portfolio-level risk gate (spec §D).
+    pr_ok, pr_failed, pr_warns = _portfolio_risk_gate(
+        symbol=symbol, side=side, size_usd=qty * limit_price, asset_class="crypto",
+    )
+    if not pr_ok:
+        print(f"  PORTFOLIO-RISK REJECT {symbol}: {'; '.join(pr_failed)}")
+        return None
+    for w in pr_warns:
+        print(f"  portfolio-risk warn: {w}")
 
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
     # (Alpaca crypto = simple limit only); we pass the strategy-level

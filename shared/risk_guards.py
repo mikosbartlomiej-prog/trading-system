@@ -15,6 +15,8 @@ VIX fetch fails open: if Finnhub is unreachable or FINNHUB_API_KEY is unset,
 the guard returns OK so a Finnhub outage cannot silently kill all trading.
 """
 
+from __future__ import annotations
+
 import os
 import urllib.parse
 import requests
@@ -31,7 +33,7 @@ VIX_CAUTION_THRESHOLD = 999.0   # effectively disabled — the CAUTION branch ne
 DAILY_DRAWDOWN_HALT_PCT  = -3.0    # v3.0 aggressive (was -12% in v2.0)
 WEEKLY_DRAWDOWN_HALT_PCT = -7.0    # NEW v3.0
 MAX_DRAWDOWN_DEFENSIVE_PCT = -12.0  # NEW v3.0 — trigger defensive mode
-MAX_DRAWDOWN_FULL_STOP_PCT = -20.0  # NEW v3.0 — close all (manual confirm)
+MAX_DRAWDOWN_FULL_STOP_PCT = -20.0  # NEW v3.0 — emergency-close all via emergency_engine
 POSITION_PCT_CAP         = 40.0    # block new entries if combined pos% > 40% equity
 
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
@@ -276,7 +278,7 @@ def max_drawdown_guard(account: dict | None = None,
     full_stop = _profile_threshold_pct("max_drawdown_full_stop_pct", MAX_DRAWDOWN_FULL_STOP_PCT)
     defensive = _profile_threshold_pct("max_drawdown_defensive_mode_pct", MAX_DRAWDOWN_DEFENSIVE_PCT)
     if dd_pct <= full_stop:
-        msg = f"drawdown {dd_pct:+.2f}% <= {full_stop:+.1f}% -> FULL_STOP (manual confirm required)"
+        msg = f"drawdown {dd_pct:+.2f}% <= {full_stop:+.1f}% -> FULL_STOP (autonomous emergency-close triggered)"
         print(f"  Max-DD guard: {msg}")
         return "FULL_STOP", msg
     if dd_pct <= defensive:

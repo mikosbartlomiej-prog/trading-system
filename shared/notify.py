@@ -85,8 +85,9 @@ def notify_signal(signal: dict, alert_sent: bool, reason: str = "") -> bool:
     """Notification about a detected trading signal.
 
     Options proposals (signal['option_type'] set) get a richer subject and
-    body that doubles as an actionable approval request — Claude Routines
-    have no native email tool, so the monitor itself is the approval channel.
+    body that doubles as an autonomous-audit notification. Per the
+    autonomy contract (docs/AUTONOMY_CONTRACT.md) there is no operator
+    approval step — every signal ends APPROVE or REJECT.
     """
     if signal.get("option_type"):
         return _notify_options_proposal(signal, alert_sent)
@@ -173,11 +174,16 @@ def _notify_options_proposal(signal: dict, alert_sent: bool) -> bool:
     sl_mult    = signal.get("sl_premium_mult", 0.5)
     now        = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    # AUTONOMY: this email is an audit notification, NOT an approval
+    # request. The options-monitor auto-decides APPROVE/REJECT per
+    # docs/AUTONOMY_CONTRACT.md. If a proposal email arrives the system
+    # has already EITHER placed the order ([EXECUTED] subject) OR rejected
+    # it for a deterministic reason (this subject).
     routine_status = "delivered to routine" if alert_sent else "routine delivery FAILED"
-    subject = f"[OPTIONS APPROVAL NEEDED] {opt_type} {symbol} ~${strike_t} ({expiry_min}..{expiry_max})"
+    subject = f"[OPTIONS REJECTED] {opt_type} {symbol} ~${strike_t} ({expiry_min}..{expiry_max})"
 
     body = (
-        f"Options Proposal - APPROVAL REQUIRED\n"
+        f"Options Proposal - AUTONOMOUSLY REJECTED (audit)\n"
         f"{'='*48}\n"
         f"Time:        {now}\n"
         f"Symbol:      {symbol}\n"
@@ -192,18 +198,12 @@ def _notify_options_proposal(signal: dict, alert_sent: bool) -> bool:
         f"SL:          -{int((1 - sl_mult) * 100)}% premium\n"
         f"RSI signal:  {rsi}\n"
         f"\n"
-        f"To EXECUTE this trade (manual, iron-rule):\n"
-        f"  1. Open https://app.alpaca.markets/paper/dashboard/options\n"
-        f"  2. Search {symbol} option chain\n"
-        f"  3. Filter: type={opt_type}, expiry between {expiry_min} and {expiry_max}\n"
-        f"  4. Pick a strike near ${strike_t} with IV <= {iv_max}%\n"
-        f"  5. Buy 1 contract as a bracket order:\n"
-        f"       TP limit  = entry premium * {tp_mult}\n"
-        f"       SL stop   = entry premium * {sl_mult}\n"
-        f"  6. Total cost <= {_usd(size_usd)}\n"
-        f"\n"
-        f"To REJECT: simply ignore this email. If conditions persist, a\n"
-        f"new proposal will arrive on the next 10-minute cron.\n"
+        f"Decision: REJECT (autonomous). Most common reasons:\n"
+        f"  - OPTIONS_ENABLED=false in this environment\n"
+        f"  - liquidity gate failed (spread/OI/volume)\n"
+        f"  - portfolio_risk premium-at-risk cap hit\n"
+        f"  - max open options reached\n"
+        f"Audit trail: journal/autonomy/YYYY-MM-DD.jsonl\n"
         f"\n"
         f"Routine: {routine_status}.\n"
         f"{'='*48}\n"

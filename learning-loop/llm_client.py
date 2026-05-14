@@ -35,7 +35,22 @@ import subprocess
 import time
 import requests
 
-USE_LLM            = os.environ.get("USE_LLM_LEARNING", "true").lower() == "true"
+# LLM toggle (spec §A.1): LLM_ENABLED is the canonical kill switch. Default
+# is false — deterministic execution must work without LLM. The old
+# USE_LLM_LEARNING env is honoured as a fallback for backward compatibility,
+# but LLM_ENABLED wins when both are set.
+def _llm_is_enabled() -> bool:
+    raw = os.environ.get("LLM_ENABLED")
+    if raw is not None:
+        return raw.strip().lower() in ("1", "true", "yes", "on")
+    # Legacy fallback. Note default flipped to FALSE per spec §A.1.
+    raw = os.environ.get("USE_LLM_LEARNING")
+    if raw is not None:
+        return raw.strip().lower() in ("1", "true", "yes", "on")
+    return False
+
+
+USE_LLM            = _llm_is_enabled()
 WORKER_URL         = os.environ.get("CLOUDFLARE_LEARNING_WORKER_URL", "")
 CHALLENGER_WORKER_URL = os.environ.get("CLOUDFLARE_LEARNING_CHALLENGER_WORKER_URL", "")
 TRIGGER_TIMEOUT_S  = 30        # POST is fire-and-forget; receipt comes back <1s

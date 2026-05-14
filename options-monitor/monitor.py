@@ -32,6 +32,8 @@ try:
     from risk_guards import vix_guard
     from market_data import get_daily_bars
     from learning_state import load_strategy_state
+    from runtime_config import options_enabled
+    from portfolio_risk import evaluate_portfolio_risk
 except ImportError:
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
@@ -39,6 +41,59 @@ except ImportError:
     def vix_guard(): return ("OK", 1.0)
     def get_daily_bars(symbol, days=35): return None
     def load_strategy_state(_): return {}
+    def options_enabled(): return False
+    def evaluate_portfolio_risk(*a, **k): return {"decision": "APPROVE", "failed": [], "warnings": [], "metrics": {}}
+
+
+# ─── Options liquidity gate (spec §E.2) ──────────────────────────────────────
+#
+# Cheap deterministic checks BEFORE we POST an order. Free-tier-friendly:
+# uses the same Alpaca options-snapshot we already fetch for limit pricing.
+
+OPTIONS_SPREAD_PCT_MAX = float(os.environ.get("OPTIONS_SPREAD_PCT_MAX", "20.0"))
+OPTIONS_MIN_OPEN_INTEREST = int(os.environ.get("OPTIONS_MIN_OPEN_INTEREST", "100"))
+OPTIONS_MIN_VOLUME = int(os.environ.get("OPTIONS_MIN_VOLUME", "10"))
+
+
+def check_options_liquidity(contract: dict, quote: dict | None) -> tuple[bool, list[str]]:
+    """
+    Returns (ok, reasons). Hard fail when bid<=0 / ask<=0 (illiquid) or
+    spread too wide; soft warn (no fail) when OI/volume missing because
+    Alpaca free chain doesn't always populate them.
+    """
+    reasons: list[str] = []
+    if not quote or quote.get("bid", 0) <= 0 or quote.get("ask", 0) <= 0:
+        reasons.append("no bid/ask quote")
+        return False, reasons
+    bid = float(quote["bid"])
+    ask = float(quote["ask"])
+    if ask <= bid:
+        reasons.append(f"ask {ask} <= bid {bid} (crossed/locked)")
+        return False, reasons
+    mid = (bid + ask) / 2.0
+    spread_pct = (ask - bid) / mid * 100.0
+    if spread_pct > OPTIONS_SPREAD_PCT_MAX:
+        reasons.append(f"spread {spread_pct:.1f}% > {OPTIONS_SPREAD_PCT_MAX}% max")
+        return False, reasons
+    if mid <= 0:
+        reasons.append("mid premium <= 0")
+        return False, reasons
+    # OI / volume are best-effort — Alpaca free chain often omits them.
+    oi = contract.get("open_interest") if isinstance(contract, dict) else None
+    vol = contract.get("volume") if isinstance(contract, dict) else None
+    try:
+        if oi is not None and int(oi) < OPTIONS_MIN_OPEN_INTEREST:
+            reasons.append(f"open_interest {oi} < {OPTIONS_MIN_OPEN_INTEREST}")
+            return False, reasons
+    except (TypeError, ValueError):
+        pass
+    try:
+        if vol is not None and int(vol) < OPTIONS_MIN_VOLUME:
+            reasons.append(f"volume {vol} < {OPTIONS_MIN_VOLUME}")
+            return False, reasons
+    except (TypeError, ValueError):
+        pass
+    return True, reasons
 
 # ─── Konfiguracja ────────────────────────────────────────────────────────────
 
@@ -134,6 +189,46 @@ def is_earnings_imminent(ticker: str) -> bool:
 
 
 # ─── Alpaca helpers ──────────────────────────────────────────────────────────
+
+def _fetch_account_snapshot() -> dict | None:
+    """Helper for portfolio_risk gate. Returns Alpaca /v2/account dict or None."""
+    if not ALPACA_API_KEY:
+        return None
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/account", headers=alpaca_headers(), timeout=10)
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        print(f"  account snapshot error: {e}")
+    return None
+
+
+def _fetch_positions_snapshot() -> list[dict]:
+    """Helper for portfolio_risk gate. Returns Alpaca /v2/positions list."""
+    if not ALPACA_API_KEY:
+        return []
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/positions", headers=alpaca_headers(), timeout=10)
+        if r.status_code == 200:
+            return r.json() or []
+    except Exception as e:
+        print(f"  positions snapshot error: {e}")
+    return []
+
+
+def _fetch_open_orders_snapshot() -> list[dict]:
+    """Helper for portfolio_risk gate. Returns Alpaca /v2/orders?status=open list."""
+    if not ALPACA_API_KEY:
+        return []
+    try:
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/orders",
+                         headers=alpaca_headers(), params={"status": "open"}, timeout=10)
+        if r.status_code == 200:
+            return r.json() or []
+    except Exception as e:
+        print(f"  open orders snapshot error: {e}")
+    return []
+
 
 def count_open_options() -> int:
     """How many options positions does the account currently hold?"""
@@ -352,7 +447,10 @@ def build_proposal(ticker: str) -> dict | None:
         "max_contracts":     MAX_CONTRACTS_PER_SIGNAL,
         "tp_premium_mult":   TP_PREMIUM_MULT,
         "sl_premium_mult":   SL_PREMIUM_MULT,
-        "requires_approval": not AUTO_EXECUTE,
+        # Autonomy contract: there is no human-approval step. False here
+        # means the system auto-executes; True means it auto-rejects (and
+        # logs an audit email). Either way, the operator is never asked.
+        "autonomous_decision": True,
     }
 
 
@@ -393,6 +491,38 @@ def execute_proposal(proposal: dict) -> tuple[str, dict | None]:
     print(f"  {sym}: wybrany {contract_symbol} strike={contract['strike_price']} "
           f"expiry={contract['expiration_date']} premium=${premium:.2f}")
 
+    # Liquidity gate (spec §E.2)
+    quote = _get_option_quote(contract_symbol)
+    ok_liq, liq_reasons = check_options_liquidity(contract, quote)
+    if not ok_liq:
+        print(f"  {sym}: liquidity reject — {'; '.join(liq_reasons)}")
+        return "rejected", None
+
+    # Portfolio-level risk gate (spec §D) — fail-open if Alpaca unavailable.
+    try:
+        from portfolio_risk import evaluate_portfolio_risk as _eval_port
+        account_snap = _fetch_account_snapshot()
+        positions_snap = _fetch_positions_snapshot()
+        open_orders_snap = _fetch_open_orders_snapshot()
+        port_verdict = _eval_port(
+            proposed_trade = {
+                "symbol":     contract_symbol,
+                "side":       "buy_to_open",
+                "size_usd":   qty * premium * 100,
+                "asset_class": "us_option",
+            },
+            account = account_snap,
+            positions = positions_snap,
+            open_orders = open_orders_snap,
+        )
+        if port_verdict["decision"] == "REJECT":
+            print(f"  {sym}: portfolio-risk REJECT — {'; '.join(port_verdict['failed'])}")
+            return "rejected", None
+        for w in port_verdict.get("warnings", []):
+            print(f"  portfolio-risk warn: {w}")
+    except Exception as e:  # pragma: no cover — fail-open
+        print(f"  portfolio-risk unavailable ({type(e).__name__}: {e}); proceeding")
+
     order = place_options_buy(
         contract_symbol = contract_symbol,
         qty             = qty,
@@ -427,6 +557,16 @@ def run_scan():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     mode = "AUTO-EXECUTE (Alpaca REST)" if AUTO_EXECUTE else "ROUTINE (Cloudflare Worker)"
     print(f"\n[{now}] === OPTIONS MONITOR — {mode} ===")
+
+    # Global kill switch — OPTIONS_ENABLED must be true to allow ANY options
+    # entry. Defaults to false per spec §E.1. Existing/exit positions are
+    # NOT affected — options-exit-monitor still runs independently to close
+    # what's already open.
+    if not options_enabled():
+        print("  OPTIONS_ENABLED=false (default) -> safe no-op")
+        print("  To enable, set env OPTIONS_ENABLED=true in the workflow YAML.")
+        notify_summary("Options Monitor", 0, 0)
+        return
 
     if not FINNHUB_API_KEY:
         print("BŁĄD: brak FINNHUB_API_KEY")
