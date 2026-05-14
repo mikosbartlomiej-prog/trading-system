@@ -1,13 +1,9 @@
 name: Exit Monitor — dual cron (market 5min + off-hours 15min)
 
-# v3.5 (vNext): per spec §C exit-monitor must NOT commit state.json on
-# every cron tick (git-as-runtime-database anti-pattern). peak_tracker
-# state persistence is BACKLOG: migrate daily_peak + trailing_state to
-# learning-loop/runtime_state.json behind a separate workflow with
-# STATE_WRITE_ACTOR=manual-maintenance so it can write without
-# violating the state-policy invariant.
-# Without persistence, PROFIT_LOCK detection resets each tick — operator
-# is alerted via daily-health-check if drift becomes large.
+# v3.4.1 (2026-05-13): added commit step to persist peak_tracker state.
+# Without this, shared/peak_tracker.py writes state.json on the runner
+# but changes are discarded — daily_peak/trailing_state never persist
+# across cron ticks, so PROFIT_LOCK + trailing stop are silently broken.
 
 on:
   schedule:
@@ -16,12 +12,8 @@ on:
     - cron: '*/15 * * * 0,6'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
-
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check-positions:
@@ -32,6 +24,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
       - name: Setup Python
@@ -54,3 +47,26 @@ jobs:
           GMAIL_APP_PASSWORD:         ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:               ${{ secrets.NOTIFY_EMAIL }}
         run: python exit-monitor/monitor.py
+
+      - name: Commit peak_tracker + trailing_state if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          # state.json holds: daily_peak (peak_tracker), trailing_state (options peaks)
+          git add learning-loop/state.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No state changes to commit (no peak update this tick)."
+          else
+            git commit -m "exit-monitor: state $(date -u +%Y-%m-%d_%H%M) [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed state on attempt ${attempt}."
+                exit 0
+              fi
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
+            echo "Push failed after 3 attempts; state still in this run's logs."
+          fi

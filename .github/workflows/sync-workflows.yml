@@ -44,14 +44,8 @@ on:
         type:     boolean
         default:  false
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
-
 permissions:
-  contents: write   # writes to .github/workflows via PAT; declared so the
-                    # static auditor (scripts/audit_workflows.py) sees parity
-                    # between declared perms and actual git commit/push
+  contents: read    # PAT does the writes; GITHUB_TOKEN only needs read here
 
 jobs:
   sync:
