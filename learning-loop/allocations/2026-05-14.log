@@ -45,3 +45,18 @@
 [15:23:51 WARN]     order check failed: BTCUSD:EXIT — BTCUSD not on risk_officer whitelist
 [15:23:51 INFO] ── Step 8: plan complete ──
 [15:23:51 INFO]   auto_execute=False  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[15:33:48 INFO] ============================================================
+[15:33:48 INFO] execute_orders() — auto-execute path
+[15:33:48 INFO] ============================================================
+[15:33:48 INFO]   market_status: open=True reason=open
+[15:33:48 INFO]     XLE EXIT placed: EXIT MARKET 111
+[15:33:48 INFO]     RTX EXIT placed: EXIT MARKET 34
+[15:33:48 INFO]     XOM EXIT placed: EXIT MARKET 2
+[15:33:48 WARN]     AMD BUY: skipped — qty_delta is zero or unknown
+[15:33:48 WARN]     SMH BUY: skipped — qty_delta is zero or unknown
+[15:33:48 WARN]     NVDA BUY: skipped — qty_delta is zero or unknown
+[15:33:48 WARN]     SPY BUY: skipped — qty_delta is zero or unknown
+[15:33:50 ERR ]     GLD BUY failed
+[15:33:50 WARN]     QQQ BUY: skipped — qty_delta is zero or unknown
+[15:33:50 INFO]   execution complete: 3 placed, 5 skipped, 1 failed

@@ -1,0 +1,84 @@
+{
+  "plan_date": "2026-05-14",
+  "executed_at": "2026-05-14T15:33:50Z",
+  "n_placed": 3,
+  "n_skipped": 5,
+  "n_failed": 1,
+  "results": [
+    {
+      "symbol": "XLE",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 111",
+      "attempted_at": "2026-05-14T15:33:48Z",
+      "alpaca_order_id": "c68a764a-07b3-426d-92c0-63838abd8330"
+    },
+    {
+      "symbol": "RTX",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 34",
+      "attempted_at": "2026-05-14T15:33:48Z",
+      "alpaca_order_id": "ee6732a7-fbd1-4c4a-b457-8cefb5e0a06c"
+    },
+    {
+      "symbol": "XOM",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 2",
+      "attempted_at": "2026-05-14T15:33:48Z",
+      "alpaca_order_id": "6742638f-b944-4f1c-ae94-467aedc65730"
+    },
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "qty_delta is zero or unknown",
+      "attempted_at": "2026-05-14T15:33:48Z"
+    },
+    {
+      "symbol": "SMH",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "qty_delta is zero or unknown",
+      "attempted_at": "2026-05-14T15:33:48Z"
+    },
+    {
+      "symbol": "NVDA",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "qty_delta is zero or unknown",
+      "attempted_at": "2026-05-14T15:33:48Z"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "qty_delta is zero or unknown",
+      "attempted_at": "2026-05-14T15:33:48Z"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-14T15:33:48Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "qty_delta is zero or unknown",
+      "attempted_at": "2026-05-14T15:33:50Z"
+    }
+  ]
+}
