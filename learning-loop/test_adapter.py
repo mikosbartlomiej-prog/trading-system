@@ -336,3 +336,34 @@ class TestSpyOverboughtOptionsBlock(unittest.TestCase):
         stats = {"rsi_snapshot": {"SPY": {}}}
         fired, _ = heuristic_spy_overbought_options_block(stats)
         self.assertFalse(fired)
+
+
+# ─── Stale-exit-emergency tests (Lane 2 PR #3, 2026-05-09) ───────────────────
+from adapter import heuristic_stale_exit_emergency  # noqa: E402,F401
+
+
+class TestStaleExitEmergency(unittest.TestCase):
+    def test_triggers_on_stale_pattern(self):
+        stats = {"exit-emergency": {"placed": 4, "filled": 0, "canceled": 0}}
+        fired, reason = heuristic_stale_exit_emergency(stats)
+        self.assertTrue(fired)
+        self.assertIn("stale LIMIT orders suspected", reason)
+
+    def test_no_trigger_when_orders_canceled(self):
+        stats = {"exit-emergency": {"placed": 4, "filled": 0, "canceled": 4}}
+        fired, _ = heuristic_stale_exit_emergency(stats)
+        self.assertFalse(fired)
+
+    def test_no_trigger_below_min_placed(self):
+        stats = {"exit-emergency": {"placed": 1, "filled": 0, "canceled": 0}}
+        fired, _ = heuristic_stale_exit_emergency(stats)
+        self.assertFalse(fired)
+
+    def test_no_trigger_when_some_filled(self):
+        stats = {"exit-emergency": {"placed": 4, "filled": 1, "canceled": 0}}
+        fired, _ = heuristic_stale_exit_emergency(stats)
+        self.assertFalse(fired)
+
+    def test_no_trigger_missing_key(self):
+        fired, _ = heuristic_stale_exit_emergency({})
+        self.assertFalse(fired)

@@ -429,6 +429,13 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             rationale.append(f"{today_iso} · {line} · {cut_reason}")
             next_actions.append(line)
 
+    # Stale-exit-emergency detector (Lane 2 PR #3, 2026-05-09): surface
+    # the QQQ260518P00714000-style failure in daily rationale so operator
+    # gets a visible nudge to clean up stuck orders.
+    stale_fired, stale_why = heuristic_stale_exit_emergency(fill_data)
+    if stale_fired:
+        rationale.append(f"{today_iso} · {stale_why}")
+
     # SPY-overbought regime gate for options-momentum (Lane 2 PR #4, 2026-05-14):
     # When SPY RSI > 75 we extend the options-momentum pause regardless of
     # paused_until expiry. This codifies the LLM Senior PM's 2026-05-13
@@ -589,4 +596,28 @@ def heuristic_spy_overbought_options_block(today_stats: dict) -> tuple[bool, str
     spy_rsi = (today_stats or {}).get("rsi_snapshot", {}).get("SPY", {}).get("today")
     if spy_rsi is not None and spy_rsi > 75:
         return True, f"SPY RSI {spy_rsi:.1f} > 75 — overbought regime, options-momentum pause extended"
+    return False, ""
+
+
+# ─── Stale-exit-emergency detector (Lane 2 PR #3, 2026-05-09) ────────────────
+def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
+    """
+    Flag when exit-emergency orders are placed but never fill or cancel.
+
+    Realised problem 2026-05-13/14: QQQ260518P00714000 had 4 attempted
+    closes that all returned errors (paper API buying-power bug), the
+    standing LIMIT @$5.80 sat unfilled, and no auto-cancellation fired.
+    Detector: if `exit-emergency.placed >= 2` and both `filled == 0` AND
+    `canceled == 0`, surface in rationale so operator runs the
+    cancel-stale-emergency-orders workflow.
+    """
+    fe = (fill_stats or {}).get("exit-emergency", {})
+    placed = fe.get("placed", 0)
+    filled = fe.get("filled", 0)
+    canceled = fe.get("canceled", 0)
+    if placed >= 2 and filled == 0 and canceled == 0:
+        return True, (
+            f"exit-emergency: {placed} placed / 0 filled / 0 canceled "
+            "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
+        )
     return False, ""
