@@ -1,0 +1,17 @@
+
+=== Emergency Close 2026-05-14 | 2026-05-14 14:44:20 UTC ===
+Targets: ['QQQ260518P00714000']
+
+Account OK — equity $94,589.94  daily P&L $-388.85
+
+--- QQQ260518P00714000 ---
+  Reason: Stuck since 2026-05-13. 4× routine attempts failed with Alpaca paper 'insufficient options buying power for cash-secured put' (paper bug for sell_to_close). DTE=4, P&L -23.24%. DELETE /v2/positions bypasses bug.
+  [QQQ260518P00714000] DELETE /v2/positions/QQQ260518P00714000
+  [QQQ260518P00714000]   → CLOSE OK: order_id=d6499c2c-bef0-44a7-89b9-e009aaa05001 status=pending_new
+
+=== Summary ===
+  ✅ QQQ260518P00714000
+
+All 1 positions closed successfully.
+
+MACHINE_READABLE_RESULT:{"timestamp": "2026-05-14T14:44:22.104417+00:00", "total": 1, "ok": 1, "failed": 0, "results": [{"ok": true, "symbol": "QQQ260518P00714000", "order": {"id": "d6499c2c-bef0-44a7-89b9-e009aaa05001", "client_order_id": "cda058d6-1d5f-4b67-a222-ca7c9b29a9ae", "created_at": "2026-05-14T14:44:21.596120758Z", "updated_at": "2026-05-14T14:44:21.596194868Z", "submitted_at": "2026-05-14T14:44:21.592492918Z", "filled_at": null, "expired_at": null, "canceled_at": null, "failed_at": null, "replaced_at": null, "replaced_by": null, "replaces": null, "asset_id": "d390b35c-1f51-48ea-9c9c-257678437f7c", "symbol": "QQQ260518P00714000", "asset_class": "us_option", "notional": null, "qty": "2", "filled_qty": "0", "filled_avg_price": null, "order_class": "simple", "order_type": "market", "type": "market", "side": "sell", "position_intent": "sell_to_close", "time_in_force": "day", "limit_price": null, "stop_price": null, "status": "pending_new", "extended_hours": false, "legs": null, "trail_percent": null, "trail_price": null, "hwm": null, "subtag": null, "source": null, "expires_at": "2026-05-14T20:15:00Z"}}]}
