@@ -25,3 +25,7 @@ Thumbs.db
 # Backtest harness artifacts
 backtest/.cache/
 backtest/results/
+
+# Agent-generated reports (regenerated on every run)
+reports/
+
