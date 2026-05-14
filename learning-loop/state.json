@@ -184,6 +184,27 @@
     }
   },
   "trailing_state": {},
+  "pending_emergency_close": {
+    "created_at": "2026-05-14T05:08:00Z",
+    "created_by": "exit-monitor-routine",
+    "reason": "CLOSE_EMERGENCY: strata -23.24% > prog awaryjny -12%; daily P&L -3.19% (v3.0 defensive mode)",
+    "orders": [
+      {
+        "symbol": "QQQ260518P00714000",
+        "qty": 2,
+        "side": "sell",
+        "type": "limit",
+        "limit_price": 5.80,
+        "time_in_force": "day",
+        "asset_class": "us_option",
+        "client_order_id": "exit-emergency-QQQ260518P00714000-20260514-0508",
+        "prior_order_id_01": "e2969770-2d67-44d3-8356-2f2114b1fc2a",
+        "note": "Zlec z 01:26 UTC nieweryfikowalne. Jesli nie aktywne - wykonac przez emergency-close-positions.yml"
+      }
+    ],
+    "status": "PENDING_EXECUTION",
+    "execute_at_open": "2026-05-14T13:30:00Z"
+  },
   "daily_peak": {
     "date": "2026-05-14",
     "peak_pl_usd": 0.0,
