@@ -1,0 +1,60 @@
+{
+  "plan_date": "2026-05-15",
+  "executed_at": "2026-05-15T14:47:02Z",
+  "n_placed": 3,
+  "n_skipped": 0,
+  "n_failed": 3,
+  "results": [
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-15T14:46:51Z"
+    },
+    {
+      "symbol": "SMH",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-15T14:46:53Z"
+    },
+    {
+      "symbol": "NVDA",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-15T14:46:54Z"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 12.0000 @ $740.99",
+      "attempted_at": "2026-05-15T14:46:56Z",
+      "alpaca_order_id": "2ace4d2e-8a90-4060-acc4-f2e564f46a8c"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 22.0000 @ $417.86",
+      "attempted_at": "2026-05-15T14:46:58Z",
+      "alpaca_order_id": "19a43b91-4fb0-4b11-a514-cec4feaf06d7"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 11.0000 @ $710.50",
+      "attempted_at": "2026-05-15T14:47:00Z",
+      "alpaca_order_id": "898a6bf2-dd92-4c38-854b-0fe7bca8b2c0"
+    }
+  ]
+}

@@ -35,3 +35,21 @@
 [01:37:24 INFO]   summary: 6 actionable + 0 hold; passed=6  failed=0
 [01:37:24 INFO] ── Step 8: plan complete ──
 [01:37:24 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[14:46:51 INFO] ============================================================
+[14:46:51 INFO] execute_orders() — auto-execute path
+[14:46:51 INFO] ============================================================
+[14:46:51 INFO]   market_status: open=True reason=open
+[14:46:52 INFO]     AMD BUY: derived qty=32 from target=$14,634 @ $444.00 (no prior position)
+[14:46:53 ERR ]     AMD BUY failed
+[14:46:54 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $559.65 (no prior position)
+[14:46:54 ERR ]     SMH BUY failed
+[14:46:55 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $228.24 (no prior position)
+[14:46:56 ERR ]     NVDA BUY failed
+[14:46:56 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $740.99 (no prior position)
+[14:46:58 INFO]     SPY BUY placed: BUY 12.0000 @ $740.99  id=2ace4d2e-8a90-4060-acc4-f2e564f46a8c
+[14:46:58 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.86 (no prior position)
+[14:47:00 INFO]     GLD BUY placed: BUY 22.0000 @ $417.86  id=19a43b91-4fb0-4b11-a514-cec4feaf06d7
+[14:47:00 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $710.50 (no prior position)
+[14:47:02 INFO]     QQQ BUY placed: BUY 11.0000 @ $710.50  id=898a6bf2-dd92-4c38-854b-0fe7bca8b2c0
+[14:47:02 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
