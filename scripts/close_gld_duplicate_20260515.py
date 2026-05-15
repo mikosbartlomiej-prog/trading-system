@@ -69,25 +69,24 @@ def get_position(symbol: str) -> dict | None:
 
 
 def place_sell(symbol: str, qty: int) -> dict | None:
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    payload = {
-        "symbol":          symbol,
-        "qty":             str(qty),
-        "side":            "sell",
-        "type":            "market",
-        "time_in_force":   "day",
-        "client_order_id": f"op-correction-{symbol}-duplicate-{ts}",
-    }
+    """
+    Close `qty` shares of `symbol` via DELETE /v2/positions/{symbol}?qty=X.
+
+    Why DELETE instead of POST /v2/orders SELL: bracket-order child legs
+    (SL + TP) reserve the entire position for execution. POST SELL
+    returns 403 "insufficient qty available" because Alpaca counts all
+    shares as held_for_orders. DELETE on positions endpoint auto-cancels
+    conflicting orders + closes the requested qty atomically.
+    """
     try:
-        r = requests.post(
-            f"{ALPACA_BASE}/v2/orders",
+        r = requests.delete(
+            f"{ALPACA_BASE}/v2/positions/{symbol}?qty={qty}",
             headers=_headers(),
-            json=payload,
             timeout=15,
         )
-        if r.status_code in (200, 201):
+        if r.status_code in (200, 201, 207):
             return r.json()
-        print(f"  POST /v2/orders: HTTP {r.status_code} {r.text[:250]}")
+        print(f"  DELETE /v2/positions/{symbol}?qty={qty}: HTTP {r.status_code} {r.text[:250]}")
         return None
     except Exception as e:
         print(f"  exception: {e}")
