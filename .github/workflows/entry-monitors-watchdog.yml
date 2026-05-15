@@ -28,7 +28,11 @@ name: Entry Monitors — Watchdog (re-trigger if missed)
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # every 15 min, 24/7
+    - cron: '*/10 * * * *'   # every 10 min, 24/7 (v3.8.4 — bumped from */15
+                              # after 2026-05-15 incident: watchdog itself
+                              # cron-skipped multiple slots, missed STALE
+                              # workflows for 2+ hours. */10 doubles
+                              # catch-probability against GH Actions cron skip).
   workflow_dispatch:
 
 concurrency:
