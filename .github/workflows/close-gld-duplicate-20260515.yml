@@ -1,0 +1,39 @@
+name: Close GLD duplicate (operational correction 2026-05-15)
+
+# One-shot: closes 22 GLD shares to revert allocator-duplicate concentration
+# (44 shares from two triggers, 19.5% equity > 20% AGGRESSIVE cap risk).
+# Safe to delete this workflow + scripts/close_gld_duplicate_20260515.py
+# after one successful run.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Close GLD duplicate
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python3 scripts/close_gld_duplicate_20260515.py
