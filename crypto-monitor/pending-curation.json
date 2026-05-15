@@ -1,16 +1,16 @@
 {
-  "narrative": "Dwa kandydaci SELL_SHORT na AVAX/AAVE z RSI 12.6/14.7 i volume 148×/26× — to klasyczne dno kapitulacji/liquidation flush, nie potwierdzenie kontynuacji breakdown. BTC 1h +0.55% aktywnie blokuje alt shorty (Predator reguła: alt shorts wymagają BTC <-1.5%); short-squeeze ryzyko przy RSI 12-15 jest maksymalne. Zero emisji.",
+  "narrative": "Oba kandydaci odrzuceni — LINK RSI 21.3 i UNI RSI 24.4 to skrajne kapitulacyjne wyprzedanie, nie świeże breakdowny. LINK 11.92x vol potwierdza panic-sell, ale shortowanie przy RSI 21 = entry jako exit liquidity dla covrujących. UNI 540x vol to anomalia danych lub zakończony whale dump — wejście po fakcie.",
   "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "AVAX/USD",
-      "reason": "RSI 12.6 + volume 148.63× avg = klasyczny liquidation cascade bottom — volume spike przy ekstremalnym RSI to capitulation signal sprzedających, nie potwierdzenie kontynuacji; BTC 1h +0.55% wyklucza alt shorty per Predator reguła; short-squeeze ryzyko maksymalne."
+      "ticker": "LINK/USD",
+      "reason": "RSI 21.3 = skrajne wyprzedanie; 11.92x volume sugeruje kapitulację (koniec ruchu), nie świeży breakdown — shortowanie tu ryzykuje 8% bounce prosto w stop-loss."
     },
     {
-      "ticker": "AAVE/USD",
-      "reason": "RSI 14.7 (ekstremalne wyprzedanie) + volume 26.29× + BTC 1h pozytywny (+0.55%) = identyczna pułapka co AVAX; AAVE to cienki DeFi-governance token z wysokim spreadem na Alpaca; mean-reversion dominuje nad kontynuacją breakdown przy tych poziomach RSI."
+      "ticker": "UNI/USD",
+      "reason": "Volume ratio 540x to anomalia danych lub szczyt jednorazowego whale dump; RSI 24.4 + ekstremalny wolumen = wejście po fakcie jako exit liquidity."
     }
   ],
-  "macro_context": "BTC 1h +0.55% — pozytywna dynamika wyklucza alt-short pozycje per Predator reguły; konto czyste (0 otwartych pozycji, equity $94,598); AVAX/AAVE volume spikes (148×/26×) sygnalizują flush/kapitulację dna, nie nowy trend spadkowy.",
+  "macro_context": "BTC flat (-0.07% 1h) — neutralny backdrop; DeFi alts wyprzedawane selektywnie bez BTC katalizatora, co wskazuje na rotation out of DeFi, nie broad sell-off.",
   "confidence_in_curation": "high"
 }
