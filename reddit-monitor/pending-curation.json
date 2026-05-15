@@ -1,20 +1,20 @@
 {
-  "narrative": "Trzech kandydatów, zero edge: SPXL short oparty na gain-porn z pozycji long (spike_ratio=99 to artefakt rolling_avg=0, treść BYCZA nie niedźwiedzia); AMD BUY bez katalizatora AMD-specific przy semis concentration 46% (AMD 15.1% + NVDA 15.4% + SMH 15.4%) daleko ponad cap; SPY BUY na loss-porn o 0DTE z skew=0.2 = czysty szum. Zero edge dzisiaj — chronię bankroll.",
+  "narrative": "Zero edge dzisiaj — wszystkie 3 kandydaty to fałszywe sygnały. SPXL spike_ratio=99 artefakt (rolling_avg=0), post to $4M gain porn z pozycji LONG — skew=-1 błędnie wykryty, kierunek odwrotny do reżimu (VIX=17 risk-on). AMD brak katalizatora AMD-specific, posty mówią o TSM i NVDA; portfel już ma semis na 45.9% (AMD+NVDA+SMH) — concentration cap naruszony. SPY: post to 0DTE loss story, nie sygnał BUY; skew=+0.2 szum. Bankroll chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "SPXL",
-      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwszy mention w historii); post to gain-porn od długoterminowego LONG-holdera ($4M zysk z pozycji long SPXL) — wyekstrahowany side SELL_SHORT odwrotny do treści posta i do reżimu (VIX=17, portfel 100% long); brak katalizatora bearish."
+      "reason": "spike_ratio=99 artefakt (rolling_avg_7d=0, pierwsza wzmianka); post to gain-porn z $4M zysku z pozycji LONG SPXL — wyekstrahowany side SELL_SHORT odwrotny do treści posta i do reżimu (VIX=17, portfel 100% long); brak katalizatora bearish; shortowanie 3x ETF w risk-on bez zmiany reżimu = brak edge."
     },
     {
       "ticker": "AMD",
-      "reason": "Brak katalizatora AMD-specific — ticker wyekstrahowany tangencjalnie z dyskusji o wycenie NVDA; najlepszy post 35 ups dotyczy TSM; spike_ratio=1.5 poniżej progu; AMD+NVDA+SMH=45.9% equity blokuje dokładanie (per-ticker concentration cap)."
+      "reason": "Brak katalizatora AMD-specific — posty dotyczą TSM monopolu i wyceny NVDA ATH; spike_ratio=1.5 poniżej progu; AMD 15.1% + NVDA 15.4% + SMH 15.4% = 45.9% equity w semis blokuje dokładanie (concentration cap naruszony)."
     },
     {
       "ticker": "SPY",
-      "reason": "Top post to loss-porn (0DTE -$16k call) bez bullish tezy; skew=0.2 = szum statystyczny; spike_ratio=1.6 bez znaczenia; zduplikowana pozycja (SPY 9.4% portfela) bez nowego katalizatora z ostatnich 24h."
+      "reason": "Post to 0DTE loss-porn (-$16k na calls) bez bullish tezy; skew=+0.2 szum statystyczny; spike_ratio=1.6 bez znaczenia; SPY już 9.4% portfela bez nowego katalizatora z ostatnich 24h."
     }
   ],
-  "macro_context": "Reżim risk-on (VIX=17, portfel zyska: NVDA +0.43%, AMD +0.39%), ale semis concentration na granicy — żaden sygnał Reddit nie dostarcza świeżego katalizatora; najlepszą decyzją jest nie dodawanie do już maksymalnie obciążonych pozycji.",
+  "macro_context": "Reżim risk-on: VIX=17, portfel +0.33% dziennie, semis strong — ale portfel już blisko concentration cap w AI/semis (45.9%); żaden sygnał Reddit nie dostarcza świeżego katalizatora wartego nowej pozycji.",
   "confidence_in_curation": "high"
 }
