@@ -50,6 +50,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install requests (shared modules import requests transitively)
+        run: pip install requests
+
       - name: Run validator
         env:
           AUTONOMOUS_PATCH_PATH:    ${{ inputs.patch_path }}
