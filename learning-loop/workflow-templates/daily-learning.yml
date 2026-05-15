@@ -39,6 +39,7 @@ jobs:
 
       - name: Run daily learning analyzer
         env:
+          RISK_PROFILE:        AGGRESSIVE_PAPER
           PYTHONIOENCODING:                utf-8
           LC_ALL:                          C
           LANG:                            C

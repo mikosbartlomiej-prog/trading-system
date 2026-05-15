@@ -62,6 +62,7 @@ jobs:
 
       - name: Execute allocation plan
         env:
+          RISK_PROFILE:        AGGRESSIVE_PAPER
           PYTHONIOENCODING:    utf-8
           LC_ALL:              C
           LANG:                C
