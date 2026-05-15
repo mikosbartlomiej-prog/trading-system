@@ -77,7 +77,14 @@ jobs:
           # management — missing them risks unprotected positions
           # overnight or unexecuted allocation plans.
           - workflow: morning-allocator.yml
-            staleness_minutes: 20      # cron is daily 13:35; check 13:35-14:00
+            staleness_minutes: 720     # 12h — morning-allocator fires once
+                                        # per day at 13:35 UTC. With 20 min
+                                        # threshold (v3.8.3 mistake) it became
+                                        # STALE 20 min after 13:35 and watchdog
+                                        # retriggered every 10 min until EOD —
+                                        # 3 wasted NOOPs today. 720 min means:
+                                        # only retrigger if no allocator run in
+                                        # last 12h (i.e. 13:35 cron was missed).
             session_only: true
           - workflow: exit-monitor.yml
             staleness_minutes: 12      # cron */5 13-20 weekday + dual off-hours
