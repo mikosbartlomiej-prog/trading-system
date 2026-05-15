@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 94598.04,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
+    "current_equity": 94484.58,
+    "current_intraday_pnl": -113.45999999999185,
+    "current_intraday_pnl_pct": -0.0011993906004816998,
     "date": "2026-05-15",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
+    "giveback_usd": 113.45999999999185,
     "intraday_peak_equity": 94978.78901517414,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-05-15T14:34:44.044364+00:00",
+    "last_update_at": "2026-05-15T14:50:46.731885+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-15T00:10:31.854468+00:00",
@@ -23,6 +23,44 @@
     "session_start_equity": 94598.04,
     "state_entered_at": "2026-05-15T00:10:31.854468+00:00",
     "top_giveback_symbols": []
+  },
+  "position_mfe": {
+    "AMD": {
+      "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
+      "last_pct": -0.00263,
+      "last_seen_at": "2026-05-15T14:50:46.732518+00:00",
+      "peak_pct": 0.0
+    },
+    "GLD": {
+      "first_seen_at": "2026-05-15T14:50:46.732993+00:00",
+      "last_pct": -0.00034,
+      "last_seen_at": "2026-05-15T14:50:46.732993+00:00",
+      "peak_pct": 0.0
+    },
+    "NVDA": {
+      "first_seen_at": "2026-05-15T14:50:46.733487+00:00",
+      "last_pct": -0.00187,
+      "last_seen_at": "2026-05-15T14:50:46.733487+00:00",
+      "peak_pct": 0.0
+    },
+    "QQQ": {
+      "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
+      "last_pct": -0.0006999999999999999,
+      "last_seen_at": "2026-05-15T14:50:46.733960+00:00",
+      "peak_pct": 0.0
+    },
+    "SMH": {
+      "first_seen_at": "2026-05-15T14:50:46.734446+00:00",
+      "last_pct": -0.00177,
+      "last_seen_at": "2026-05-15T14:50:46.734446+00:00",
+      "peak_pct": 0.0
+    },
+    "SPY": {
+      "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
+      "last_pct": -0.00033,
+      "last_seen_at": "2026-05-15T14:50:46.734914+00:00",
+      "peak_pct": 0.0
+    }
   },
   "routine_budget": {
     "by_routine": {
