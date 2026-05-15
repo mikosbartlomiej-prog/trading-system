@@ -112,6 +112,15 @@ CRYPTO_MAX_EXPOSURE_USD = 25000   # v2.0 — combined cap
 RSI_LONG_MIN  = 45
 RSI_SHORT_MAX = 35
 
+# v3.8.1 (2026-05-15): Alpaca paper crypto = LONG-only.
+# Every SELL_SHORT order returns 403 "insufficient balance" because there is
+# no margin shorting on crypto. The crypto-breakdown strategy was generating
+# spam emails ("Alert NOT sent (error)") all session. Until Alpaca adds
+# crypto margin shorting (or we route via inverse instruments) the SHORT
+# emission must be silenced at source. Default False; flip via env if
+# Alpaca ever changes.
+ENABLE_CRYPTO_SHORT = os.environ.get("ENABLE_CRYPTO_SHORT", "false").lower() == "true"
+
 # ─── Alpaca Market Data API ───────────────────────────────────────────────────
 
 def alpaca_data_get(endpoint: str, params: dict = None) -> dict:
@@ -313,9 +322,19 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
         }
 
     # ── SHORT entry ────────────────────────────────────────────────────
+    # Gated by ENABLE_CRYPTO_SHORT (default False as of v3.8.1) — Alpaca
+    # paper crypto is LONG-only; emitting SHORT signals produces 403
+    # "insufficient balance" rejects and "Alert NOT sent (error)" emails.
+    # The detection block stays for observability (log only) so we can
+    # flip the flag on later if margin shorting becomes available.
     if (current_price < low_20
             and current_volume > avg_vol * max(1.5, vol_mult - 0.5)
             and rsi is not None and rsi < RSI_SHORT_MAX):
+        if not ENABLE_CRYPTO_SHORT:
+            print(f"  SHORT {symbol} [T{tier}] detected but NOT emitted — "
+                  f"crypto-breakdown disabled (Alpaca paper crypto = LONG-only). "
+                  f"price=${current_price:.2f} low20=${low_20:.2f} RSI={rsi:.1f}")
+            return None
         stop_loss   = round(current_price * (1 + sl_pct), 4)
         take_profit = round(current_price * (1 - tp_pct), 4)
         print(f"  SHORT {symbol} [T{tier}]: ${current_price:.2f} < low20=${low_20:.2f}, "
@@ -349,12 +368,19 @@ def send_alert(alert: dict) -> bool:
     Default: AUTO_EXECUTE via Alpaca REST (simple limit; Alpaca crypto =
     no bracket support, exit-monitor handles SL/TP via crypto thresholds).
     USE_ROUTINE=true -> legacy worker path.
+
+    Returns True only when an actual Alpaca order id is returned. A
+    "deferred" envelope (per-instrument window block, crypto SHORT refusal,
+    etc.) returns False — the signal is logged but no order placed.
     """
     if not USE_ROUTINE:
         order = execute_crypto_signal(alert)
-        if order:
+        if order and not order.get("deferred") and order.get("id"):
             print(f"  Order {alert['action']} {alert['symbol']}: id={order.get('id')} qty={order.get('qty')} @ ${order.get('limit_price')}")
             return True
+        if order and order.get("deferred"):
+            print(f"  Order {alert['action']} {alert['symbol']}: DEFERRED ({order.get('reason')})")
+            return False
         print(f"  Order {alert['action']} {alert['symbol']}: REJECTED (Alpaca)")
         return False
 
@@ -467,7 +493,9 @@ def run_scan():
         sent = send_alert(signal)
         if sent:
             alerts_sent += 1
-        notify_signal(signal, sent)
+        # Pass reason so notify subject shows [DEFERRED] / [NOT-SENT] instead
+        # of "[SELL]" with generic "Alert NOT sent (error)" body.
+        notify_signal(signal, sent, reason="" if sent else "alpaca_reject")
 
     notify_summary("Crypto Monitor", alerts_sent, alerts_sent)
     print(f"  Wysłano alertów: {alerts_sent}")

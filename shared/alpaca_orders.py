@@ -666,6 +666,16 @@ def execute_crypto_signal(signal: dict) -> dict | None:
     if size_usd <= 0:
         return None
 
+    # v3.8.1 (2026-05-15): Alpaca paper crypto is LONG-only. SELL_SHORT
+    # signals get rejected with 403 "insufficient balance for X". Reject
+    # upstream so caller's notify_signal gets a clean reason instead of
+    # propagating the rejection through to a generic "Alert NOT sent
+    # (error)" email. The crypto-monitor v3.8.1 gates emission at source,
+    # but this is a belt-and-braces second line for any other caller.
+    if action.upper() in ("SELL_SHORT", "SHORT"):
+        print(f"  {sym}: SELL_SHORT crypto not supported (Alpaca paper LONG-only) — refusing")
+        return {"deferred": True, "reason": "crypto_no_short", "symbol": sym}
+
     # Per-instrument trading window gate. Crypto is 24/7 so default-allow,
     # but per-symbol pause (instrument_overrides) still applies.
     try:
