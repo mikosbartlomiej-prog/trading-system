@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 94747.31,
-    "current_intraday_pnl": 149.27000000000407,
-    "current_intraday_pnl_pct": 0.0015779396697860133,
+    "current_equity": 94653.52,
+    "current_intraday_pnl": 55.48000000001048,
+    "current_intraday_pnl_pct": 0.0005864814958112291,
     "date": "2026-05-15",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
+    "giveback_pct_of_peak": 0.6283245126280634,
+    "giveback_usd": 93.7899999999936,
     "intraday_peak_equity": 94978.78901517414,
     "intraday_peak_pnl": 149.27000000000407,
     "intraday_peak_pnl_pct": 0.0015779396697860133,
-    "last_action": "transition_FLAT_to_GREEN",
-    "last_update_at": "2026-05-15T15:21:24.240096+00:00",
+    "last_action": "noop",
+    "last_update_at": "2026-05-15T17:08:37.830408+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-15T15:21:24.240096+00:00",
@@ -27,8 +27,8 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.00466,
-      "last_seen_at": "2026-05-15T15:21:24.245414+00:00",
+      "last_pct": -0.00171,
+      "last_seen_at": "2026-05-15T17:08:37.831133+00:00",
       "peak_pct": 0.00466
     },
     "GLD": {
@@ -39,9 +39,9 @@
     },
     "NVDA": {
       "first_seen_at": "2026-05-15T14:50:46.733487+00:00",
-      "last_pct": 0.00368,
-      "last_seen_at": "2026-05-15T15:21:24.246036+00:00",
-      "peak_pct": 0.00368
+      "last_pct": 0.0058,
+      "last_seen_at": "2026-05-15T17:08:37.831732+00:00",
+      "peak_pct": 0.0058
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
@@ -51,9 +51,9 @@
     },
     "SMH": {
       "first_seen_at": "2026-05-15T14:50:46.734446+00:00",
-      "last_pct": 0.00161,
-      "last_seen_at": "2026-05-15T15:21:24.246559+00:00",
-      "peak_pct": 0.00161
+      "last_pct": 0.00232,
+      "last_seen_at": "2026-05-15T17:08:37.832267+00:00",
+      "peak_pct": 0.00232
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
