@@ -1,0 +1,42 @@
+name: Cancel allocator duplicates (one-shot 2026-05-15)
+
+# One-shot cleanup: cancels 3 stale LIMIT entries from first morning-allocator
+# manual trigger today (14:46 UTC). Second trigger at 14:49 UTC with
+# AGGRESSIVE_PAPER profile placed 6 new entries on same symbols — first
+# 3 LIMITs may still be sitting in queue and could fill near EOD,
+# duplicating positions.
+#
+# Safe to delete this workflow file after one successful run.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Cancel first-allocator-attempt orders
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python3 scripts/cancel_first_allocator_attempt_20260515.py
