@@ -1,60 +1,63 @@
 {
   "plan_date": "2026-05-15",
-  "executed_at": "2026-05-15T14:47:02Z",
-  "n_placed": 3,
+  "executed_at": "2026-05-15T14:49:14Z",
+  "n_placed": 6,
   "n_skipped": 0,
-  "n_failed": 3,
+  "n_failed": 0,
   "results": [
     {
       "symbol": "AMD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "failed",
-      "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T14:46:51Z"
+      "status": "placed",
+      "reason": "BUY 33.0000 @ $433.36",
+      "attempted_at": "2026-05-15T14:49:05Z",
+      "alpaca_order_id": "3cae2ae7-fda0-4307-b7e3-e9d72e6ad37c"
     },
     {
       "symbol": "SMH",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "failed",
-      "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T14:46:53Z"
+      "status": "placed",
+      "reason": "BUY 26.0000 @ $559.07",
+      "attempted_at": "2026-05-15T14:49:08Z",
+      "alpaca_order_id": "d57b365b-9ac1-4711-968e-bee86da13e6f"
     },
     {
       "symbol": "NVDA",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "failed",
-      "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T14:46:54Z"
+      "status": "placed",
+      "reason": "BUY 64.0000 @ $226.78",
+      "attempted_at": "2026-05-15T14:49:09Z",
+      "alpaca_order_id": "6f8e7f1c-2037-4a76-95bc-1930becf920a"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 12.0000 @ $740.99",
-      "attempted_at": "2026-05-15T14:46:56Z",
-      "alpaca_order_id": "2ace4d2e-8a90-4060-acc4-f2e564f46a8c"
+      "reason": "BUY 12.0000 @ $741.07",
+      "attempted_at": "2026-05-15T14:49:10Z",
+      "alpaca_order_id": "d81d3697-712e-4c09-a64a-60de3a391287"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 22.0000 @ $417.86",
-      "attempted_at": "2026-05-15T14:46:58Z",
-      "alpaca_order_id": "19a43b91-4fb0-4b11-a514-cec4feaf06d7"
+      "reason": "BUY 22.0000 @ $417.81",
+      "attempted_at": "2026-05-15T14:49:12Z",
+      "alpaca_order_id": "65c70c9c-c959-4ad0-ba00-5809f143ba0e"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 11.0000 @ $710.50",
-      "attempted_at": "2026-05-15T14:47:00Z",
-      "alpaca_order_id": "898a6bf2-dd92-4c38-854b-0fe7bca8b2c0"
+      "reason": "BUY 11.0000 @ $710.48",
+      "attempted_at": "2026-05-15T14:49:13Z",
+      "alpaca_order_id": "2ff6bd6e-7861-4b1a-bf8d-114174bfd5fe"
     }
   ]
 }

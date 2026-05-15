@@ -53,3 +53,21 @@
 [14:47:00 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $710.50 (no prior position)
 [14:47:02 INFO]     QQQ BUY placed: BUY 11.0000 @ $710.50  id=898a6bf2-dd92-4c38-854b-0fe7bca8b2c0
 [14:47:02 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
+
+[14:49:05 INFO] ============================================================
+[14:49:05 INFO] execute_orders() — auto-execute path
+[14:49:05 INFO] ============================================================
+[14:49:05 INFO]   market_status: open=True reason=open
+[14:49:06 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $433.36 (no prior position)
+[14:49:08 INFO]     AMD BUY placed: BUY 33.0000 @ $433.36  id=3cae2ae7-fda0-4307-b7e3-e9d72e6ad37c
+[14:49:08 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $559.07 (no prior position)
+[14:49:09 INFO]     SMH BUY placed: BUY 26.0000 @ $559.07  id=d57b365b-9ac1-4711-968e-bee86da13e6f
+[14:49:09 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $226.78 (no prior position)
+[14:49:10 INFO]     NVDA BUY placed: BUY 64.0000 @ $226.78  id=6f8e7f1c-2037-4a76-95bc-1930becf920a
+[14:49:11 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.07 (no prior position)
+[14:49:12 INFO]     SPY BUY placed: BUY 12.0000 @ $741.07  id=d81d3697-712e-4c09-a64a-60de3a391287
+[14:49:12 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.81 (no prior position)
+[14:49:13 INFO]     GLD BUY placed: BUY 22.0000 @ $417.81  id=65c70c9c-c959-4ad0-ba00-5809f143ba0e
+[14:49:13 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $710.48 (no prior position)
+[14:49:14 INFO]     QQQ BUY placed: BUY 11.0000 @ $710.48  id=2ff6bd6e-7861-4b1a-bf8d-114174bfd5fe
+[14:49:14 INFO]   execution complete: 6 placed, 0 skipped, 0 failed
