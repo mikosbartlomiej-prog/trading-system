@@ -1,28 +1,12 @@
 {
-  "narrative": "5 kandydatów, zero edge do handlu. SPXL i VOO mają spike_ratio=99 — artefakt (rolling_avg_7d=0, nie realny spike). AMD i NVDA już trzymamy łącznie 30.6% equity (plus SMH 15.4% = 46% w AI/semis) — dodawanie bez świeżego katalizatora to koncentracja dla koncentracji. SPY to loss porn 0DTE, nie sygnał. Portfel już dobrze ustawiony na AI/semis; nic z Reddita dziś nie bije obecnej ekspozycji.",
+  "narrative": "Jeden kandydat: VOO z spike_ratio=99 — artefakt danych (rolling_avg_7d=0, nie prawdziwy spike). Post to long-term pasywny inwestor świętujący pierwszy $100k i filozofujący że 'nie ma co optymalizować ponad VOO' — zero świeżego katalizatora, zero momentum edge. Portfel ma już SPY 18.8% + QQQ 16.5% = de facto dwie pozycje na VOO; dokładanie trzeciej to czysty overlap, nie alpha.",
   "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "SPXL",
-      "reason": "Gain porn — autor zamknął 6-miesięczną pozycję long po $4M zysku ('TACO'ed'); sentyment błędnie sklasyfikowany jako SELL_SHORT. VIX=17 = risk-on, short SPXL jest counter-regime. spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwszy mention)."
-    },
-    {
       "ticker": "VOO",
-      "reason": "Post filozoficzny o inwestowaniu pasywnym (53 ups, brak konkretnego katalizatora). spike_ratio=99 to artefakt (rolling_avg_7d=0). VOO nie ruszy 5%+ w 72h bez triggera — brak momentum setupu."
-    },
-    {
-      "ticker": "AMD",
-      "reason": "Już w portfelu 15.1% equity. Post excerpts nie zawierają AMD-specyficznego katalizatora — AMD wspomniane peryferyjnie w dyskusjach o TSM i NVDA. Najlepszy post (38 ups) dotyczy TSM, nie AMD. spike_ratio=3× borderline ale jakość postów niska i brak świeżego triggera."
-    },
-    {
-      "ticker": "NVDA",
-      "reason": "Już w portfelu 15.5% equity + SMH 15.4% = 30.9% w AI/semis — dodanie pogłębia koncentrację bez proporcjonalnego edge. spike_ratio=1.71 poniżej progu. Najlepszy post 38 ups — niska jakość. Jensen w Pekinie to realny katalizator, ale już w cenie (NVDA na ATH $235, +50% od październikowych dołków)."
-    },
-    {
-      "ticker": "SPY",
-      "reason": "Najlepszy post to loss porn 0DTE (-$16,190 w 14 min) — nie sygnał bullish. skew=0.2 zbyt słaby. spike_ratio=1.6 brak realnego spike'u. Już w portfelu 9.4% equity."
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, brak historii); treść postu to esej o pasywnym buy-and-hold bez żadnego świeżego katalizatora; portfel ma już 35.3% w SPY+QQQ (identyczna ekspozycja) i 62%+ w tech/semis — zero przyrostowej wartości, zero momentum setup."
     }
   ],
-  "macro_context": "VIX=17 risk-on, portfel lekko zielony +0.29%; AI/semis (AMD+NVDA+SMH) już zajmuje 46% equity — dalsze dokładanie bez świeżego katalizatora to FOMO, nie alpha.",
+  "macro_context": "VIX 17 = risk-on, ale portfel zdeplojowany w ~91% z mocnym przeważeniem tech/semis (NVDA+SMH+AMD+QQQ = 62%+); brak miejsca i brak katalizatora dla nowych pozycji indeksowych.",
   "confidence_in_curation": "high"
 }
