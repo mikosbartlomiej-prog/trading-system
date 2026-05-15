@@ -66,6 +66,21 @@ jobs:
           - workflow: reddit-monitor.yml
             staleness_minutes: 40
             session_only: true
+          # v3.8.3 (2026-05-15): morning-allocator + exit-monitor +
+          # options-exit-monitor added after morning-allocator silently
+          # skipped its 13:35 UTC cron today (user had to trigger
+          # manually). These workflows are CRITICAL to position
+          # management — missing them risks unprotected positions
+          # overnight or unexecuted allocation plans.
+          - workflow: morning-allocator.yml
+            staleness_minutes: 20      # cron is daily 13:35; check 13:35-14:00
+            session_only: true
+          - workflow: exit-monitor.yml
+            staleness_minutes: 12      # cron */5 13-20 weekday + dual off-hours
+            session_only: false
+          - workflow: options-exit-monitor.yml
+            staleness_minutes: 12      # cron */5 13-20 weekday
+            session_only: true
 
     steps:
       - name: Check ${{ matrix.workflow }} last run age
