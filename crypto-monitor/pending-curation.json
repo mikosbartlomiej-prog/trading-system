@@ -1,0 +1,16 @@
+{
+  "narrative": "AVAX i AAVE z RSI 17.1/16.3 i volume 3.9×/3.7× to klasyczny pattern kapitulacji, nie kontynuacji breakdownu — shorty w RSI <20 to wejście w strefę gwałtownego mean-reversion squeeze. Żaden z kandydatów nie dostał przepustki.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AVAX/USD",
+      "reason": "RSI 17.1 to ekstremalne wyprzedanie — volume spike 3.93× przy RSI <20 to sygnał kapitulacji sprzedających, nie potwierdzenie kontynuacji; shorty tutaj trafiają w ścianę short-squeeze; 24h move -3.1% zbyt słaby dla conviction breakdown przy takim poziomie RSI."
+    },
+    {
+      "ticker": "AAVE/USD",
+      "reason": "RSI 16.3 — jeszcze głębiej w strefie mean-reversion niż AVAX; AAVE to cienki token DeFi-governance na Alpaca z wysokim spreadem; brak named catalyst dla kontynuacji; 24h move -3.15% przy takiej kapitulacji RSI = wchodzenie za ostatnimi sprzedającymi."
+    }
+  ],
+  "macro_context": "BTC 1h -0.65% marginalnie słaby (wspierający shorty teoretycznie), jednak bez altseasonu ani paniki systemowej — rynek się konsoliduje, nie runął; obie propozycje wymagają kontynuacji której RSI ekstrema nie zapowiadają.",
+  "confidence_in_curation": "high"
+}
