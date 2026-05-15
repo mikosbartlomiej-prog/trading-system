@@ -1,6 +1,6 @@
 {
   "plan_date": "2026-05-15",
-  "executed_at": "2026-05-15T17:13:35Z",
+  "executed_at": "2026-05-15T18:56:38Z",
   "n_placed": 3,
   "n_skipped": 0,
   "n_failed": 3,
@@ -11,7 +11,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T17:13:26Z"
+      "attempted_at": "2026-05-15T18:56:30Z"
     },
     {
       "symbol": "SMH",
@@ -19,7 +19,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T17:13:27Z"
+      "attempted_at": "2026-05-15T18:56:32Z"
     },
     {
       "symbol": "NVDA",
@@ -27,34 +27,34 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-15T17:13:28Z"
+      "attempted_at": "2026-05-15T18:56:33Z"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 12.0000 @ $741.53",
-      "attempted_at": "2026-05-15T17:13:29Z",
-      "alpaca_order_id": "3777e061-b2ac-44ac-b4df-1a0caaf58348"
+      "reason": "BUY 12.0000 @ $741.75",
+      "attempted_at": "2026-05-15T18:56:33Z",
+      "alpaca_order_id": "1fcbf6e3-66ec-4378-b05d-00efb360c7c0"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 22.0000 @ $418.21",
-      "attempted_at": "2026-05-15T17:13:31Z",
-      "alpaca_order_id": "15adfbda-a992-4e38-91c6-6004bafcb459"
+      "reason": "BUY 22.0000 @ $418.73",
+      "attempted_at": "2026-05-15T18:56:35Z",
+      "alpaca_order_id": "d47e58e8-9940-41b6-97e3-d29e1f2075a4"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "placed",
-      "reason": "BUY 11.0000 @ $711.64",
-      "attempted_at": "2026-05-15T17:13:33Z",
-      "alpaca_order_id": "1030b025-97ab-448a-b64a-ca049e495507"
+      "reason": "BUY 11.0000 @ $713.02",
+      "attempted_at": "2026-05-15T18:56:37Z",
+      "alpaca_order_id": "2b8fb358-2d16-4515-9fc4-8336dce8d1ec"
     }
   ]
 }
