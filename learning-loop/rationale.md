@@ -195,3 +195,8 @@
 - 2026-05-15 · alloc-exit: SILENT — enabled but 0 trades lifetime (19 days tracked); consider disable or remove
 - 2026-05-15 · options-momentum: SPY-overbought gate · SPY RSI 82.5 > 75 — overbought regime, options-momentum pause extended
 
+- 2026-05-15 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-15 · pruned 3 UUID artifact strategy keys (5e5e7366-b480-4f17, 8a12bf8b-a8b8-406f, cda058d6-1d5f-4b67)
+- 2026-05-15 · alloc-exit: SILENT — enabled but 0 trades lifetime (20 days tracked); consider disable or remove
+- 2026-05-15 · crypto-momentum: SILENT — enabled but 0 trades lifetime (20 days tracked); consider disable or remove
+

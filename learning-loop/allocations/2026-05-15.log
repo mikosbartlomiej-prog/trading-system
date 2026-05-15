@@ -1,145 +1,45 @@
-[01:37:23 INFO] ============================================================
-[01:37:23 INFO] AccountAwareAllocator — daily plan 2026-05-15
-[01:37:23 INFO] ============================================================
-[01:37:23 INFO] ── Step 1: fetching account state ──
-[01:37:23 INFO]   equity=$  94598.14  cash=$ 299673.57  buying_power=$ 346972.64
-[01:37:23 INFO] ── Step 2: fetching open positions ──
-[01:37:23 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
-[01:37:23 INFO] ── Step 3: defensive mode check ──
-[01:37:23 INFO]   defensive_mode OFF → proceed with deployment
-[01:37:23 INFO] ── Step 4: regime detection ──
-[01:37:23 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[01:37:23 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
-[01:37:23 INFO] ── Step 5: scoring allowed universe ──
-[01:37:24 DBG ]     AMD      score=+0.642  bucket=ai_nasdaq_semis
-[01:37:24 DBG ]     SMH      score=+0.583  bucket=ai_nasdaq_semis
-[01:37:24 DBG ]     NVDA     score=+0.556  bucket=ai_nasdaq_semis
-[01:37:24 DBG ]     TSLA     score=+0.327  bucket=ai_nasdaq_semis
-[01:37:24 DBG ]     QQQ      score=+0.324  bucket=ai_nasdaq_semis
-[01:37:24 INFO] ── Step 6: target weight construction ──
-[01:37:24 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
-[01:37:24 INFO]   target_invested_ratio_after_plan = 0.7500
-[01:37:24 DBG ]     AMD        target_weight=0.1547 ($14634.33)
-[01:37:24 DBG ]     SMH        target_weight=0.1547 ($14634.33)
-[01:37:24 DBG ]     NVDA       target_weight=0.1547 ($14634.33)
-[01:37:24 DBG ]     SPY        target_weight=0.1000 ($9459.81)
-[01:37:24 DBG ]     QQQ        target_weight=0.0859 ($8125.98)
-[01:37:24 DBG ]     GLD        target_weight=0.1000 ($9459.81)
-[01:37:24 INFO] ── Step 7: rebalance order generation ──
-[01:37:24 INFO]     AMD      BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
-[01:37:24 INFO]     SMH      BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
-[01:37:24 INFO]     NVDA     BUY     current=$     0.00 target=$ 14634.33 delta=$+14634.33  -- new position at target 15.5%
-[01:37:24 INFO]     SPY      BUY     current=$     0.00 target=$  9459.81 delta=$ +9459.81  -- new position at target 10.0%
-[01:37:24 INFO]     GLD      BUY     current=$     0.00 target=$  9459.81 delta=$ +9459.81  -- new position at target 10.0%
-[01:37:24 INFO]     QQQ      BUY     current=$     0.00 target=$  8125.98 delta=$ +8125.98  -- new position at target 8.6%
-[01:37:24 INFO]   summary: 6 actionable + 0 hold; passed=6  failed=0
-[01:37:24 INFO] ── Step 8: plan complete ──
-[01:37:24 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[14:46:51 INFO] ============================================================
-[14:46:51 INFO] execute_orders() — auto-execute path
-[14:46:51 INFO] ============================================================
-[14:46:51 INFO]   market_status: open=True reason=open
-[14:46:52 INFO]     AMD BUY: derived qty=32 from target=$14,634 @ $444.00 (no prior position)
-[14:46:53 ERR ]     AMD BUY failed
-[14:46:54 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $559.65 (no prior position)
-[14:46:54 ERR ]     SMH BUY failed
-[14:46:55 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $228.24 (no prior position)
-[14:46:56 ERR ]     NVDA BUY failed
-[14:46:56 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $740.99 (no prior position)
-[14:46:58 INFO]     SPY BUY placed: BUY 12.0000 @ $740.99  id=2ace4d2e-8a90-4060-acc4-f2e564f46a8c
-[14:46:58 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.86 (no prior position)
-[14:47:00 INFO]     GLD BUY placed: BUY 22.0000 @ $417.86  id=19a43b91-4fb0-4b11-a514-cec4feaf06d7
-[14:47:00 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $710.50 (no prior position)
-[14:47:02 INFO]     QQQ BUY placed: BUY 11.0000 @ $710.50  id=898a6bf2-dd92-4c38-854b-0fe7bca8b2c0
-[14:47:02 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
-
-[14:49:05 INFO] ============================================================
-[14:49:05 INFO] execute_orders() — auto-execute path
-[14:49:05 INFO] ============================================================
-[14:49:05 INFO]   market_status: open=True reason=open
-[14:49:06 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $433.36 (no prior position)
-[14:49:08 INFO]     AMD BUY placed: BUY 33.0000 @ $433.36  id=3cae2ae7-fda0-4307-b7e3-e9d72e6ad37c
-[14:49:08 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $559.07 (no prior position)
-[14:49:09 INFO]     SMH BUY placed: BUY 26.0000 @ $559.07  id=d57b365b-9ac1-4711-968e-bee86da13e6f
-[14:49:09 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $226.78 (no prior position)
-[14:49:10 INFO]     NVDA BUY placed: BUY 64.0000 @ $226.78  id=6f8e7f1c-2037-4a76-95bc-1930becf920a
-[14:49:11 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.07 (no prior position)
-[14:49:12 INFO]     SPY BUY placed: BUY 12.0000 @ $741.07  id=d81d3697-712e-4c09-a64a-60de3a391287
-[14:49:12 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.81 (no prior position)
-[14:49:13 INFO]     GLD BUY placed: BUY 22.0000 @ $417.81  id=65c70c9c-c959-4ad0-ba00-5809f143ba0e
-[14:49:13 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $710.48 (no prior position)
-[14:49:14 INFO]     QQQ BUY placed: BUY 11.0000 @ $710.48  id=2ff6bd6e-7861-4b1a-bf8d-114174bfd5fe
-[14:49:14 INFO]   execution complete: 6 placed, 0 skipped, 0 failed
-
-[15:27:39 INFO] ============================================================
-[15:27:39 INFO] execute_orders() — auto-execute path
-[15:27:39 INFO] ============================================================
-[15:27:39 INFO]   market_status: open=True reason=open
-[15:27:39 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $440.00 (no prior position)
-[15:27:39 ERR ]     AMD BUY failed
-[15:27:39 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $560.52 (no prior position)
-[15:27:39 ERR ]     SMH BUY failed
-[15:27:39 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $226.67 (no prior position)
-[15:27:40 ERR ]     NVDA BUY failed
-[15:27:40 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.38 (no prior position)
-[15:27:40 INFO]     SPY BUY placed: BUY 12.0000 @ $741.38  id=4dd1029a-07db-4045-86c3-d7d2fa2bbf7d
-[15:27:40 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.50 (no prior position)
-[15:27:40 INFO]     GLD BUY placed: BUY 22.0000 @ $417.50  id=a79670eb-ba6c-4791-82f8-ffffbadf24b1
-[15:27:40 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $711.57 (no prior position)
-[15:27:41 INFO]     QQQ BUY placed: BUY 11.0000 @ $711.57  id=f6e133d1-6762-4999-8e4e-0e4890269d1f
-[15:27:41 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
-
-[15:37:58 INFO] ============================================================
-[15:37:58 INFO] execute_orders() — auto-execute path
-[15:37:58 INFO] ============================================================
-[15:37:58 INFO]   market_status: open=True reason=open
-[15:37:59 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $436.10 (no prior position)
-[15:37:59 ERR ]     AMD BUY failed
-[15:37:59 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $562.69 (no prior position)
-[15:38:00 ERR ]     SMH BUY failed
-[15:38:00 INFO]     NVDA BUY: derived qty=63 from target=$14,634 @ $228.82 (no prior position)
-[15:38:00 ERR ]     NVDA BUY failed
-[15:38:00 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.68 (no prior position)
-[15:38:00 INFO]     SPY BUY placed: BUY 12.0000 @ $741.68  id=746aaa07-aed8-41d7-99fb-c15a65e787c1
-[15:38:00 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $417.20 (no prior position)
-[15:38:01 INFO]     GLD BUY placed: BUY 22.0000 @ $417.20  id=e4e93c6b-2326-479a-92d0-d17966c418eb
-[15:38:01 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $712.43 (no prior position)
-[15:38:01 INFO]     QQQ BUY placed: BUY 11.0000 @ $712.43  id=3ca1cc2b-0e0e-4075-bf10-06e0032a5399
-[15:38:01 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
-
-[17:13:26 INFO] ============================================================
-[17:13:26 INFO] execute_orders() — auto-execute path
-[17:13:26 INFO] ============================================================
-[17:13:26 INFO]   market_status: open=True reason=open
-[17:13:27 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $443.15 (no prior position)
-[17:13:27 ERR ]     AMD BUY failed
-[17:13:28 INFO]     SMH BUY: derived qty=26 from target=$14,634 @ $560.25 (no prior position)
-[17:13:28 ERR ]     SMH BUY failed
-[17:13:28 INFO]     NVDA BUY: derived qty=64 from target=$14,634 @ $228.25 (no prior position)
-[17:13:29 ERR ]     NVDA BUY failed
-[17:13:29 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.53 (no prior position)
-[17:13:31 INFO]     SPY BUY placed: BUY 12.0000 @ $741.53  id=3777e061-b2ac-44ac-b4df-1a0caaf58348
-[17:13:31 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $418.21 (no prior position)
-[17:13:33 INFO]     GLD BUY placed: BUY 22.0000 @ $418.21  id=15adfbda-a992-4e38-91c6-6004bafcb459
-[17:13:33 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $711.64 (no prior position)
-[17:13:35 INFO]     QQQ BUY placed: BUY 11.0000 @ $711.64  id=1030b025-97ab-448a-b64a-ca049e495507
-[17:13:35 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
-
-[18:56:30 INFO] ============================================================
-[18:56:30 INFO] execute_orders() — auto-execute path
-[18:56:30 INFO] ============================================================
-[18:56:30 INFO]   market_status: open=True reason=open
-[18:56:31 INFO]     AMD BUY: derived qty=33 from target=$14,634 @ $436.56 (no prior position)
-[18:56:32 ERR ]     AMD BUY failed
-[18:56:32 INFO]     SMH BUY: derived qty=25 from target=$14,634 @ $563.19 (no prior position)
-[18:56:33 ERR ]     SMH BUY failed
-[18:56:33 INFO]     NVDA BUY: derived qty=63 from target=$14,634 @ $228.93 (no prior position)
-[18:56:33 ERR ]     NVDA BUY failed
-[18:56:34 INFO]     SPY BUY: derived qty=12 from target=$9,460 @ $741.75 (no prior position)
-[18:56:35 INFO]     SPY BUY placed: BUY 12.0000 @ $741.75  id=1fcbf6e3-66ec-4378-b05d-00efb360c7c0
-[18:56:35 INFO]     GLD BUY: derived qty=22 from target=$9,460 @ $418.73 (no prior position)
-[18:56:37 INFO]     GLD BUY placed: BUY 22.0000 @ $418.73  id=d47e58e8-9940-41b6-97e3-d29e1f2075a4
-[18:56:37 INFO]     QQQ BUY: derived qty=11 from target=$8,126 @ $713.02 (no prior position)
-[18:56:38 INFO]     QQQ BUY placed: BUY 11.0000 @ $713.02  id=2b8fb358-2d16-4515-9fc4-8336dce8d1ec
-[18:56:38 INFO]   execution complete: 3 placed, 0 skipped, 3 failed
+[22:01:34 INFO] ============================================================
+[22:01:34 INFO] AccountAwareAllocator — daily plan 2026-05-15
+[22:01:34 INFO] ============================================================
+[22:01:34 INFO] ── Step 1: fetching account state ──
+[22:01:34 INFO]   equity=$  93785.92  cash=$ 236291.57  buying_power=$ 283184.53
+[22:01:34 INFO] ── Step 2: fetching open positions ──
+[22:01:34 INFO]   6 positions, invested_ratio=1.0069 (target=1.00, min=0.98)
+[22:01:34 DBG ]     AMD        long  qty=33.0000 mv=$ 13962.30  pct_eq=14.89%  pl=-2.22%
+[22:01:34 DBG ]     GLD        long  qty=44.0000 mv=$ 18350.20  pct_eq=19.57%  pl=-0.34%
+[22:01:34 DBG ]     NVDA       long  qty=64.0000 mv=$ 14386.56  pct_eq=15.34%  pl=-0.86%
+[22:01:34 DBG ]     QQQ        long  qty=22.0000 mv=$ 15568.74  pct_eq=16.60%  pl=-0.65%
+[22:01:34 DBG ]     SMH        long  qty=26.0000 mv=$ 14425.58  pct_eq=15.38%  pl=-0.76%
+[22:01:34 DBG ]     SPY        long  qty=24.0000 mv=$ 17740.08  pct_eq=18.92%  pl=-0.33%
+[22:01:34 INFO] ── Step 3: defensive mode check ──
+[22:01:34 INFO]   defensive_mode OFF → proceed with deployment
+[22:01:34 INFO] ── Step 4: regime detection ──
+[22:01:34 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:01:34 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
+[22:01:34 INFO] ── Step 5: scoring allowed universe ──
+[22:01:36 DBG ]     USO      score=+0.535  bucket=inflation_energy
+[22:01:36 DBG ]     AMD      score=+0.418  bucket=ai_nasdaq_semis
+[22:01:36 DBG ]     OXY      score=+0.350  bucket=inflation_energy
+[22:01:36 DBG ]     SMH      score=+0.325  bucket=ai_nasdaq_semis
+[22:01:36 DBG ]     XOM      score=+0.305  bucket=inflation_energy
+[22:01:36 INFO] ── Step 6: target weight construction ──
+[22:01:36 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
+[22:01:36 INFO]   target_invested_ratio_after_plan = 0.8400
+[22:01:36 DBG ]     USO        target_weight=0.1800 ($16881.47)
+[22:01:36 DBG ]     AMD        target_weight=0.1800 ($16881.47)
+[22:01:36 DBG ]     OXY        target_weight=0.1800 ($16881.47)
+[22:01:36 DBG ]     SPY        target_weight=0.1000 ($9378.59)
+[22:01:36 DBG ]     QQQ        target_weight=0.1000 ($9378.59)
+[22:01:36 DBG ]     GLD        target_weight=0.1000 ($9378.59)
+[22:01:36 INFO] ── Step 7: rebalance order generation ──
+[22:01:36 INFO]     USO      BUY     current=$     0.00 target=$ 16881.47 delta=$+16881.47  -- new position at target 18.0%
+[22:01:36 INFO]     OXY      BUY     current=$     0.00 target=$ 16881.47 delta=$+16881.47  -- new position at target 18.0%
+[22:01:36 INFO]     SMH      EXIT    current=$ 14425.58 target=$     0.00 delta=$-14425.58  -- symbol not in target allocation
+[22:01:36 INFO]     NVDA     EXIT    current=$ 14386.56 target=$     0.00 delta=$-14386.56  -- symbol not in target allocation
+[22:01:36 INFO]     GLD      REDUCE  current=$ 18350.20 target=$  9378.59 delta=$ -8971.61  -- reduce $8972 to target 10.0%
+[22:01:36 INFO]     SPY      REDUCE  current=$ 17740.08 target=$  9378.59 delta=$ -8361.49  -- reduce $8361 to target 10.0%
+[22:01:36 INFO]     QQQ      REDUCE  current=$ 15568.74 target=$  9378.59 delta=$ -6190.15  -- reduce $6190 to target 10.0%
+[22:01:36 INFO]     AMD      BUY     current=$ 13962.30 target=$ 16881.47 delta=$ +2919.17  -- add $2919 to reach target 18.0%
+[22:01:36 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
+[22:01:36 INFO] ── Step 8: plan complete ──
+[22:01:36 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
