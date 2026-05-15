@@ -1,0 +1,99 @@
+{
+  "narrative": "Challenger miał rację w 90% — akceptuję krytykę historycznego framing'u RSI (min_12d == max_12d == 82.5 to N=1, pierwszy odczyt trackera, nie percentyl 12-dniowy; moje słowo 'historycznie rzadki' było błędem) i wycofuję side_bias=short wraz z global_overrides (0 tradów z jakimkolwiek bias w systemie = brak podstaw kierunkowych). Krytyczny miss z mojej strony w round 1: fill_rate.emergency placed=1/filled=0/expired=1 po 390 minutach — DAY LIMIT emergency close wygasł przy EOD bez realizacji, co jest structural failure trybu awaryjnego. Bronię jednej decyzji: paused_until=2026-05-19 zamiast adapter-proposed 2026-05-16 pozostaje jako świadomy judgment call — per v3.8 OPEN w SWING intent jest ALLOW nawet w PDT LOCKED, więc data overlap z PDT nie tworzy operacyjnego konfliktu.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Brak potwierdzanego edge na żadnej strategii — cumulative_trades=0, 1 options-momentum lifetime trade za -$0.60, 0 otwartych pozycji. System poprawnie śpi w risk_on reżimie z SPY RSI 82.5. Najważniejszy finding dzisiaj: emergency LIMIT failure wskazuje na structural gap w exit-monitor, który wymaga fixa zanim nowe pozycje zostaną otwarte.",
+  "state_overrides": {
+    "strategies": {
+      "options-momentum": {
+        "paused_until": "2026-05-19",
+        "enabled": false,
+        "size_multiplier": 0.5,
+        "rationale": "Pauza do 2026-05-19 — judgment call, nie twierdzenie kwantytatywne (adapter proponował 2026-05-16; dodatkowe 3 dni przy N=1 RSI historii i 0 otwartych pozycjach mają niski koszt opóźnienia). size_multiplier=0.5 zgodny z 1-consecutive-loss cool-down (nie 'kara za WR' — próbka zbyt mała). side_bias USUNIĘTY: 0 tradów z jakimkolwiek bias = brak danych do decyzji kierunkowej. PDT LOCKED nie blokuje SWING-intent OPEN per v3.8, więc date overlap nie tworzy operacyjnego konfliktu."
+      }
+    },
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Investigate crypto-momentum/breakdown silence — 19+ days, 0 trades",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "342 scan-coin-okazji (38+ cron-ticki × 9 Tier-2 coins) bez JEDNEGO sygnału przy aktywnych rynkach krypto jest statystycznie podejrzane. Challenger dodał mierzalne kryterium sukcesu diagnozy — inkorporowane do sketcha.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-20",
+      "implementation_sketch": "KROK 0 (kryterium sukcesu przed diagnozą): via Alpaca daily bars sprawdź czy DOWOLNY Tier-2 altcoin (SOL/AVAX/LINK/DOT/MATIC/LTC/BCH/UNI/AAVE) miał 24h move w [3%, 15%] w ostatnich 19 dniach. Jeśli TAK i nie było sygnału → pipeline broken. Jeśli NIE → correct silence, close. KROK 1: uruchom crypto-monitor.yml manualnie, sprawdź logi per-coin: RSI scan, 24h move bracket check, BTC dominance guard (-3% in 1h threshold), alt position cap (max 3, ale 0 open = nie blokuje). KROK 2: przetestuj Curator LLM — 429 fail-soft powinien przepuszczać heurystycznie. KROK 3: rozważ czy [3%, 15%] bracket jest za wąski przy wysokiej BTC dominance (alts mogą nie osiągać +3% nawet przy ogólnym wzroście krypto)."
+    },
+    {
+      "title": "PDT-aware swing-only allocator plan when daytrade_count >= 3",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "generate_plan() nie sprawdza PDT statusu — plan generuje N orders, execute blokuje M przez pdt_guard, tworząc mylące emaile (9/9 blocks jak 2026-05-14). Challenger poprawił proxy: asset_class zamiast nieistniejącego avg_hold_hours.",
+      "effort_estimate": "1-2h",
+      "revisit_date": "2026-05-20",
+      "implementation_sketch": "1. W shared/allocator.py::generate_plan() wywołaj pdt_guard.get_pdt_status() na początku. 2. Jeśli mode in [RESTRICTED, LOCKED]: ustaw intent='swing' dla wszystkich orders, wyklucz instrumenty gdzie asset_class='us_option' LUB instrument_windows.can_trade_now(symbol)=False dla aktualnej godziny — dostępny proxy, nie wymaga avg_hold_hours (pole nieistniejące w today_stats). 3. Dodaj pdt_mode do plan JSON jako metadata. 4. morning-allocator loguje '[PDT-SWING-ONLY]' w execution email. ~50 LOC + 2 testy."
+    },
+    {
+      "title": "P0: Emergency LIMIT close expires at EOD without fill — switch to MARKET or DELETE",
+      "lane": "backlog",
+      "risk": "high",
+      "rationale": "fill_rate.emergency: placed=1, filled=0, expired=1, avg_minutes_to_cancel=390 — DAY TIF LIMIT emergency close wygasł po 6.5h bez realizacji. Pozycja mogła pozostać otwarta przez noc bez exit planu. Structural failure trybu awaryjnego — wymaga fixa przed otwarciem nowych pozycji.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-16",
+      "implementation_sketch": "1. Zidentyfikuj symbol: sprawdź Alpaca dashboard orders z 2026-05-14/15 z client_order_id prefix 'exit-emergency-*' lub 'emergency-close-*', TIF=day, status=expired. 2. exit-monitor/monitor.py::place_emergency_close: zmień LIMIT+DAY na MARKET dla CLOSE_EMERGENCY recommendation (us_equity i us_option). Alternatywnie użyj DELETE /v2/positions/{symbol_encoded} jak emergency_close_20260514.py — omija paper API buying-power bugs dla opcji. 3. Sprawdź czy exit-monitor ma retry logic po wygaśnięciu ORDER — jeśli nie, dodaj: po otrzymaniu expired status dla emergency order → natychmiastowy retry MARKET. 4. options-exit-monitor: SL/NEARDTH/GOVERNOR/REGIME już używają MARKET (v3.3) — verify nie regresowały. 5. Test: mock place_emergency_close → assert order_type='market' OR HTTP method='DELETE'."
+    },
+    {
+      "title": "Investigate unknown strategy tag — 10.8h order, no attribution, manually canceled",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "fill_rate.unknown: placed=1, filled=0, manually_canceled=1, avg_minutes_to_cancel=647.7 — order bez strategy attribution siedział 10.8h. Bug w client_order_id tagging powoduje utratę P&L attribution w analyzer.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-16",
+      "implementation_sketch": "1. Znajdź order: Alpaca dashboard orders z 2026-05-14/15, manualnie canceled, bez rozpoznawalnego prefix (opcja: puste client_order_id lub raw UUID). 2. Zidentyfikuj monitor: sprawdź logi GitHub Actions z tego dnia — który workflow uruchomił order bez prefix. 3. Fix: każde wywołanie place_stock_bracket/place_crypto_order/place_simple_buy musi mieć explicit client_order_id z rozpoznawalnym strategy prefix. 4. Dodaj assertion w shared/alpaca_orders.py: jeśli client_order_id jest None → raise ValueError('client_order_id required for attribution') zamiast cichego None."
+    }
+  ],
+  "revision_log": [
+    {
+      "original_proposal": "state_overrides.strategies.options-momentum: paused_until=2026-05-19 + side_bias=short + size_multiplier=0.5 + global_overrides.options_side_bias=short",
+      "challenger_decision": "MODIFIED",
+      "your_disposition": "MODIFIED",
+      "final_value": "paused_until=2026-05-19, enabled=false, size_multiplier=0.5 — USUNIĘTE: side_bias=short + global_overrides.options_side_bias=short",
+      "reasoning": "Akceptuję 5 z 7 odrzuconych sub-claims: historyczny RSI opiera się na N=1 (ACCEPT), mean reversion bez backtestu (ACCEPT), side_bias bez danych P&L (ACCEPT), global override scope creep (ACCEPT), size_multiplier=0.5 reframuję jako 1-consecutive-loss cool-down nie 'kara za WR' (ACCEPT). Bronię paused_until=2026-05-19: per v3.8 OPEN w SWING intent jest ALLOW nawet w PDT LOCKED (count nie blokuje opens, tylko BP check), więc PDT date overlap nie tworzy operacyjnego konfliktu — judgment call przy braku historii RSI jest defensywny i low-cost."
+    },
+    {
+      "original_proposal": "new_heuristic: heuristic_options_spy_overbought_put_bias (SPY RSI>80 → side_bias=short), lane=auto_pr",
+      "challenger_decision": "REJECTED",
+      "your_disposition": "ACCEPTED",
+      "final_value": "removed — auto_pr slot pusty w tej rundzie",
+      "reasoning": "ACCEPT — 1/6 sub-claims passed. Kluczowy błąd logiczny zidentyfikowany przez Challengera: RSI 76-80 = strategia aktywna BEZ bias (PR#4 nie blokuje, propozycja nie aktywuje), RSI>80 = pauzowana Z biasem — odwrócona struktura. Brak danych P&L dla kierunkowej decyzji + N=1 RSI tracker uniemożliwiają walidację. auto_pr lane nieodpowiedni dla zmiany kierunku strategicznego bez backtestu. Slot auto_pr pozostaje pusty — brak silnego kandydata spełniającego wszystkie 6 kryteriów lane=auto_pr w tej rundzie."
+    },
+    {
+      "original_proposal": "new_heuristic: Investigate crypto-momentum/breakdown silence — 19 days, 0 trades (backlog)",
+      "challenger_decision": "SURVIVED",
+      "your_disposition": "MODIFIED",
+      "final_value": "backlog (retained) — dodany krok 0: zdefiniuj kryterium sukcesu PRZED diagnozą (verify via Alpaca daily bars czy ANY Tier-2 altcoin miał 24h move w [3%, 15%] w ostatnich 19 dniach)",
+      "reasoning": "4/4 sub-claims passed. Inkorporuję modyfikację Challengera: bez mierzalnego kryterium sukcesu diagnoza może skończyć się nierozstrzygającym 'wszystko wygląda OK'. Krok 0 definiuje falsifiable check przed manualną inspekcją — poprawa jakości backlog item."
+    },
+    {
+      "original_proposal": "new_heuristic: PDT-aware swing-only allocator plan when daytrade_count >= 3 (backlog)",
+      "challenger_decision": "SURVIVED",
+      "your_disposition": "MODIFIED",
+      "final_value": "backlog (retained) — avg_hold_hours < 4h proxy ZASTĄPIONY przez asset_class='us_option' OR instrument_windows.can_trade_now()=False",
+      "reasoning": "3/4 sub-claims passed. Inkorporuję modyfikację Challengera: avg_hold_hours to pole nieistniejące w today_stats ani w żadnym trackowanym module. Zastąpione przez dostępny asset_class-based proxy z instrument_windows.json — implementacja możliwa bez nowych danych."
+    },
+    {
+      "original_proposal": "ADDED — fill_rate.emergency P0: emergency LIMIT expired 390 min without fill",
+      "challenger_decision": "N/A — raised in open_questions_for_senior_pm",
+      "your_disposition": "ADDED",
+      "final_value": "new backlog item: 'P0: Emergency LIMIT close expires at EOD — switch to MARKET or DELETE', effort=1h, revisit=2026-05-16, risk=high",
+      "reasoning": "Critical miss w round 1. fill_rate.emergency: placed=1, filled=0, expired=1, avg_minutes=390 — DAY TIF LIMIT emergency close wygasło o EOD bez realizacji. Pozycja mogła pozostać otwarta przez noc bez exit planu. Structural failure wymagający fixa przed otwarciem nowych pozycji — najwyższy priorytet z nowych propozycji."
+    },
+    {
+      "original_proposal": "ADDED — fill_rate.unknown: order 10.8h without strategy tag, manually canceled",
+      "challenger_decision": "N/A — raised in open_questions_for_senior_pm",
+      "your_disposition": "ADDED",
+      "final_value": "new backlog item: 'Investigate unknown strategy tag — 10.8h order, no attribution', effort=1h, revisit=2026-05-16, risk=medium",
+      "reasoning": "fill_rate.unknown: placed=1, filled=0, manually_canceled=1, avg_minutes=647.7. Order bez strategy attribution siedział 10.8h — bug w client_order_id tagging. Analyzer traci P&L attribution dla tej strategii, co zaburza dane w by_strategy."
+    }
+  ],
+  "confidence": "medium"
+}
