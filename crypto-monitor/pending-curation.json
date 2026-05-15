@@ -1,16 +1,16 @@
 {
-  "narrative": "AVAX i AAVE z RSI 17.1/16.3 i volume 3.9×/3.7× to klasyczny pattern kapitulacji, nie kontynuacji breakdownu — shorty w RSI <20 to wejście w strefę gwałtownego mean-reversion squeeze. Żaden z kandydatów nie dostał przepustki.",
+  "narrative": "Dwa kandydaci SELL_SHORT na AVAX/AAVE z RSI 12.6/14.7 i volume 148×/26× — to klasyczne dno kapitulacji/liquidation flush, nie potwierdzenie kontynuacji breakdown. BTC 1h +0.55% aktywnie blokuje alt shorty (Predator reguła: alt shorts wymagają BTC <-1.5%); short-squeeze ryzyko przy RSI 12-15 jest maksymalne. Zero emisji.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "AVAX/USD",
-      "reason": "RSI 17.1 to ekstremalne wyprzedanie — volume spike 3.93× przy RSI <20 to sygnał kapitulacji sprzedających, nie potwierdzenie kontynuacji; shorty tutaj trafiają w ścianę short-squeeze; 24h move -3.1% zbyt słaby dla conviction breakdown przy takim poziomie RSI."
+      "reason": "RSI 12.6 + volume 148.63× avg = klasyczny liquidation cascade bottom — volume spike przy ekstremalnym RSI to capitulation signal sprzedających, nie potwierdzenie kontynuacji; BTC 1h +0.55% wyklucza alt shorty per Predator reguła; short-squeeze ryzyko maksymalne."
     },
     {
       "ticker": "AAVE/USD",
-      "reason": "RSI 16.3 — jeszcze głębiej w strefie mean-reversion niż AVAX; AAVE to cienki token DeFi-governance na Alpaca z wysokim spreadem; brak named catalyst dla kontynuacji; 24h move -3.15% przy takiej kapitulacji RSI = wchodzenie za ostatnimi sprzedającymi."
+      "reason": "RSI 14.7 (ekstremalne wyprzedanie) + volume 26.29× + BTC 1h pozytywny (+0.55%) = identyczna pułapka co AVAX; AAVE to cienki DeFi-governance token z wysokim spreadem na Alpaca; mean-reversion dominuje nad kontynuacją breakdown przy tych poziomach RSI."
     }
   ],
-  "macro_context": "BTC 1h -0.65% marginalnie słaby (wspierający shorty teoretycznie), jednak bez altseasonu ani paniki systemowej — rynek się konsoliduje, nie runął; obie propozycje wymagają kontynuacji której RSI ekstrema nie zapowiadają.",
+  "macro_context": "BTC 1h +0.55% — pozytywna dynamika wyklucza alt-short pozycje per Predator reguły; konto czyste (0 otwartych pozycji, equity $94,598); AVAX/AAVE volume spikes (148×/26×) sygnalizują flush/kapitulację dna, nie nowy trend spadkowy.",
   "confidence_in_curation": "high"
 }
