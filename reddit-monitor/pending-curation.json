@@ -1,12 +1,20 @@
 {
-  "narrative": "Jedyny kandydat to SPXL SELL_SHORT ze spike_ratio=99 — artefakt matematyczny (rolling_avg_7d=0, dzielenie przez zero, nie realny spike). Post '4M gain with SPXL' to gain porn o udanym wyjściu z pozycji LONG, nie sygnał bearish; kierunek SHORT odwrotny do treści posta. VIX=17 = risk-on, brak katalizatora bearish — shortowanie 3× bull ETF bez reżimu = trap na decay. Zero edge dzisiaj.",
+  "narrative": "Trzech kandydatów, zero edge: SPXL short oparty na gain-porn z pozycji long (spike_ratio=99 to artefakt rolling_avg=0, treść BYCZA nie niedźwiedzia); AMD BUY bez katalizatora AMD-specific przy semis concentration 46% (AMD 15.1% + NVDA 15.4% + SMH 15.4%) daleko ponad cap; SPY BUY na loss-porn o 0DTE z skew=0.2 = czysty szum. Zero edge dzisiaj — chronię bankroll.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "SPXL",
-      "reason": "spike_ratio=99 to artefakt matematyczny (rolling_avg_7d=0 → division-by-zero, nie realny spike); tylko 1 mention; post to gain porn o sukcesie LONG ($4M profit exit), nie bearish catalyst; proposed SELL_SHORT sprzeczny z treścią posta; VIX=17 risk-on regime bez żadnego katalizatora bearish wyklucza short na 3× leveraged bull ETF."
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwszy mention w historii); post to gain-porn od długoterminowego LONG-holdera ($4M zysk z pozycji long SPXL) — wyekstrahowany side SELL_SHORT odwrotny do treści posta i do reżimu (VIX=17, portfel 100% long); brak katalizatora bearish."
+    },
+    {
+      "ticker": "AMD",
+      "reason": "Brak katalizatora AMD-specific — ticker wyekstrahowany tangencjalnie z dyskusji o wycenie NVDA; najlepszy post 35 ups dotyczy TSM; spike_ratio=1.5 poniżej progu; AMD+NVDA+SMH=45.9% equity blokuje dokładanie (per-ticker concentration cap)."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "Top post to loss-porn (0DTE -$16k call) bez bullish tezy; skew=0.2 = szum statystyczny; spike_ratio=1.6 bez znaczenia; zduplikowana pozycja (SPY 9.4% portfela) bez nowego katalizatora z ostatnich 24h."
     }
   ],
-  "macro_context": "VIX=17 = niski, reżim risk-on; brak bearish catalyst w payloadzie; środowisko nie sprzyja shortowaniu leveraged bull ETFs — decay po obu stronach przy chop.",
+  "macro_context": "Reżim risk-on (VIX=17, portfel zyska: NVDA +0.43%, AMD +0.39%), ale semis concentration na granicy — żaden sygnał Reddit nie dostarcza świeżego katalizatora; najlepszą decyzją jest nie dodawanie do już maksymalnie obciążonych pozycji.",
   "confidence_in_curation": "high"
 }
