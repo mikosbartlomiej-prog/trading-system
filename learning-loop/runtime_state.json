@@ -26,13 +26,15 @@
   },
   "routine_budget": {
     "by_routine": {
-      "daily-learning-pm": 1
+      "daily-learning-challenger": 1,
+      "daily-learning-pm": 1,
+      "daily-learning-revise": 1
     },
     "by_tier": {
-      "P0_essential": 1
+      "P0_essential": 3
     },
-    "date": "2026-05-14",
-    "last_updated": "2026-05-14T22:13:49.549471+00:00",
-    "total": 1
+    "date": "2026-05-15",
+    "last_updated": "2026-05-15T01:31:27.163059+00:00",
+    "total": 3
   }
 }

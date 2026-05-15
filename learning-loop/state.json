@@ -18,17 +18,19 @@
     "verdict": "NORMAL",
     "verdict_at": "2026-05-14T17:20:57Z"
   },
-  "days_tracked": 18,
+  "days_tracked": 19,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-14T22:13:49.540972+00:00",
+  "last_updated": "2026-05-15T01:20:06.323956+00:00",
   "last_validated_at": "2026-05-14T20:48:01.824866+00:00",
   "last_write_reason": "Cleared QQQ260518P00714000 pending_emergency_close after Alpaca-confirmed fill",
   "last_writer": "manual-maintenance",
-  "next_actions": [],
+  "next_actions": [
+    "options-momentum: paused_until -> 2026-05-16 (SPY-overbought gate)"
+  ],
   "peak_equity": 94616.44,
   "pending_emergency_close": {
     "prior_pending": {
@@ -216,10 +218,10 @@
       "consecutive_losses": 1,
       "enabled": false,
       "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
-      "paused_until": "2026-05-15",
+      "paused_until": "2026-05-19",
       "pnl_usd_7d": -0.6,
       "pnl_usd_lifetime": -0.6,
-      "rationale": "PRZEDŁUŻAM PAUZĘ mimo paused_until=2026-05-14. SPY RSI 82.4 = overbought — identyczny reżim co wczorajsza strata -$3,120. Re-enable w tym środowisku = powtórka. Warunki dla re-enable: (a) SPY RSI < 70 I min. 3 sesje bez rajdu, LUB (b) regime-gate zaimplementowany w options-monitor.py. size_multiplier=0.5 i side_bias=null zostają jako kara za 0% WR lifetime.",
+      "rationale": "Pauza do 2026-05-19 — judgment call, nie twierdzenie kwantytatywne (adapter proponował 2026-05-16; dodatkowe 3 dni przy N=1 RSI historii i 0 otwartych pozycjach mają niski koszt opóźnienia). size_multiplier=0.5 zgodny z 1-consecutive-loss cool-down (nie 'kara za WR' — próbka zbyt mała). side_bias USUNIĘTY: 0 tradów z jakimkolwiek bias = brak danych do decyzji kierunkowej. PDT LOCKED nie blokuje SWING-intent OPEN per v3.8, więc date overlap nie tworzy operacyjnego konfliktu.",
       "review_after": "2026-05-14 (post daily-learning)",
       "side_bias": null,
       "size_multiplier": 0.5,
@@ -243,7 +245,7 @@
       "win_rate_7d": 0,
       "win_rate_lifetime": 0
     },
-    "5e5e7366-b480-4f17": {
+    "alloc-exit": {
       "trades_lifetime": 0,
       "trades_7d": 0,
       "win_rate_lifetime": 0.0,
@@ -285,7 +287,7 @@
       "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
       "paused_until": null
     },
-    "alloc-exit": {
+    "5e5e7366-b480-4f17": {
       "trades_lifetime": 0,
       "trades_7d": 0,
       "win_rate_lifetime": 0.0,
