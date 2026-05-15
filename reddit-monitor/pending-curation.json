@@ -1,0 +1,12 @@
+{
+  "narrative": "Jedyny kandydat to SPXL SELL_SHORT z spike_ratio=99 — artefakt (1 wzmianka / 0 rolling_avg = dzielenie przez zero, nie realny spike). Post to gain porn o $4M zysku na LONG SPXL sprzed 6 miesięcy — skew=-1 błędnie wyekstrahowany z byczego tekstu celebrującego pozycję long. VIX=17 + risk-on reżim = short 3× bull ETF to zły kierunek. Zero sygnałów do emisji.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "SPXL",
+      "reason": "spike_ratio=99 to artefakt 1/0 (brak historii rolling_avg_7d); post to 6-miesięczna gain porn o long SPXL bez żadnego fresh catalyst; skew=-1 błędnie wyekstrahowany z byczego tekstu ('$4M gain'); VIX=17 + risk-on = zły reżim dla short 3× leveraged bull ETF"
+    }
+  ],
+  "macro_context": "VIX=17 wskazuje risk-on — środowisko sprzyjające longom, nie shortom 3× leveraged ETF; konto czyste ($94.6k, 0 pozycji), gotowe do deploymentu przy kolejnym realnym setupie z fresh catalyst",
+  "confidence_in_curation": "high"
+}
