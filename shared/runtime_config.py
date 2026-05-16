@@ -136,7 +136,12 @@ _PROFILE_LIMITS: dict[str, dict[str, float]] = {
     "AGGRESSIVE_PAPER": {
         "max_single_trade_pct":          20.0,
         "max_symbol_exposure_pct":       40.0,
-        "max_correlated_bucket_pct":     60.0,
+        # v3.8.6 (2026-05-16): bucket cap raised 60→65%. AI/Nasdaq/Semis
+        # rally pushed our 6-stock basket (AMD+SMH+NVDA+QQQ+SPY +
+        # AVGO/ARM/SMCI optionally) to ~62% on 2026-05-15 — blocking
+        # legit Monday plan adds. 65% gives ~5% headroom for tactical
+        # overweight without losing safety. Reduce to 55% in BALANCED.
+        "max_correlated_bucket_pct":     65.0,
         "max_gross_exposure_pct":        200.0,
         "max_net_long_exposure_pct":     150.0,
         "max_short_exposure_pct":        80.0,

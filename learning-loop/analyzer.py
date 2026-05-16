@@ -249,7 +249,7 @@ def reconstruct_trades(orders: list[dict]) -> list[dict]:
 
 def _is_close(order: dict) -> bool:
     """
-    Detect close orders. Two patterns:
+    Detect close orders. Patterns:
 
     1. Explicit tagging by exit-monitor / options-exit-monitor:
        client_order_id starts with 'exit-' (e.g. 'exit-emergency-*',
@@ -257,7 +257,14 @@ def _is_close(order: dict) -> bool:
     2. Alpaca bracket-order child legs (auto-created by Alpaca when a
        parent is placed with order_class=bracket):
        client_order_id ends with '_take_profit' or '_stop_loss'.
-       These are standard Alpaca naming for bracket children.
+    3. Operational closes by allocator / one-shot scripts (v3.8.6):
+       'alloc-exit-*', 'alloc-reduce-*', 'op-correction-*',
+       'emergency-close-*'. These reduce positions but are tagged
+       differently from strategy exits.
+    4. Position-intent fallback: Alpaca sets order.position_intent =
+       'sell_to_close' / 'buy_to_close' for orders that explicitly close
+       a position (via DELETE /v2/positions endpoint). This catches
+       cases #3 even without prefix recognition.
 
     Anything else is treated as an entry.
     """
@@ -265,6 +272,15 @@ def _is_close(order: dict) -> bool:
     if cid.startswith("exit-"):
         return True
     if cid.endswith("_take_profit") or cid.endswith("_stop_loss"):
+        return True
+    if (cid.startswith("alloc-exit-")
+            or cid.startswith("alloc-reduce-")
+            or cid.startswith("op-correction-")
+            or cid.startswith("emergency-close-")
+            or cid.startswith("operational-correction-")):
+        return True
+    intent = (order.get("position_intent") or "").lower()
+    if intent in ("sell_to_close", "buy_to_close"):
         return True
     return False
 
@@ -763,6 +779,38 @@ def load_state() -> dict:
 
 
 def save_state(state: dict) -> None:
+    # v3.8.6 (2026-05-16): refresh legacy daily_peak from runtime_state so
+    # state.json doesn't drift to stale dates. peak_tracker.py reads from
+    # runtime_state.json::intraday_governor at runtime, but state.json's
+    # daily_peak field was a pre-v3.5 snapshot that nothing kept updated —
+    # we observed dates 2 days behind. Back-compat readers (LLM payload,
+    # heuristic_proposals lookup) get current data now.
+    try:
+        try:
+            from runtime_state import read_section
+        except ImportError:
+            import sys, os as _os
+            sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+            from runtime_state import read_section  # type: ignore
+        ig = read_section("intraday_governor") or {}
+        if ig:
+            state["daily_peak"] = {
+                "date":          ig.get("date"),
+                "peak_pl_usd":   ig.get("intraday_peak_pnl"),
+                "peak_pl_pct":   ig.get("intraday_peak_pnl_pct"),
+                "peak_at":       ig.get("peak_at"),
+                "peak_equity":   ig.get("intraday_peak_equity"),
+                "current_pl_usd":   ig.get("current_intraday_pnl"),
+                "current_equity":   ig.get("current_equity"),
+                "retrace_from_peak": ig.get("giveback_pct_of_peak"),
+                "verdict":          ig.get("pnl_state"),
+                "verdict_at":       ig.get("last_update_at"),
+                "alerts_sent":      ig.get("alerts_sent") or {},
+                "source":           "runtime_state.intraday_governor (v3.8.6 sync)",
+            }
+    except Exception as e:
+        print(f"  daily_peak sync skipped ({type(e).__name__}: {e})")
+
     with open(STATE_PATH, "w") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
         f.write("\n")

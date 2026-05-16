@@ -452,19 +452,39 @@ def run_scan():
     equity = account["equity"] if account else 0
 
     # ── Phase 1: collect candidates ──
+    # v3.8.6 (2026-05-16): verbose per-coin scan summary (LLM proposal
+    # 2026-05-13 "Crypto pipeline 14+ days 0 trades — log verbose
+    # rejection reasons"). After 21 days of zero crypto trades we need
+    # operator visibility into whether silence is correct or pipeline
+    # broken. check_crypto_signal already logs per-coin RSI / move_24h /
+    # vol / RSI when no signal. Here we add aggregate summary.
     candidates: list[dict] = []
+    scanned = 0
+    rejected_no_signal = 0
+    rejected_alt_cap = 0
+    rejected_open_pos = 0
     for symbol in CRYPTO_SYMBOLS:
+        scanned += 1
         signal = check_crypto_signal(symbol, btc_1h_change=btc_1h_change)
         if not signal:
+            rejected_no_signal += 1
             continue
         # Skip Tier 2 longs if we're at alt cap
         if signal["tier"] >= 2 and signal["action"] == "BUY" and alt_open >= MAX_ALT_POSITIONS:
             print(f"  >>> {symbol} skipped — alt cap ({alt_open}/{MAX_ALT_POSITIONS})")
+            rejected_alt_cap += 1
             continue
         if has_open_position(symbol):
             print(f"  >>> {signal['action']} {symbol} pominięty (otwarta pozycja)")
+            rejected_open_pos += 1
             continue
         candidates.append(signal)
+
+    print(f"  Scan summary: {scanned} coins; {len(candidates)} candidates; "
+          f"rejected: no_signal={rejected_no_signal}, "
+          f"alt_cap={rejected_alt_cap}, open_position={rejected_open_pos}")
+    print(f"  BTC dominance proxy: btc_1h_change={btc_1h_change:+.2f}% " if btc_1h_change is not None
+          else "  BTC dominance: unavailable")
 
     if not candidates:
         print(f"  No candidates after filters — quiet scan")

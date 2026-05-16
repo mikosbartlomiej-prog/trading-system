@@ -126,8 +126,8 @@
   "intraday_profit_protection": {
     "enabled":                              true,
     "check_frequency":                      "every_exit_monitor_run",
-    "min_profit_to_arm_usd":                1000,
-    "min_profit_to_arm_pct":                0.01,
+    "min_profit_to_arm_usd":                500,
+    "min_profit_to_arm_pct":                0.005,
     "strong_profit_usd":                    3000,
     "strong_profit_pct":                    0.03,
     "major_profit_usd":                     5000,

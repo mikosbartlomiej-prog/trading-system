@@ -107,8 +107,12 @@ _STATE_RANK = {s: i for i, s in enumerate(STATE_ORDER)}
 
 _DEFAULTS: dict[str, Any] = {
     "enabled":                     True,
-    "min_profit_to_arm_usd":       1000.0,
-    "min_profit_to_arm_pct":       0.01,
+    # v3.8.6 (2026-05-16): peak ARM threshold $1k → $500 (1% → 0.5% equity).
+    # 2026-05-15 incident: peak $258, giveback $1,080 — cascade never armed
+    # because peak < $1k. Lower threshold catches smaller-peak giveback
+    # patterns. $500 = 0.5% of $94k equity = meaningful peak worth protecting.
+    "min_profit_to_arm_usd":       500.0,
+    "min_profit_to_arm_pct":       0.005,
     "strong_profit_usd":           3000.0,
     "strong_profit_pct":           0.03,
     "major_profit_usd":            5000.0,

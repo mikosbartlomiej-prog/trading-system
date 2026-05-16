@@ -235,6 +235,36 @@ class AccountAwareAllocator:
                 f"pl={p['pl_pct']:+.2f}%"
             )
 
+        # 2.5. PDT-aware planning metadata (v3.8.6, 2026-05-16). Plan
+        # generation records PDT state so morning-allocator + downstream
+        # consumers can adapt: when LOCKED or RESTRICTED, ALL new BUYs
+        # are tagged intent=swing (caller declares overnight hold). This
+        # mirrors what _pdt_gate already enforces at execute time, but
+        # surfacing it in the PLAN gives operators visibility into why
+        # certain symbols may DEFER vs ALLOW. LLM-flagged proposal
+        # 2026-05-15: "PDT-aware swing-only allocator plan when dt >= 3".
+        try:
+            try:
+                from pdt_guard import get_pdt_status
+            except ImportError:
+                from shared.pdt_guard import get_pdt_status  # type: ignore
+            pdt_snap = get_pdt_status(account=account)
+            plan["pdt_mode"]            = pdt_snap.mode
+            plan["pdt_dt_remaining"]    = pdt_snap.dt_remaining
+            plan["pdt_dt_count"]        = pdt_snap.daytrade_count
+            plan["pdt_intent_for_buys"] = "swing"   # all monitor opens default swing in v3.8
+            if pdt_snap.mode in ("RESTRICTED", "LOCKED"):
+                self.trace.warn(
+                    f"PDT mode={pdt_snap.mode} dt={pdt_snap.daytrade_count}/{pdt_snap.dt_limit} "
+                    f"— all plan BUYs MUST hold overnight (intent=swing). "
+                    f"Discretionary intraday-close of same-day opens would DEFER/BLOCK."
+                )
+            else:
+                self.trace.info(f"PDT mode={pdt_snap.mode}  dt_remaining={pdt_snap.dt_remaining}")
+        except Exception as e:
+            self.trace.warn(f"pdt_guard unavailable in plan gen: {e}")
+            plan["pdt_mode"] = "UNKNOWN"
+
         # 3. Detect kill-switch / defensive mode
         self.trace.step(3, "defensive mode check")
         defensive = self._check_defensive_mode()

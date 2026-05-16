@@ -232,11 +232,23 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
     if days_tracked < min_days:
         return []                          # not enough history yet
 
+    # v3.8.6 (2026-05-16): exclude allocator-level tags from SILENT check.
+    # alloc-exit, allocator-rebalance, op-correction are NOT strategies —
+    # they're allocator's order tagging for operational flows. Their
+    # "0 trades lifetime" is meaningless because trades are attributed
+    # to the underlying signal strategy, not the allocator tag.
+    ALLOCATOR_LEVEL_TAGS = {
+        "alloc-exit", "allocator-rebalance", "op-correction",
+        "operational-correction", "emergency-close", "unknown",
+    }
+
     by_strat = today_stats.get("by_strategy") or {}
     out: list[str] = []
     for name, cfg in state["strategies"].items():
         if not cfg.get("enabled", True):
             continue                       # disabled is fine
+        if name in ALLOCATOR_LEVEL_TAGS:
+            continue                       # not a strategy — allocator tag
         stats = by_strat.get(name) or {}
         if stats.get("trades_lifetime", 0) > 0:
             continue                       # has trades at some point

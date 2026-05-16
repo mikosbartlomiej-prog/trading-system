@@ -129,6 +129,22 @@ SL_PREMIUM_MULT          = 0.35    # -65%  (was -50%)
 STRIKE_OTM_MAX_PCT       = 7.0     # ATM ±7% (was ±3%)
 EARNINGS_BUFFER_DAYS     = 1       # iron rule, unchanged
 
+# v3.8.6 (2026-05-16): P2 LLM-proposed regime gate + side concentration cap.
+# Regime gate (#8): block PUT proposals when SPY RSI > 75 AND SPY 5d > +2%.
+# Mean-reversion on PUT assumes overbought reverses; in strong uptrend it
+# becomes systematic fade-the-trend (cost ~$3,120 on 2026-05-14 incident).
+PUT_TREND_BLOCK_RSI       = 75.0
+PUT_TREND_BLOCK_5D_PCT    = 0.02
+# Symmetric: block CALL on capitulation (SPY RSI < 25 + 5d < -2%).
+CALL_TREND_BLOCK_RSI      = 25.0
+CALL_TREND_BLOCK_5D_PCT   = -0.02
+
+# Side concentration cap (#9): max 5 PUTs OR 5 CALLs simultaneously,
+# independent of MAX_OPEN_OPTIONS=10 (which is the union). Prevents the
+# 2026-05-12 scenario of 15 open PUTs wiped in a single SPY rally.
+PUT_CAP                   = 5
+CALL_CAP                  = 5
+
 
 def alpaca_headers() -> dict:
     return {
@@ -400,6 +416,66 @@ def place_options_buy(contract_symbol: str, qty: int, premium: float) -> dict | 
         return None
 
 
+# ─── SPY regime helper (v3.8.6 — for regime gate + LLM context) ─────────────
+
+def _get_spy_regime() -> tuple[float | None, float | None]:
+    """
+    Returns (spy_rsi_14, spy_5d_return_decimal) or (None, None) on failure.
+    Used by PUT/CALL regime gate. Fetches 10 daily bars via Alpaca data
+    API and computes RSI + 5d total return.
+    """
+    try:
+        bars = get_candles("SPY")
+    except Exception:
+        return (None, None)
+    if not bars or not bars.get("close") or len(bars["close"]) < 6:
+        return (None, None)
+    closes = bars["close"]
+    spy_rsi = calculate_rsi(closes)
+    try:
+        prev = closes[-6]
+        curr = closes[-1]
+        spy_5d = (curr / prev - 1) if prev > 0 else None
+    except Exception:
+        spy_5d = None
+    return (spy_rsi, spy_5d)
+
+
+def _count_open_options_by_side() -> tuple[int, int]:
+    """
+    Returns (open_put_count, open_call_count) across all underlying
+    symbols. Used by PUT_CAP/CALL_CAP side concentration gate.
+    Fail-soft: returns (0, 0) on Alpaca error so monitor doesn't freeze.
+    """
+    try:
+        r = requests.get(
+            f"{ALPACA_BASE_URL}/v2/positions",
+            headers=alpaca_headers(),
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return (0, 0)
+        positions = r.json() or []
+    except Exception:
+        return (0, 0)
+    puts = 0
+    calls = 0
+    for p in positions:
+        if p.get("asset_class") != "us_option":
+            continue
+        sym = p.get("symbol", "")
+        # OCC option symbol: <root><YYMMDD><C|P><strike8>
+        # The C/P character is at position len-9.
+        if len(sym) < 15:
+            continue
+        side_char = sym[-9].upper()
+        if side_char == "P":
+            puts += 1
+        elif side_char == "C":
+            calls += 1
+    return (puts, calls)
+
+
 # ─── Sygnał ──────────────────────────────────────────────────────────────────
 
 def build_proposal(ticker: str) -> dict | None:
@@ -420,6 +496,24 @@ def build_proposal(ticker: str) -> dict | None:
     else:
         print(f"  {ticker}: RSI={rsi:.1f} -> brak setupu")
         return None
+
+    # v3.8.6 (2026-05-16) — regime gate (LLM proposal 2026-05-13). PUT
+    # mean-reversion assumes overbought reverses; in strong uptrend
+    # (SPY RSI > 75 AND SPY 5d > +2%) it becomes systematic fade-the-trend.
+    # 2026-05-14 cost: ~$3,120 from PUTs fading SPY rally. Symmetric for CALL.
+    if opt_type in ("put", "call"):
+        spy_rsi, spy_5d_pct = _get_spy_regime()
+        if spy_rsi is not None and spy_5d_pct is not None:
+            if opt_type == "put" and spy_rsi > PUT_TREND_BLOCK_RSI and spy_5d_pct > PUT_TREND_BLOCK_5D_PCT:
+                print(f"  {ticker}: REGIME GATE — SPY RSI={spy_rsi:.1f} (>{PUT_TREND_BLOCK_RSI}) "
+                      f"+ 5d={spy_5d_pct*100:+.1f}% (>+{PUT_TREND_BLOCK_5D_PCT*100:.0f}%) "
+                      f"→ PUT blocked (fade-the-trend protection)")
+                return None
+            if opt_type == "call" and spy_rsi < CALL_TREND_BLOCK_RSI and spy_5d_pct < CALL_TREND_BLOCK_5D_PCT:
+                print(f"  {ticker}: REGIME GATE — SPY RSI={spy_rsi:.1f} (<{CALL_TREND_BLOCK_RSI}) "
+                      f"+ 5d={spy_5d_pct*100:+.1f}% (<{CALL_TREND_BLOCK_5D_PCT*100:.0f}%) "
+                      f"→ CALL blocked (fade-the-capitulation protection)")
+                return None
 
     if is_earnings_imminent(ticker):
         print(f"  {ticker}: earnings ±{EARNINGS_BUFFER_DAYS}d -> pomijam")
@@ -605,8 +699,15 @@ def run_scan():
     slots_left = MAX_OPEN_OPTIONS - open_count
     print(f"  Otwartych opcji: {open_count}/{MAX_OPEN_OPTIONS} (slotów: {slots_left})")
 
+    # v3.8.6 — side concentration cap (LLM proposal 2026-05-13). PUT/CALL
+    # are counted independently of MAX_OPEN_OPTIONS=10. Prevents single
+    # SPY rally from wiping a full-PUT portfolio (2026-05-12 incident).
+    open_puts, open_calls = _count_open_options_by_side()
+    print(f"  Side breakdown: {open_puts} PUTs (cap {PUT_CAP}), {open_calls} CALLs (cap {CALL_CAP})")
+
     proposals = []
     skipped_by_bias = 0
+    skipped_by_side_cap = 0
     for ticker in TICKERS:
         proposal = build_proposal(ticker)
         if proposal:
@@ -616,6 +717,16 @@ def run_scan():
                 continue
             if learning_bias == "long" and proposal.get("option_type") == "put":
                 skipped_by_bias += 1
+                continue
+            # Side concentration cap — skip if proposed side already at cap.
+            opt_type = proposal.get("option_type")
+            if opt_type == "put" and open_puts >= PUT_CAP:
+                print(f"  {ticker}: SIDE CAP — {open_puts} open PUTs ≥ {PUT_CAP}, skip")
+                skipped_by_side_cap += 1
+                continue
+            if opt_type == "call" and open_calls >= CALL_CAP:
+                print(f"  {ticker}: SIDE CAP — {open_calls} open CALLs ≥ {CALL_CAP}, skip")
+                skipped_by_side_cap += 1
                 continue
             proposal["size_usd"] = round(proposal["size_usd"] * combined_size_mult)
             proposals.append(proposal)
