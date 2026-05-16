@@ -1,24 +1,20 @@
 {
-  "narrative": "Cztery kandydaty — cztery rejecty. Dominujący sygnał dziś to BRAK sygnału: wszystkie NVDA/AMD posty są REAKTYWNE na negatywny katalyzator (Trump opuścił Pekin bez umowy, AMD -5.7%, NVDA -4.4%), spike_ratio poniżej 2× dla obu, a portfel i tak wyczerpany w 100% z 62%+ w tech/semis — dokładanie NVDA/AMD teraz to kupowanie szczytowej ekspozycji po selloffie bez świeżego powodu do odwrócenia.",
+  "narrative": "Wszystkie 3 kandydaty odrzucone — zero actionable edge 2026-05-16 09:11 UTC. VOO-post (spike_ratio=99) to artefakt zerowej historii wzmianek, sam post to manifest pasywnego inwestowania bez żadnej tezy trade'owej. AMD-post z 1683 upvotami opisuje AMD -5.7% po klęsce szczytu Trump-Pekin bez umowy — sentyment kontekstowy bearish, nie bullish. SPY-post to loss-porn o 0DTE katastrofie bez directional catalyst. Konto w 100% deployed w tech/AI long (AMD+NVDA+SMH+QQQ+SPY ~81% equity) — brak gotówki, brak sygnałów wartych otwarcia.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "VOO",
-      "reason": "spike_ratio=99 to czysty artefakt danych (rolling_avg_7d=0, brak historii); post to esej pasywnego inwestora o filozofii buy-and-hold bez żadnego świeżego katalizatora; portfel ma już 35.5% w SPY+QQQ = identyczna ekspozycja, zero przyrostowej wartości."
+      "reason": "spike_ratio=99 to artefakt zerowej historii (rolling_avg_7d=0, pierwsze wzmianki); post to filozofia buy-and-hold bez named catalyst ani momentum setup — nie jest to trade signal."
     },
     {
       "ticker": "AMD",
-      "reason": "Katalyzator jest NEGATYWNY — Trump-China brak umowy spowodował AMD -5.7% w piątek; spike_ratio=2.25× (poniżej progu); posty to analityczne pytania o rotację kapitału do IPO, nie bullish conviction DDs; portfel już 14.9% AMD, kupowanie falling knife bez odwrócenia katalizatora = bagholding."
-    },
-    {
-      "ticker": "NVDA",
-      "reason": "Spike_ratio=1.71× słaby; negatywny katalyzator (summit bez umowy, NVDA -4.4%); trzy posty to valuation questions i breadth-divergence obawy, nie bullish DDs; IPO pipeline (CBRS/SpaceX/OpenAI) ryzykuje rotacją kapitału z NVDA; portfel już 15.4% NVDA — concentration cap 40% + istniejące pozycje blokują nowe wejście."
+      "reason": "Najlepszy post (1683 ups) opisuje AMD -5.7% na szczycie Trump-Pekin bez porozumienia — kontekst bearish; spike_ratio=1.5× i skew=0.33 poniżej minimalnych progów; konto już posiada 14.9% AMD w drawdownie -1.98%; dodawanie do przegranej pozycji bez świeżego katalizatora to averaging-down, nie alpha."
     },
     {
       "ticker": "SPY",
-      "reason": "Post to loss porn (-$16,190 w 14 min na 0DTE) — anegdota, nie sygnał; skew=0.2 to szum; portfel już 18.9% SPY; spike_ratio=1.6× poniżej progu."
+      "reason": "Post to loss-porn o 0DTE (anegdota bez directional thesis); spike_ratio=1.6×, skew=0.2 — oba subthreshold; konto już posiada 18.9% SPY; żadnego powodu do zwiększania ekspozycji."
     }
   ],
-  "macro_context": "VIX=17 nominalnie risk-on, ale portfel zdeplojowany w 100% z 62%+ koncentracją w tech/semis (NVDA+AMD+SMH+QQQ); Trump-China summit bez wiążących zobowiązań = negatywny short-term katalyzator dla półprzewodników; S&P na ATH przy tylko 52% składowych powyżej 50d MA (thin breadth) — reżim choppy/niepewny, nie trend-day.",
+  "macro_context": "Reżim UNCLEAR/lekko bearish tech: szczyt Trump-Pekin bez porozumienia handlowego → semis i AI wyprzedane -4-6% w piątek; VIX=17 nominalnie spokojny ale konto w 100% deployed bez wolnej gotówki — zero nowych wejść możliwych bez naruszenia concentration cap.",
   "confidence_in_curation": "high"
 }
