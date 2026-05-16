@@ -29,6 +29,7 @@ to email-only / log path. Same fail-open philosophy as risk_guards.
 """
 
 import os
+import re
 import urllib.parse
 import requests
 from datetime import datetime, timezone
@@ -205,10 +206,41 @@ def _headers() -> dict:
 
 
 def _client_order_id(strategy: str, symbol: str) -> str:
-    """Per-strategy client_order_id so exit-monitor can identify origin."""
+    """Per-strategy client_order_id so exit-monitor + analyzer can attribute origin.
+
+    v3.8.5 (2026-05-16): defensive validation. Hard-rejects truly broken
+    inputs (None, empty, UUID-shaped). Allows "auto" (legacy default)
+    with a warning print — analyzer parses "auto-SYM-ts" as strategy
+    "auto" which is at least not UUID pollution.
+
+    LLM-flagged 2026-05-15: 'Unknown strategy tag — 10.8h order, no
+    attribution' — that was an order placed with empty strategy. The
+    None/empty rejection catches this at source.
+    """
+    if not strategy or not isinstance(strategy, str):
+        raise ValueError(
+            f"_client_order_id requires non-empty strategy name; got {strategy!r}. "
+            f"Every order MUST carry attribution for analyzer to compute "
+            f"per-strategy P&L."
+        )
+    strategy_clean = strategy.strip().lower()
+    if not strategy_clean:
+        raise ValueError(f"strategy is empty after strip; got {strategy!r}")
+    # Reject if strategy itself looks UUID-ish (would pollute analyzer).
+    if re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}", strategy_clean):
+        raise ValueError(
+            f"strategy={strategy!r} looks like a UUID prefix; analyzer would "
+            f"treat the resulting client_order_id as 'unknown'. Use a real strategy name."
+        )
+    # 'auto' is the historical fallback default — log a soft warning so we
+    # can spot call sites that should be passing a real name. Not fatal.
+    if strategy_clean == "auto":
+        print(f"  ⚠️  _client_order_id: strategy='auto' for {symbol} — caller "
+              f"should pass an explicit strategy name (e.g. 'momentum-long', "
+              f"'allocator-rebalance', 'op-correction')")
     ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
     safe_sym = symbol.replace("/", "").replace(" ", "")
-    return f"{strategy}-{safe_sym}-{ts}"
+    return f"{strategy_clean}-{safe_sym}-{ts}"
 
 
 # ─── Quote / spot price ───────────────────────────────────────────────────────

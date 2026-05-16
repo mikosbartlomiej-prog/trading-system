@@ -221,7 +221,24 @@ def call_routine(payload: dict, worker_url: str | None = None,
     if r.status_code != 200:
         print(f"  LLM trigger: HTTP {r.status_code} -> skipping")
         if r.status_code == 429:
+            # v3.8.5 (2026-05-16): parse Retry-After header so operator can
+            # see when Anthropic's rolling window clears. 3 days of 429 at
+            # 21:00 UTC was the reason daily-learning was moved to 04:00 UTC.
+            retry_after = r.headers.get("Retry-After") or r.headers.get("retry-after")
+            anthropic_reset = (
+                r.headers.get("anthropic-ratelimit-requests-reset")
+                or r.headers.get("x-ratelimit-reset")
+                or r.headers.get("ratelimit-reset")
+            )
             print("    (Anthropic Routines daily limit hit. Deterministic baseline still active.)")
+            if retry_after:
+                print(f"    Retry-After: {retry_after} seconds")
+            if anthropic_reset:
+                print(f"    Rolling window reset: {anthropic_reset}")
+            # If response body has helpful info, surface a snippet for debugging.
+            body_snippet = (r.text or "")[:240].replace("\n", " ")
+            if body_snippet:
+                print(f"    Body: {body_snippet}")
         return None
 
     # Pull session URL out of the trigger receipt for post-hoc debugging

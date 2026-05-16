@@ -95,6 +95,20 @@ def get_account() -> dict:
 
 # ─── Trade reconstruction ────────────────────────────────────────────────────
 
+import re as _re_strategy_parse
+
+# Alpaca auto-generates UUIDs for bracket child orders (SL + TP legs)
+# when the parent uses bracket. These look like
+# `cda058d6-1d5f-4b67-a222-ca7c9b29a9ae` (8-4-4-4-12 hex). Without this
+# detection, the fallback "-".join(parts[:-2]) below treated them as
+# valid "strategy" names — polluting state.json with fake strategies
+# each day (7 pruned 2026-05-16, 3 on 05-15, 1 on 05-14, growing).
+_UUID_RE = _re_strategy_parse.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    _re_strategy_parse.IGNORECASE,
+)
+
+
 def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     """
     client_order_id formats:
@@ -106,15 +120,26 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
               "exit-<reason>-<symbol_clean>-<HHMMSSmmm>"
               -> returns 'unknown' (no strategy embedded; caller should
                  fall back to per-symbol entry lookup).
+      AUTO-GENERATED UUID (Alpaca bracket child orders or untagged calls):
+              "<uuid-8-4-4-4-12>"  -> returns 'unknown' (NOT a real strategy).
 
     Strategy names may contain hyphens (e.g. "momentum-long"), so we
     can't simply split on '-'. We locate the symbol marker and take
     everything before it.
+
+    v3.8.5 (2026-05-16): UUID pattern detection added to stop fake
+    strategy pollution. Previously, Alpaca-auto-generated bracket-child
+    UUIDs were parsed as 3-hyphen-segment "strategies" and polluted
+    state.json (cumulative 11+ fake entries across 3 days).
     """
     if not client_order_id:
         return "unknown"
 
     cid = client_order_id
+
+    # FIRST: detect Alpaca auto-generated UUIDs (bracket children).
+    if _UUID_RE.match(cid):
+        return "unknown"   # never a real strategy — UUID = auto-assigned
 
     # Detect EXIT format: strip the "exit-<reason>-" prefix so the
     # remaining structure matches ENTRY format.
@@ -132,12 +157,21 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     else:
         rest = cid
 
+    def _uuidish(name: str) -> bool:
+        """True if name has 8-hex-dash-4-hex-dash-4-hex shape anywhere."""
+        return bool(_re_strategy_parse.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}", name, _re_strategy_parse.IGNORECASE,
+        ))
+
     if symbol:
         sym_clean = symbol.replace("/", "")
         marker = f"-{sym_clean}-"
         idx = rest.find(marker)
         if idx > 0:
-            return rest[:idx]
+            candidate = rest[:idx]
+            if _uuidish(candidate):
+                return "unknown"   # stitched UUID + symbol, not a strategy
+            return candidate
         # New exit format may include strategy; older exit format jumps
         # straight to symbol — detect by checking if rest STARTS with the
         # symbol (then no strategy embedded).
@@ -147,7 +181,10 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     # Fallback: strip last 2 segments (timestamp + symbol)
     parts = rest.split("-")
     if len(parts) >= 3:
-        return "-".join(parts[:-2])
+        candidate = "-".join(parts[:-2])
+        if _uuidish(candidate):
+            return "unknown"
+        return candidate
     return "unknown"
 
 
@@ -989,6 +1026,21 @@ def run():
         "target_branch":           target_branch,
     }
 
+    # v3.8.5 (2026-05-16): Silent-day optimization. Skip Challenger + Revise
+    # (rounds 2+3) when the day has 0 fills + 0 new heuristic proposals from
+    # draft1 — no material content for Challenger to challenge, draft1 is
+    # safe to apply unfiltered. Saves 2/3 of routine budget on quiet days.
+    # Anthropic uses rolling 24h window so saving calls protects the
+    # next day's budget too.
+    cumulative_trades = int((today_stats or {}).get("cumulative_trades", 0))
+    trades_24h_total  = sum(
+        int(s.get("trades_7d", 0)) for s in (today_stats.get("strategies") or {}).values()
+    )
+    is_silent_day = (cumulative_trades == 0 and trades_24h_total == 0)
+    if is_silent_day:
+        print(f"\n  [Silent-day optimization] cumulative_trades=0 + trades_24h=0 — "
+              f"will skip Challenger/Revise to conserve Anthropic budget.")
+
     print("\n  [Round 1/3] Calling Senior PM for draft analysis...")
     draft1 = call_senior_pm_round1(base_payload)
 
@@ -998,6 +1050,14 @@ def run():
     if draft1 is None:
         print("  [Round 1/3] Senior PM unavailable — skipping rounds 2 & 3, "
               "falling back to deterministic baseline only")
+    elif is_silent_day:
+        # Silent day → apply draft1 directly; no Challenger needed.
+        # (Acceptable risk: draft1 has no human-flagged edge cases.
+        # If a non-trivial proposal lands, daily-learning next day can
+        # still run full 3-round dialog.)
+        print("  [Round 1/3] Silent day — applying Senior PM draft 1 directly, "
+              "skipping rounds 2+3 to conserve budget")
+        llm_resp = draft1
     else:
         print(f"  [Round 1/3] Senior PM draft received "
               f"(confidence={draft1.get('confidence', '?')}, "

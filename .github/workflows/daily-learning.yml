@@ -2,8 +2,12 @@ name: Daily Learning Loop — Strategy Adapter
 
 on:
   schedule:
-    # Codziennie 21:00 UTC (1h po US market close 20:00 UTC)
-    - cron: '0 21 * * *'
+    # 04:00 UTC daily (v3.8.5, 2026-05-16). Moved from 21:00 UTC because
+    # Anthropic Routines daily limit uses rolling 24h window — three days
+    # in a row (2026-05-14/15/16) 21:00 fire hit HTTP 429 'daily limit'
+    # because previous-day evening curator calls (15-22 UTC) still counted.
+    # 04:00 UTC is ~7h after typical last call → rolling window clearest.
+    - cron: '0 4 * * *'
   workflow_dispatch:
 
 concurrency:

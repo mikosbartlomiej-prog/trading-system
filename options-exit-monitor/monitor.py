@@ -186,11 +186,19 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     except Exception as e:
         print(f"  pdt-guard unavailable for {contract_symbol} ({type(e).__name__}: {e}) — proceeding")
 
+    # v3.8.5 (2026-05-16): LIMIT TP uses GTC (not DAY) so it survives the
+    # EOD cutoff. Previously DAY TIF caused TP orders to expire unfilled
+    # at EOD — LLM-flagged 2026-05-15: "fill_rate.emergency placed=1
+    # filled=0 expired=1 avg_minutes=390" was a DAY TIF LIMIT that
+    # expired without filling, leaving the position exposed overnight.
+    # GTC + MARKET fallback (other branches below) ensures every exit
+    # decision has a durable order at the broker.
+    tif = "day" if decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR") else "gtc"
     payload: dict = {
         "symbol":          contract_symbol,
         "qty":             str(int(qty)),
         "side":            "sell",
-        "time_in_force":   "day",
+        "time_in_force":   tif,
         "client_order_id": _exit_client_order_id(reason, contract_symbol),
     }
     # MARKET exit for any close that prioritises guaranteed fill over
