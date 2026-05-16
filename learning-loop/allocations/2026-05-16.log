@@ -1,0 +1,45 @@
+[00:12:50 INFO] ============================================================
+[00:12:50 INFO] AccountAwareAllocator — daily plan 2026-05-16
+[00:12:50 INFO] ============================================================
+[00:12:50 INFO] ── Step 1: fetching account state ──
+[00:12:50 INFO]   equity=$  93610.66  cash=$ 236379.20  buying_power=$ 283184.53
+[00:12:50 INFO] ── Step 2: fetching open positions ──
+[00:12:50 INFO]   6 positions, invested_ratio=1.0069 (target=1.00, min=0.98)
+[00:12:50 DBG ]     AMD        long  qty=33.0000 mv=$ 13865.28  pct_eq=14.81%  pl=-2.90%
+[00:12:50 DBG ]     GLD        long  qty=44.0000 mv=$ 18360.76  pct_eq=19.61%  pl=-0.28%
+[00:12:50 DBG ]     NVDA       long  qty=64.0000 mv=$ 14362.24  pct_eq=15.34%  pl=-1.03%
+[00:12:50 DBG ]     QQQ        long  qty=22.0000 mv=$ 15534.42  pct_eq=16.59%  pl=-0.87%
+[00:12:50 DBG ]     SMH        long  qty=26.0000 mv=$ 14395.42  pct_eq=15.38%  pl=-0.97%
+[00:12:50 DBG ]     SPY        long  qty=24.0000 mv=$ 17740.08  pct_eq=18.95%  pl=-0.33%
+[00:12:50 INFO] ── Step 3: defensive mode check ──
+[00:12:50 INFO]   defensive_mode OFF → proceed with deployment
+[00:12:50 INFO] ── Step 4: regime detection ──
+[00:12:50 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:12:50 INFO]     allowed_buckets=['ai_nasdaq_semis', 'inflation_energy', 'crypto']
+[00:12:50 INFO] ── Step 5: scoring allowed universe ──
+[00:12:53 DBG ]     USO      score=+0.535  bucket=inflation_energy
+[00:12:53 DBG ]     AMD      score=+0.418  bucket=ai_nasdaq_semis
+[00:12:53 DBG ]     OXY      score=+0.350  bucket=inflation_energy
+[00:12:53 DBG ]     SMH      score=+0.325  bucket=ai_nasdaq_semis
+[00:12:53 DBG ]     XOM      score=+0.305  bucket=inflation_energy
+[00:12:53 INFO] ── Step 6: target weight construction ──
+[00:12:53 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
+[00:12:53 INFO]   target_invested_ratio_after_plan = 0.8400
+[00:12:53 DBG ]     USO        target_weight=0.1800 ($16849.92)
+[00:12:53 DBG ]     AMD        target_weight=0.1800 ($16849.92)
+[00:12:53 DBG ]     OXY        target_weight=0.1800 ($16849.92)
+[00:12:53 DBG ]     SPY        target_weight=0.1000 ($9361.07)
+[00:12:53 DBG ]     QQQ        target_weight=0.1000 ($9361.07)
+[00:12:53 DBG ]     GLD        target_weight=0.1000 ($9361.07)
+[00:12:53 INFO] ── Step 7: rebalance order generation ──
+[00:12:53 INFO]     USO      BUY     current=$     0.00 target=$ 16849.92 delta=$+16849.92  -- new position at target 18.0%
+[00:12:53 INFO]     OXY      BUY     current=$     0.00 target=$ 16849.92 delta=$+16849.92  -- new position at target 18.0%
+[00:12:53 INFO]     SMH      EXIT    current=$ 14395.42 target=$     0.00 delta=$-14395.42  -- symbol not in target allocation
+[00:12:53 INFO]     NVDA     EXIT    current=$ 14362.24 target=$     0.00 delta=$-14362.24  -- symbol not in target allocation
+[00:12:53 INFO]     GLD      REDUCE  current=$ 18360.76 target=$  9361.07 delta=$ -8999.69  -- reduce $9000 to target 10.0%
+[00:12:53 INFO]     SPY      REDUCE  current=$ 17740.08 target=$  9361.07 delta=$ -8379.01  -- reduce $8379 to target 10.0%
+[00:12:53 INFO]     QQQ      REDUCE  current=$ 15534.42 target=$  9361.07 delta=$ -6173.35  -- reduce $6173 to target 10.0%
+[00:12:53 INFO]     AMD      BUY     current=$ 13865.28 target=$ 16849.92 delta=$ +2984.64  -- add $2985 to reach target 18.0%
+[00:12:53 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
+[00:12:53 INFO] ── Step 8: plan complete ──
+[00:12:53 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)

@@ -200,3 +200,9 @@
 - 2026-05-15 · alloc-exit: SILENT — enabled but 0 trades lifetime (20 days tracked); consider disable or remove
 - 2026-05-15 · crypto-momentum: SILENT — enabled but 0 trades lifetime (20 days tracked); consider disable or remove
 
+- 2026-05-16 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-16 · pruned 7 UUID artifact strategy keys (8cfae0b1-b666-45b7, 197c428c-55de-484c, e32dbb74-e810-4776...)
+- 2026-05-16 · alloc-exit: SILENT — enabled but 0 trades lifetime (21 days tracked); consider disable or remove
+- 2026-05-16 · crypto-momentum: SILENT — enabled but 0 trades lifetime (21 days tracked); consider disable or remove
+- 2026-05-16 · allocator-rebalance: SILENT — enabled but 0 trades lifetime (21 days tracked); consider disable or remove
+
