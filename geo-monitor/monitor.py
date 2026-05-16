@@ -15,15 +15,22 @@ from datetime import datetime, timezone, timedelta
 
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
-    from risk_guards import vix_guard, daily_drawdown_guard, get_account_status
+    from risk_guards import vix_guard, daily_drawdown_guard, get_account_status, has_open_position, concentration_ok
     from event_scoring import score_and_decide
     from market_data import compute_reaction_metrics
+    from alpaca_orders import execute_stock_signal
+    from notify import notify_signal, notify_summary
 except ImportError:
     def vix_guard(): return ("OK", 1.0)
     def daily_drawdown_guard(account=None): return ("OK", "stub")
     def get_account_status(): return None
+    def has_open_position(_s): return False
+    def concentration_ok(_s, _sz, equity=None): return (True, 0.0)
     def score_and_decide(**kw): return {"stance": "FOLLOW_REACTION", "rationale": "stub", "credibility": 60, "prob_shift": 60, "reaction": 50}
     def compute_reaction_metrics(_s): return None
+    def execute_stock_signal(_s): return None
+    def notify_signal(*a, **k): pass
+    def notify_summary(*a, **k): pass
 
 
 GEO_SOURCE_TYPE_MAP = {
@@ -93,6 +100,20 @@ def attach_event_scoring(news_items: list[dict]) -> list[dict]:
 CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_GEO_WORKER_URL", "")
 FINNHUB_API_KEY       = os.environ.get("FINNHUB_API_KEY", "")
 NEWSAPI_KEY           = os.environ.get("NEWSAPI_KEY", "")
+
+# v3.8.7 (2026-05-16): direct execution mode. USE_ROUTINE=true reverts to
+# legacy Cloudflare Worker → Claude Routine path (DEPRECATED, kept as
+# fallback only). Default false routes through alpaca_orders.execute_stock_signal
+# matching defense-monitor's pattern.
+USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
+AUTO_EXECUTE = os.environ.get("AUTO_EXECUTE_GEO", "true").lower() == "true"
+MAX_TRADES_PER_RUN = int(os.environ.get("GEO_MAX_TRADES_PER_RUN", "2"))
+
+# Strategy sizing per docs/STRATEGY.md §4.4 (geopolitical bucket).
+SIZE_USD_HIGH_PRIORITY   = 8000.0   # major escalation (e.g. iran attack, strait of hormuz)
+SIZE_USD_MEDIUM_PRIORITY = 4000.0   # routine news (e.g. trump tariff, opec)
+GEO_SL_PCT               = -5.0     # -5% stop-loss
+GEO_TP_PCT               = 10.0     # +10% take-profit (conservative for news-driven)
 
 # Słowa kluczowe — geopolityka Bliski Wschód / Trump
 KEYWORDS_HIGH = [
@@ -249,8 +270,118 @@ def fetch_rss_feeds() -> list[dict]:
     return result
 
 
+def _classify_news_to_signals(news_items: list[dict], top_priority: str) -> list[dict]:
+    """
+    v3.8.7 (2026-05-16): direct execution classifier (replaces deprecated
+    routine path). For each news item, build (ticker, side, strategy)
+    signal dict mirroring defense-monitor's pattern. Mapping based on
+    keyword bucket + sentiment.
+
+    Pattern rules:
+      - "iran attack" / "israel strike" / "missile" / "hezbollah" / "hamas"
+          → defense LONG (RTX, LMT primary)
+      - "oil embargo" / "strait of hormuz" / "iran" / "opec"
+          → energy LONG (XOM, CVX, USO primary)
+      - "nuclear" / "war" / generic escalation
+          → gold LONG (GLD safe haven)
+      - "trade war" / "trump tariff" / "trump sanction" (non-iran)
+          → broad SHORT-bias (skip — too noisy, requires direction context)
+
+    Sizing per docs/STRATEGY.md §4.4 (geo bucket): $8k HIGH, $4k MEDIUM.
+    Per-event MAX_TRADES_PER_RUN=2 cap prevents news-cluster overload.
+    """
+    signals: list[dict] = []
+    seen_tickers: set[str] = set()
+    DEFENSE_KW    = ("iran attack", "iran missile", "israel strike", "missile",
+                     "hezbollah", "hamas", "middle east war")
+    ENERGY_KW     = ("oil embargo", "strait of hormuz", "oil supply",
+                     "iran ", "iran nuclear", "opec", "trump sanction iran")
+    GOLD_KW       = ("nuclear", "war ", "tensions escalate", "diplomatic crisis")
+
+    size_usd = SIZE_USD_HIGH_PRIORITY if top_priority == "HIGH" else SIZE_USD_MEDIUM_PRIORITY
+
+    for item in news_items[:5]:    # process top-5 by score
+        title_lower = (item.get("title") or "").lower()
+        summary_lower = (item.get("summary") or "").lower()
+        haystack = title_lower + " " + summary_lower
+
+        triggered: list[tuple[str, str, str]] = []   # (bucket, ticker, strategy)
+
+        if any(kw in haystack for kw in DEFENSE_KW):
+            for t in ASSET_MAP["defense"][:2]:    # RTX + LMT primary
+                triggered.append(("defense", t, "geo-defense"))
+        if any(kw in haystack for kw in ENERGY_KW):
+            for t in ASSET_MAP["energy"][:2]:     # XOM + CVX primary
+                triggered.append(("energy", t, "geo-xom" if t in ("XOM","CVX") else "geo-energy"))
+        if any(kw in haystack for kw in GOLD_KW):
+            triggered.append(("gold", "GLD", "geo-gold"))
+
+        for bucket, ticker, strategy in triggered:
+            if ticker in seen_tickers:
+                continue          # one trade per ticker per run
+            seen_tickers.add(ticker)
+            signals.append({
+                "symbol":   ticker,
+                "action":   "BUY",
+                "size_usd": size_usd,
+                "sl_pct":   GEO_SL_PCT,
+                "tp_pct":   GEO_TP_PCT,
+                "strategy": strategy,
+                "score":    item.get("score", 0),
+                "source":   item.get("source", "geo-news"),
+                "headline": (item.get("title", "") or "")[:120],
+                "url":      item.get("url", ""),
+                "bucket":   bucket,
+                "priority": top_priority,
+            })
+    return signals[:MAX_TRADES_PER_RUN]
+
+
+def execute_geo_signal(signal: dict) -> bool:
+    """
+    Place geo-driven BUY via direct Alpaca REST. Same gate stack as
+    defense-monitor: VIX + drawdown + concentration + PDT all checked
+    inside execute_stock_signal / place_stock_bracket.
+
+    Returns True iff Alpaca returned an order ID.
+    """
+    if not USE_ROUTINE:
+        if not AUTO_EXECUTE:
+            print(f"  AUTO_EXECUTE_GEO=false — signal {signal['symbol']} skipped (email-only)")
+            return False
+        # Pre-execute symbol guards (mirror defense-monitor::run_scan).
+        sym = signal["symbol"]
+        if has_open_position(sym):
+            print(f"  >>> {signal['action']} {sym} pominięty (otwarta pozycja)")
+            return False
+        order = execute_stock_signal(signal)
+        if order and order.get("id"):
+            print(f"  Order {signal['action']} {sym}: id={order['id']} qty={order.get('qty')} @ ${order.get('limit_price')}")
+            return True
+        if order and order.get("deferred"):
+            print(f"  Order {signal['action']} {sym}: DEFERRED ({order.get('reason')})")
+            return False
+        print(f"  Order {signal['action']} {sym}: REJECTED (Alpaca / quote unavailable)")
+        return False
+
+    # Legacy routine path (opt-in via USE_ROUTINE=true)
+    if not CLOUDFLARE_WORKER_URL:
+        print(f"  BRAK CLOUDFLARE_GEO_WORKER_URL — sygnał lokalnie: {signal}")
+        return False
+    try:
+        resp = requests.post(CLOUDFLARE_WORKER_URL, json=signal, timeout=30)
+        print(f"  Routine forward {signal['action']} {signal['symbol']}: HTTP {resp.status_code}")
+        return resp.status_code == 200
+    except Exception as e:
+        print(f"  Błąd routine forward: {e}")
+        return False
+
+
 def send_alert(news_items: list[dict], priority: str) -> bool:
-    """Wysyła alert do Cloudflare Worker → Claude Routine"""
+    """
+    DEPRECATED legacy alert path — kept for back-compat with USE_ROUTINE=true.
+    Default v3.8.7+ flow uses _classify_news_to_signals + execute_geo_signal.
+    """
     if not CLOUDFLARE_WORKER_URL:
         print("  BRAK CLOUDFLARE_GEO_WORKER_URL — pomijam wysyłanie")
         return False
@@ -261,15 +392,11 @@ def send_alert(news_items: list[dict], priority: str) -> bool:
         "timestamp":  datetime.now(timezone.utc).isoformat(),
         "news_count": len(news_items),
         "asset_map":  ASSET_MAP,
-        "news":       news_items[:10],  # max 10 newsów na raz
+        "news":       news_items[:10],
     }
 
     try:
-        resp = requests.post(
-            CLOUDFLARE_WORKER_URL,
-            json=payload,
-            timeout=30,
-        )
+        resp = requests.post(CLOUDFLARE_WORKER_URL, json=payload, timeout=30)
         print(f"  Alert wysłany: HTTP {resp.status_code}")
         return resp.status_code == 200
     except Exception as e:
@@ -340,9 +467,33 @@ def run_scan():
     for item in relevant[:5]:
         print(f"  [{item['priority']}] {item['title'][:80]}")
 
-    # Wyślij alert
-    print(f"\n  Wysyłam alert do Claude Routine...")
-    send_alert(relevant, top_priority)
+    # v3.8.7 (2026-05-16): direct execution path replaces deprecated routine.
+    # USE_ROUTINE=true falls back to legacy Cloudflare Worker → Routine flow.
+    if USE_ROUTINE:
+        print(f"\n  USE_ROUTINE=true — sending to Claude Routine (legacy path)...")
+        send_alert(relevant, top_priority)
+        return
+
+    # Direct execution: classify news → build signals → execute via Alpaca.
+    signals = _classify_news_to_signals(relevant, top_priority)
+    print(f"\n  Classified {len(signals)} trade signals from {len(relevant)} news items "
+          f"(cap MAX_TRADES_PER_RUN={MAX_TRADES_PER_RUN}, AUTO_EXECUTE={AUTO_EXECUTE})")
+
+    placed = 0
+    for sig in signals:
+        print(f"\n  >>> {sig['strategy']} {sig['action']} {sig['symbol']} "
+              f"(bucket={sig['bucket']}, score={sig['score']}, ${sig['size_usd']:.0f})")
+        print(f"      headline: {sig['headline'][:100]}")
+        ok = execute_geo_signal(sig)
+        try:
+            notify_signal(sig, ok, reason="" if ok else "alpaca_reject")
+        except Exception:
+            pass
+        if ok:
+            placed += 1
+
+    notify_summary("Geo Monitor", len(signals), placed)
+    print(f"\n  Geo signals placed: {placed}/{len(signals)}")
 
 
 # ─── Start ────────────────────────────────────────────────────────────────────

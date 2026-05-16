@@ -83,11 +83,17 @@ def place_emergency_close(ep: dict) -> dict | None:
     """
     Close an exit-flagged position via Alpaca direct REST.
 
-    Strategy (v3.4.3, 2026-05-13):
+    Strategy (v3.4.3, 2026-05-13 — extended v3.8.7, 2026-05-16):
+      0. PRE-MARKET guard (v3.8.7): if current UTC < 13:30 (market closed),
+         options orders cannot fill. POST /v2/orders MARKET pre-market is
+         rejected by Alpaca for options. DELETE /v2/positions also waits
+         for market open. Behavior: skip placement, queue to runtime_state
+         for next session pickup by morning-allocator or auto-retry on
+         next exit-monitor cron after 13:30 UTC.
       1. PRIMARY: DELETE /v2/positions/{symbol} — canonical close endpoint
          that bypasses options buying-power checks (the failure mode that
-         hit QQQ260518P00714000 today: "insufficient options buying power
-         for cash-secured put" returned 403 on POST /v2/orders sell_to_close).
+         hit QQQ260518P00714000 2026-05-13: "insufficient options buying
+         power for cash-secured put" returned 403 on POST sell_to_close).
          DELETE explicitly references existing position → no buying-power
          requirement → reliable closure.
       2. FALLBACK: POST /v2/orders MARKET sell — used when DELETE returns
@@ -97,7 +103,7 @@ def place_emergency_close(ep: dict) -> dict | None:
     sandbox uses different (invalid) Alpaca keys that return 401.
 
     `ep` is the enriched-position dict from `enrich_position()`. Returns
-    the Alpaca order JSON on success, None on failure.
+    the Alpaca order JSON on success, None on failure or pre-market defer.
 
     Reason tag in client_order_id:
       profit-lock | emergency | flat | decay
@@ -109,6 +115,28 @@ def place_emergency_close(ep: dict) -> dict | None:
     side   = ep.get("side", "long")
     if qty <= 0 or not symbol:
         return None
+
+    # v3.8.7 (2026-05-16): pre-market emergency close defer.
+    # Options pre-market: Alpaca rejects with "market closed for options"
+    # (paper). Equity pre-market MARKET orders queue but may slip widely
+    # at open. Defer to first cron after 13:30 UTC for clean execution.
+    # asset_class detected from symbol shape (option = 15+ chars w/ digits).
+    asset_class = ep.get("asset_class", "")
+    now_utc = datetime.now(timezone.utc)
+    is_premarket = (
+        now_utc.weekday() < 5 and (
+            now_utc.hour < 13 or (now_utc.hour == 13 and now_utc.minute < 30)
+        )
+    )
+    is_weekend_premarket = (now_utc.weekday() >= 5)
+    if (asset_class in ("us_option", "us_equity") and (is_premarket or is_weekend_premarket)
+            and "/" not in symbol):
+        slot = "weekend" if is_weekend_premarket else f"pre-market ({now_utc.hour:02d}:{now_utc.minute:02d} UTC)"
+        print(f"  emergency-close {symbol} ({asset_class}): deferred — {slot}, "
+              f"will retry post 13:30 UTC")
+        # Queue marker for downstream observability (next cron re-evaluates).
+        return {"deferred": True, "reason": "pre_market_emergency_close",
+                "symbol": symbol, "queued_at": now_utc.isoformat()}
 
     # Note: trade-window check is done by caller via _emergency_close_window_ok
     # so blocked positions can be DEFERRED (skip routine fallback). Kept here

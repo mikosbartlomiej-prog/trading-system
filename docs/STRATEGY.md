@@ -769,7 +769,7 @@ on any monitor) for diagnostics, and remains the only path for
 | options-monitor | already AUTO_EXECUTE (since 2026-05-06) | RSI rules in monitor |
 | options-exit-monitor | direct Alpaca SELL-to-close | TP/SL polling in monitor |
 | **twitter-monitor** | Pattern A-D classifier in Python; Pattern E → email-only | `classify_and_execute()` in monitor |
-| geo-monitor | still uses routine (asset_map mapping kept smart layer) | routine resolves news → ticker |
+| geo-monitor | **v3.8.7 (2026-05-16)**: direct execution via `_classify_news_to_signals` → `execute_stock_signal`. USE_ROUTINE=true falls back to legacy. | keyword bucket map (defense/energy/gold) + sentiment in monitor |
 | exit-monitor | local thresholds; routine call only when ≥1 flagged | thresholds in monitor |
 | weekly-learning | routine | LLM analysis |
 
@@ -1326,6 +1326,38 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 ### Persistence baseline (v3.4.5)
 - state['peak_equity'] = max(prior, today_eq) updated each daily-learning run
 - max_drawdown_guard uses this as -12%/-20% baseline (not last_equity proxy)
+
+### Learning Loop v3.8.5 (2026-05-16)
+- analyzer.py `_strategy_from_client_id` rozpoznaje UUID pattern (8-4-4-4-12 hex)
+  i odrzuca jako "unknown" — zatrzymuje fake-strategy pollution w state.json
+- shared/alpaca_orders.py `_client_order_id` strict validation: hard-reject
+  None/empty/UUID-prefixed strategy; warn na "auto"
+- daily-learning cron 21:00 UTC → 04:00 UTC (Anthropic Routines rolling 24h
+  window clearest); watchdog 22:30/23:30 → 05:30/06:30 UTC
+- llm_client parses Retry-After + anthropic-ratelimit-* headers from 429
+- Silent-day optimization: gdy cumulative_trades=0 + trades_24h=0 → skip
+  Challenger+Revise rounds (saves 2/3 P0 routine budget)
+- options-exit-monitor TP LIMIT TIF: DAY → GTC (nie expira o EOD)
+
+### Geo-monitor direct execution (v3.8.7, 2026-05-16)
+- `geo-monitor/monitor.py::_classify_news_to_signals` → keyword bucket mapping:
+  - DEFENSE_KW (iran attack/missile/hezbollah/hamas) → RTX+LMT BUY (strategy=geo-defense)
+  - ENERGY_KW  (oil embargo/strait/opec/iran nuclear) → XOM+CVX BUY (strategy=geo-xom)
+  - GOLD_KW    (nuclear/war/tensions) → GLD BUY (strategy=geo-gold)
+- `execute_geo_signal` uses `shared/alpaca_orders.execute_stock_signal` →
+  same gate stack as defense-monitor (VIX + drawdown + concentration + PDT)
+- Per-cron caps: MAX_TRADES_PER_RUN=2, dedup per ticker
+- Sizing: HIGH priority $8k / MEDIUM $4k; SL=-5%; TP=+10%
+- `USE_ROUTINE=true` env restores legacy Cloudflare Worker path
+- State.json re-enables geo-xom + geo-defense + geo-gold + geo-energy strategies
+
+### Emergency-close pre-market defer (v3.8.7, 2026-05-16)
+- `exit-monitor.place_emergency_close` detects pre-market (UTC < 13:30 weekday)
+  or weekend for us_option/us_equity → returns `{deferred: True, reason:
+  pre_market_emergency_close}` instead of placing DAY LIMIT that expires
+  pre-market unfilled (LLM-flagged P0 from 2026-05-15)
+- Crypto symbols unaffected (24/7 market)
+- Next exit-monitor cron after 13:30 UTC retries cleanly
 
 ### PDT protection (v3.8, 2026-05-14 intent-aware redesign)
 **Core insight (v3.7 was too restrictive):**
