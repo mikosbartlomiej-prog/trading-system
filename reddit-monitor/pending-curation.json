@@ -1,16 +1,24 @@
 {
-  "narrative": "Zero sygnałów do emisji. VOO to filozoficzny post o inwestowaniu pasywnym — brak katalizatora, spike_ratio=99 to artefakt rolling_avg_7d=0. AMD: top post (2166 ups) OPISUJE AMD -5.7% po braku umowy handlowej Trumpa z Pekinem — treść jest BEARISH, nie bullish; drugi post ostrzega o rotacji kapitału z AMD/NVDA do AI IPO pipeline (SpaceX/OpenAI/Anthropic). Portfel 100% deployed, AMD już w portfelu na -1.98% — żadnego sensu dokładać.",
+  "narrative": "Zero sygnałów do emisji — 4 kandydaci, żaden nie przeszedł. SLV to ODWROTNY WSKAŹNIK: post opisuje straty na SLV calls po 20% runie i 10% spadku w 2 dni. AMD spike_ratio=1.5 jest za słaby, a TOP post (2476 ups) to bearish story (Trump-Pekin bez umowy, AMD -5.7%). MSFT spike_ratio=6 realny ale skew=0.059 to płaski sentiment bez katalizatora; portfel 100% deployed bez buying power na nową pozycję.",
   "selected_signals": [],
   "rejected_signals": [
     {
+      "ticker": "SLV",
+      "reason": "Post to loss story — autor rekomendował SLV calls, SLV spadł 10% w 2 dni po wcześniejszym +20% runie. To odwrotny wskaźnik (late-FOMO entry po pump), nie sygnał kupna. spike_ratio=99 to artefakt rolling_avg_7d=0."
+    },
+    {
       "ticker": "VOO",
-      "reason": "Post filozoficzny o buy-and-hold, zero katalizatora. spike_ratio=99 to artefakt rolling_avg_7d=0. VOO nie ruszy 5%+ w 72h — żadnej przewagi tradingowej."
+      "reason": "Filozoficzny post o pasywnym inwestowaniu bez żadnego katalizatora tradingowego. VOO nie ruszy 5%+ w 72h. Zero edge. spike_ratio=99 to artefakt braku historii."
     },
     {
       "ticker": "AMD",
-      "reason": "Top post (2166 ups) opisuje AMD -5.7% na failed US-China trade talks — BEARISH catalyst, nie bullish. Drugi post ostrzega o rotacji z istniejących AI names do IPO pipeline. spike_ratio=1.5× to nie spike. Już trzymamy AMD long -1.98% (14.9% equity); averaging down na bearish treści to trap."
+      "reason": "Top post (2476 ups) to BEARISH catalyst: Trump wrócił z Pekinu bez umowy, AMD -5.7%, INTC -6%, Nasdaq -1.54%. Drugi post ostrzega o rotacji kapitału z AMD/NVDA do AI IPO pipeline (CBRS, SpaceX, OpenAI). spike_ratio=1.5 to nie spike. Portfel już trzyma AMD long 14.9% equity na -1.98% — dokładanie na bearish treści to averaging down w pułapkę."
+    },
+    {
+      "ticker": "MSFT",
+      "reason": "spike_ratio=6 realny, ale skew=0.059 to prawie zero — sentiment UNCLEAR. Posty dotyczą portfolio filozofii Ackmana (przejście z GOOG do MSFT) i losów retail tradera po 5 latach break-even — brak świeżego katalizatora dla MSFT. Portfel 100% deployed (AMD+GLD+NVDA+QQQ+SMH+SPY ≈ 100.7% equity) — brak buying power na nową pozycję bez zamknięcia istniejącej."
     }
   ],
-  "macro_context": "VIX=17 sugeruje risk-on, ale failed Trump-Beijing summit uderzył w tech (AMD -5.7%, NVDA -4.4%, INTC -6%); AI IPO season (CBRS, potencjalnie SpaceX/OpenAI) może rotować kapitał z istniejących AI names. Portfel ~100% deployed — brak buying power na nowe pozycje bez zamknięcia istniejących.",
+  "macro_context": "VIX=17 sugeruje risk-on, ale failed US-China summit (brak umowy, 'fantastic conversations' Trumpa) uderzył w tech (AMD -5.7%, NVDA -4.4%, Nasdaq -1.54%); AI IPO pipeline (CBRS debiut +90% → -10% d2, potencjalnie SpaceX/OpenAI/Anthropic) może rotować kapitał z istniejących AI names; portfel 100% deployed = brak miejsca na nowe pozycje.",
   "confidence_in_curation": "high"
 }
