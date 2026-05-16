@@ -1,1 +1,16 @@
-{"narrative":"Wszystkie 3 kandydaty odrzucone — brak edge'u handlowego. VOO to filozoficzny post o passive investing bez żadnego katalizatora. AMD: post OPISUJE spadek AMD o 5.7% po nieudanym szczycie Trump-Pekin (zero umów handlowych) — to bearish catalyst, nie bullish setup, a konto ma już AMD long na 14.9% equity. SPY: loss porn z WSB (0DTE -$16k w 14 min) — czysty szum. Portfel w 100% zaangażowany, PDT-LOCKED — brak przestrzeni na nowe pozycje.","selected_signals":[],"rejected_signals":[{"ticker":"VOO","reason":"Filozoficzny post o passive investing bez żadnego świeżego katalizatora cenowego — zero edge handlowego, spike_ratio=99 to artefakt pierwszego dnia historii, nie realny spike."},{"ticker":"AMD","reason":"Post opisuje AMD spadające 5.7% po nieudanym szczycie Trump-Pekin (brak umowy handlowej) — catalyst BEARISH, nie bullish; sygnał proponuje BUY przy istniejącej pozycji long 14.9% equity; spike_ratio 1.5x poniżej progu."},{"ticker":"SPY","reason":"Loss porn WSB (-$16k na 0DTE w 14 min) — czysty szum bez sygnału kierunkowego; skew 0.2 za niski; konto ma już SPY long 18.9% equity; spike_ratio 1.6x niesignifikantny."}],"macro_context":"Risk-off sygnał z fiasko szczytu Trump-Pekin (AMD/NVDA/INTC -4-6%), jednak VIX=17 wskazuje że rynek wchłonął szok — chop/neutralny reżim; brak warunków do nowych wejść z kontem 100% zaangażowanym i PDT-LOCKED.","confidence_in_curation":"high"}
+{
+  "narrative": "Zero sygnałów do emisji. VOO to filozoficzny post o inwestowaniu pasywnym — brak katalizatora, spike_ratio=99 to artefakt rolling_avg_7d=0. AMD: top post (2166 ups) OPISUJE AMD -5.7% po braku umowy handlowej Trumpa z Pekinem — treść jest BEARISH, nie bullish; drugi post ostrzega o rotacji kapitału z AMD/NVDA do AI IPO pipeline (SpaceX/OpenAI/Anthropic). Portfel 100% deployed, AMD już w portfelu na -1.98% — żadnego sensu dokładać.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "VOO",
+      "reason": "Post filozoficzny o buy-and-hold, zero katalizatora. spike_ratio=99 to artefakt rolling_avg_7d=0. VOO nie ruszy 5%+ w 72h — żadnej przewagi tradingowej."
+    },
+    {
+      "ticker": "AMD",
+      "reason": "Top post (2166 ups) opisuje AMD -5.7% na failed US-China trade talks — BEARISH catalyst, nie bullish. Drugi post ostrzega o rotacji z istniejących AI names do IPO pipeline. spike_ratio=1.5× to nie spike. Już trzymamy AMD long -1.98% (14.9% equity); averaging down na bearish treści to trap."
+    }
+  ],
+  "macro_context": "VIX=17 sugeruje risk-on, ale failed Trump-Beijing summit uderzył w tech (AMD -5.7%, NVDA -4.4%, INTC -6%); AI IPO season (CBRS, potencjalnie SpaceX/OpenAI) może rotować kapitał z istniejących AI names. Portfel ~100% deployed — brak buying power na nowe pozycje bez zamknięcia istniejących.",
+  "confidence_in_curation": "high"
+}
