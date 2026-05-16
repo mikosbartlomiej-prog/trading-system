@@ -1,12 +1,24 @@
 {
-  "narrative": "Jeden kandydat: VOO z spike_ratio=99 — artefakt danych (rolling_avg_7d=0, nie prawdziwy spike). Post to long-term pasywny inwestor świętujący pierwszy $100k i filozofujący że 'nie ma co optymalizować ponad VOO' — zero świeżego katalizatora, zero momentum edge. Portfel ma już SPY 18.8% + QQQ 16.5% = de facto dwie pozycje na VOO; dokładanie trzeciej to czysty overlap, nie alpha.",
+  "narrative": "Cztery kandydaty — cztery rejecty. Dominujący sygnał dziś to BRAK sygnału: wszystkie NVDA/AMD posty są REAKTYWNE na negatywny katalyzator (Trump opuścił Pekin bez umowy, AMD -5.7%, NVDA -4.4%), spike_ratio poniżej 2× dla obu, a portfel i tak wyczerpany w 100% z 62%+ w tech/semis — dokładanie NVDA/AMD teraz to kupowanie szczytowej ekspozycji po selloffie bez świeżego powodu do odwrócenia.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "VOO",
-      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, brak historii); treść postu to esej o pasywnym buy-and-hold bez żadnego świeżego katalizatora; portfel ma już 35.3% w SPY+QQQ (identyczna ekspozycja) i 62%+ w tech/semis — zero przyrostowej wartości, zero momentum setup."
+      "reason": "spike_ratio=99 to czysty artefakt danych (rolling_avg_7d=0, brak historii); post to esej pasywnego inwestora o filozofii buy-and-hold bez żadnego świeżego katalizatora; portfel ma już 35.5% w SPY+QQQ = identyczna ekspozycja, zero przyrostowej wartości."
+    },
+    {
+      "ticker": "AMD",
+      "reason": "Katalyzator jest NEGATYWNY — Trump-China brak umowy spowodował AMD -5.7% w piątek; spike_ratio=2.25× (poniżej progu); posty to analityczne pytania o rotację kapitału do IPO, nie bullish conviction DDs; portfel już 14.9% AMD, kupowanie falling knife bez odwrócenia katalizatora = bagholding."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "Spike_ratio=1.71× słaby; negatywny katalyzator (summit bez umowy, NVDA -4.4%); trzy posty to valuation questions i breadth-divergence obawy, nie bullish DDs; IPO pipeline (CBRS/SpaceX/OpenAI) ryzykuje rotacją kapitału z NVDA; portfel już 15.4% NVDA — concentration cap 40% + istniejące pozycje blokują nowe wejście."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "Post to loss porn (-$16,190 w 14 min na 0DTE) — anegdota, nie sygnał; skew=0.2 to szum; portfel już 18.9% SPY; spike_ratio=1.6× poniżej progu."
     }
   ],
-  "macro_context": "VIX 17 = risk-on, ale portfel zdeplojowany w ~91% z mocnym przeważeniem tech/semis (NVDA+SMH+AMD+QQQ = 62%+); brak miejsca i brak katalizatora dla nowych pozycji indeksowych.",
+  "macro_context": "VIX=17 nominalnie risk-on, ale portfel zdeplojowany w 100% z 62%+ koncentracją w tech/semis (NVDA+AMD+SMH+QQQ); Trump-China summit bez wiążących zobowiązań = negatywny short-term katalyzator dla półprzewodników; S&P na ATH przy tylko 52% składowych powyżej 50d MA (thin breadth) — reżim choppy/niepewny, nie trend-day.",
   "confidence_in_curation": "high"
 }
