@@ -21,9 +21,8 @@ name: Daily Learning — Watchdog (re-trigger if missed)
 
 on:
   schedule:
-    # Re-aligned 2026-05-16 v3.8.5 after daily-learning moved 21:00→04:00 UTC.
-    - cron: '30 5 * * *'    # 05:30 UTC — 1h30m after planned 04:00
-    - cron: '30 6 * * *'    # 06:30 UTC — last chance before market data drift
+    - cron: '30 22 * * *'   # 22:30 UTC — 1h30m after planned 21:00
+    - cron: '30 23 * * *'   # 23:30 UTC — last chance before midnight UTC
   workflow_dispatch:
 
 concurrency:
