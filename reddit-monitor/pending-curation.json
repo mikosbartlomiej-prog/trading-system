@@ -1,10 +1,10 @@
 {
-  "narrative": "Żaden z 4 kandydatów nie przeszedł walidacji: SLV i VOO mają spike_ratio=99 jako artefakt (rolling_avg_7d=0), SLV-post to cautionary tale o stracie na calls po 20% runie (+10% drop = FOMO trap), VOO-post to filozofia passive investing bez jakiegokolwiek 1-72h katalizatora. MSFT spike 5.33× realny, ale skew=0.125 i posty opisują rotację Ackmana (stale) plus ryzyko odpływu kapitału do AI IPO — brak świeżego katalizatora. AMD spike_ratio=1.5× to szum, nie sygnał, a wiodący post z 2812 ups jest BEARISH (AMD -5.7% po Trump-Pekin bez deal). Bankroll chroniony.",
+  "narrative": "Wszystkie 4 kandydaty odrzucone: SLV spike_ratio=99 to artefakt (rolling_avg_7d=0), a wiodący post opisuje STRATĘ na calls po 20% runie który zakończył się -10% — klasyczny FOMO trap, nie sygnał wejścia. MSFT spike_ratio=5.33 realny, ale skew=0.125 zbyt słaby, a oba top-posty ostrzegają przed rotacją kapitału OUT z istniejących AI names (NVDA/AMD/MSFT/GOOGL) do IPO Cerebras/OpenAI/SpaceX — to niedźwiedzi kontekst, nie bullish catalyst. AMD leading post (2851 ups) to BEARISH: AMD -5.7% po szczycie Trump-Pekin bez żadnego deal, a konto już trzyma AMD 14.9% equity. VOO: filozofia passive investing bez jakiegokolwiek katalizatora 1-72h. Bankroll chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "SLV",
-      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0); best post opisuje STRATĘ na SLV calls po 20% runie który skończył się -10% drop — to klasyczny FOMO trap post-pump, nie sygnał wejścia"
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0); best post opisuje STRATĘ na SLV calls po 20% runie który zakończył się -10% drop — to FOMO trap post-pump cautionary tale, nie sygnał wejścia"
     },
     {
       "ticker": "VOO",
@@ -12,13 +12,13 @@
     },
     {
       "ticker": "MSFT",
-      "reason": "skew=0.125 zbyt słaby; posty opisują rotację Ackmana (stale portfolio rebalancing) i ryzyko odpływu kapitału do AI IPO (CBRS/OpenAI) — jeden post wprost ostrzega przed rotacją OUT z istniejących AI names; brak świeżego katalizatora"
+      "reason": "skew=0.125 zbyt słaby; oba top-posty opisują rotację Ackmana (stale Q1 13F data) i wprost ostrzegają przed odpływem kapitału do AI IPO (Cerebras/OpenAI/SpaceX) z istniejących AI names — narracja faktycznie niedźwiedzia dla MSFT; brak świeżego katalizatora"
     },
     {
       "ticker": "AMD",
-      "reason": "spike_ratio=1.5× to szum, nie spike; konto już trzyma AMD 14.9% equity (concentration risk); wiodący post 2812 ups jest BEARISH (AMD -5.7% po nieudanym szczycie Trump-Pekin bez żadnego deal)"
+      "reason": "spike_ratio=1.5 to szum (tylko 2 mentions); leading post 2851 ups jest BEARISH (AMD -5.7% po Trump-Pekin bez deal); konto już trzyma AMD 14.9% equity (concentration risk przy 40% cap); brak bullish catalyst"
     }
   ],
-  "macro_context": "VIX=17 sugeruje risk-on, ale konto w 100%+ deployed (6 pozycji, wszystkie na minusie) bez wolnego cash — każdy nowy BUY wymagałby marginu na PDT-locked account; reżim cichy, brak wyraźnego katalizatora kierunkowego",
+  "macro_context": "VIX=17 risk-on, ale konto w 100%+ deployed (6 pozycji equity, wszystkie lekko na minusie, ~100% equity zainwestowane); AI IPO pipeline (Cerebras/OpenAI/SpaceX) ryzykuje rotację OUT z obecnych AI holdings; bez świeżego katalizatora nowe BUY = dodatkowe ryzyko koncentracji",
   "confidence_in_curation": "high"
 }
