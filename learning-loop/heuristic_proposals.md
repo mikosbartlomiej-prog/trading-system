@@ -194,3 +194,10 @@
 - [ ] [2026-05-17] **Suppress SILENT adapter flag for strategies within 5 days of re-enable** _(risk: low, effort: 1h, revisit: 2026-05-22)_
   - **Rationale:** Geo-defense/energy/gold/xom re-enabled 2026-05-16. Adapter natychmiast flaguje je SILENT (22 days tracked, 0 trades) — false positive. Nie mogły handlować zanim zostały włączone. SILENT warning powinien być gated na  nie .
   - **Sketch:** W analyzer.py::_check_silent_strategies(): przed emisją SILENT bullet sprawdź state["strategies"][name]["rationale"] pod kątem "RE-ENABLED YYYY-MM-DD" pattern lub dodaj pole "enabled_at" do state.json entry per strategy. Jeśli delta(as_of, enable_date) < 5 trading_days: skip SILENT flag. Pliki: learning-loop/analyzer.py.
+- [ ] [2026-05-17] **Diagnoza fill_rate.unknown 0-outcome — 6 zleceń bez statusu przed poniedziałkiem** _(risk: medium, effort: 1h, revisit: 2026-05-19)_
+  - **Rationale:** 6 zleceń strategy=unknown z zerem wszystkich outcome counters (filled=0, canceled=0, expired=0, rejected=0) to matematyczna niemożliwość — każde Alpaca order musi mieć status. Przed Monday session trzeba zidentyfikować skąd pochodzą i naprawić attribution, inaczej będziemy tracić ślad wypełnionych tradów.
+  - **Sketch:** 1. Fetch GET /v2/orders?status=all&after=2026-05-16T00:00:00Z&limit=50
+2. Zidentyfikuj zlecenia gdzie _strategy_from_client_id zwraca 'unknown'
+3. Jeśli UUID format (przed v3.8.5): dodaj pre-filter — te legacy orders pomiń w fill_rate counter
+4. Jeśli nowy format (po v3.8.5): znaleźć monitor produkujący nieparsowalny client_order_id i naprawić
+5. Upewnij się że outcome counters zliczają też strategy=unknown (nie tylko named strategies)

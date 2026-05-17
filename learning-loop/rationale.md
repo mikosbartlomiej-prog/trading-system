@@ -217,3 +217,13 @@
 - 2026-05-17 · geo-xom: SILENT — enabled but 0 trades lifetime (22 days tracked); consider disable or remove
 - 2026-05-17 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
 
+- 2026-05-17 · LLM[low] regime=trending_up: Sobota 17 maja — konto flat na $93,930 (szczyt tygodnia $94,616, delta -$686), 0 pozycji, 0 tradów w 24h oknie; system poprawnie wstrzymał działanie w weekend. SPY RSI 69.8 po korekcie z 82.5 w piątek — zdrowa normalizacja wykupienia, trend up zachowany, środowisko korzystne dla powrotu options-momentum w poniedziałek 19.05 per plan (SPY-overbought gate już nie blokuje). Priorytet diagnostyczny przed poniedziałkiem: fill_rate.unknown 6 zleceń z zerowym outcome (0 filled/canceled/expired/rejected) — matematycznie niemożliwe, każde zlecenie musi mieć status; wskazuje na bug attribution lub legacy UUID clientOrderId niezliczający outcomes. TRAILING STOP REVIEW (reminder 2026-05-17): options-momentum N=1 lifetime trade ($-0.60) — za mało na decyzję kalibracji progu 8%; TRAILING_STOP_ENABLED pozostaje true, tuning odłożony do minimum 10 tradów.
+- 2026-05-17 · LLM edge: Zero mierzalnego edge w 24h oknie (0 tradów, market zamknięty w weekend). Strukturalne: SPY 69.8 po korekcie z 82.5 = odpowiednie środowisko wejścia dla options-momentum bez blokady SPY-overbought gate; ETH RSI 33.9 to jedyna oversold okazja w snapshot — Tier-1 crypto, predator filter obserwuje dla możliwego wejścia long.
+- 2026-05-17 · LLM auto-PR: https://github.com/mikosbartlomiej-prog/trading-system/pull/6
+- 2026-05-17 · crypto-momentum: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
+- 2026-05-17 · geo-defense: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
+- 2026-05-17 · geo-energy: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
+- 2026-05-17 · geo-gold: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
+- 2026-05-17 · geo-xom: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
+- 2026-05-17 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
+

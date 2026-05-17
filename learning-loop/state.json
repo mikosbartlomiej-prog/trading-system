@@ -6,26 +6,26 @@
     "starting_equity": 93930.35
   },
   "daily_peak": {
-    "date": "2026-05-16",
+    "date": "2026-05-17",
     "peak_pl_usd": 0.0,
     "peak_pl_pct": 0.0,
-    "peak_at": "2026-05-16T00:06:16.774117+00:00",
-    "peak_equity": 94598.04,
+    "peak_at": "2026-05-17T01:30:35.009076+00:00",
+    "peak_equity": 93930.35,
     "current_pl_usd": 0.0,
     "current_equity": 93930.35,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-05-16T23:35:16.744094+00:00",
+    "verdict_at": "2026-05-17T05:34:13.030841+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 22,
+  "days_tracked": 23,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-17T01:24:18.162791+00:00",
+  "last_updated": "2026-05-17T06:45:59.666438+00:00",
   "last_validated_at": "2026-05-16T09:37:07.525688+00:00",
   "last_write_reason": "v3.8.7: re-enable geo-* strategies after direct-execution refactor",
   "last_writer": "manual-maintenance",
