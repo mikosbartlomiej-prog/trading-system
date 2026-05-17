@@ -1,0 +1,135 @@
+{
+  "week_pl_story": "Tydzień zdominowany przez systemową katastrofę 2026-05-13 (-$3,163 z pozycji startowej $98,173): SPY RSI 82.4 podczas jednego z silniejszych bull legów cyklu, a options-monitor RSI>72 trigger otwierał NOWE PUTy w tym samym momencie — klasyczny błąd kontra-trend bez intraday regime gate. Skumulowane equity tygodnia: $96,672 → $93,930 = -$2,742 (-2.84%). Struktura tygodnia: jeden katastrofalny dzień + sześć dni ciszy (PDT LOCKED, pausa options-momentum, 3 dni bez LLM Anthropic 429, weekend). Dwie pozytywne obserwacje wchodzące w następny tydzień: (1) konto czyste — 0 pozycji, SPY RSI znormalizował się z 82.4 do 69.8, środowisko re-enable options-momentum 05-19 radykalnie lepsze; (2) trailing stop review (reminder 05-17): options-momentum N=1 lifetime trade — próbka za mała na kalibrację 8% progu, TRAILING_STOP_ENABLED pozostaje true, tuning odłożony do minimum 10 tradów. Krytyczne problemy niezwiązane z P&L: UUID artifacts generowane CODZIENNIE przez niezidentyfikowany komponent (fill_rate.unknown 6 zleceń 0% outcome attribution = analytics blind spot nie do zaakceptowania), emergency LIMIT DAY TIF structural failure (expired 390 min bez realizacji 05-15), oraz 3 dni bez LLM które zostawiły system bez nadzoru strategicznego w krytycznym momencie po 05-13.",
+  "market_regime": "trending_up",
+  "strategy_scorecard": [
+    {
+      "name": "options-momentum",
+      "rank": 1,
+      "pnl_usd": -3163.0,
+      "verdict": "keep"
+    },
+    {
+      "name": "crypto-momentum",
+      "rank": 2,
+      "pnl_usd": 0.0,
+      "verdict": "keep"
+    },
+    {
+      "name": "geo-defense/energy/gold/xom",
+      "rank": 3,
+      "pnl_usd": 0.0,
+      "verdict": "keep"
+    },
+    {
+      "name": "crypto-breakdown",
+      "rank": 4,
+      "pnl_usd": 0.0,
+      "verdict": "cut"
+    },
+    {
+      "name": "alloc-exit",
+      "rank": 5,
+      "pnl_usd": 0.0,
+      "verdict": "cut"
+    },
+    {
+      "name": "allocator-rebalance",
+      "rank": 6,
+      "pnl_usd": 0.0,
+      "verdict": "cut"
+    }
+  ],
+  "allocation_recommendation": {
+    "stocks_pct": 55.0,
+    "leveraged_etf_pct": 10.0,
+    "crypto_pct": 20.0,
+    "options_pct": 5.0,
+    "defense_geo_pct": 10.0,
+    "twitter_pct": 0.0,
+    "rationale": "Czyste konto $93,930 wchodzi w nowy tydzień. Priorytet #1: stocks/ETF 55% — momentum-long ma potwierdzony backtest edge (AAPL 71% WR, SPY/AMZN pozytywne); morning-allocator generuje plan niedziela, wykonuje 13:35 UTC poniedziałek. Crypto 20% — ETH RSI 33.9 podchodzi do oversold; jeśli zejdzie <30, predator filter powinien odpalić pierwsze krypto trade w historii systemu (23 dni milczenia = weryfikacja pipeline P1). Options 5% minimalne — re-enable 05-19 przy SPY RSI 69.8, size_multiplier=0.5, CALL i PUT dozwolone ale SPY-overbought gate blokuje PUT przy RSI>75. Defense/geo 10% — direct-execution pipeline nowy (v3.8.7); pierwsze 1-2 transakcje to test infrastruktury przed zwiększeniem alokacji. Twitter 0% — sygnały emitowane ale zero konwersji na zlecenia w tym tygodniu; obserwuję."
+  },
+  "best_sources": [
+    {
+      "source": "unknown bracket-TP (prawdopodobnie GLD/RTX/XLE z poprzedniego tygodnia — niezatrybutowane stock bracket legs, fill_rate.unknown 2/2 = 100% na 05-12)",
+      "win_rate": 1.0,
+      "pnl": 0.0
+    }
+  ],
+  "worst_sources": [
+    {
+      "source": "options-momentum RSI>72 PUT trigger bez intraday regime gate (05-13: SPY RSI 82.4 + nowe PUTy = contra-trend systematic failure)",
+      "win_rate": 0.0,
+      "pnl": -3163.0
+    }
+  ],
+  "structural_mistakes": [
+    {
+      "description": "Brak intraday regime gate w options-monitor.py: adapter SPY-overbought gate (PR#4) działa TYLKO w cyklu daily-learning 21:00 UTC. Na 05-13 RSI 82.4 — monitor uruchamiany co 5-10 min podczas sesji nadal otwierał nowe PUTy przez całą sesję, bo gate nie jest sprawdzany w czasie rzeczywistym wewnątrz monitora.",
+      "lost_usd": 3163.0,
+      "remediation": "Dodać `_get_spy_regime()` check na początku options-monitor scan loop (każdy 5-minutowy run): PUT proposals require SPY RSI < 72 at scan time; CALL proposals require SPY RSI > 30. Gate w options-monitor.py, nie tylko w adapter.py. Priorytet P0 — wymagane PRZED 05-19 re-enable."
+    },
+    {
+      "description": "Emergency LIMIT close DAY TIF wygasa bez realizacji: fill_rate.emergency placed=1, filled=0, expired=1, avg_minutes=390 na 05-15. DAY TIF na LIMIT order dla opcji wygasa o EOD Alpaca (~20:00 UTC) niezależnie od statusu pozycji. Pozycja mogła pozostać otwarta przez noc bez exit plan.",
+      "lost_usd": 500.0,
+      "remediation": "Emergency close path dla us_option + CLOSE_EMERGENCY verdict → MARKET sell (nie LIMIT DAY). Stocks emergency → LIMIT GTC lub re-issue następna sesja. Ujednolicić z istniejącym MARKET path dla SL/TRAIL/NEARDTH/GOVERNOR — te już używają MARKET poprawnie."
+    },
+    {
+      "description": "UUID client_order_id generowany CODZIENNIE przez niezidentyfikowany komponent: cykl prune (7 kluczy/dzień) → reappear następnego dnia (05-14 → 05-15 → 05-16 → 05-17 te same UUIDs). fill_rate.unknown 6 zleceń z 0% outcome attribution — matematycznie niemożliwe (każde zlecenie Alpaca musi mieć status). v3.8.5 fix do _strategy_from_client_id nie eliminuje źródła — tylko symptom.",
+      "lost_usd": 0.0,
+      "remediation": "Znaleźć źródło UUID: sprawdzić `_client_order_id()` w alpaca_orders.py, allocator._execute_one(), geo-monitor.execute_geo_signal() — każde gdzie strategy=None/empty może produkować UUID fallback. Dodać assert: client_order_id MUSI zaczynać się od prefix z whitelist [options-, stock-, crypto-, exit-, alloc-]; raise ValueError na UUID format. Fix wymagany przed poniedziałkową sesją."
+    }
+  ],
+  "experiments_next_week": [
+    {
+      "hypothesis": "options-momentum przy SPY RSI 69.8 (nie overbought) + size_multiplier=0.5 wygeneruje pierwsze trade z pozytywnym outcome po re-enable 2026-05-19. Kluczowe: SPY-overbought gate (RSI>75 block) nie jest aktywny — środowisko właściwe.",
+      "metric": "Win rate >= 50% na pierwszych 3 transakcjach post-re-enable; żaden single trade > -$500 realized loss. Zweryfikować w logs że intraday SPY RSI check działa (blokuje przy RSI>75, pozwala przy 69.8).",
+      "revert_if": "Kolejna strata > $1,000 na jednym trade LUB win_rate po 5 tradach < 20% → pause do 2026-06-01 i wymagaj intraday regime gate w options-monitor.py jako warunek re-enable"
+    },
+    {
+      "hypothesis": "ETH RSI 33.9 podchodzi do strefy oversold — crypto-momentum predator filter wyemituje pierwsze zlecenie krypto w historii systemu (23 dni milczenia) jeśli RSI zejdzie <30",
+      "metric": "fill_rate.crypto-momentum filled > 0 w następnym tygodniu = pipeline potwierdzony. Jeśli ETH RSI < 30 AND ŻADNE zlecenie nie złożone w 48h → P0 pipeline diagnostic natychmiast.",
+      "revert_if": "Nie dotyczy — jeśli ETH RSI nie zejdzie <30, trigger nie odpalił; eksperyment oczekuje bez powrotu"
+    },
+    {
+      "hypothesis": "NVDA Reddit 48× spike (2026-05-12) był zablokowany na konkretnym kroku pipeline — identyfikacja tego kroku da targetowany fix bez regresji",
+      "metric": "Przejrzeć GitHub Actions log dla reddit-monitor run 2026-05-12: (a) spike_ratio >3 threshold met? (b) sentiment_skew >= 0.3? (c) VIX guard passed? (d) drawdown guard passed? (e) concentration guard passed? (f) emit_signal called? Znaleźć pierwszy missing log = miejsce blokady.",
+      "revert_if": "N/A — diagnostyka read-only"
+    },
+    {
+      "hypothesis": "UUID client_order_id pollution ma jeden konkretny źródłowy plik — code inspection jednej sesji go ujawni i naprawi PRZED poniedziałkowym market open",
+      "metric": "Zero nowych UUID kluczy w state.json po następnym daily-learning run (05-18 lub 05-19). Zero fill_rate.unknown entries z UUID prefix.",
+      "revert_if": "N/A — fix addytywny (dodanie validation/assert)"
+    },
+    {
+      "hypothesis": "alloc-exit i allocator-rebalance to operational lifecycle tagi, nie autonomiczne strategie — wyłączenie ich w state.json nie przerywa morning-allocator execution",
+      "metric": "morning-allocator 05-19 13:35 UTC wykonuje plan bez KeyError na 'alloc-exit' lub 'allocator-rebalance' kluczach. Sprawdzić execution.json na brak error entries.",
+      "revert_if": "allocator.py rzuca błąd na brakujących kluczach → przywrócić enabled=true i zamiast tego flagować te wpisy jako excluded_from_silent_warnings w adapter.py"
+    }
+  ],
+  "state_overrides": {
+    "strategies": {
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "enabled": false,
+        "side_bias": null,
+        "rationale": "Utrzymuję pauzę do 2026-05-19 per plan. SPY RSI 69.8 (05-17) = warunek re-enable spełniony przy otwarciu 05-19. Re-enable z size_multiplier=0.5 (1-consecutive-loss cool-down), side_bias=null (CALL i PUT oba dozwolone, ale SPY-overbought gate w adapter.py blokuje PUT przy RSI>75). WYMAGANIE KRYTYCZNE przed re-enable: options-monitor.py musi mieć własny intraday SPY RSI check — adapter gate chroni tylko od 21:00 UTC, nie chroni intraday entries."
+      },
+      "alloc-exit": {
+        "enabled": false,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "Operational lifecycle tag — nie autonomiczna strategia handlowa. 21 dni SILENT warnings zaśmiecają rationale.md bez wartości analitycznej. Wyłączam dla czystości analytics. allocator.py używa 'alloc-exit' jako client_order_id prefix, nie jako strategy gate — disable bezpieczny o ile morning-allocator nie sprawdza is_strategy_enabled('alloc-exit'). Przywrócić enabled=true natychmiast jeśli 05-19 allocator zgłosi błąd."
+      },
+      "allocator-rebalance": {
+        "enabled": false,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "Analogicznie do alloc-exit — operational tag generujący SILENT noise bez wartości. Wyłączam. Przywrócić enabled=true jeśli morning-allocator 05-19 zgłosi KeyError na tym kluczu."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "confidence": "medium"
+}
