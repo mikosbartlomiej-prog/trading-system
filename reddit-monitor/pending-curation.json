@@ -1,25 +1,25 @@
 {
-  "as_of": "2026-05-17T20:53:38Z",
-  "narrative": "Cztery kandydaty tej tury — wszystkie odrzucone. USO to artefakt spike_ratio=99 (rolling_avg_7d=0, jedyne retrospektywne wspomnienie w gain-porn bez tezy handlowej). BTC BUY błędna klasyfikacja — post to niedźwiedzia teza na PUT STRC/MSTR preferred (13 upvotes, instrument mismatch). AMD SELL_SHORT sprzeczny z otwartą pozycją long 33 szt. (-1.98%) — post opisuje ruch który już zaszedł (past tense, Trump/Pekin). MSFT spike=8.67× realny ale katalizator (rotacja Ackmana Q1 13F) stary o tygodnie, skew=0.10 daleko poniżej progu 0.30, brak binarnego zdarzenia <72h, konto 100% deployed.",
+  "as_of": "2026-05-17T21:56:32Z",
+  "narrative": "Portfel pełny (~100% equity na marginie, 6 pozycji long); żaden z 4 kandydatów nie spełnia kryterium świeżego katalizatora (<24h) z ruchem 5%+ w 1-72h. MSFT (spike_ratio 8.67×) to najsilniejszy sygnał, ale skew=0.10 i thesis fundamentalny bez momentum-triggera = slow grind, nie predator alpha; otwieranie nowej pozycji na pełnym marginie bez wyraźnego 24h zapłonu to FOMO, nie edge. Zero emisji — kapitał chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "USO",
-      "reason": "spike_ratio=99 to artefakt rolling_avg_7d=0 — jedyne retrospektywne wspomnienie w gain-porn poście (+107K YTD brag) bez tezy handlowej, kierunek UNCLEAR, brak świeżego katalizatora USO."
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, 1 wzmianka → dzielenie przez zero); post to gain-porn (+107K YTD brag) z retrospektywnym wymienieniem USO obok LLY/AMZN — brak tezy handlowej, kierunek UNCLEAR."
     },
     {
       "ticker": "BTC",
-      "reason": "Post to niedźwiedzia teza na STRC PUT (MSTR preferred stock), błędnie sklasyfikowany jako BUY BTC; 13 upvotes, skew=0.20 poniżej progu 0.30, brak świeżego katalizatora BTC, konto 100% deployed — brak gotówki na nową pozycję."
+      "reason": "Post pyta o hedge via STRC PUT (MSTR preferred stock) — to niedźwiedzia dyskusja hedgingowa, błędnie sklasyfikowana jako BUY BTC; best_post 15 upvotes, skew=0.20 poniżej progu 0.30, brak świeżego katalizatora spot BTC."
     },
     {
       "ticker": "AMD",
-      "reason": "Konto ma otwartą pozycję long AMD 33 szt. (-1.98%, 14.9% equity) — SELL_SHORT sprzeczny z portfelem; top post opisuje ruch który już zaszedł (Trump/Pekin summit, past tense), stale catalyst."
+      "reason": "Konto ma otwartą pozycję LONG AMD 33 szt. (14.9% equity, -1.98%) — SELL_SHORT jest bezpośrednim konfliktem pozycji; top post opisuje ruch który już zaszedł (Trump-Pekin no-deal selloff, past tense) — stale catalyst >48h."
     },
     {
       "ticker": "MSFT",
-      "reason": "Katalizator (rotacja Ackmana z GOOG→MSFT w Q1 13F) stary o tygodnie, skew=0.10 daleko poniżej progu 0.30, MSFT +18% od marcowego dołka, brak binarnego zdarzenia <72h, konto 100% deployed."
+      "reason": "Skew=0.10 daleko poniżej progu 0.30 (prawie neutralny); katalizator (Ackman Q1 13F rotation + Friday relative strength) nie jest świeżym <24h triggerem tylko fundamentalną tezą jakościową; portfel 100%+ deployed — brak sensu dodawania kolejnej pozycji na marginie bez binarnego zdarzenia <72h."
     }
   ],
-  "macro_context": "VIX=17 (risk-on), portfel 100% deployed (6 pozycji long, wszystkie lekko pod wodą, łącznie ~100.7% equity), brak wolnej gotówki na nowe wejścia — reżim NEUTRAL/chop po bezowocnym szczycie Trump-Pekin; tech wyprzedany, rynek czeka na nowy kierunek.",
+  "macro_context": "VIX=17 (risk-on, benign), portfel 100%+ deployed (6 pozycji long łącznie ~100.7% equity na marginie), rynek w NEUTRAL/chop po szczycie Trump-Pekin bez dealu; brak wyraźnego directional regime który uzasadniałby nowe margin entries.",
   "confidence_in_curation": "high"
 }
