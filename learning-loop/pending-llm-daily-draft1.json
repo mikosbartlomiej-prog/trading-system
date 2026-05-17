@@ -1,0 +1,49 @@
+{
+  "narrative": "Sobota 17 maja — konto flat: equity $93,930, 0 pozycji, 0 tradów w oknie 24h. Trzy dni bez LLM (2 x unavailable, 1 x silent-day optimization) — system działał deterministycznie i poprawnie wstrzymał akcje. Kluczowe obserwacje: ETH RSI 33.3 zbliża się do oversold (jedyna aktywna setup na radarze; predator filter zdecyduje o wejściu), SPY RSI 69.8 wrócił z 82.5 dnia 15 maja — korekta nadmiernego wykupienia, nie zmiana trendu. fill_rate.unknown 0%% na 6 zleceń bez attribution wymaga diagnozy przed kolejnym trading dniem. options-momentum wraca 2026-05-19 per plan; środowisko wejścia lepsze niż tydzień temu.",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "Zero mierzalnego edge przy 0 tradach w oknie. Strukturalna obserwacja: SPY RSI znormalizował się z 82.5 do 69.8 w 2 dni — zdrowa korekta wykupienia, nie odwrócenie trendu. ETH RSI 33.3 to jedyna oversold okazja w snapshot; BTC neutral 47.9. Geo-* re-enabled 2026-05-16 — za wcześnie na ocenę edge (1 dzień po włączeniu).",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Minimum sample guard before setting side_bias",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "Challenger 2026-05-15 odrzucił side_bias dla options-momentum z powodu braku danych (N=1 trade). Guard: jeśli trades_7d < 3 AND trades_lifetime < 3, wyzeruj proposed side_bias do null. Zapobiega LLM-narzuconemu kierunkowi bez próbki empirycznej — dokładnie błąd z ostatniej rundy.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_min_sample_before_side_bias(stats, proposed_side_bias, min_trades=3):\n    \"\"\"Suppress side_bias when sample is too small to determine direction.\n\n    Returns proposed_side_bias unchanged if sample sufficient,\n    or None if both trades_7d and trades_lifetime are below min_trades.\n    Prevents LLM from setting directional bias on 1-2 trade samples.\n    \"\"\"\n    if proposed_side_bias is None:\n        return None\n    trades_7d = stats.get(\"trades_7d\") or 0\n    trades_lifetime = stats.get(\"trades_lifetime\") or 0\n    if trades_7d < min_trades and trades_lifetime < min_trades:\n        return None\n    return proposed_side_bias\n",
+      "test_addition": "class TestMinSampleBeforeSideBias(unittest.TestCase):\n    def test_suppresses_bias_insufficient_sample(self):\n        stats = {\"trades_7d\": 1, \"trades_lifetime\": 1}\n        self.assertIsNone(heuristic_min_sample_before_side_bias(stats, \"short\"))\n\n    def test_allows_bias_with_7d_sample(self):\n        stats = {\"trades_7d\": 3, \"trades_lifetime\": 1}\n        self.assertEqual(heuristic_min_sample_before_side_bias(stats, \"short\"), \"short\")\n\n    def test_allows_bias_with_lifetime_sample(self):\n        stats = {\"trades_7d\": 0, \"trades_lifetime\": 5}\n        self.assertEqual(heuristic_min_sample_before_side_bias(stats, \"long\"), \"long\")\n\n    def test_passthrough_none_bias(self):\n        stats = {\"trades_7d\": 0, \"trades_lifetime\": 0}\n        self.assertIsNone(heuristic_min_sample_before_side_bias(stats, None))\n\n    def test_missing_keys_treated_as_zero(self):\n        self.assertIsNone(heuristic_min_sample_before_side_bias({}, \"long\"))\n",
+      "wire_into_adapt_strategy": "Before writing side_bias to any proposed override, call: proposed_side_bias = heuristic_min_sample_before_side_bias(stats, proposed_side_bias). Replace any direct side_bias assignment with the guarded value."
+    },
+    {
+      "title": "Trailing stop decision deferred: tp_hit_rate empty, options N=1 — revisit 2026-06-01",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Scheduled review 2026-05-17 niewykonalny: tp_hit_rate={}, options-momentum trades_lifetime=1. Trailing stop framework gotowy w options-exit-monitor (TRAILING_STOP_ENABLED env flag, 8%% trail, 12h min-hold) — tylko decyzja aktywacji wymaga min. 10 options trades z TP data.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-01",
+      "implementation_sketch": "Warunek rewizji: options-momentum trades_lifetime >= 10. Kroki: 1) pobierz tp_hit_rate z learning-loop/history/*.md dla ostatnich 10 trade-ow; 2) jeśli hit_rate < 30%% -> flip TRAILING_STOP_ENABLED=true w options-exit-monitor workflow; 3) jeśli >= 50%% -> static TP ok, zamknij temat; 4) 30-50%% = dyskusja z userem. Pliki: options-exit-monitor/monitor.py (TRAILING_STOP_ENABLED env var), learning-loop/history/*.md (tp_hit_rate metric)."
+    },
+    {
+      "title": "Diagnose fill_rate.unknown: 6 placed / 0 filled — allocator tagging or stale LIMIT",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "6 zleceń bez strategy attribution i 0%% fill rate destruuje P&L analytics i może oznaczać otwarte LIMIT buy-y z planu allocatora siedzące w order book. Muszą być zdiagnozowane przed otwarciem rynku w poniedziałek żeby nie kolizować z nowym planem allocatora.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-18",
+      "implementation_sketch": "GET /v2/orders?status=open — sprawdź czy 6 otwartych zleceń bez proper client_order_id prefix. Jeśli to morning-allocator BUY-y (PDT-blocked -> LIMIT nie wypełnione -> expired): anuluj pozostałości, poczekaj na PDT reset (~2026-05-22). Jeśli ID bug: napraw alpaca_orders.py::_client_order_id() i dodaj assert no UUID prefix. Pliki: shared/alpaca_orders.py, learning-loop/analyzer.py::_strategy_from_client_id."
+    },
+    {
+      "title": "Suppress SILENT adapter flag for strategies within 5 days of re-enable",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Geo-defense/energy/gold/xom re-enabled 2026-05-16. Adapter natychmiast flaguje je SILENT (22 days tracked, 0 trades) — false positive. Nie mogły handlować zanim zostały włączone. SILENT warning powinien być gated na  nie .",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-22",
+      "implementation_sketch": "W analyzer.py::_check_silent_strategies(): przed emisją SILENT bullet sprawdź state[\"strategies\"][name][\"rationale\"] pod kątem \"RE-ENABLED YYYY-MM-DD\" pattern lub dodaj pole \"enabled_at\" do state.json entry per strategy. Jeśli delta(as_of, enable_date) < 5 trading_days: skip SILENT flag. Pliki: learning-loop/analyzer.py."
+    }
+  ],
+  "confidence": "low"
+}
