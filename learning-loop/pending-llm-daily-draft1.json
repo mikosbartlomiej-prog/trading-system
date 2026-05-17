@@ -1,0 +1,31 @@
+{
+  "narrative": "Sobota 17 maja — konto flat na $93,930 (szczyt tygodnia $94,616, delta -$686), 0 pozycji, 0 tradów w 24h oknie; system poprawnie wstrzymał działanie w weekend. SPY RSI 69.8 po korekcie z 82.5 w piątek — zdrowa normalizacja wykupienia, trend up zachowany, środowisko korzystne dla powrotu options-momentum w poniedziałek 19.05 per plan (SPY-overbought gate już nie blokuje). Priorytet diagnostyczny przed poniedziałkiem: fill_rate.unknown 6 zleceń z zerowym outcome (0 filled/canceled/expired/rejected) — matematycznie niemożliwe, każde zlecenie musi mieć status; wskazuje na bug attribution lub legacy UUID clientOrderId niezliczający outcomes. TRAILING STOP REVIEW (reminder 2026-05-17): options-momentum N=1 lifetime trade ($-0.60) — za mało na decyzję kalibracji progu 8%; TRAILING_STOP_ENABLED pozostaje true, tuning odłożony do minimum 10 tradów.",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "Zero mierzalnego edge w 24h oknie (0 tradów, market zamknięty w weekend). Strukturalne: SPY 69.8 po korekcie z 82.5 = odpowiednie środowisko wejścia dla options-momentum bez blokady SPY-overbought gate; ETH RSI 33.9 to jedyna oversold okazja w snapshot — Tier-1 crypto, predator filter obserwuje dla możliwego wejścia long.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Auto-disable chronically silent strategies at 25+ days for pipeline diagnostic",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "crypto-momentum milczy 22 dni na 11-coinowym universe (SOL/AVAX/LINK regularnie ruszają 5-15%/dobę) — po 25 dniach bez trade to nie 'quiet market', to problem pipeline. Automatyczne wyłączenie po progu zmusi do diagnozy zamiast nieskończonego generowania 'SILENT' alertów w rationale.md. Próg 25 dni daje nowym strategiom (geo-* od 1 dnia, options-momentum pauzowana) czas na udowodnienie działania.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_chronic_silent_disable(name, stats, days_tracked):\n    \"\"\"\n    After 25+ days with 0 lifetime trades, propose disabling strategy for pipeline diagnostic.\n    Excludes operational strategies that produce no trades by design.\n    Returns (should_disable, reason).\n    \"\"\"\n    OPERATIONAL_STRATEGIES = {\n        \"alloc-exit\", \"allocator-rebalance\",\n        \"overbought-short\", \"crypto-breakdown\"\n    }\n    CHRONIC_DAYS_THRESHOLD = 25\n    if name in OPERATIONAL_STRATEGIES:\n        return False, \"\"\n    if stats.get(\"trades_lifetime\", 0) == 0 and days_tracked >= CHRONIC_DAYS_THRESHOLD:\n        return True, (\n            f\"{name}: {days_tracked} days tracked, 0 lifetime trades — \"\n            \"auto-disabled for pipeline diagnostic (heuristic_chronic_silent_disable)\"\n        )\n    return False, \"\"",
+      "test_addition": "class TestChronicSilentDisable(unittest.TestCase):\n    def test_triggers_at_threshold(self):\n        fired, reason = heuristic_chronic_silent_disable(\"crypto-momentum\", {\"trades_lifetime\": 0}, 25)\n        self.assertTrue(fired)\n        self.assertIn(\"pipeline diagnostic\", reason)\n\n    def test_no_trigger_below_threshold(self):\n        fired, _ = heuristic_chronic_silent_disable(\"crypto-momentum\", {\"trades_lifetime\": 0}, 24)\n        self.assertFalse(fired)\n\n    def test_no_trigger_with_trades(self):\n        fired, _ = heuristic_chronic_silent_disable(\"crypto-momentum\", {\"trades_lifetime\": 1}, 30)\n        self.assertFalse(fired)\n\n    def test_exempt_operational_strategies(self):\n        for name in (\"alloc-exit\", \"allocator-rebalance\", \"overbought-short\", \"crypto-breakdown\"):\n            fired, _ = heuristic_chronic_silent_disable(name, {\"trades_lifetime\": 0}, 30)\n            self.assertFalse(fired, f\"{name} should be exempt from chronic silent disable\")",
+      "wire_into_adapt_strategy": "after the existing _flag_silent_strategies call, check heuristic_chronic_silent_disable(name, stats, days_tracked); if True and strategy currently enabled, set override enabled=False and log the reason — operator re-enables only after confirming pipeline fix"
+    },
+    {
+      "title": "Diagnoza fill_rate.unknown 0-outcome — 6 zleceń bez statusu przed poniedziałkiem",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "6 zleceń strategy=unknown z zerem wszystkich outcome counters (filled=0, canceled=0, expired=0, rejected=0) to matematyczna niemożliwość — każde Alpaca order musi mieć status. Przed Monday session trzeba zidentyfikować skąd pochodzą i naprawić attribution, inaczej będziemy tracić ślad wypełnionych tradów.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-19",
+      "implementation_sketch": "1. Fetch GET /v2/orders?status=all&after=2026-05-16T00:00:00Z&limit=50\n2. Zidentyfikuj zlecenia gdzie _strategy_from_client_id zwraca 'unknown'\n3. Jeśli UUID format (przed v3.8.5): dodaj pre-filter — te legacy orders pomiń w fill_rate counter\n4. Jeśli nowy format (po v3.8.5): znaleźć monitor produkujący nieparsowalny client_order_id i naprawić\n5. Upewnij się że outcome counters zliczają też strategy=unknown (nie tylko named strategies)"
+    }
+  ],
+  "confidence": "low"
+}
