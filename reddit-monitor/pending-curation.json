@@ -1,20 +1,20 @@
 {
-  "narrative": "Trzech kandydatów, zero wejść. Portfel 100% deployed (AMD 14.9% + GLD 19.5% + NVDA 15.4% + QQQ 16.6% + SMH 15.4% + SPY 18.9% = ~100.7% equity, brak wolnej gotówki bez lewaru). SLV: spike_ratio=99 to artefakt (rolling_avg_7d=0, brak baseline) + post to dosłownie post-mortem przegranego trade na wygasłych May-15c po krachu -10% po 6-dniowym rally +20% — klasyczna LATE pułapka, zero świeżego katalizatora. MSFT: spike 8.67× ale skew ledwo 0.1 (bez kierunku) + excerpty to retrospektywna analiza Ackman Q1 13F i opis ruchu z piątku — stale dane, nie predykcja. GOOGL: Berkshire 13F (kwartalny, retrospektywny, nie <24h) + Samsung story bez związku z GOOGL + spike_ratio 2.5 + skew 0.23 poniżej minimalnego 0.30.",
+  "narrative": "Trzy kandydaci, żaden nie drukuje — CVX spike_ratio=99 to artefakt (1 wzmianka / baseline=0, nie sygnał), MSFT skew=0.10 za słaby na momentum (13F-driven value narracja Ackmana sprzed miesięcy, nie fresh catalyst), GOOGL spike=2.5× poniżej progu, ta sama stara historia Berkshire Q1. Portfolio na ~100% equity deployed (AMD+GLD+NVDA+QQQ+SMH+SPY ≈ 100.7%), tech/AI już 62% equity — brak slack'u na nowe BUY bez marżowego ryzyka. Bankroll chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "SLV",
-      "reason": "spike_ratio=99 to artefakt pierwszego dnia (rolling_avg_7d=0, zero historii); post to wyłącznie post-mortem przegranego call na wygasłych May-15c ($130→$30) po SLV rally +20% już zrealizowanym — LATE pułapka, brak świeżego bullish katalizatora, portfel 100% deployed."
+      "ticker": "CVX",
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, 1 wzmianka); catalyst to Q1 13F Berkshire (dane sprzed miesięcy, rynek dawno zdyskontował); brak fresh <24h trigger dla SELL_SHORT."
     },
     {
       "ticker": "MSFT",
-      "reason": "skew=0.10 brak wyraźnego kierunku; excerpty to retrospektywna analiza Q1 13F Ackmana (dane kwartalne, nie <24h) i opis ruchu z ubiegłego piątku; brak świeżego katalizatora <24h; portfel 100% deployed bez wolnej gotówki."
+      "reason": "skew=0.10 za słaby (ledwo bullish); katalyzatory stale — 13F Ackmana Q1 + wyniki April, żaden <24h; portfolio na ~100% deployed (tech/AI 62% equity: NVDA+QQQ+SMH+AMD), dodanie MSFT = over-concentration na dźwigni bez edge."
     },
     {
       "ticker": "GOOGL",
-      "reason": "Catalyst = Berkshire Q1 13F filing (kwartalny, stary, nie <24h); Samsung labour news zupełnie niezwiązany z GOOGL; spike_ratio=2.5 poniżej przekonującego progu; skew=0.23 poniżej wymaganego 0.30; portfel 100% deployed."
+      "reason": "spike_ratio=2.5× poniżej progu 3×; ta sama Berkshire 13F historia co CVX — Q1 data dawno w rynku; skew=0.23 umiarkowany, Samsung labor noise nieistotny dla GOOGL."
     }
   ],
-  "macro_context": "VIX=17 sugeruje risk-on, ale portfel flat/minimalnie na minusie (SPY -0.3%, QQQ -0.37%, NVDA -0.63%, AMD -1.98%) bez wyraźnego impulsu kierunkowego; 100% deployed = brak gotówki na nowe wejście bez sprzedaży istniejącej pozycji.",
+  "macro_context": "VIX=17 (risk-on, sprzyjające środowisko), ale portfolio już na ~100% deployed — brak slack'u na nowe entries bez marżowego ryzyka; regime RISK_ON nie uzasadnia forsowania średniej jakości sygnałów Reddit gdy koncentracja tech/AI 62% equity.",
   "confidence_in_curation": "high"
 }
