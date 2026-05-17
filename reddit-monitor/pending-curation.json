@@ -1,21 +1,17 @@
 {
-  "as_of": "2026-05-17T16:58:09Z",
-  "narrative": "Dominant narrative dzisiaj to Berkshire Q1 13F — $10B rotacja z CVX do GOOGL plus Ackman pivot z GOOGL na MSFT. Problem: 13F to dane z końca marca, opublikowane 45+ dni po fakcie — GOOGL +43% od dołka, MSFT +18%, CVX-trim dawno w cenach. Zero świeżego katalizatora (<24h). Konto 100.7% zdeployowane (AMD 14.9%+GLD 19.5%+NVDA 15.4%+QQQ 16.6%+SMH 15.4%+SPY 18.9%) — bankroll chroniony.",
+  "as_of": "2026-05-17T18:03:30Z",
+  "narrative": "Dwa kandydaci, zero edge: AMD/SELL_SHORT sprzeczne z aktualną long pozycją AMD (14.9% equity, ~$14k) — shortowanie własnego holdu to absurd, a ruch (-5.7%) już z piątku dawno w cenach. MSFT/BUY: spike_ratio=8.67 napędzony Berkshire+Ackman Q1 13F sprzed 45+ dni — stale dane, skew=0.10 daleko poniżej progu 0.30, MSFT +18% od marcowego dołka i near-resistance $433. Konto 100.7% deployed — bankroll chroniony, żaden kandydat nie ma świeżego (<24h) katalizatora.",
   "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "CVX",
-      "reason": "spike_ratio=99 to artefakt (1 wzmianka / rolling_avg_7d=0 = infinity); catalyst to Berkshire Q1 13F trim z 130M→84M akcji — dane sprzed 45+ dni, rynek dawno zdyskontował; SELL_SHORT bez fresh <24h trigger = FOMO na stary news; konto 100% deployed bez cash."
+      "ticker": "AMD",
+      "reason": "Bezpośredni konflikt z aktualną AMD long pozycją (14.9% equity ~$14k) — SELL_SHORT to shortowanie własnego holdu; catalyst Trump-Beijing brak-dealu (AMD -5.7% piątek) stale i w cenach; 2/3 excerptów to memy (pigeon post, call spread humor) bez konkretnego DD; short wymagałby dodatkowego marginu przy koncie 100.7% deployed."
     },
     {
       "ticker": "MSFT",
-      "reason": "skew=0.10 prawie neutralny (za słaby na momentum trade); spike 8.67x to szum dyskusyjny wokół Ackman Q1 13F (stale 45+ dni, nie nowa informacja); MSFT +18% od dołka marca ($356→$422) — late entry w pobliżu oporu 3-miesięcznego; tech/AI bucket ~62% equity (NVDA+QQQ+SMH+AMD) — koncentracja już wysoka."
-    },
-    {
-      "ticker": "GOOGL",
-      "reason": "spike_ratio=2.5x poniżej progu 3×; ta sama Berkshire 13F narracja co CVX — Q1, stale 45+ dni; GOOGL +43% od dołka marcowego, move potwierdzony i w cenach; portfolio fully deployed, brak slacku na nowe entry."
+      "reason": "spike_ratio=8.67 to szum wokół Berkshire Q1 13F + Ackman pivot — dane sprzed 45+ dni, stary konsensus dawno zdyskontowany; skew=0.10 za słaby (próg 0.30); MSFT +18% od marcowego dna ($356→$422), near-resistance 3-miesięczne $433; konto fully deployed (100.7%) bez cash buffer na nowe BUY."
     }
   ],
-  "macro_context": "VIX=17 (risk-on), ale portfolio na 100.7% equity deployed bez cash buffer — wszelkie nowe BUY wymagałyby marginu bez dodatkowego edge; przy zerowym daily P&L i fully-deployed koncie nie wymuszamy trades na słabych/stałych sygnałach Reddit.",
+  "macro_context": "VIX=17 risk-on, ale konto 100.7% deployed w 6 pozycjach swing-held i zero daily P&L — żaden Reddit signal dzisiaj nie justyfikuje dodatkowego margin exposure bez świeżego katalizatora.",
   "confidence_in_curation": "high"
 }
