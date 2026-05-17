@@ -634,3 +634,25 @@ def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
             "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
         )
     return False, ""
+
+
+# ─── Lane2 auto-added — Auto-disable chronically silent strategies at 25+ days for pipeline diagnostic ────────────
+def heuristic_chronic_silent_disable(name, stats, days_tracked):
+    """
+    After 25+ days with 0 lifetime trades, propose disabling strategy for pipeline diagnostic.
+    Excludes operational strategies that produce no trades by design.
+    Returns (should_disable, reason).
+    """
+    OPERATIONAL_STRATEGIES = {
+        "alloc-exit", "allocator-rebalance",
+        "overbought-short", "crypto-breakdown"
+    }
+    CHRONIC_DAYS_THRESHOLD = 25
+    if name in OPERATIONAL_STRATEGIES:
+        return False, ""
+    if stats.get("trades_lifetime", 0) == 0 and days_tracked >= CHRONIC_DAYS_THRESHOLD:
+        return True, (
+            f"{name}: {days_tracked} days tracked, 0 lifetime trades — "
+            "auto-disabled for pipeline diagnostic (heuristic_chronic_silent_disable)"
+        )
+    return False, ""

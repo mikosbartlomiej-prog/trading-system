@@ -367,3 +367,27 @@ class TestStaleExitEmergency(unittest.TestCase):
     def test_no_trigger_missing_key(self):
         fired, _ = heuristic_stale_exit_emergency({})
         self.assertFalse(fired)
+
+
+# ─── Lane2 auto-added test for: Auto-disable chronically silent strategies at 25+ days for pipeline diagnostic ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_chronic_silent_disable  # noqa: E402,F401
+
+class TestChronicSilentDisable(unittest.TestCase):
+    def test_triggers_at_threshold(self):
+        fired, reason = heuristic_chronic_silent_disable("crypto-momentum", {"trades_lifetime": 0}, 25)
+        self.assertTrue(fired)
+        self.assertIn("pipeline diagnostic", reason)
+
+    def test_no_trigger_below_threshold(self):
+        fired, _ = heuristic_chronic_silent_disable("crypto-momentum", {"trades_lifetime": 0}, 24)
+        self.assertFalse(fired)
+
+    def test_no_trigger_with_trades(self):
+        fired, _ = heuristic_chronic_silent_disable("crypto-momentum", {"trades_lifetime": 1}, 30)
+        self.assertFalse(fired)
+
+    def test_exempt_operational_strategies(self):
+        for name in ("alloc-exit", "allocator-rebalance", "overbought-short", "crypto-breakdown"):
+            fired, _ = heuristic_chronic_silent_disable(name, {"trades_lifetime": 0}, 30)
+            self.assertFalse(fired, f"{name} should be exempt from chronic silent disable")
