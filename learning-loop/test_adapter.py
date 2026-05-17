@@ -367,3 +367,28 @@ class TestStaleExitEmergency(unittest.TestCase):
     def test_no_trigger_missing_key(self):
         fired, _ = heuristic_stale_exit_emergency({})
         self.assertFalse(fired)
+
+
+# ─── Lane2 auto-added test for: Minimum sample guard before setting side_bias ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_min_sample_before_side_bias  # noqa: E402,F401
+
+class TestMinSampleBeforeSideBias(unittest.TestCase):
+    def test_suppresses_bias_insufficient_sample(self):
+        stats = {"trades_7d": 1, "trades_lifetime": 1}
+        self.assertIsNone(heuristic_min_sample_before_side_bias(stats, "short"))
+
+    def test_allows_bias_with_7d_sample(self):
+        stats = {"trades_7d": 3, "trades_lifetime": 1}
+        self.assertEqual(heuristic_min_sample_before_side_bias(stats, "short"), "short")
+
+    def test_allows_bias_with_lifetime_sample(self):
+        stats = {"trades_7d": 0, "trades_lifetime": 5}
+        self.assertEqual(heuristic_min_sample_before_side_bias(stats, "long"), "long")
+
+    def test_passthrough_none_bias(self):
+        stats = {"trades_7d": 0, "trades_lifetime": 0}
+        self.assertIsNone(heuristic_min_sample_before_side_bias(stats, None))
+
+    def test_missing_keys_treated_as_zero(self):
+        self.assertIsNone(heuristic_min_sample_before_side_bias({}, "long"))

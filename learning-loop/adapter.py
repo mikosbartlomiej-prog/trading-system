@@ -634,3 +634,20 @@ def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
             "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
         )
     return False, ""
+
+
+# ─── Lane2 auto-added — Minimum sample guard before setting side_bias ────────────
+def heuristic_min_sample_before_side_bias(stats, proposed_side_bias, min_trades=3):
+    """Suppress side_bias when sample is too small to determine direction.
+
+    Returns proposed_side_bias unchanged if sample sufficient,
+    or None if both trades_7d and trades_lifetime are below min_trades.
+    Prevents LLM from setting directional bias on 1-2 trade samples.
+    """
+    if proposed_side_bias is None:
+        return None
+    trades_7d = stats.get("trades_7d") or 0
+    trades_lifetime = stats.get("trades_lifetime") or 0
+    if trades_7d < min_trades and trades_lifetime < min_trades:
+        return None
+    return proposed_side_bias
