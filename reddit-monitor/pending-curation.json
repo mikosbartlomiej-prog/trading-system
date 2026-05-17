@@ -1,20 +1,20 @@
 {
-  "narrative": "Trzy kandydaci, żaden nie drukuje — CVX spike_ratio=99 to artefakt (1 wzmianka / baseline=0, nie sygnał), MSFT skew=0.10 za słaby na momentum (13F-driven value narracja Ackmana sprzed miesięcy, nie fresh catalyst), GOOGL spike=2.5× poniżej progu, ta sama stara historia Berkshire Q1. Portfolio na ~100% equity deployed (AMD+GLD+NVDA+QQQ+SMH+SPY ≈ 100.7%), tech/AI już 62% equity — brak slack'u na nowe BUY bez marżowego ryzyka. Bankroll chroniony.",
+  "narrative": "Trzy kandydaci, zero edge — CVX spike_ratio=99 to klasyczny artefakt (1 wzmianka / baseline=0), MSFT skew=0.10 za slaby i Ackman 13F Q1 to dane sprzed 45+ dni, GOOGL spike=2.5x ponizej progu 3x + ta sama stala Berkshire narracja. Portfolio na 100.7% equity deployed (AMD+GLD+NVDA+QQQ+SMH+SPY), zero slack na nowe BUY bez marzy — bankroll chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "CVX",
-      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, 1 wzmianka); catalyst to Q1 13F Berkshire (dane sprzed miesięcy, rynek dawno zdyskontował); brak fresh <24h trigger dla SELL_SHORT."
+      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, 1 wzmianka = nieskonczona ratio); catalyst to Berkshire Q1 13F trim (dane sprzed 45+ dni, rynek dawno zdyskontowal); SELL_SHORT bez fresh <24h trigger = FOMO entry na stary news."
     },
     {
       "ticker": "MSFT",
-      "reason": "skew=0.10 za słaby (ledwo bullish); katalyzatory stale — 13F Ackmana Q1 + wyniki April, żaden <24h; portfolio na ~100% deployed (tech/AI 62% equity: NVDA+QQQ+SMH+AMD), dodanie MSFT = over-concentration na dźwigni bez edge."
+      "reason": "skew=0.10 prawie neutralny (za slaby na momentum); katalyzator Ackman Q1 13F stale 45+ dni; portfolio 100.7% deployed bez slacku na nowe BUY; tech/AI bucket ~62% equity (NVDA+QQQ+SMH+AMD) — over-concentration risk."
     },
     {
       "ticker": "GOOGL",
-      "reason": "spike_ratio=2.5× poniżej progu 3×; ta sama Berkshire 13F historia co CVX — Q1 data dawno w rynku; skew=0.23 umiarkowany, Samsung labor noise nieistotny dla GOOGL."
+      "reason": "spike_ratio=2.5x ponizej progu 3x; ta sama Berkshire 13F narracja co CVX (Q1, stale 45+ dni); Samsung labor dispute w excerptach irrelevant dla GOOGL; portfolio fully deployed, brak slacku na nowe entry."
     }
   ],
-  "macro_context": "VIX=17 (risk-on, sprzyjające środowisko), ale portfolio już na ~100% deployed — brak slack'u na nowe entries bez marżowego ryzyka; regime RISK_ON nie uzasadnia forsowania średniej jakości sygnałów Reddit gdy koncentracja tech/AI 62% equity.",
+  "macro_context": "VIX=17 (risk-on), ale portfolio na 100.7% equity deployed — wszelkie nowe BUY wymagalyby marzy bez dodatkowego edge; przy zerowym daily P&L i fully-deployed accounts nie wymuszamy trades dla slabych/stale sygnalow Reddit.",
   "confidence_in_curation": "high"
 }
