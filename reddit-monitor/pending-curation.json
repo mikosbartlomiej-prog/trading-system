@@ -1,24 +1,20 @@
 {
-  "narrative": "Cztery kandydaci, zero edge: SLV skew=1 to artefakt posta opisującego STRATĘ (-10% po +20% runupie, dosłownie 'recommended SLV calls and it crashed'); VOO to filozofia pasywna bez żadnego katalizatora; AMD spike_ratio=3.75 ale NAJLEPSZY post (2969 ups) wprost mówi 'AMD lost 5.7% po szczycie Trump-Pekin bez dealu' — spike jest o SPADKU, nie o akumulacji, a my już siedzimy na AMD 14.9% equity; MSFT spike_ratio=6.67 ale skew=0.158 czyli prawie neutral, posty to long-term fundamental dyskusja bez żadnego 1-72h katalizatora, konto w 100%+ deployed. Bankroll chroniony.",
+  "narrative": "Trzy kandydaci, zero edge: SLV skew=1.0 i spike_ratio=99 to artefakty — top post (404 ups) DOSŁOWNIE opisuje przegraną pozycję calls -75% po +20% SLV runupie; to loss porn, nie bullish thesis. VOO to filozofia pasywna bez żadnego katalizatora 1-72h. MSFT spike_ratio=6 ale skew=0.111 prawie neutral, oba posty długoterminowe (Ackman Q1 reshuffle już wyceniony miesiące temu, Azure CapEx thesis bez świeżego triggera). Konto w 100.7% deployed — nawet idealny setup wymagałby margin i wszystkie 6 pozycji świecą na czerwono.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "SLV",
-      "reason": "Skew=1.0 jest artefaktem: top post opisuje NIEUDANY trade gdzie SLV runął -10% po +20% runupie — brak bullish thesis, literalnie post o stracie."
+      "reason": "skew=1.0 i spike_ratio=99 są artefaktem braku historii (rolling_avg_7d=0); jedyny post opisuje STRATĘ -75% na SLV calls po +20% runupie — loss porn, nie bullish setup."
     },
     {
       "ticker": "VOO",
-      "reason": "Filozofia pasywna ('just hold VOO') bez żadnego momentum katalizatora; nie trading signal, już trzymamy SPY 18.9%."
-    },
-    {
-      "ticker": "AMD",
-      "reason": "Najlepszy post opisuje AMD -5.7% po szczycie Trump-Pekin bez dealu; spike jest reakcją na SPADEK nie akumulację; concentration risk (już AMD 14.9% equity w portfelu)."
+      "reason": "Passive investing philosophy post ('just hold VOO') bez żadnego momentum katalizatora; nie trading signal — zero edge w 1-72h horyzoncie."
     },
     {
       "ticker": "MSFT",
-      "reason": "Skew=0.158 prawie neutral, posty to long-term fundamental (Azure CapEx thesis), zero katalizatora w oknie 1-72h, konto w 100%+ deployed bez wolnego BP."
+      "reason": "Skew=0.111 prawie neutral; Ackman Q1 MSFT buy jest starą wiadomością już dawno wycenioną; Azure CapEx thesis to long-term bez świeżego katalizatora; konto 100.7% deployed bez wolnego BP na nową pozycję."
     }
   ],
-  "macro_context": "VIX=17 to środowisko risk-on, ale konto w 100%+ deployed (AMD+GLD+NVDA+QQQ+SMH+SPY = ~100.7% equity z marginem) i wszystkie pozycje lekko na minusie — brak sygnału uzasadniającego dodatkowe margin deployment bez wyraźnego edge.",
+  "macro_context": "VIX=17 środowisko risk-on, ale konto w 100.7% deployed (AMD+GLD+NVDA+QQQ+SMH+SPY) z marginem i wszystkie 6 pozycji lekko ujemne — brak BP i żaden kandydat nie ma czystego 72h edge uzasadniającego dodatkowe margin deployment.",
   "confidence_in_curation": "high"
 }
