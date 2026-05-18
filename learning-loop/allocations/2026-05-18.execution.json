@@ -1,0 +1,81 @@
+{
+  "plan_date": "2026-05-18",
+  "executed_at": "2026-05-18T16:20:35Z",
+  "n_placed": 8,
+  "n_skipped": 0,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "SMH",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 26",
+      "attempted_at": "2026-05-18T16:20:32Z",
+      "alpaca_order_id": "b6693b95-09b4-4eec-af74-c79c7581b55a"
+    },
+    {
+      "symbol": "NVDA",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 64",
+      "attempted_at": "2026-05-18T16:20:32Z",
+      "alpaca_order_id": "67531981-d126-4a02-9111-fcbbfb89b8b4"
+    },
+    {
+      "symbol": "GLD",
+      "action": "REDUCE",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "REDUCE 21 @ $416.67",
+      "attempted_at": "2026-05-18T16:20:32Z",
+      "alpaca_order_id": "6207c30d-42cc-4e52-b1e0-d50cda0a90b7"
+    },
+    {
+      "symbol": "SPY",
+      "action": "REDUCE",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "REDUCE 11 @ $736.18",
+      "attempted_at": "2026-05-18T16:20:33Z",
+      "alpaca_order_id": "c7bcaf7f-3f4b-40dd-b810-4404ed7c3a44"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "REDUCE",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "REDUCE 8 @ $703.2",
+      "attempted_at": "2026-05-18T16:20:33Z",
+      "alpaca_order_id": "baec7af8-0bdf-4f21-8f9d-370b94f4d75c"
+    },
+    {
+      "symbol": "USO",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 110.0000 @ $152.75",
+      "attempted_at": "2026-05-18T16:20:33Z",
+      "alpaca_order_id": "e42e3327-92da-4082-ae3b-aee1062158b0"
+    },
+    {
+      "symbol": "OXY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 281.0000 @ $59.99",
+      "attempted_at": "2026-05-18T16:20:34Z",
+      "alpaca_order_id": "d43e2466-8bc0-4064-89ec-1740e77b5579"
+    },
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 6.6492 @ $426.11",
+      "attempted_at": "2026-05-18T16:20:34Z",
+      "alpaca_order_id": "335b79c2-5437-403a-84b8-76d2f6c70368"
+    }
+  ]
+}

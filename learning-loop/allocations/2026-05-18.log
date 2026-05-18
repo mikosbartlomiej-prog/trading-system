@@ -44,3 +44,19 @@
 [08:09:28 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
 [08:09:28 INFO] ── Step 8: plan complete ──
 [08:09:28 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[16:20:32 INFO] ============================================================
+[16:20:32 INFO] execute_orders() — auto-execute path
+[16:20:32 INFO] ============================================================
+[16:20:32 INFO]   market_status: open=True reason=open
+[16:20:32 INFO]     SMH EXIT placed: EXIT MARKET 26
+[16:20:32 INFO]     NVDA EXIT placed: EXIT MARKET 64
+[16:20:33 INFO]     GLD REDUCE placed: REDUCE 21 @ $416.67
+[16:20:33 INFO]     SPY REDUCE placed: REDUCE 11 @ $736.18
+[16:20:33 INFO]     QQQ REDUCE placed: REDUCE 8 @ $703.2
+[16:20:33 INFO]     USO BUY: derived qty=110 from target=$16,895 @ $152.75 (no prior position)
+[16:20:34 INFO]     USO BUY placed: BUY 110.0000 @ $152.75  id=e42e3327-92da-4082-ae3b-aee1062158b0
+[16:20:34 INFO]     OXY BUY: derived qty=281 from target=$16,895 @ $59.99 (no prior position)
+[16:20:34 INFO]     OXY BUY placed: BUY 281.0000 @ $59.99  id=d43e2466-8bc0-4064-89ec-1740e77b5579
+[16:20:35 INFO]     AMD BUY placed: BUY 6.6492 @ $426.11  id=335b79c2-5437-403a-84b8-76d2f6c70368
+[16:20:35 INFO]   execution complete: 8 placed, 0 skipped, 0 failed
