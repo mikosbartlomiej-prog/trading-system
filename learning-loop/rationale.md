@@ -227,3 +227,29 @@
 - 2026-05-17 · geo-xom: SILENT — enabled but 0 trades lifetime (23 days tracked); consider disable or remove
 - 2026-05-17 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
 
+- 2026-05-18 · LLM[low] regime=unclear: Poniedziałek 18 maja — equity $92,743 (-$1,187/-1.26% od starting_equity $93,930), 0 pozycji, 0 tradów w 24h oknie. Krytyczna anomalia: $1,187 straty bez żadnej atrybucji w by_strategy oraz fill_rate.unknown=6 placed/0 outcomes — matematycznie niemożliwe przy pełnym rozliczeniu; wskazuje na ghost orders lub bug atrybucji ukrywający fills. Deterministic flaguje geo-* jako '24 dni silent' — BŁĄD INTERPRETACYJNY: strategie były martwe z powodu deprecated routing przez 24 dni, nie braku sygnałów; re-enabled 2026-05-16 (2 dni temu), za wcześnie na disable. AAPL review reminder 2026-05-18: 0 live tradów produkcyjnych — backtest edge zachowany (71% WR, +$3,379 kumulatywnie), ale decyzji koncentracyjnej nie podejmujemy bez min. 5 live tradów.
+-   · geo-defense.size_multiplier: 1.0 -> 1.0
+-   · geo-defense.enabled: True -> True
+-   · geo-defense.side_bias: None -> None
+-   · geo-defense.rationale: Defense escalation news → RTX/LMT LONG. New v3.8.7. -> OVERRIDE SILENT FLAG — re-enabled 2026-05-16 po direct-execution refaktorze. 24-day silence = deprecated routing bug, nie behavioral. 2 dni live = za wcześnie na ocenę. Wyłączam dopiero po 10 dniach realnych sygnałów bez fills.
+-   · geo-energy.size_multiplier: 1.0 -> 1.0
+-   · geo-energy.enabled: True -> True
+-   · geo-energy.side_bias: None -> None
+-   · geo-energy.rationale: Energy bucket fallback (USO/XLE) when XOM/CVX taken. New v3.8.7. -> OVERRIDE SILENT FLAG — identyczna logika co geo-defense. 2 dni live po refaktorze. Keep.
+-   · geo-gold.size_multiplier: 1.0 -> 1.0
+-   · geo-gold.enabled: True -> True
+-   · geo-gold.side_bias: None -> None
+-   · geo-gold.rationale: Nuclear/war keywords → GLD safe-haven LONG. New v3.8.7. -> OVERRIDE SILENT FLAG — 2 dni live. BTC/ETH selloff może korelować z risk-off środowiskiem = potencjalne safe-haven setup dla GLD. Za wcześnie na disable.
+-   · geo-xom.size_multiplier: 1.0 -> 1.0
+-   · geo-xom.enabled: True -> True
+-   · geo-xom.side_bias: None -> None
+-   · geo-xom.rationale: RE-ENABLED 2026-05-16 v3.8.7: geo-monitor refactored to direct Alpaca execution (was DEPRECATED routine path). _classify_news_to_signals maps energy keywords → XOM/CVX BUY signals. execute_stock_signal uses same gate stack as defense-monitor (VIX + drawdown + concentration + PDT). -> OVERRIDE SILENT FLAG — 2 dni live po v3.8.7 direct-execution refaktorze. Poprzednie 24 dni = dead strategy (deprecated routing do routine), nie brak sygnałów. Keep enabled.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-18 · LLM edge: Zero mierzalnego edge w 24h oknie (0 fills). Krypto spada agresywnie: BTC RSI 39.3 (było 47.9 wczoraj, -8.6 pkt), ETH RSI 25.2 (było 33.9, -8.7 pkt) — środowisko spadkowe, nie breakoutowe; crypto-momentum milczenie jest PRAWIDŁOWE. SPY 69.8 poniżej PUT-block gate (75) = jutro options-momentum może wejść w PUT kierunku przy odpowiednim setupie. $1,187 equity gap bez atrybucji = ślepota P&L dopóki fill_rate.unknown nie zostanie zdiagnozowane.
+- 2026-05-18 · crypto-momentum: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
+- 2026-05-18 · geo-defense: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
+- 2026-05-18 · geo-energy: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
+- 2026-05-18 · geo-gold: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
+- 2026-05-18 · geo-xom: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
+- 2026-05-18 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
+

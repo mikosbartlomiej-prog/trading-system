@@ -15,17 +15,17 @@
     "current_equity": 93930.35,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-05-17T05:34:13.030841+00:00",
+    "verdict_at": "2026-05-17T23:55:33.041103+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 23,
+  "days_tracked": 24,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-17T06:45:59.666438+00:00",
+  "last_updated": "2026-05-18T01:27:16.543711+00:00",
   "last_validated_at": "2026-05-16T09:37:07.525688+00:00",
   "last_write_reason": "v3.8.7: re-enable geo-* strategies after direct-execution refactor",
   "last_writer": "manual-maintenance",
@@ -228,20 +228,23 @@
     "geo-defense": {
       "enabled": true,
       "paused_until": null,
-      "rationale": "Defense escalation news → RTX/LMT LONG. New v3.8.7.",
-      "size_multiplier": 1.0
+      "rationale": "OVERRIDE SILENT FLAG — re-enabled 2026-05-16 po direct-execution refaktorze. 24-day silence = deprecated routing bug, nie behavioral. 2 dni live = za wcześnie na ocenę. Wyłączam dopiero po 10 dniach realnych sygnałów bez fills.",
+      "size_multiplier": 1.0,
+      "side_bias": null
     },
     "geo-energy": {
       "enabled": true,
       "paused_until": null,
-      "rationale": "Energy bucket fallback (USO/XLE) when XOM/CVX taken. New v3.8.7.",
-      "size_multiplier": 1.0
+      "rationale": "OVERRIDE SILENT FLAG — identyczna logika co geo-defense. 2 dni live po refaktorze. Keep.",
+      "size_multiplier": 1.0,
+      "side_bias": null
     },
     "geo-gold": {
       "enabled": true,
       "paused_until": null,
-      "rationale": "Nuclear/war keywords → GLD safe-haven LONG. New v3.8.7.",
-      "size_multiplier": 1.0
+      "rationale": "OVERRIDE SILENT FLAG — 2 dni live. BTC/ETH selloff może korelować z risk-off środowiskiem = potencjalne safe-haven setup dla GLD. Za wcześnie na disable.",
+      "size_multiplier": 1.0,
+      "side_bias": null
     },
     "geo-xom": {
       "consecutive_losses": 0,
@@ -250,7 +253,7 @@
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "RE-ENABLED 2026-05-16 v3.8.7: geo-monitor refactored to direct Alpaca execution (was DEPRECATED routine path). _classify_news_to_signals maps energy keywords → XOM/CVX BUY signals. execute_stock_signal uses same gate stack as defense-monitor (VIX + drawdown + concentration + PDT).",
+      "rationale": "OVERRIDE SILENT FLAG — 2 dni live po v3.8.7 direct-execution refaktorze. Poprzednie 24 dni = dead strategy (deprecated routing do routine), nie brak sygnałów. Keep enabled.",
       "review_after": "2026-05-20 (or post geo-monitor direct exec)",
       "side_bias": null,
       "size_multiplier": 1.0,
