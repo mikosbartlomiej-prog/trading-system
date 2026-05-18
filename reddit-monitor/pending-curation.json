@@ -1,25 +1,33 @@
 {
-  "as_of": "2026-05-17T21:56:32Z",
-  "narrative": "Portfel pełny (~100% equity na marginie, 6 pozycji long); żaden z 4 kandydatów nie spełnia kryterium świeżego katalizatora (<24h) z ruchem 5%+ w 1-72h. MSFT (spike_ratio 8.67×) to najsilniejszy sygnał, ale skew=0.10 i thesis fundamentalny bez momentum-triggera = slow grind, nie predator alpha; otwieranie nowej pozycji na pełnym marginie bez wyraźnego 24h zapłonu to FOMO, nie edge. Zero emisji — kapitał chroniony.",
+  "as_of": "2026-05-18T00:00:23Z",
+  "narrative": "6 kandydatów, 0 emisji — portfel 100.3% equity na marginie (AMD 14.8% + GLD 19.5% + NVDA 15.3% + QQQ 16.6% + SMH 15.3% + SPY 18.8%) wyklucza nowe pozycje bez uprzedniego zamknięcia; MSFT spike_ratio=8.67× to najsilniejszy sygnał ale skew=0.10 = rynek podzielony, nie early entry; żaden z 6 kandydatów nie ma świeżego <24h binarnego katalizatora z potencjałem 5%+ w 72h — kapitał chroniony.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "USO",
-      "reason": "spike_ratio=99 to artefakt (rolling_avg_7d=0, 1 wzmianka → dzielenie przez zero); post to gain-porn (+107K YTD brag) z retrospektywnym wymienieniem USO obok LLY/AMZN — brak tezy handlowej, kierunek UNCLEAR."
+      "reason": "spike_ratio=99 artefakt (rolling_avg_7d=0, 1 wzmianka), post to gain-porn (+107K YTD brag) z retrospektywnym wymienieniem USO bez tezy handlowej — brak kierunku, brak katalizatora."
     },
     {
-      "ticker": "BTC",
-      "reason": "Post pyta o hedge via STRC PUT (MSTR preferred stock) — to niedźwiedzia dyskusja hedgingowa, błędnie sklasyfikowana jako BUY BTC; best_post 15 upvotes, skew=0.20 poniżej progu 0.30, brak świeżego katalizatora spot BTC."
+      "ticker": "MSTR",
+      "reason": "Post dotyczy zakupu STRC PUT (niedźwiedzi hedge na MSTR preferred stock) — błędnie sklasyfikowany jako BUY MSTR; spike_ratio=99 artefakt (rolling_avg_7d=0); best_post_ups=18; brak świeżego BUY katalizatora."
     },
     {
       "ticker": "AMD",
-      "reason": "Konto ma otwartą pozycję LONG AMD 33 szt. (14.9% equity, -1.98%) — SELL_SHORT jest bezpośrednim konfliktem pozycji; top post opisuje ruch który już zaszedł (Trump-Pekin no-deal selloff, past tense) — stale catalyst >48h."
+      "reason": "Portfel trzyma już AMD 33 szt. (14.8% equity, -2.79%) — koncentracja wyklucza dokładanie; katalyzator (Trump-Pekin no-deal, AMD -5.7%) stary >24h, posty to retrospektywna analiza zakończonego ruchu."
+    },
+    {
+      "ticker": "BTC",
+      "reason": "Skew=0.20 poniżej progu 0.30; ten sam post co MSTR — niedźwiedzia dyskusja o STRC PUT błędnie przypisana jako BTC BUY; brak świeżego spot BTC katalizatora."
     },
     {
       "ticker": "MSFT",
-      "reason": "Skew=0.10 daleko poniżej progu 0.30 (prawie neutralny); katalizator (Ackman Q1 13F rotation + Friday relative strength) nie jest świeżym <24h triggerem tylko fundamentalną tezą jakościową; portfel 100%+ deployed — brak sensu dodawania kolejnej pozycji na marginie bez binarnego zdarzenia <72h."
+      "reason": "Skew=0.10 prawie neutralny; Ackman 13F Q1 rotacja GOOG→MSFT to dane historyczne, nie świeży <24h trigger; MSFT +3% Friday to relative strength move już zaistniały; portfel 100%+ deployed — FOMO, nie edge."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "Portfel trzyma SPY LONG 24 szt. (18.8% equity) — SELL_SHORT to bezpośredni konflikt pozycji; spike_ratio=1.5 poniżej progu; posty to humor/memy ('pigeon', 'Wendy's dumpster'), nie analiza; skew=-0.20 poniżej progu -0.30."
     }
   ],
-  "macro_context": "VIX=17 (risk-on, benign), portfel 100%+ deployed (6 pozycji long łącznie ~100.7% equity na marginie), rynek w NEUTRAL/chop po szczycie Trump-Pekin bez dealu; brak wyraźnego directional regime który uzasadniałby nowe margin entries.",
+  "macro_context": "VIX=17 (risk-on), portfel 100.3% deployed na marginie — brak przestrzeni na nowe wpisy; rynek w NEUTRAL/chop po Trump-Pekin no-deal (wyceniony w piątkowej korekcie semis -4-6%); MSFT relative strength vs semis może sygnalizować rotację do quality, ale to wielodniowy proces, nie 72h predator play.",
   "confidence_in_curation": "high"
 }
