@@ -425,9 +425,20 @@ def compute_fill_rate(orders: list[dict]) -> dict:
     from manually-canceled / SL-triggered cancels). Plus tracks
     avg_minutes_to_cancel so we can see if cancels happen instantly
     (rejection-like) vs after sitting at limit for hours (limit too tight).
+
+    v3.8.8 (2026-05-18): added 'other' status counter (held / pending /
+    accepted / new / partially_filled) plus a 'sample_open_ids' list
+    that surfaces up to 5 client_order_ids per strategy whose orders
+    are still in non-terminal state. Senior PM has been flagging
+    'fill_rate.unknown = 6 placed / 0 outcomes' for 3 days running —
+    open orders sitting beyond their TIF window were undiagnosable
+    without seeing the IDs. This adds operator visibility without
+    changing aggregate behavior.
     """
     by_strat = defaultdict(lambda: defaultdict(int))
     cancel_durations: dict[str, list[float]] = defaultdict(list)
+    open_samples: dict[str, list[str]] = defaultdict(list)
+    open_symbols: dict[str, list[str]] = defaultdict(list)
     for o in orders:
         strat = _strategy_from_client_id(o.get("client_order_id", ""), o.get("symbol", ""))
         by_strat[strat]["placed"] += 1
@@ -443,7 +454,19 @@ def compute_fill_rate(orders: list[dict]) -> dict:
         elif st == "rejected":
             by_strat[strat]["rejected"] += 1
         else:
+            # Non-terminal state — held / pending / accepted / new /
+            # partially_filled / done_for_day. These are the "ghost"
+            # orders Senior PM has been calling out — they consume
+            # buying-power without ever resolving to a P&L outcome.
             by_strat[strat]["other"] += 1
+            by_strat[strat][f"open_status_{st}"] += 1
+            cid = o.get("client_order_id") or ""
+            sym = o.get("symbol") or ""
+            if len(open_samples[strat]) < 5:
+                # Truncate timestamp segment for readability — strategy +
+                # symbol are the diagnostic signal.
+                open_samples[strat].append(cid[:60])
+                open_symbols[strat].append(sym)
         # Time-to-cancel: submitted_at -> canceled_at / expired_at
         if st in ("canceled", "expired"):
             try:
@@ -462,17 +485,26 @@ def compute_fill_rate(orders: list[dict]) -> dict:
     for strat, counts in by_strat.items():
         placed = counts["placed"]
         durations = cancel_durations.get(strat) or []
-        out[strat] = {
+        entry = {
             "placed":     placed,
             "filled":     counts.get("filled", 0),
             "canceled":   counts.get("canceled", 0),
             "expired":    counts.get("expired", 0),
             "manually_canceled": counts.get("manually_canceled", 0),
             "rejected":   counts.get("rejected", 0),
+            "other":      counts.get("other", 0),
             "fill_rate":  round(counts.get("filled", 0) / placed, 3) if placed else 0.0,
             "avg_minutes_to_cancel": round(sum(durations) / len(durations), 1) if durations else None,
             "max_minutes_to_cancel": round(max(durations), 1) if durations else None,
         }
+        # Surface non-terminal statuses for diagnostics
+        for k, v in counts.items():
+            if k.startswith("open_status_"):
+                entry[k] = v
+        if open_samples.get(strat):
+            entry["sample_open_ids"]     = open_samples[strat]
+            entry["sample_open_symbols"] = open_symbols[strat]
+        out[strat] = entry
     return out
 
 
