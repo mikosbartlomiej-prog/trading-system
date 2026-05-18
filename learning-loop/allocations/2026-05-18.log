@@ -60,3 +60,19 @@
 [16:20:34 INFO]     OXY BUY placed: BUY 281.0000 @ $59.99  id=d43e2466-8bc0-4064-89ec-1740e77b5579
 [16:20:35 INFO]     AMD BUY placed: BUY 6.6492 @ $426.11  id=335b79c2-5437-403a-84b8-76d2f6c70368
 [16:20:35 INFO]   execution complete: 8 placed, 0 skipped, 0 failed
+
+[16:39:28 INFO] ============================================================
+[16:39:28 INFO] execute_orders() — auto-execute path
+[16:39:28 INFO] ============================================================
+[16:39:28 INFO]   market_status: open=True reason=open
+[16:39:29 INFO]     SMH EXIT placed: EXIT MARKET 26
+[16:39:29 INFO]     NVDA EXIT placed: EXIT MARKET 64
+[16:39:30 INFO]     GLD REDUCE placed: REDUCE 21 @ $415.99
+[16:39:30 INFO]     SPY REDUCE placed: REDUCE 11 @ $734.18
+[16:39:30 INFO]     QQQ REDUCE placed: REDUCE 8 @ $700.15
+[16:39:30 INFO]     USO BUY: derived qty=110 from target=$16,895 @ $152.86 (no prior position)
+[16:39:30 ERR ]     USO BUY failed
+[16:39:31 INFO]     OXY BUY: derived qty=281 from target=$16,895 @ $60.10 (no prior position)
+[16:39:31 ERR ]     OXY BUY failed
+[16:39:31 INFO]     AMD BUY placed: BUY 6.6492 @ $426.11  id=a149217f-8dcb-4d5d-981c-4cc368ddf96d
+[16:39:31 INFO]   execution complete: 6 placed, 0 skipped, 2 failed
