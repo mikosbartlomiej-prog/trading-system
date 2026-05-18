@@ -243,14 +243,46 @@ def append_rationale_lines(lines: list[str]) -> None:
 def run():
     now = datetime.now(timezone.utc)
     print(f"\n[{now.isoformat()}] === WEEKLY RETROSPECTIVE ===")
-    payload = collect_inputs()
+    try:
+        payload = collect_inputs()
+    except Exception as e:
+        # v3.8.8 (2026-05-18): fail-soft outer wrapper. Sunday 2026-05-17
+        # weekly-retro failed (exit 1) and produced NO output file. Most
+        # likely cause: collect_inputs raised on a missing daily report
+        # or unreadable rationale file. Wrap entire pipeline in fail-soft
+        # so the workflow still completes (writes a stub file + clear
+        # rationale line) instead of crashing silently.
+        print(f"  ERROR: collect_inputs failed ({type(e).__name__}: {e})")
+        week_end = now.date().isoformat()
+        try:
+            stub_path = os.path.join(LEARNING_DIR, "weekly-retros",
+                                     f"{week_end}.md")
+            os.makedirs(os.path.dirname(stub_path), exist_ok=True)
+            with open(stub_path, "w") as f:
+                f.write(f"# Weekly Retrospective — {week_end} (stub)\n\n")
+                f.write(f"**Error during input collection:** "
+                        f"{type(e).__name__}: {e}\n\n")
+                f.write("Workflow completed in fail-soft mode. Investigate "
+                        "next session.\n")
+            print(f"  Wrote stub retro: {stub_path}")
+        except Exception as inner:
+            print(f"  Stub write also failed: {inner}")
+        return  # exit 0 — fail-soft
+
     week_end = payload["week_end"]
     print(f"  Week: {payload['week_start']} → {week_end}")
     print(f"  Daily reports collected: {sum(1 for r in payload['daily_reports'] if not r.startswith('# (missing'))} / 7")
     print(f"  Rationale entries available: {len(payload['rationale_tail'])}")
 
     print("\n  Calling Learning Loop Strategist (weekly retro)...")
-    llm_resp = call_routine(payload)
+    try:
+        llm_resp = call_routine(payload)
+    except Exception as e:
+        # v3.8.8: also wrap LLM call. call_routine already returns None
+        # on graceful failures, but defensive belt-and-braces ensures any
+        # unexpected exception still produces a retro file.
+        print(f"  LLM call raised ({type(e).__name__}: {e}) — proceeding with None")
+        llm_resp = None
 
     # Apply state overrides (whitelist)
     state = payload["current_state"]
