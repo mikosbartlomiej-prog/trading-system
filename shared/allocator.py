@@ -1001,6 +1001,42 @@ class AccountAwareAllocator:
         except ImportError:
             from shared.alpaca_orders import place_stock_bracket, place_crypto_order, get_latest_quote
 
+        # v3.8.8 (2026-05-18): pre-flight check for OPEN orders on same
+        # symbol+side. Bug surfaced today: USO + OXY rejected by Alpaca
+        # on 2nd allocator run because LIMIT BUYs from 1st run sat
+        # unfilled (stale price) and Alpaca rejects duplicate-side
+        # open orders.
+        try:
+            import requests as _rq
+            import urllib.parse as _up
+            from alpaca_orders import _headers as _hdr, ALPACA_BASE_URL as _base
+            r = _rq.get(
+                f"{_base}/v2/orders",
+                headers=_hdr(),
+                params={"status": "open", "symbols": sym, "limit": 50},
+                timeout=10,
+            )
+            if r.status_code == 200:
+                opens = r.json() or []
+                existing_buys = [o for o in opens if o.get("side") == "buy"]
+                if existing_buys:
+                    result["status"] = "skipped"
+                    result["reason"] = (
+                        f"BUY skipped: {len(existing_buys)} existing open BUY order(s) "
+                        f"for {sym} (oldest id={existing_buys[0].get('id','?')[:8]}). "
+                        f"Cancel via cancel-stale-emergency-orders or wait for fill."
+                    )
+                    self.trace.warn(f"{sym} BUY: {result['reason']}", indent=2)
+                    return result
+        except Exception as e:
+            # Fail-open: if open-orders check fails, proceed to place
+            # (preserves prior behavior; new check is best-effort guard).
+            self.trace.warn(
+                f"{sym} BUY: open-orders pre-check unavailable "
+                f"({type(e).__name__}: {e}); proceeding",
+                indent=2,
+            )
+
         # Need a fresh price for SL/TP calculation
         ref_price = order.get("current_price")
         if not ref_price or ref_price <= 0:
