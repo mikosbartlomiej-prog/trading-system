@@ -1,10 +1,10 @@
 {
-  "_doc": "Daily Anthropic Routine call budget (hard cap 15/day per Anthropic limit). Tiers gate routine calls by priority — essential calls never starve.",
+  "_doc": "Daily Anthropic Routine call budget (hard cap 15/day per Anthropic limit). Tiers gate routine calls by priority \u2014 essential calls never starve.",
   "daily_limit": 15,
-  "buffer": 1,
+  "buffer": 2,
   "tiers": {
     "P0_essential": {
-      "_doc": "Daily learning pipeline — never starve. Senior PM round 1 + Challenger + revise = 3 calls/day. 1 buffer for re-tries on transient timeout.",
+      "_doc": "Daily learning pipeline \u2014 never starve. Senior PM round 1 + Challenger + revise = 3 calls/day. 1 buffer for re-tries on transient timeout.",
       "cap": 4,
       "routines": [
         "daily-learning-pm",
@@ -24,8 +24,8 @@
       ]
     },
     "P2_optional": {
-      "_doc": "Curators (Reddit, Crypto). Fail-soft if budget exhausted — pipeline already uses heuristic fallback when LLM unavailable.",
-      "cap": 5,
+      "_doc": "Curators (Reddit, Crypto). Fail-soft if budget exhausted \u2014 pipeline already uses heuristic fallback when LLM unavailable. v3.8.8: tightened from 5 \u2192 4 to leave headroom for P0 3-round dialog when Anthropic 24h rolling window is tight.",
+      "cap": 4,
       "routines": [
         "reddit-curator",
         "crypto-curator",
@@ -34,8 +34,8 @@
     }
   },
   "_notes": [
-    "Caps sum to 14 (= daily_limit 15 - buffer 1). The buffer absorbs unexpected calls (e.g. retried routine that briefly hits 429).",
-    "P0 has highest priority — even if P1/P2 are exhausted, P0 calls still go through up to its cap.",
+    "Caps sum to 13 (= daily_limit 15 - buffer 2). v3.8.8 reduced P2_optional 5 \u2192 4 + buffer 1 \u2192 2 because chronic 429 on daily-learning Challenger/Revise rounds across 3 days indicated curator weekend volume was eating P0 budget headroom.",
+    "P0 has highest priority \u2014 even if P1/P2 are exhausted, P0 calls still go through up to its cap.",
     "When tier cap reached, callers receive (False, reason) and fall back to deterministic / heuristic paths.",
     "Reset is automatic at UTC midnight (counts keyed by ISO date)."
   ]

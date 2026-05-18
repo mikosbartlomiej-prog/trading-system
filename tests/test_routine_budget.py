@@ -68,7 +68,9 @@ class TestFreshDay(unittest.TestCase):
         with _patch_store(store):
             s = routine_budget.get_state()
         self.assertEqual(s["total_used"], 0)
-        self.assertEqual(s["remaining_total"], 14)  # daily 15 - buffer 1
+        # v3.8.8 (2026-05-18): buffer raised 1 → 2 (curator volume eating
+        # P0 budget across rolling Anthropic window). remaining_total = 13.
+        self.assertEqual(s["remaining_total"], 13)  # daily 15 - buffer 2
         # Tier ints present
         for tname in ("P0_essential", "P1_important", "P2_optional"):
             self.assertIn(tname, s["remaining_by_tier"])
@@ -119,8 +121,8 @@ class TestTierCaps(unittest.TestCase):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   routine_budget._today_iso(),
-                "total":  5,
-                "by_tier": {"P2_optional": 5},
+                "total":  4,
+                "by_tier": {"P2_optional": 4},  # v3.8.8: P2 cap 5→4
                 "by_routine": {},
                 "last_updated": "...",
             }
@@ -134,8 +136,8 @@ class TestTierCaps(unittest.TestCase):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   routine_budget._today_iso(),
-                "total":  5,
-                "by_tier": {"P2_optional": 5},
+                "total":  4,
+                "by_tier": {"P2_optional": 4},
                 "by_routine": {},
                 "last_updated": "...",
             }
@@ -146,14 +148,14 @@ class TestTierCaps(unittest.TestCase):
 
 
 class TestDailyLimit(unittest.TestCase):
-    """Total daily limit (15 - buffer 1 = 14) hard cap."""
+    """Total daily limit (15 - buffer 2 = 13) hard cap (v3.8.8)."""
 
-    def test_total_14_blocks_everything(self):
+    def test_total_13_blocks_everything(self):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   routine_budget._today_iso(),
-                "total":  14,
-                "by_tier": {"P0_essential": 4, "P1_important": 5, "P2_optional": 5},
+                "total":  13,
+                "by_tier": {"P0_essential": 4, "P1_important": 5, "P2_optional": 4},
                 "by_routine": {},
                 "last_updated": "...",
             }
@@ -172,8 +174,8 @@ class TestDailyReset(unittest.TestCase):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   yesterday,
-                "total":  14,
-                "by_tier": {"P2_optional": 5},
+                "total":  13,
+                "by_tier": {"P2_optional": 4},
                 "by_routine": {},
                 "last_updated": "...",
             }
@@ -186,7 +188,7 @@ class TestDailyReset(unittest.TestCase):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   routine_budget._today_iso(),
-                "total":  14,
+                "total":  13,
                 "by_tier": {"P0_essential": 4},
                 "by_routine": {},
                 "last_updated": "...",
@@ -252,8 +254,8 @@ class TestAuditEmission(unittest.TestCase):
         store = _FakeRuntimeStore({
             "routine_budget": {
                 "date":   routine_budget._today_iso(),
-                "total":  5,
-                "by_tier": {"P2_optional": 5},
+                "total":  4,
+                "by_tier": {"P2_optional": 4},
                 "by_routine": {},
                 "last_updated": "...",
             }
