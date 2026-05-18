@@ -51,6 +51,13 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # (enforced by workflow's `git add` line, not by audit).
     "exit-monitor.yml",
     "options-exit-monitor.yml",
+    # v3.8.8 (2026-05-18) — reddit-monitor + crypto-monitor commit
+    # learning-loop/runtime_state.json so routine_budget counters persist
+    # across cron ticks (curator P2_optional cap of 4/day must enforce
+    # globally, not per-tick). Allowed write scope = ONLY runtime_state.json
+    # (enforced by workflow's `git add learning-loop/runtime_state.json`).
+    "reddit-monitor.yml",
+    "crypto-monitor.yml",
 }
 
 # Workflows allowed to create PRs.

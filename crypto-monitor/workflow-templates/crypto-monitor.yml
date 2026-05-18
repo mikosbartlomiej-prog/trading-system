@@ -13,6 +13,13 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 
+# v3.8.8 (2026-05-18): contents:write required for Curator routine_budget
+# persistence step (see commit "Commit routine_budget state" below).
+# Allowed write scope = ONLY learning-loop/runtime_state.json
+# (enforced by the `git add learning-loop/runtime_state.json` line).
+permissions:
+  contents: write
+
 jobs:
   scan-crypto:
     runs-on: ubuntu-latest
