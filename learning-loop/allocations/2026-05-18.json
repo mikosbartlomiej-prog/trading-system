@@ -1,15 +1,15 @@
 {
   "date": "2026-05-18",
-  "generated_at": "2026-05-18T01:31:28Z",
+  "generated_at": "2026-05-18T08:09:23Z",
   "version": "1.0",
   "config": {
     "target_invested_ratio": 1.0,
     "min_invested_ratio": 0.98,
     "auto_execute": true
   },
-  "account_equity": 92735.48,
-  "portfolio_value": 92735.48,
-  "cash": 215860.14,
+  "account_equity": 93860.6,
+  "portfolio_value": 93860.6,
+  "cash": 215297.58000000002,
   "buying_power": 262227.88,
   "account_blocked": false,
   "trading_blocked": false,
@@ -20,11 +20,11 @@
       "side": "long",
       "qty": 33.0,
       "avg_entry_price": 432.69,
-      "current_price": 414.65,
-      "market_value": 13683.45,
-      "unrealized_pl": -595.32,
-      "pl_pct": -4.17,
-      "pct_equity": 14.76
+      "current_price": 426.11,
+      "market_value": 14061.63,
+      "unrealized_pl": -217.14,
+      "pl_pct": -1.52,
+      "pct_equity": 14.98
     },
     {
       "symbol": "GLD",
@@ -32,11 +32,11 @@
       "side": "long",
       "qty": 44.0,
       "avg_entry_price": 417.8728,
-      "current_price": 413.5,
-      "market_value": 18194.0,
-      "unrealized_pl": -192.4,
-      "pl_pct": -1.05,
-      "pct_equity": 19.62
+      "current_price": 417.45,
+      "market_value": 18367.8,
+      "unrealized_pl": -18.6,
+      "pl_pct": -0.1,
+      "pct_equity": 19.57
     },
     {
       "symbol": "NVDA",
@@ -44,11 +44,11 @@
       "side": "long",
       "qty": 64.0,
       "avg_entry_price": 226.7447,
-      "current_price": 221.83,
-      "market_value": 14197.12,
-      "unrealized_pl": -314.54,
-      "pl_pct": -2.17,
-      "pct_equity": 15.31
+      "current_price": 223.75,
+      "market_value": 14320.0,
+      "unrealized_pl": -191.66,
+      "pl_pct": -1.32,
+      "pct_equity": 15.26
     },
     {
       "symbol": "QQQ",
@@ -56,11 +56,11 @@
       "side": "long",
       "qty": 22.0,
       "avg_entry_price": 711.5544,
-      "current_price": 702.4,
-      "market_value": 15452.8,
-      "unrealized_pl": -201.4,
-      "pl_pct": -1.29,
-      "pct_equity": 16.66
+      "current_price": 707.82,
+      "market_value": 15572.04,
+      "unrealized_pl": -82.16,
+      "pl_pct": -0.53,
+      "pct_equity": 16.59
     },
     {
       "symbol": "SMH",
@@ -68,11 +68,11 @@
       "side": "long",
       "qty": 26.0,
       "avg_entry_price": 559.07,
-      "current_price": 547.68,
-      "market_value": 14239.68,
-      "unrealized_pl": -296.14,
-      "pl_pct": -2.04,
-      "pct_equity": 15.36
+      "current_price": 558.15,
+      "market_value": 14511.9,
+      "unrealized_pl": -23.92,
+      "pl_pct": -0.17,
+      "pct_equity": 15.46
     },
     {
       "symbol": "SPY",
@@ -80,14 +80,14 @@
       "side": "long",
       "qty": 24.0,
       "avg_entry_price": 741.3836,
-      "current_price": 734.0,
-      "market_value": 17616.0,
-      "unrealized_pl": -177.21,
-      "pl_pct": -1.0,
-      "pct_equity": 19.0
+      "current_price": 736.45,
+      "market_value": 17674.8,
+      "unrealized_pl": -118.41,
+      "pl_pct": -0.66,
+      "pct_equity": 18.83
     }
   ],
-  "invested_ratio_before": 1.007,
+  "invested_ratio_before": 1.0069,
   "pdt_mode": "OK",
   "pdt_dt_remaining": 3,
   "pdt_dt_count": 0,
@@ -385,12 +385,12 @@
   "allocation_reason": "regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%",
   "invested_ratio_after_target": 0.84,
   "current_weights": {
-    "AMD": 0.1476,
-    "GLD": 0.1962,
-    "NVDA": 0.1531,
-    "QQQ": 0.1666,
-    "SMH": 0.1536,
-    "SPY": 0.19
+    "AMD": 0.1498,
+    "GLD": 0.1957,
+    "NVDA": 0.1526,
+    "QQQ": 0.1659,
+    "SMH": 0.1546,
+    "SPY": 0.1883
   },
   "rebalance_orders": [
     {
@@ -398,8 +398,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 16692.39,
-      "delta": 16692.39,
+      "target_value": 16894.91,
+      "delta": 16894.91,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -410,8 +410,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 16692.39,
-      "delta": 16692.39,
+      "target_value": 16894.91,
+      "delta": 16894.91,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -421,73 +421,73 @@
       "symbol": "SMH",
       "action": "EXIT",
       "asset_class": "us_equity",
-      "current_value": 14239.68,
+      "current_value": 14511.9,
       "target_value": 0.0,
-      "delta": -14239.68,
+      "delta": -14511.9,
       "current_qty": 26.0,
       "qty_delta": -26.0,
-      "current_price": 547.68,
+      "current_price": 558.15,
       "reason": "symbol not in target allocation"
     },
     {
       "symbol": "NVDA",
       "action": "EXIT",
       "asset_class": "us_equity",
-      "current_value": 14197.12,
+      "current_value": 14320.0,
       "target_value": 0.0,
-      "delta": -14197.12,
+      "delta": -14320.0,
       "current_qty": 64.0,
       "qty_delta": -64.0,
-      "current_price": 221.83,
+      "current_price": 223.75,
       "reason": "symbol not in target allocation"
     },
     {
       "symbol": "GLD",
       "action": "REDUCE",
       "asset_class": "us_equity",
-      "current_value": 18194.0,
-      "target_value": 9273.55,
-      "delta": -8920.45,
+      "current_value": 18367.8,
+      "target_value": 9386.06,
+      "delta": -8981.74,
       "current_qty": 44.0,
-      "qty_delta": -21.57304,
-      "current_price": 413.5,
-      "reason": "reduce $8920 to target 10.0%"
+      "qty_delta": -21.515726,
+      "current_price": 417.45,
+      "reason": "reduce $8982 to target 10.0%"
     },
     {
       "symbol": "SPY",
       "action": "REDUCE",
       "asset_class": "us_equity",
-      "current_value": 17616.0,
-      "target_value": 9273.55,
-      "delta": -8342.45,
+      "current_value": 17674.8,
+      "target_value": 9386.06,
+      "delta": -8288.74,
       "current_qty": 24.0,
-      "qty_delta": -11.365738,
-      "current_price": 734.0,
-      "reason": "reduce $8342 to target 10.0%"
+      "qty_delta": -11.254994,
+      "current_price": 736.45,
+      "reason": "reduce $8289 to target 10.0%"
     },
     {
       "symbol": "QQQ",
       "action": "REDUCE",
       "asset_class": "us_equity",
-      "current_value": 15452.8,
-      "target_value": 9273.55,
-      "delta": -6179.25,
+      "current_value": 15572.04,
+      "target_value": 9386.06,
+      "delta": -6185.98,
       "current_qty": 22.0,
-      "qty_delta": -8.797341,
-      "current_price": 702.4,
-      "reason": "reduce $6179 to target 10.0%"
+      "qty_delta": -8.739482,
+      "current_price": 707.82,
+      "reason": "reduce $6186 to target 10.0%"
     },
     {
       "symbol": "AMD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "current_value": 13683.45,
-      "target_value": 16692.39,
-      "delta": 3008.94,
+      "current_value": 14061.63,
+      "target_value": 16894.91,
+      "delta": 2833.28,
       "current_qty": 33.0,
-      "qty_delta": 7.256569,
-      "current_price": 414.65,
-      "reason": "add $3009 to reach target 18.0%"
+      "qty_delta": 6.64917,
+      "current_price": 426.11,
+      "reason": "add $2833 to reach target 18.0%"
     }
   ],
   "risk_checks": {

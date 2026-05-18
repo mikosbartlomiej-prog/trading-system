@@ -253,3 +253,13 @@
 - 2026-05-18 · geo-xom: SILENT — enabled but 0 trades lifetime (24 days tracked); consider disable or remove
 - 2026-05-18 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
 
+- 2026-05-18 · LLM[low] regime=choppy: 25 dni systemu, 1 zaksięgowany trade (options-momentum, -$0.60) — aktywność na granicy zera. fill_rate.unknown (6 placed, 0 filled) to trzeci dzień z rzędu z nieprzypisanymi zleceniami: jeśli są to rozkazy allocatora lub options-monitor sprzed sesji, P&L jest ślepy. Krypto wyraźnie spada: ETH RSI 25.9 (oversold), BTC RSI 40.1 — crypto-momentum milczenie jest ZASADNE (strategia czeka na momentum, nie kupuje do capitulation). options-momentum odblokowuje się jutro (2026-05-19), SPY RSI 69.8 poniżej PUT-gate 75 — to jedyna konkretna szansa systemu na najbliższe 24h.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-18 · LLM edge: Edge niemierzalny przy N=1 lifetime. fill_rate.unknown blokuje pełną atrybuję P&L już trzeci dzień. Krypto w silnym downtrend (ETH -8.7 pkt RSI w ciągu doby), equities elevated SPY 69.8 — środowisko nie sprzyja momentum-long na akcjach; PUT-side options jutro jest najlepiej uzasadnionym setupem przy obecnych RSI poziomach.
+- 2026-05-18 · crypto-momentum: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
+- 2026-05-18 · geo-defense: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
+- 2026-05-18 · geo-energy: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
+- 2026-05-18 · geo-gold: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
+- 2026-05-18 · geo-xom: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
+- 2026-05-18 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
+
