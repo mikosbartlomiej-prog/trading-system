@@ -1,41 +1,20 @@
 {
-  "narrative": "Najsilniejszy sygnał: Berkshire Q1 13F (złożone ~3 dni temu) z trójkowym dokładaniem GOOGL do $15.6B — $10B świeżego kapitału w jednym kwartale, retail dopiero odkrywa skalę. AMD buy-the-dip po -5.7% na Trump/Beijing no-deal jest drugoplanowy przy 3.75× spike i skew 0.6, ale makro overhang z Chinami ogranicza size do 0.5×. CVX/IWM mają spike_ratio=99 jako artefakt dzielenia przez zero — nie jest to realny spike.",
-  "selected_signals": [
-    {
-      "ticker": "GOOGL",
-      "lane": "sub",
-      "side": "BUY",
-      "conviction": "medium",
-      "size_multiplier": 0.5,
-      "rationale": "Berkshire Q1 13F złożone ~15 maja: pozycja GOOGL potrojona z 17.8M do 54.2M akcji, $10B świeżego kapitału w jednym kwartale pod Abelem/Weschlerem/Combsem — największy pojedynczy ruch widoczny w tym cyklu 13F. Reddit odkrywa dopiero 3 dni po złożeniu (spike 2.5×, skew +0.23). Rozmiar 0.5× bo pierwsze reakcje smart money już się rozeszły, ale retail jeszcze nie zaabsorbował pełnej skali zakupu.",
-      "expected_horizon": "2-3d",
-      "key_risk": "Dane 13F mają 3 dni opóźnienia od reakcji instytucji; GOOGL mogła już wycenić cały przepływ. Brak świeżego katalizatora po złożeniu 13F — wchodzenie teraz to możliwy FOMO na końcu fali."
-    },
-    {
-      "ticker": "AMD",
-      "lane": "sub",
-      "side": "BUY",
-      "conviction": "low",
-      "size_multiplier": 0.5,
-      "rationale": "Trump/Beijing no-deal spowodował AMD -5.7% w jednej sesji; spike 3.75× (5 wzmianek vs 1.33 śr. 7d), skew 0.6 BUY — buy-the-dip sentiment po news-driven selloff. VIX=17 i konto +1.78% dzisiaj sygnalizują stabilizację rynku; thesis: bad news fully priced, brak eskalacji → odbicie 2-3% w 1d. Lepsza ekspresja to SOXL (3× semis), ale AMD na whitelist i bezpieczniejszy przy aktywnym makro.",
-      "expected_horizon": "1d",
-      "key_risk": "Trump eskaluje retorykę lub Chiny ogłaszają odwet taryfowy → AMD kontynuuje spadki. Sygnał buy-the-dip jest reaktywny, nie przewidujący — wchodzenie po -5.7% to ryzyko złapania spadającego noża jeśli makro się pogarsza."
-    }
-  ],
+  "narrative": "Zero emisji — wszystkie 3 kandydaty zabite. Największa pułapka: spike_ratio=99 dla MSTR i IWM to artefakt matematyczny (rolling_avg_7d=0, jakikolwiek mention = nieskończony ratio). Post MSTR to BEARISH thesis — autor kupuje STRC PUT jako ochronę przed krachem BTC do 55k, nie bullish call. Post IWM eksplicytnie głosi 'markets rolling over' z bearish argumentacją o stopach i dolarze — sygnał ma side=BUY ale treść posta to shortlist. BTC ma jedyną realną spike_ratio=6 ale najlepszy post to ten sam STRC/MSTR PUT (BTC 55k crash scenario) — zero bullish catalyst.",
+  "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "CVX",
-      "reason": "spike_ratio=99 to artefakt (mentions=1, rolling_avg_7d=0 → dzielenie przez zero); jedyna wzmianka pochodzi z 13F Berkshire trimmującego CVX — dane Q1 2026, transakcje stare 6-8 tygodni; short CVX sprzeczny z aktywnymi pozycjami LONG OXY + USO w portfelu (energy bucket)."
+      "ticker": "MSTR",
+      "reason": "Ticker DISABLED w state.json (enabled=false, paused_until=null, backtest 0% WR -$2,364); spike_ratio=99 to artefakt rolling_avg_7d=0; post jest BEARISH (autor kupuje STRC PUT na scenariusz BTC<55k) — kierunek odwrotny do emitowanego BUY."
     },
     {
       "ticker": "IWM",
-      "reason": "spike_ratio=99 artefakt (mentions=2, rolling_avg_7d=0); best post zaledwie 16 ups — sygnał bardzo niskiej jakości; post jest ogólną analizą makro bez konkretnego katalizatora dla IWM, skew 0.2 zbyt słaby na trade."
+      "reason": "spike_ratio=99 to artefakt (rolling_avg=0); 2 mentions / 17 ups = no real volume; post 'Markets Rolling Over Update' jest eksplicytnie BEARISH (interest rates, dollar strengthening, market top thesis) — direction mismatch z side=BUY; skew=0.20 too weak."
     },
     {
-      "ticker": "MSFT",
-      "reason": "Kierunek UNCLEAR (skew=0.067 praktycznie zero); dyskusja o rotacji Ackman GOOG→MSFT to debata inwestycyjna bez konkretnego entry catalyst na 1-72h; spike 4.67× to szum 13F-related bez jednoznacznej dyrektywy."
+      "ticker": "BTC",
+      "reason": "Jedyna realniejsza spike_ratio=6 ale best_post to ten sam STRC/MSTR PUT artykuł — BTC pojawia się w kontekście crash scenario (50k-55k drop), nie bullish catalyst; skew=0.20 nie uzasadnia wejścia; brak świeżego bullish triggera <24h."
     }
   ],
-  "macro_context": "Risk-on: VIX=17, konto +1.78% dzisiaj, portfel energy-heavy (OXY/USO LONG + GLD SHORT). Rynek absorbuje Trump/Beijing no-deal spokojnie — bez paniki; selektywny buy-the-dip w tech uzasadniony przy braku dalszej eskalacji.",
-  "confidence_in_curation": "medium"
+  "macro_context": "VIX=17 sugeruje risk-on środowisko, ale portfel już 34.8% equity w energii (OXY+USO), +1.17% intraday — nie ma powodu dokładać pozycji na słabych sygnałach; zero candidate przeżył walidację.",
+  "confidence_in_curation": "high"
 }
