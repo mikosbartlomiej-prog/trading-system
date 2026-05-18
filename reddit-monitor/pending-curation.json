@@ -1,1 +1,28 @@
-{"narrative":"Cztery kandydaty — zero alpha. MSTR spike_ratio=99 to artefakt rolling_avg=0 (pierwsze wystąpienie), a sam post omawia BEARISH put na STRC (preferred MSTR) przy scenariuszu BTC <55k — ekstrakcja sentymentu odwrócona; ticker pauzowany w state.json. IWM nie ma na whitelist i post 'Markets Rolling Over' jest jawnie niedźwiedzi. AMD 1748-upvote post to historyczna lista zwrotów IPO bez tezy AMD; pozostałe to WSB shitposty (pigeon/Wendy's) — zero DD. BTC 6 wzmianek pochodzi z tego samego BEARISH MSTR-put posta; skew 0.2 za słaby. Portfolio już short QQQ/SPY/NVDA/SMH — brak Reddit edge uzasadniającego nowe pozycje.","selected_signals":[],"rejected_signals":[{"ticker":"MSTR","reason":"Ticker pauzowany w state.json (disabled 2026-05-08, backtest 0% WR / -$2,364); spike_ratio=99 artefakt rolling_avg_7d=0 (pierwsze wystąpienie); best post to BEARISH thesis — kupno STRC puta przy scenariuszu BTC <55k; sentiment extractor odwrócił kierunek (faktyczny sygnał = BEARISH, nie BUY)."},{"ticker":"IWM","reason":"IWM nie ma na tickers-whitelist; 10 upvotów; post 'Markets Rolling Over' jawnie niedźwiedzi (analiza wzrostu stóp procentowych, dolara) — skew 0.2 BUY odwrócony względem treści."},{"ticker":"AMD","reason":"Brak fresh catalyst: 1748-upvote post to historyczna lista zwrotów IPO bez tezy AMD; pozostałe posty to WSB shitpost humor (pigeon/Wendy's) — zero DD; spike_ratio=3 na memeowym contencie = noise; konto ma już AMD long (2.6% equity, -0.66%)."},{"ticker":"BTC","reason":"Sześć wzmianek pochodzi z tego samego STRC-put posta (bearish BTC thesis przy scenariuszu <55k); skew 0.2 poniżej progu 0.30; brak samodzielnego bullish catalyst; ticker format nieprawidłowy (wymaga BTC/USD dla crypto)."}],"macro_context":"VIX 17 i +1.14% daily P&L sugerują risk-on chop po odbiciu — portfolio already short QQQ/SPY/NVDA/SMH pokrywa ewentualny pullback; brak Reddit edge uzasadniającego nową long exposure.","confidence_in_curation":"high"}
+{
+  "narrative": "Żaden z 5 kandydatów nie dostarcza świeżego katalizatora — dominuje stały materiał z Q1 13F (CVX/GOOGL/MSFT backward-looking), meme-post bez tezy (SPY), i AMD ze skewem +0.6 kompletnie sprzecznym z treścią topowego posta (3076 ups) opisującego 5.7% spadek po fiasku szczytu Trump-Pekin. Portfel jest już ~106% short netto przy VIX 17; dodawanie krótkich w risk-on/low-vol regime bez nowego katalizatora to zbędna kumulacja — zero emisji, bankroll chroniony.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "CVX",
+      "reason": "spike_ratio=99 to artefakt matematyczny (1 wzmianka / rolling_avg=0); katalyzator = Berkshire trim z Q1 13F — dane backward-looking sprzed 6-10 tygodni, brak świeżego triggera cenowego."
+    },
+    {
+      "ticker": "AMD",
+      "reason": "skew +0.6 nie pokrywa się z treścią postów — top post (3076 ups) opisuje 5.7% spadek AMD po fiasku szczytu Trumpa w Pekinie; to bagholder cope nie bull thesis; portfel ma już pozycję AMD long (-0.84%), dodawanie dokłada koncentrację."
+    },
+    {
+      "ticker": "GOOGL",
+      "reason": "Katalyzator = Berkshire tripling GOOGL w Q1 13F — backward-looking dane z okresu styczeń-marzec 2026, brak nowej akcji cenowej lub informacji; skew tylko +0.23; spike_ratio 2.5x poniżej przekonującego progu."
+    },
+    {
+      "ticker": "MSFT",
+      "reason": "Kierunek UNCLEAR (skew +0.067 ≈ zero); katalyzator = Ackman Q1 portfolio rotation (stale 13F); posty są filozoficzną dyskusją alokacyjną bez actionable setup — spike_ratio 4.67 to artefakt przy rolling_avg=1.5 i 7 wzmiankach."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "Główne źródło sygnału to meme-post z Wendy's dumpster (pure comedy, nie signal); spike_ratio 1.5x poniżej progu; portfel ma już SPY short 16.9% equity — bez nowego makro-katalizatora to zbędna kumulacja krótkich."
+    }
+  ],
+  "macro_context": "VIX 17 = risk-on/low-vol regime; portfel ~106% short netto — bez świeżego makro-szoku nowe krótkie pozycje to decay-ryzyko w upartym low-vol środowisku; żaden z kandydatów nie dostarcza informacji ponad to co rynek zdyskontował.",
+  "confidence_in_curation": "high"
+}
