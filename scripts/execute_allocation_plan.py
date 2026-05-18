@@ -115,6 +115,37 @@ def main() -> int:
                 print(f"  [PLAN-ONLY] {o['action']:<6} {o['symbol']:<10} delta={o.get('delta', 0):+.2f}")
         return 0
 
+    # ── Idempotency guard (v3.8.8, 2026-05-18) ──────────────────────────────
+    # Bug realised 2026-05-18: operator triggered workflow_dispatch 3× in
+    # 20 min; each run re-executed full plan from scratch. Duplicates:
+    # AMD bought 2×, GLD/SPY/QQQ REDUCE 2×, EXITs no-op (positions gone).
+    # USO/OXY BUY rejected by Alpaca (first-run LIMITs sat unfilled →
+    # duplicate side-order rejection on 2nd attempt).
+    #
+    # Guard: if <date>.execution.json exists AND executed_at < EXEC_TTL
+    # ago AND any orders were placed → skip silently with explanation.
+    # --force overrides to allow operator re-run after cancellation.
+    exec_path = os.path.join(_ALLOCATIONS_DIR, f"{plan_date}.execution.json")
+    EXEC_TTL_MIN = 60  # 60 min — covers typical multi-allocator-trigger windows
+    if os.path.exists(exec_path) and not args.force:
+        try:
+            with open(exec_path) as f:
+                prior = json.load(f)
+            prior_ts = prior.get("executed_at", "")
+            n_placed_prior = int(prior.get("n_placed") or 0)
+            if prior_ts and n_placed_prior > 0:
+                prior_dt = datetime.strptime(prior_ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                age_min = (datetime.now(timezone.utc) - prior_dt).total_seconds() / 60
+                if age_min < EXEC_TTL_MIN:
+                    print(f"[executor] IDEMPOTENCY GUARD: plan {plan_date} already executed "
+                          f"{age_min:.0f} min ago ({n_placed_prior} placed). Skipping re-execution.")
+                    print(f"[executor]   prior execution: {exec_path}")
+                    print(f"[executor]   to override: --force (use only after cancelling open orders)")
+                    return 0
+                print(f"[executor] prior execution exists ({age_min:.0f} min ago, > {EXEC_TTL_MIN} min TTL) — re-executing")
+        except (json.JSONDecodeError, OSError, ValueError) as e:
+            print(f"[executor] idempotency check error (proceeding anyway): {e}")
+
     # Execute
     results = alloc.execute_orders(plan.get("rebalance_orders") or [], force=args.force)
 
