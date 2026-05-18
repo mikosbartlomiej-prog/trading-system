@@ -8,13 +8,19 @@ name: Reddit Monitor — sentiment + tracked-user scan
 #   Lane B: per-user submitted.json over tracked DD writers
 #           (.claude/rules/reddit-users.md)
 #
-# v3.5 (vNext): per spec §C, reddit-monitor no longer commits state.json
-# on every tick. Curator handoff files live in reddit-monitor/ as
-# ephemeral runner artifacts and are NOT committed.
+# v3.8.8 (2026-05-18): committed runtime_state.json so routine_budget
+# state persists across cron ticks. Previously each cron started with
+# fresh budget counters from main → P2_optional cap of 5 NEVER enforced
+# → curator made 15+ calls/day on weekends → Anthropic global 24h limit
+# bled into Monday Senior PM Challenger+Revise rounds.
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # Reduced from */30 to hourly during US market hours + 1 overnight
+    # snapshot. Cuts curator volume ~24×/day → ~10×/day so Anthropic
+    # rolling 24h window has headroom for daily-learning P0 rounds.
+    - cron: '0 13-21 * * 1-5'
+    - cron: '0 22 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -22,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   scan:
@@ -32,6 +38,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -57,3 +66,30 @@ jobs:
           CLOUDFLARE_REDDIT_CURATOR_WORKER_URL: ${{ secrets.CLOUDFLARE_REDDIT_CURATOR_WORKER_URL }}
           USE_REDDIT_CURATOR:      'true'
         run: python reddit-monitor/monitor.py
+
+      - name: Commit routine_budget state (if changed)
+        if: always()
+        run: |
+          # Curator may have incremented routine_budget counters. Persist
+          # to main so next cron sees accurate state and cap of 5/day for
+          # P2_optional is actually enforced.
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet learning-loop/runtime_state.json 2>/dev/null; then
+            echo "no runtime_state changes"
+            exit 0
+          fi
+          git pull --ff-only origin main 2>/dev/null || true
+          git add learning-loop/runtime_state.json
+          if git diff --cached --quiet 2>/dev/null; then
+            exit 0
+          fi
+          git commit -m "reddit-monitor: routine_budget state $(date -u +%Y-%m-%d_%H%M) [automerge]" || exit 0
+          for attempt in 1 2 3; do
+            if git push origin "${GITHUB_REF_NAME:-main}"; then
+              exit 0
+            fi
+            git pull --rebase origin "${GITHUB_REF_NAME:-main}" 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          echo "push failed after 3 attempts — budget state not persisted"
