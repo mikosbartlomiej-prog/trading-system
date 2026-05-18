@@ -2,26 +2,29 @@
   "_last_writer": "intraday-monitor",
   "intraday_governor": {
     "account_unavailable": false,
-    "alerts_sent": {},
+    "alerts_sent": {
+      "GIVEBACK_WARN": "2026-05-18T20:03:07.114314+00:00",
+      "legacy:WARN": "2026-05-18T20:03:07.113719+00:00"
+    },
     "block_new_entries": false,
-    "current_equity": 95600.76,
-    "current_intraday_pnl": 1670.409999999989,
-    "current_intraday_pnl_pct": 0.017783495962699902,
+    "current_equity": 95110.24,
+    "current_intraday_pnl": 1179.8899999999994,
+    "current_intraday_pnl_pct": 0.012561328686627904,
     "date": "2026-05-18",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
+    "giveback_pct_of_peak": 0.2936524565825113,
+    "giveback_usd": 490.5199999999895,
     "intraday_peak_equity": 95600.76,
     "intraday_peak_pnl": 1670.409999999989,
     "intraday_peak_pnl_pct": 0.017783495962699902,
-    "last_action": "noop",
-    "last_update_at": "2026-05-18T18:21:47.883278+00:00",
-    "max_gross_target": 1.5,
+    "last_action": "warn_tighten_stops",
+    "last_update_at": "2026-05-18T20:03:04.517512+00:00",
+    "max_gross_target": 1.25,
     "options_first_reduction": false,
     "peak_at": "2026-05-18T18:21:47.883278+00:00",
-    "pnl_state": "GREEN",
+    "pnl_state": "GIVEBACK_WARN",
     "profit_floor_usd": 417.60249999999724,
     "session_start_equity": 93930.35,
-    "state_entered_at": "2026-05-18T09:41:28.153971+00:00",
+    "state_entered_at": "2026-05-18T20:03:04.517512+00:00",
     "top_giveback_symbols": []
   },
   "position_mfe": {
@@ -33,8 +36,8 @@
     },
     "GLD": {
       "first_seen_at": "2026-05-15T14:50:46.732993+00:00",
-      "last_pct": 0.00099,
-      "last_seen_at": "2026-05-18T18:21:47.884002+00:00",
+      "last_pct": -0.0025900000000000003,
+      "last_seen_at": "2026-05-18T20:03:07.115117+00:00",
       "peak_pct": 0.00295
     },
     "NVDA": {
@@ -45,8 +48,8 @@
     },
     "OXY": {
       "first_seen_at": "2026-05-18T16:30:48.723419+00:00",
-      "last_pct": 0.00117,
-      "last_seen_at": "2026-05-18T18:21:47.884600+00:00",
+      "last_pct": -0.00483,
+      "last_seen_at": "2026-05-18T20:03:07.115766+00:00",
       "peak_pct": 0.00217
     },
     "QQQ": {
@@ -69,8 +72,8 @@
     },
     "USO": {
       "first_seen_at": "2026-05-18T16:30:48.725677+00:00",
-      "last_pct": 0.013349999999999999,
-      "last_seen_at": "2026-05-18T18:21:47.885141+00:00",
+      "last_pct": -0.0089,
+      "last_seen_at": "2026-05-18T20:03:07.116363+00:00",
       "peak_pct": 0.013349999999999999
     }
   },
