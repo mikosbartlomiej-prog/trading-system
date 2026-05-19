@@ -38,3 +38,17 @@
 [08:00:20 INFO]   summary: 5 actionable + 1 hold; passed=5  failed=0
 [08:00:20 INFO] ── Step 8: plan complete ──
 [08:00:20 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[15:51:17 INFO] ============================================================
+[15:51:17 INFO] execute_orders() — auto-execute path
+[15:51:17 INFO] ============================================================
+[15:51:17 INFO]   market_status: open=True reason=open
+[15:51:18 INFO]     OXY EXIT placed: EXIT MARKET 281
+[15:51:19 INFO]     AMD BUY: derived qty=41 from target=$17,162 @ $413.95 (no prior position)
+[15:51:19 ERR ]     AMD BUY failed
+[15:51:20 ERR ]     GLD BUY failed
+[15:51:20 INFO]     SPY BUY: derived qty=12 from target=$9,534 @ $733.69 (no prior position)
+[15:51:21 ERR ]     SPY BUY failed
+[15:51:21 INFO]     QQQ BUY: derived qty=13 from target=$9,534 @ $699.58 (no prior position)
+[15:51:22 ERR ]     QQQ BUY failed
+[15:51:22 INFO]   execution complete: 1 placed, 0 skipped, 4 failed
