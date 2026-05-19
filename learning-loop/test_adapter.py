@@ -367,3 +367,35 @@ class TestStaleExitEmergency(unittest.TestCase):
     def test_no_trigger_missing_key(self):
         fired, _ = heuristic_stale_exit_emergency({})
         self.assertFalse(fired)
+
+
+# ─── Lane2 auto-added test for: Fill-rate cancel diagnosis: distinguish 'limit too far' vs 'close but not touching' ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_fill_rate_cancel_diagnosis  # noqa: E402,F401
+
+class TestFillRateCancelDiagnosis(unittest.TestCase):
+    def test_high_fill_rate_ok(self):
+        diag, _ = heuristic_fill_rate_cancel_diagnosis({"fill_rate": 0.75})
+        self.assertEqual(diag, "ok")
+    def test_day_expiry_dominant(self):
+        diag, action = heuristic_fill_rate_cancel_diagnosis(
+            {"fill_rate": 0.2, "expired": 10, "placed": 25, "manually_canceled": 0, "avg_minutes_to_cancel": None}
+        )
+        self.assertEqual(diag, "day_expiry_dominant")
+        self.assertIn("too_far", action)
+    def test_slow_cancel_near_limit(self):
+        diag, action = heuristic_fill_rate_cancel_diagnosis(
+            {"fill_rate": 0.37, "expired": 2, "placed": 30, "manually_canceled": 14, "avg_minutes_to_cancel": 82.4}
+        )
+        self.assertEqual(diag, "slow_cancel_near_limit")
+        self.assertIn("widen_limit", action)
+    def test_fast_cancel(self):
+        diag, action = heuristic_fill_rate_cancel_diagnosis(
+            {"fill_rate": 0.3, "expired": 0, "placed": 20, "manually_canceled": 8, "avg_minutes_to_cancel": 15.0}
+        )
+        self.assertEqual(diag, "fast_manual_cancel")
+    def test_undetermined(self):
+        diag, _ = heuristic_fill_rate_cancel_diagnosis(
+            {"fill_rate": 0.4, "expired": 1, "placed": 10, "manually_canceled": 1, "avg_minutes_to_cancel": 45.0}
+        )
+        self.assertEqual(diag, "undetermined")

@@ -634,3 +634,24 @@ def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
             "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
         )
     return False, ""
+
+
+# ─── Lane2 auto-added — Fill-rate cancel diagnosis: distinguish 'limit too far' vs 'close but not touching' ────────────
+def heuristic_fill_rate_cancel_diagnosis(fill_stats: dict) -> tuple:
+    """Distinguish fill-rate failure modes for actionable remediation.
+    Returns (diagnosis_code, recommended_action) or ('ok', '') when fill_rate >= 0.50.
+    """
+    fr = fill_stats.get("fill_rate", 1.0)
+    if fr >= 0.50:
+        return "ok", ""
+    avg_cancel = fill_stats.get("avg_minutes_to_cancel") or 0
+    manually_canceled = fill_stats.get("manually_canceled", 0)
+    expired = fill_stats.get("expired", 0)
+    placed = max(fill_stats.get("placed", 1), 1)
+    if expired > placed * 0.3:
+        return "day_expiry_dominant", "entry_limit_too_far_from_market"
+    if avg_cancel < 30 and manually_canceled > placed * 0.3:
+        return "fast_manual_cancel", "check_for_system_cancel_logic_or_stale_quote"
+    if avg_cancel > 60 and manually_canceled > placed * 0.2:
+        return "slow_cancel_near_limit", "widen_limit_by_0.5pct_or_switch_to_midpoint"
+    return "undetermined", "check_individual_order_reasons"
