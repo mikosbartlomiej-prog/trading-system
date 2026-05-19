@@ -263,3 +263,20 @@
 - 2026-05-18 · geo-xom: SILENT — enabled but 0 trades lifetime (25 days tracked); consider disable or remove
 - 2026-05-18 · fill-rate alert [unknown]: fill rate 0% below 50% (0 canceled / 6 placed) — limits too tight or quote stale
 
+- 2026-05-19 · LLM[medium] regime=choppy: Equity skoczyła +$1,350 (93,930 → 95,281) w 24h oknie, ale cała ta kwota jest nieatrybutowana — alokator wypełnił 14 zleceń z 100% fill_rate (alloc-exit 4/4, alloc-reduce 6/6, allocator-rebalance 4/4), ale analyzer nie rekonstruuje ich jako zamkniętych par trade, więc adapter nie 'widzi' tego P&L. Kluczowy sygnał z fill_rate.unknown: 3 otwarte zlecenia na USO, OXY, GLD z avg_cancel=82.4 min — to są geo-energy i geo-gold strategie, które SĄ aktywne i generują zlecenia po refaktorze; problem to ciasne limity, nie martwy pipeline. options-momentum: pauza wygasa DZISIAJ (2026-05-19), SPY RSI 73.2 poniżej PUT-gate 75, BTC/ETH w kapitulacji — re-enable z side_bias=short bez dyskusji.
+-   · options-momentum.enabled: False -> True
+-   · options-momentum.side_bias: None -> short
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.rationale: Pauza do 2026-05-19 — judgment call, nie twierdzenie kwantytatywne (adapter proponował 2026-05-16; dodatkowe 3 dni przy N=1 RSI historii i 0 otwartych pozycjach mają niski koszt opóźnienia). size_multiplier=0.5 zgodny z 1-consecutive-loss cool-down (nie 'kara za WR' — próbka zbyt mała). side_bias USUNIĘTY: 0 tradów z jakimkolwiek bias = brak danych do decyzji kierunkowej. PDT LOCKED nie blokuje SWING-intent OPEN per v3.8, więc date overlap nie tworzy operacyjnego konfliktu. -> Pausa wygasła 2026-05-19 — re-enable obowiązkowe. side_bias=short: SPY RSI 73.2 (overbought, poniżej PUT-block gate 75), BTC RSI 34.2 i ETH RSI 23.5 = risk-off środowisko; PUT-side opcji logicznie uzasadniony. size_multiplier=0.5 pozostaje (cool-down po 1 consecutive loss, N=1 lifetime = za mała próbka do oceny WR — nie podnoszę przed 5+ tradami).
+-   · global_overrides.options_side_bias: None -> short
+- 2026-05-19 · LLM edge: Zero udokumentowanego edge (N=1 lifetime, -$47.58), ale +$1,350 nieatrybutowanego P&L sugeruje że system zarabia — jesteśmy ślepi analitycznie, nie operacyjnie. USO/OXY/GLD w fill_rate.unknown = geo-energy/gold strategie działają, fill_rate 37% = limity za ciasne. Jedyna udokumentowana szansa na edge jutro: options-momentum PUT-side przy SPY overbought + risk-off środowisko (ETH RSI 23.5 oversold).
+- 2026-05-19 · LLM auto-PR: https://github.com/mikosbartlomiej-prog/trading-system/pull/7
+- 2026-05-19 · crypto-momentum: SILENT — enabled but 0 trades lifetime (26 days tracked); consider disable or remove
+- 2026-05-19 · geo-defense: SILENT — enabled but 0 trades lifetime (26 days tracked); consider disable or remove
+- 2026-05-19 · geo-energy: SILENT — enabled but 0 trades lifetime (26 days tracked); consider disable or remove
+- 2026-05-19 · geo-gold: SILENT — enabled but 0 trades lifetime (26 days tracked); consider disable or remove
+- 2026-05-19 · geo-xom: SILENT — enabled but 0 trades lifetime (26 days tracked); consider disable or remove
+- 2026-05-19 · fill-rate alert [unknown]: fill rate 37% below 50% (16 canceled / 30 placed) — limits too tight or quote stale
+- 2026-05-19 · peak-tracker: intraday: peak $+1,350 at 466+00:0 current $+1,350 giveback 0% state=GREEN max_gross=1.50 floor=$338
+- 2026-05-19 · peak_equity advanced $94,616 -> $95,281
+
