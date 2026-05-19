@@ -1,0 +1,60 @@
+{
+  "narrative": "Equity +$1,457 (93,930 → 95,387), ale zero alpha przypisanego strategiom sygnałowym — całe P&L pochodzi z alokatora (14 wypełnień, 100% fill rate na alloc-exit/reduce/rebalance). Geo-energy i geo-gold są operacyjnie aktywne po refaktorze — USO/OXY/GLD widoczne w fill_rate.unknown, ale 37% fill rate z avg_cancel=82.4 min to symptom zbyt ciasnych limitów, nie martwego pipeline. ETH RSI 25.7 (oversold) przy SPY RSI 73.2 (overbought) = risk-off divergence; BTC RSI 36 zbliża się do neutralnego progu wejścia. Options-momentum pauza wygasła — re-enable z side_bias=short potwierdzam: SPY overbought, ETH w kapitulacji.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Jedyny zweryfikowany edge dzisiaj to efektywność alokatora (100% fill rate na 14 transakcjach). Strategie sygnałowe nie zamknęły żadnej pary trade w oknie 24h — analyzer nie 'widzi' ich P&L. Geo-zlecenia na USO/OXY/GLD są składane, ale fill_rate 37% wskazuje limity za ciasne. Kluczowe: system zarabia, ale analitycznie jesteśmy ślepi na źródło returnu.",
+  "state_overrides": {
+    "strategies": {
+      "geo-defense": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "OVERRIDE SILENT FLAG — 27 dni ciszy obejmuje 25 dni z deprecated routing (przed v3.8.7 direct-execution refaktorem). Tylko 2 dni live. Żadnych zamkniętych par trade = brak P&L do oceny. Minimum 10 dni live z realnym flow przed decyzją o disable."
+      },
+      "geo-energy": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "OVERRIDE SILENT FLAG — OXY i USO w fill_rate.unknown sample_open_symbols potwierdzają, że geo-energy generuje zlecenia po refaktorze. Fill_rate=37% + avg_cancel=82.4 min = limit placed poniżej ask, order expiruje. Problem operacyjny (zbyt ciasne limity), nie strategiczny. Nie wyłączam — proponuję fix limitów w backlogu."
+      },
+      "geo-gold": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "OVERRIDE SILENT FLAG — GLD w fill_rate.unknown sample. ETH RSI 25.7 + BTC RSI 36 = risk-off środowisko sprzyjające safe-haven przepływom do GLD. 2 dni live = za mała próbka na ocenę. Czekam."
+      },
+      "geo-xom": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "OVERRIDE SILENT FLAG — 2 dni live po v3.8.7. Energia skorelowana z geo-energy. Nie ma sensu wyłączać jednej gałęzi gdy cały sektor dopiero startuje. Ocena po 10 dniach realnego flow."
+      },
+      "options-momentum": {
+        "enabled": true,
+        "size_multiplier": 0.5,
+        "side_bias": "short",
+        "rationale": "CONFIRM yesterday override: paused_until=2026-05-19 wygasła. SPY RSI 73.2 (overbought, poniżej PUT-block gate 75) + ETH RSI 25.7 + BTC RSI 36 = risk-off środowisko uzasadniające PUT-side. N=1 lifetime za mała próbka — trzymam size_multiplier=0.5 (cool-down policy, nie kara za WR). Nie podnoszę przed 5+ zamkniętymi tradami."
+      },
+      "crypto-momentum": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "rationale": "OVERRIDE SILENT FLAG — ETH RSI 25.7 to głęboki oversold; historycznie bounce przy RSI < 30 jest statystycznie prawdopodobny. BTC RSI 36 zbliża się do wejścia. 0 trades w 14 dniach jest poprawne jeśli ceny nie spełniały warunków entry (brak impulsu 3-15% w 24h). Nie wyłączam na tydzień przed potencjalnym sygnałem bounced ETH."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Geo-signal limit widening: quote-based midpoint + 0.25% buffer for USO/OXY/GLD/XOM orders",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Fill rate 37% na geo-zleceniach (USO/OXY/GLD) z avg_cancel=82.4 min oznacza, że limity są składane poniżej aktualnego ask. Ten sam problem miał options-monitor przed midpoint-pricing fix z 2026-05-09. Szybki 1h fix: geo-monitor/monitor.py::execute_geo_signal pobiera Alpaca quote i używa ask*1.0025 dla BUY zamiast close_price.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-21",
+      "implementation_sketch": "W geo-monitor/monitor.py::execute_geo_signal: (1) przed wywołaniem execute_stock_signal, dodaj Alpaca REST call do /v2/stocks/{symbol}/quotes/latest (papier API, te same klucze). (2) limit_price = float(quote['ask_price']) * 1.0025 dla BUY, float(quote['bid_price']) * 0.9975 dla SELL. (3) Fallback: jeśli quote endpoint zwróci błąd, użyj close_price * 1.005 (szerszy buffer z close). (4) Przekaż limit_price do shared/alpaca_orders.py::place_stock_bracket (sprawdź signature — może wymagać dodania parametru). Test: mockuj /v2/stocks/USO/quotes/latest → ask=78.50; assert limit_price == 78.50 * 1.0025 = 78.696. Precedens: options-monitor/monitor.py::_resolve_limit_price (midpoint z 2026-05-09). Pliki: geo-monitor/monitor.py, shared/alpaca_orders.py (opcjonalnie)."
+    }
+  ],
+  "confidence": "medium"
+}
