@@ -280,3 +280,42 @@
 - 2026-05-19 · peak-tracker: intraday: peak $+1,350 at 466+00:0 current $+1,350 giveback 0% state=GREEN max_gross=1.50 floor=$338
 - 2026-05-19 · peak_equity advanced $94,616 -> $95,281
 
+- 2026-05-19 · LLM[medium] regime=choppy: Equity +$1,457 (93,930 → 95,387), ale zero alpha przypisanego strategiom sygnałowym — całe P&L pochodzi z alokatora (14 wypełnień, 100% fill rate na alloc-exit/reduce/rebalance). Geo-energy i geo-gold są operacyjnie aktywne po refaktorze — USO/OXY/GLD widoczne w fill_rate.unknown, ale 37% fill rate z avg_cancel=82.4 min to symptom zbyt ciasnych limitów, nie martwego pipeline. ETH RSI 25.7 (oversold) przy SPY RSI 73.2 (overbought) = risk-off divergence; BTC RSI 36 zbliża się do neutralnego progu wejścia. Options-momentum pauza wygasła — re-enable z side_bias=short potwierdzam: SPY overbought, ETH w kapitulacji.
+-   · geo-defense.enabled: True -> True
+-   · geo-defense.size_multiplier: 1.0 -> 1.0
+-   · geo-defense.side_bias: None -> None
+-   · geo-defense.rationale: OVERRIDE SILENT FLAG — re-enabled 2026-05-16 po direct-execution refaktorze. 24-day silence = deprecated routing bug, nie behavioral. 2 dni live = za wcześnie na ocenę. Wyłączam dopiero po 10 dniach realnych sygnałów bez fills. -> OVERRIDE SILENT FLAG — 27 dni ciszy obejmuje 25 dni z deprecated routing (przed v3.8.7 direct-execution refaktorem). Tylko 2 dni live. Żadnych zamkniętych par trade = brak P&L do oceny. Minimum 10 dni live z realnym flow przed decyzją o disable.
+-   · geo-energy.enabled: True -> True
+-   · geo-energy.size_multiplier: 1.0 -> 1.0
+-   · geo-energy.side_bias: None -> None
+-   · geo-energy.rationale: OVERRIDE SILENT FLAG — identyczna logika co geo-defense. 2 dni live po refaktorze. Keep. -> OVERRIDE SILENT FLAG — OXY i USO w fill_rate.unknown sample_open_symbols potwierdzają, że geo-energy generuje zlecenia po refaktorze. Fill_rate=37% + avg_cancel=82.4 min = limit placed poniżej ask, order expiruje. Problem operacyjny (zbyt ciasne limity), nie strategiczny. Nie wyłączam — proponuję fix limitów w backlogu.
+-   · geo-gold.enabled: True -> True
+-   · geo-gold.size_multiplier: 1.0 -> 1.0
+-   · geo-gold.side_bias: None -> None
+-   · geo-gold.rationale: OVERRIDE SILENT FLAG — 2 dni live. BTC/ETH selloff może korelować z risk-off środowiskiem = potencjalne safe-haven setup dla GLD. Za wcześnie na disable. -> OVERRIDE SILENT FLAG — GLD w fill_rate.unknown sample. ETH RSI 25.7 + BTC RSI 36 = risk-off środowisko sprzyjające safe-haven przepływom do GLD. 2 dni live = za mała próbka na ocenę. Czekam.
+-   · geo-xom.enabled: True -> True
+-   · geo-xom.size_multiplier: 1.0 -> 1.0
+-   · geo-xom.side_bias: None -> None
+-   · geo-xom.rationale: OVERRIDE SILENT FLAG — 2 dni live po v3.8.7 direct-execution refaktorze. Poprzednie 24 dni = dead strategy (deprecated routing do routine), nie brak sygnałów. Keep enabled. -> OVERRIDE SILENT FLAG — 2 dni live po v3.8.7. Energia skorelowana z geo-energy. Nie ma sensu wyłączać jednej gałęzi gdy cały sektor dopiero startuje. Ocena po 10 dniach realnego flow.
+-   · options-momentum.enabled: True -> True
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.side_bias: short -> short
+-   · options-momentum.rationale: Pausa wygasła 2026-05-19 — re-enable obowiązkowe. side_bias=short: SPY RSI 73.2 (overbought, poniżej PUT-block gate 75), BTC RSI 34.2 i ETH RSI 23.5 = risk-off środowisko; PUT-side opcji logicznie uzasadniony. size_multiplier=0.5 pozostaje (cool-down po 1 consecutive loss, N=1 lifetime = za mała próbka do oceny WR — nie podnoszę przed 5+ tradami). -> CONFIRM yesterday override: paused_until=2026-05-19 wygasła. SPY RSI 73.2 (overbought, poniżej PUT-block gate 75) + ETH RSI 25.7 + BTC RSI 36 = risk-off środowisko uzasadniające PUT-side. N=1 lifetime za mała próbka — trzymam size_multiplier=0.5 (cool-down policy, nie kara za WR). Nie podnoszę przed 5+ zamkniętymi tradami.
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.size_multiplier: 1.0 -> 1.0
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.rationale: Hold — brak trades w 14 dniach prawdopodobnie poprawny przy BTC RSI 64.3 (poniżej progów wejścia). Nie wyłączam bez diagnozy pipeline (patrz heuristic proposal #3). BTC neutralny ≠ dead — czekamy na ruch. -> OVERRIDE SILENT FLAG — ETH RSI 25.7 to głęboki oversold; historycznie bounce przy RSI < 30 jest statystycznie prawdopodobny. BTC RSI 36 zbliża się do wejścia. 0 trades w 14 dniach jest poprawne jeśli ceny nie spełniały warunków entry (brak impulsu 3-15% w 24h). Nie wyłączam na tydzień przed potencjalnym sygnałem bounced ETH.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-19 · LLM edge: Jedyny zweryfikowany edge dzisiaj to efektywność alokatora (100% fill rate na 14 transakcjach). Strategie sygnałowe nie zamknęły żadnej pary trade w oknie 24h — analyzer nie 'widzi' ich P&L. Geo-zlecenia na USO/OXY/GLD są składane, ale fill_rate 37% wskazuje limity za ciasne. Kluczowe: system zarabia, ale analitycznie jesteśmy ślepi na źródło returnu.
+- 2026-05-19 · options_side_bias reset to null (zero supporting data in 7d window — proposal 2026-05-09)
+- 2026-05-19 · crypto-momentum: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · geo-defense: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · geo-energy: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · geo-gold: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · geo-xom: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · options-momentum: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · alloc-reduce: SILENT — enabled but 0 trades lifetime (27 days tracked); consider disable or remove
+- 2026-05-19 · fill-rate alert [unknown]: fill rate 37% below 50% (16 canceled / 30 placed) — limits too tight or quote stale
+- 2026-05-19 · peak-tracker: intraday: peak $+1,399 at 774+00:0 current $+1,399 giveback 0% state=GREEN max_gross=1.50 floor=$350
+- 2026-05-19 · peak_equity advanced $95,281 -> $95,387
+

@@ -1,15 +1,15 @@
 {
   "date": "2026-05-19",
-  "generated_at": "2026-05-19T01:41:44Z",
+  "generated_at": "2026-05-19T08:00:18Z",
   "version": "1.0",
   "config": {
     "target_invested_ratio": 1.0,
     "min_invested_ratio": 0.98,
     "auto_execute": true
   },
-  "account_equity": 95123.94,
-  "portfolio_value": 95123.94,
-  "cash": 174238.05,
+  "account_equity": 95342.97,
+  "portfolio_value": 95342.97,
+  "cash": 174128.53499999997,
   "buying_power": 221800.02,
   "account_blocked": false,
   "trading_blocked": false,
@@ -20,11 +20,11 @@
       "side": "short",
       "qty": -14.0,
       "avg_entry_price": 417.2912,
-      "current_price": 419.27,
-      "market_value": -5869.78,
-      "unrealized_pl": -27.7,
-      "pl_pct": -0.47,
-      "pct_equity": 6.17
+      "current_price": 417.418,
+      "market_value": -5843.85,
+      "unrealized_pl": -1.78,
+      "pl_pct": -0.03,
+      "pct_equity": 6.13
     },
     {
       "symbol": "OXY",
@@ -32,11 +32,11 @@
       "side": "long",
       "qty": 281.0,
       "avg_entry_price": 59.99,
-      "current_price": 59.5,
-      "market_value": 16719.5,
-      "unrealized_pl": -137.69,
-      "pl_pct": -0.82,
-      "pct_equity": 17.58
+      "current_price": 59.6,
+      "market_value": 16747.6,
+      "unrealized_pl": -109.59,
+      "pl_pct": -0.65,
+      "pct_equity": 17.57
     },
     {
       "symbol": "USO",
@@ -44,14 +44,14 @@
       "side": "long",
       "qty": 110.0,
       "avg_entry_price": 150.59,
-      "current_price": 150.0,
-      "market_value": 16500.0,
-      "unrealized_pl": -64.9,
-      "pl_pct": -0.39,
-      "pct_equity": 17.35
+      "current_price": 151.5,
+      "market_value": 16665.0,
+      "unrealized_pl": 100.1,
+      "pl_pct": 0.6,
+      "pct_equity": 17.48
     }
   ],
-  "invested_ratio_before": 0.4109,
+  "invested_ratio_before": 0.4117,
   "pdt_mode": "OK",
   "pdt_dt_remaining": 3,
   "pdt_dt_count": 0,
@@ -348,9 +348,9 @@
   "allocation_reason": "regime=NEUTRAL | primary_picks=2(36%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=34.00%",
   "invested_ratio_after_target": 0.6599999999999999,
   "current_weights": {
-    "GLD": 0.0617,
-    "OXY": 0.1758,
-    "USO": 0.1735
+    "GLD": 0.0613,
+    "OXY": 0.1757,
+    "USO": 0.1748
   },
   "rebalance_orders": [
     {
@@ -358,8 +358,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 17122.31,
-      "delta": 17122.31,
+      "target_value": 17161.73,
+      "delta": 17161.73,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -369,33 +369,33 @@
       "symbol": "OXY",
       "action": "EXIT",
       "asset_class": "us_equity",
-      "current_value": 16719.5,
+      "current_value": 16747.6,
       "target_value": 0.0,
-      "delta": -16719.5,
+      "delta": -16747.6,
       "current_qty": 281.0,
       "qty_delta": -281.0,
-      "current_price": 59.5,
+      "current_price": 59.6,
       "reason": "symbol not in target allocation"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "current_value": -5869.78,
-      "target_value": 9512.39,
-      "delta": 15382.17,
+      "current_value": -5843.85,
+      "target_value": 9534.3,
+      "delta": 15378.15,
       "current_qty": -14.0,
-      "qty_delta": 36.687991,
-      "current_price": 419.27,
-      "reason": "add $15382 to reach target 10.0%"
+      "qty_delta": 36.841126,
+      "current_price": 417.418,
+      "reason": "add $15378 to reach target 10.0%"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 9512.39,
-      "delta": 9512.39,
+      "target_value": 9534.3,
+      "delta": 9534.3,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -406,8 +406,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 9512.39,
-      "delta": 9512.39,
+      "target_value": 9534.3,
+      "delta": 9534.3,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -416,10 +416,10 @@
     {
       "symbol": "USO",
       "action": "HOLD",
-      "current_value": 16500.0,
-      "target_value": 17122.31,
-      "delta": 622.31,
-      "reason": "|delta +0.65%| < min_diff 2.00%"
+      "current_value": 16665.0,
+      "target_value": 17161.73,
+      "delta": 496.73,
+      "reason": "|delta +0.52%| < min_diff 2.00%"
     }
   ],
   "risk_checks": {
