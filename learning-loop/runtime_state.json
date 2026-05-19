@@ -80,13 +80,15 @@
   "routine_budget": {
     "by_routine": {
       "daily-learning-challenger": 2,
-      "daily-learning-pm": 2
+      "daily-learning-pm": 2,
+      "reddit-curator": 1
     },
     "by_tier": {
-      "P0_essential": 4
+      "P0_essential": 4,
+      "P2_optional": 1
     },
     "date": "2026-05-19",
-    "last_updated": "2026-05-19T07:51:35.558514+00:00",
-    "total": 4
+    "last_updated": "2026-05-19T15:51:39.244091+00:00",
+    "total": 5
   }
 }
