@@ -1,0 +1,23 @@
+{
+  "narrative": "Jeden realny kandydat: USO SELL_SHORT z 1343 upvotami na WSB — teza 'olej przy $150 to war premium, każdy historyczny spike (Gulf War, Iraq War, Rosja-Ukraina) cofał się, big money ładuje leaps puts'. Mocne zaangażowanie community, spójna logika makro. IWM BUY odrzucone natychmiast: 39 upvotów, post explicite BEARISH ('Markets Rolling Over'), skew 0.2 bez świeżego katalizatora. USO size_mult 0.5× bo oryginalny trade to 2028 puts (defined risk), nasza implementacja SELL_SHORT ma nieograniczone ryzyko przy eskalacji — połowa size to maksimum przy aktywnym konflikcie geopolitycznym.",
+  "selected_signals": [
+    {
+      "ticker": "USO",
+      "lane": "sub",
+      "side": "SELL_SHORT",
+      "conviction": "medium",
+      "size_multiplier": 0.5,
+      "rationale": "WSB 1343 upvotów, post z konkretną tezą i pozycją: '$20k USO puts, 12/15/28 $80P'. Autor powołuje się na historyczny precedens — każdy wojenny spike naftowy cofał się (Gulf War, Iraq, Rosja-Ukraina). spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwsze pojawienie tickera), więc ignorujemy — sygnałem jest jakość posta i zaangażowanie. VIX=17 przy oleju $150 potwierdza że equity markets są oderwane od szoku naftowego i nie dyskontują dalszej eskalacji, co wspiera short oil tezę. Size 0.5× bo instrument mismatch: post = defined-risk puts 2028, nasza implementacja = SELL_SHORT z otwartym ryzykiem przy ewentualnym spike Iran/OPEC.",
+      "expected_horizon": "2-3d",
+      "key_risk": "Eskalacja: nowy atak, OPEC emergency cut lub Trump escalation statement pchnie USO powyżej $155 zanim reversal — lepszym wyrazem tej tezy są USO puts (ograniczona strata), nie krótka pozycja na ETF z nieograniczonym ryzykiem."
+    }
+  ],
+  "rejected_signals": [
+    {
+      "ticker": "IWM",
+      "reason": "39 upvotów (szum statystyczny), post explicite BEARISH ('Markets Rolling Over'), kierunek sygnału BUY sprzeczny z treścią posta; skew 0.2 poniżej progu 0.3; generyczna analiza makro stóp procentowych bez świeżego katalizatora <24h."
+    }
+  ],
+  "macro_context": "VIX=17 przy oleju $150 sygnalizuje risk_on dla equities — rynki akcji oderwane od szoku naftowego, środowisko neutralne-do-pozytywnego dla equity longs, ale sektor energetyczny jest polem geopolitycznej niepewności gdzie każdy nagłówek może +5% USO w ciągu godziny.",
+  "confidence_in_curation": "medium"
+}
