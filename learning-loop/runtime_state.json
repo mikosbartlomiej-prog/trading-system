@@ -81,14 +81,14 @@
     "by_routine": {
       "daily-learning-challenger": 2,
       "daily-learning-pm": 2,
-      "reddit-curator": 1
+      "reddit-curator": 2
     },
     "by_tier": {
       "P0_essential": 4,
-      "P2_optional": 1
+      "P2_optional": 2
     },
     "date": "2026-05-19",
-    "last_updated": "2026-05-19T15:51:39.244091+00:00",
-    "total": 5
+    "last_updated": "2026-05-19T19:06:21.507595+00:00",
+    "total": 6
   }
 }
