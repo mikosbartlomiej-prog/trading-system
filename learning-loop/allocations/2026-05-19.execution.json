@@ -1,6 +1,6 @@
 {
   "plan_date": "2026-05-19",
-  "executed_at": "2026-05-19T15:51:22Z",
+  "executed_at": "2026-05-20T14:10:36Z",
   "n_placed": 1,
   "n_skipped": 0,
   "n_failed": 4,
@@ -11,8 +11,8 @@
       "asset_class": "us_equity",
       "status": "placed",
       "reason": "EXIT MARKET 281",
-      "attempted_at": "2026-05-19T15:51:17Z",
-      "alpaca_order_id": "c1a3f072-2251-4561-87e1-673c8f18dfe5"
+      "attempted_at": "2026-05-20T14:10:35Z",
+      "alpaca_order_id": "d953521d-5896-430b-bb4b-ad7fe1dd4035"
     },
     {
       "symbol": "AMD",
@@ -20,7 +20,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-19T15:51:18Z"
+      "attempted_at": "2026-05-20T14:10:35Z"
     },
     {
       "symbol": "GLD",
@@ -28,7 +28,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-19T15:51:19Z"
+      "attempted_at": "2026-05-20T14:10:36Z"
     },
     {
       "symbol": "SPY",
@@ -36,7 +36,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-19T15:51:20Z"
+      "attempted_at": "2026-05-20T14:10:36Z"
     },
     {
       "symbol": "QQQ",
@@ -44,7 +44,7 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected order (see stdout)",
-      "attempted_at": "2026-05-19T15:51:21Z"
+      "attempted_at": "2026-05-20T14:10:36Z"
     }
   ]
 }

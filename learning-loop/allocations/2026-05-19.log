@@ -52,3 +52,17 @@
 [15:51:21 INFO]     QQQ BUY: derived qty=13 from target=$9,534 @ $699.58 (no prior position)
 [15:51:22 ERR ]     QQQ BUY failed
 [15:51:22 INFO]   execution complete: 1 placed, 0 skipped, 4 failed
+
+[14:10:35 INFO] ============================================================
+[14:10:35 INFO] execute_orders() — auto-execute path
+[14:10:35 INFO] ============================================================
+[14:10:35 INFO]   market_status: open=True reason=open
+[14:10:35 INFO]     OXY EXIT placed: EXIT MARKET 281
+[14:10:36 INFO]     AMD BUY: derived qty=38 from target=$17,162 @ $440.61 (no prior position)
+[14:10:36 ERR ]     AMD BUY failed
+[14:10:36 ERR ]     GLD BUY failed
+[14:10:36 INFO]     SPY BUY: derived qty=12 from target=$9,534 @ $734.94 (no prior position)
+[14:10:36 ERR ]     SPY BUY failed
+[14:10:36 INFO]     QQQ BUY: derived qty=13 from target=$9,534 @ $705.67 (no prior position)
+[14:10:36 ERR ]     QQQ BUY failed
+[14:10:36 INFO]   execution complete: 1 placed, 0 skipped, 4 failed
