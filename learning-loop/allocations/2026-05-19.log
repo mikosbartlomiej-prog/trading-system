@@ -66,3 +66,17 @@
 [14:10:36 INFO]     QQQ BUY: derived qty=13 from target=$9,534 @ $705.67 (no prior position)
 [14:10:36 ERR ]     QQQ BUY failed
 [14:10:36 INFO]   execution complete: 1 placed, 0 skipped, 4 failed
+
+[16:39:23 INFO] ============================================================
+[16:39:23 INFO] execute_orders() — auto-execute path
+[16:39:23 INFO] ============================================================
+[16:39:23 INFO]   market_status: open=True reason=open
+[16:39:23 WARN]     OXY EXIT: PDT BLOCK — CLOSE discretionary blocked in LOCKED (daytrade_count 14 ≥ 3); emergency would proceed
+[16:39:24 INFO]     AMD BUY: derived qty=38 from target=$17,162 @ $443.86 (no prior position)
+[16:39:25 ERR ]     AMD BUY failed
+[16:39:26 ERR ]     GLD BUY failed
+[16:39:26 INFO]     SPY BUY: derived qty=12 from target=$9,534 @ $738.80 (no prior position)
+[16:39:26 ERR ]     SPY BUY failed
+[16:39:27 INFO]     QQQ BUY: derived qty=13 from target=$9,534 @ $709.26 (no prior position)
+[16:39:27 ERR ]     QQQ BUY failed
+[16:39:27 INFO]   execution complete: 0 placed, 1 skipped, 4 failed
