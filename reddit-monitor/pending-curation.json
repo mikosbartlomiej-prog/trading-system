@@ -1,23 +1,32 @@
 {
-  "narrative": "Jeden realny kandydat: USO SELL_SHORT z 1343 upvotami na WSB — teza 'olej przy $150 to war premium, każdy historyczny spike (Gulf War, Iraq War, Rosja-Ukraina) cofał się, big money ładuje leaps puts'. Mocne zaangażowanie community, spójna logika makro. IWM BUY odrzucone natychmiast: 39 upvotów, post explicite BEARISH ('Markets Rolling Over'), skew 0.2 bez świeżego katalizatora. USO size_mult 0.5× bo oryginalny trade to 2028 puts (defined risk), nasza implementacja SELL_SHORT ma nieograniczone ryzyko przy eskalacji — połowa size to maksimum przy aktywnym konflikcie geopolitycznym.",
-  "selected_signals": [
-    {
-      "ticker": "USO",
-      "lane": "sub",
-      "side": "SELL_SHORT",
-      "conviction": "medium",
-      "size_multiplier": 0.5,
-      "rationale": "WSB 1343 upvotów, post z konkretną tezą i pozycją: '$20k USO puts, 12/15/28 $80P'. Autor powołuje się na historyczny precedens — każdy wojenny spike naftowy cofał się (Gulf War, Iraq, Rosja-Ukraina). spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwsze pojawienie tickera), więc ignorujemy — sygnałem jest jakość posta i zaangażowanie. VIX=17 przy oleju $150 potwierdza że equity markets są oderwane od szoku naftowego i nie dyskontują dalszej eskalacji, co wspiera short oil tezę. Size 0.5× bo instrument mismatch: post = defined-risk puts 2028, nasza implementacja = SELL_SHORT z otwartym ryzykiem przy ewentualnym spike Iran/OPEC.",
-      "expected_horizon": "2-3d",
-      "key_risk": "Eskalacja: nowy atak, OPEC emergency cut lub Trump escalation statement pchnie USO powyżej $155 zanim reversal — lepszym wyrazem tej tezy są USO puts (ograniczona strata), nie krótka pozycja na ETF z nieograniczonym ryzykiem."
-    }
-  ],
+  "narrative": "Spike_ratio=99 na 5 z 6 kandydatów to artefakt rolling_avg=0 — nie realny sygnał. USO BUY to odwrócona detekcja: post WSB BEARISH na ropę ('$150 = bańka, każdy historyczny spike cofnął się'), prawidłowy kierunek to SHORT — ale energia-short już jest w portfelu (OXY -17.9% equity), dodawanie kolejnej pozycji shortowej = koncentracja. MSFT 6× spike realny, ale katalizator sprzed 5 dni (5/15), cena już cofnięta 427→416 — late entry. Zero akcji dziś, bankroll chroniony.",
+  "selected_signals": [],
   "rejected_signals": [
     {
+      "ticker": "USO",
+      "reason": "Odwrócona detekcja monitora: post jest BEARISH na ropę (autor pisze '$150 = głupota, każdy historyczny spike cofnął się'), spike_ratio=99 to artefakt rolling_avg=0; nawet gdyby prawidłowo zdekodowany jako SELL_SHORT — OXY short już 17.9% equity = koncentracja energetyczna przekroczona."
+    },
+    {
+      "ticker": "AAPL",
+      "reason": "Brak AAPL-specyficznego katalizatora — posty o anomalii MSFT na semis i ogólnej dyskusji 0DTE; spike_ratio=99 artefakt."
+    },
+    {
+      "ticker": "VOO",
+      "reason": "Meta-dyskusja o VOO jako instrumencie pasywnym; jeden post aktywnie kwestionuje sens kontynuowania zakupów — brak forward-looking bullish catalyst; VOO za wolne dla 1-72h momentum."
+    },
+    {
       "ticker": "IWM",
-      "reason": "39 upvotów (szum statystyczny), post explicite BEARISH ('Markets Rolling Over'), kierunek sygnału BUY sprzeczny z treścią posta; skew 0.2 poniżej progu 0.3; generyczna analiza makro stóp procentowych bez świeżego katalizatora <24h."
+      "reason": "Post analizuje rynek jako potencjalny szczyt z bearish rate thesis ('markets rolling over') — skew słaby 0.2, directional BUY sprzeczny z treścią; spike_ratio=99 artefakt."
+    },
+    {
+      "ticker": "QQQ",
+      "reason": "Jedyny realny spike (1.5×) ale posty to retrospektywna chwała za 0DTE wygrane, cautionary valuation discussion i covered-call management — zero forward catalyst dla BUY w 72h."
+    },
+    {
+      "ticker": "MSFT",
+      "reason": "Katalizator sprzed 5 dni (5/15 ruch 410→427), cena już cofnięta do 416 — late entry. Teza to 'spiskowa teoria' bez named fundamental driver; VIX=17 = zły reżim dla shortów."
     }
   ],
-  "macro_context": "VIX=17 przy oleju $150 sygnalizuje risk_on dla equities — rynki akcji oderwane od szoku naftowego, środowisko neutralne-do-pozytywnego dla equity longs, ale sektor energetyczny jest polem geopolitycznej niepewności gdzie każdy nagłówek może +5% USO w ciągu godziny.",
-  "confidence_in_curation": "medium"
+  "macro_context": "VIX=17 wskazuje RISK_ON/chop — rynek absorbuje $150 ropę bez paniki; brak sensu shortować w takiej ciszy, a long candidates nie mają czystych katalyzatorów na 1-72h horyzont.",
+  "confidence_in_curation": "high"
 }
