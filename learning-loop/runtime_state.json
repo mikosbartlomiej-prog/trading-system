@@ -79,13 +79,13 @@
   },
   "routine_budget": {
     "by_routine": {
-      "reddit-curator": 2
+      "reddit-curator": 3
     },
     "by_tier": {
-      "P2_optional": 2
+      "P2_optional": 3
     },
     "date": "2026-05-20",
-    "last_updated": "2026-05-20T19:30:44.280348+00:00",
-    "total": 2
+    "last_updated": "2026-05-20T22:01:41.190238+00:00",
+    "total": 3
   }
 }
