@@ -7,17 +7,17 @@
       "legacy:PROFIT_LOCK": "2026-05-20T08:45:25.987138+00:00"
     },
     "block_new_entries": true,
-    "current_equity": 95608.12,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
+    "current_equity": 95979.04,
+    "current_intraday_pnl": 370.91999999999825,
+    "current_intraday_pnl_pct": 0.0038795867966026137,
     "date": "2026-05-20",
-    "giveback_pct_of_peak": 1.0,
-    "giveback_usd": 494.52999999999884,
-    "intraday_peak_equity": 95608.24,
+    "giveback_pct_of_peak": 0.2499545022546678,
+    "giveback_usd": 123.61000000000058,
+    "intraday_peak_equity": 95979.04,
     "intraday_peak_pnl": 494.52999999999884,
     "intraday_peak_pnl_pct": 0.005172468614590464,
     "last_action": "noop",
-    "last_update_at": "2026-05-20T14:10:35.510335+00:00",
+    "last_update_at": "2026-05-20T15:55:53.424948+00:00",
     "max_gross_target": 0.25,
     "options_first_reduction": true,
     "peak_at": "2026-05-20T01:34:16.566322+00:00",
@@ -48,9 +48,9 @@
     },
     "OXY": {
       "first_seen_at": "2026-05-18T16:30:48.723419+00:00",
-      "last_pct": -0.0005,
-      "last_seen_at": "2026-05-19T12:08:12.931623+00:00",
-      "peak_pct": 0.00217
+      "last_pct": 0.02165,
+      "last_seen_at": "2026-05-20T15:55:53.425789+00:00",
+      "peak_pct": 0.02165
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
