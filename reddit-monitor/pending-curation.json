@@ -1,32 +1,32 @@
 {
-  "narrative": "Spike_ratio=99 na 5 z 6 kandydatów to artefakt rolling_avg=0 — nie realny sygnał. USO BUY to odwrócona detekcja: post WSB BEARISH na ropę ('$150 = bańka, każdy historyczny spike cofnął się'), prawidłowy kierunek to SHORT — ale energia-short już jest w portfelu (OXY -17.9% equity), dodawanie kolejnej pozycji shortowej = koncentracja. MSFT 6× spike realny, ale katalizator sprzed 5 dni (5/15), cena już cofnięta 427→416 — late entry. Zero akcji dziś, bankroll chroniony.",
+  "narrative": "6 kandydatów, zero edge — spike_ratio=99 na 5/6 to artefakt rolling_avg=0, nie realny sygnał. MSFT SELL_SHORT 6× realny, ale katalizator sprzed 5 dni (5/15 rally 410→427 już cofnięty do 416), teza to 'casual conspiracy theory' bez named fundamental driver, VIX=17 = risk-on środowisko wrogie mega-cap shortom. Konto czyste ($95.9k, 0 pozycji) — bankroll chroniony, czekamy na czysty setup z weryfikowalnym katalyzatorem <24h.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "USO",
-      "reason": "Odwrócona detekcja monitora: post jest BEARISH na ropę (autor pisze '$150 = głupota, każdy historyczny spike cofnął się'), spike_ratio=99 to artefakt rolling_avg=0; nawet gdyby prawidłowo zdekodowany jako SELL_SHORT — OXY short już 17.9% equity = koncentracja energetyczna przekroczona."
+      "reason": "Post BEARISH na ropę ('$150 = głupota, każdy historyczny spike cofnął się') — autor kupił USO calls jako contrarian bet na SPADEK ceny ropy, nie wzrost; spike_ratio=99 artefakt rolling_avg=0; brak named forward catalyst poza 'war eventually ends'; teza niespójna z kierunkiem BUY."
     },
     {
       "ticker": "AAPL",
-      "reason": "Brak AAPL-specyficznego katalizatora — posty o anomalii MSFT na semis i ogólnej dyskusji 0DTE; spike_ratio=99 artefakt."
+      "reason": "Brak AAPL-specyficznego katalizatora — drugi post to meta-analiza 0DTE vs dłuższe expiry gdzie autor przyznaje że 0DTE AAPL krwawiło go (-$4.2k); spike_ratio=99 artefakt; treść posta odwrotna do BUY sygnału."
     },
     {
       "ticker": "VOO",
-      "reason": "Meta-dyskusja o VOO jako instrumencie pasywnym; jeden post aktywnie kwestionuje sens kontynuowania zakupów — brak forward-looking bullish catalyst; VOO za wolne dla 1-72h momentum."
+      "reason": "Czysto filozoficzna meta-dyskusja 'czy ktoś realnie bije VOO po podatkach i stresie?' — zero forward-looking catalyst, zero VOO-specyficznego thesis, zero 1-72h runway; VOO za wolne dla momentum."
     },
     {
       "ticker": "IWM",
-      "reason": "Post analizuje rynek jako potencjalny szczyt z bearish rate thesis ('markets rolling over') — skew słaby 0.2, directional BUY sprzeczny z treścią; spike_ratio=99 artefakt."
-    },
-    {
-      "ticker": "QQQ",
-      "reason": "Jedyny realny spike (1.5×) ale posty to retrospektywna chwała za 0DTE wygrane, cautionary valuation discussion i covered-call management — zero forward catalyst dla BUY w 72h."
+      "reason": "Post jawnie bearish ('Markets Rolling Over, topping ~May 8, rate thesis powoduje rotację ze stocków') — monitor zdekodował BUY (skew=0.2) ale treść jest makro-bearish rate thesis; spike_ratio=99 artefakt; VIX=17 nie potwierdza risk-off."
     },
     {
       "ticker": "MSFT",
-      "reason": "Katalizator sprzed 5 dni (5/15 ruch 410→427), cena już cofnięta do 416 — late entry. Teza to 'spiskowa teoria' bez named fundamental driver; VIX=17 = zły reżim dla shortów."
+      "reason": "Jedyny realny spike (6×) ale katalizator stary 5 dni (5/15 rally 410→427 już cofnięty do 416 — ruch przerobiony); teza = 'casual conspiracy theory o manipulacji' bez named fundamental driver; skew=-0.25 weak bearish; VIX=17 risk-on wrogi dla mega-cap shortów."
+    },
+    {
+      "ticker": "SPY",
+      "reason": "spike_ratio=1.5 minimalny (barely above baseline); posty to gain porn z 0DTE SPY (anegdota, nie signal) + congressional disclosure na AT&T ($T) który nie generuje SPY edge; brak SPY-specyficznego catalyst na 1-72h."
     }
   ],
-  "macro_context": "VIX=17 wskazuje RISK_ON/chop — rynek absorbuje $150 ropę bez paniki; brak sensu shortować w takiej ciszy, a long candidates nie mają czystych katalyzatorów na 1-72h horyzont.",
+  "macro_context": "VIX=17 = risk-on/chop, rynek absorbuje geopolityczne ryzyko spokojnie; przy zerowych otwartych pozycjach konto jest gotowe na czysty setup — żaden z dzisiejszych 6 kandydatów nie dostarcza świeżego weryfikowalnego catalyst z realnym 1-72h runway.",
   "confidence_in_curation": "high"
 }
