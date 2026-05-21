@@ -92,6 +92,17 @@ def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
             new["enabled"] = True
             new["paused_until"] = None
             new["rationale"] = f"auto-resumed from pause on {today_iso}"
+            # v3.9.0 (2026-05-21): stamp enabled_at on transitions
+            # False → True so silent_strategy_warnings can grant a 5-day
+            # grace period (LLM proposal 2026-05-17). Without this,
+            # newly-re-enabled strategies (geo-* in v3.8.7, options-momentum
+            # post-pause) immediately receive SILENT warning even though
+            # they need a few days to accumulate trades.
+            new["enabled_at"] = today_iso
+    # Detect enable flip from prior state — when LLM/manual override sets
+    # enabled True externally, also stamp enabled_at.
+    elif new.get("enabled") and not old.get("enabled", True):
+        new["enabled_at"] = today_iso
 
     # If currently paused, don't adapt size
     if not new["enabled"]:
@@ -242,6 +253,13 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
         "operational-correction", "emergency-close", "unknown",
     }
 
+    # v3.9.0 (2026-05-21, LLM proposal 2026-05-17): grant 5-day grace
+    # period after re-enable. Strategy that was disabled and just came
+    # back online doesn't have any history yet — flagging it SILENT
+    # immediately is noise. After GRACE_DAYS the warning fires normally.
+    GRACE_DAYS = 5
+    today_iso = datetime.now(timezone.utc).date().isoformat()
+
     by_strat = today_stats.get("by_strategy") or {}
     out: list[str] = []
     for name, cfg in state["strategies"].items():
@@ -249,6 +267,20 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
             continue                       # disabled is fine
         if name in ALLOCATOR_LEVEL_TAGS:
             continue                       # not a strategy — allocator tag
+
+        # Grace period check — recently re-enabled strategies skip SILENT.
+        enabled_at = cfg.get("enabled_at")
+        if enabled_at:
+            try:
+                from datetime import date as _date
+                ea = _date.fromisoformat(enabled_at)
+                td = _date.fromisoformat(today_iso)
+                days_since_enable = (td - ea).days
+                if days_since_enable < GRACE_DAYS:
+                    continue               # grace window active
+            except (ValueError, TypeError):
+                pass                        # malformed → no grace, fire normally
+
         stats = by_strat.get(name) or {}
         if stats.get("trades_lifetime", 0) > 0:
             continue                       # has trades at some point
