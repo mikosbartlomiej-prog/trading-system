@@ -58,6 +58,12 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # (enforced by workflow's `git add learning-loop/runtime_state.json`).
     "reddit-monitor.yml",
     "crypto-monitor.yml",
+    # v3.9.2 (2026-05-21) — politician-monitor commits its dedupe state
+    # (politician-monitor/state.json) + may update runtime_state.json
+    # via routine_budget. Allowed write scope = ONLY politician-monitor/
+    # state.json + learning-loop/runtime_state.json (enforced by
+    # workflow's explicit `git add` lines).
+    "politician-monitor.yml",
 }
 
 # Workflows allowed to create PRs.

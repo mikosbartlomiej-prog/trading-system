@@ -97,13 +97,21 @@ def _bracket_to_mid(label: str, low: Optional[float] = None,
     return 0.0
 
 
-def _http_get_json(url: str, params: Optional[dict] = None, timeout: int = 20
-                   ) -> Any:
+def _http_get_json(url: str, params: Optional[dict] = None, timeout: int = 20,
+                   extra_headers: Optional[dict] = None) -> Any:
     """GET JSON. Returns parsed dict/list or None on any failure."""
+    # Capitol Trades sits behind Cloudflare WAF — needs browser-like
+    # headers to avoid 503 / challenge-page responses.
     headers = {
-        "User-Agent": "trading-system politician-monitor research@example.com",
-        "Accept":     "application/json",
+        "User-Agent":      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                           "(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Accept":          "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Origin":          "https://www.capitoltrades.com",
+        "Referer":         "https://www.capitoltrades.com/trades",
     }
+    if extra_headers:
+        headers.update(extra_headers)
     try:
         r = requests.get(url, params=params, headers=headers, timeout=timeout)
     except requests.RequestException as e:
@@ -115,6 +123,238 @@ def _http_get_json(url: str, params: Optional[dict] = None, timeout: int = 20
     try:
         return r.json()
     except ValueError:
+        return None
+
+
+# ─── Fallback: House Stock Watcher (community-maintained JSON dump) ──────────
+
+def fetch_housewatcher_fallback() -> list[dict[str, Any]]:
+    """
+    Fallback source — House Stock Watcher JSON dump (community-scraped,
+    refreshed ~daily). House Reps only (no Senate); covers last ~12 months.
+
+    Schema (per https://housestockwatcher.com docs):
+      [
+        {"disclosure_year": 2026, "disclosure_date": "05/19/2026",
+         "transaction_date": "2026-04-22", "owner": "self",
+         "ticker": "RTX", "asset_description": "...",
+         "type": "purchase" | "sale_full" | "sale_partial",
+         "amount": "$100,001 - $250,000",
+         "representative": "Hon. Michael McCaul",
+         "district": "TX22", "ptr_link": "https://..."}
+      ]
+    """
+    # Try a few common community URLs (best-effort, community sites move).
+    candidates = [
+        "https://housestockwatcher.com/api",
+        "https://house-stock-watcher-data.s3.us-east-2.amazonaws.com/data/all_transactions.json",
+        "https://housestockwatcher.com/data.json",
+    ]
+
+    raw = None
+    for url in candidates:
+        # Use plain headers (no Capitol Trades Cloudflare workarounds needed
+        # for these CDN-served JSON files).
+        try:
+            r = requests.get(
+                url,
+                headers={"User-Agent": "trading-system politician-monitor "
+                                       "mikosbartlomiej@gmail.com",
+                         "Accept": "application/json"},
+                timeout=30,
+            )
+            if r.status_code == 200:
+                try:
+                    raw = r.json()
+                    print(f"  STOCK Act fallback: housewatcher OK from {url}")
+                    break
+                except ValueError:
+                    continue
+        except requests.RequestException:
+            continue
+
+    if not raw:
+        return []
+
+    # housewatcher payload may be a list or wrapped {data: [...]}
+    if isinstance(raw, dict):
+        items = raw.get("data") or raw.get("transactions") or []
+    elif isinstance(raw, list):
+        items = raw
+    else:
+        items = []
+
+    out: list[dict[str, Any]] = []
+    for item in items[:500]:  # cap at 500 most recent
+        if not isinstance(item, dict):
+            continue
+        normalized = _normalize_housewatcher(item)
+        if normalized:
+            out.append(normalized)
+    return out
+
+
+def fetch_houseclerk_index(year: Optional[int] = None
+                            ) -> list[dict[str, Any]]:
+    """
+    Official House Clerk XML index of all member filings for given year.
+
+    Returns metadata-only entries (no ticker/amount — XML doesn't include
+    transaction details). Each PTR (FilingType=P) entry resolves to a
+    PDF at https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/<year>/<DocID>.pdf
+    where the operator can read the actual transactions.
+
+    Used as tier-3 fallback when Capitol Trades + housewatcher both down.
+    The monitor emits these as "filing_alert" rows — single politician +
+    PDF link, no auto-execute (no ticker known yet).
+    """
+    import xml.etree.ElementTree as ET
+
+    if year is None:
+        year = date.today().year
+
+    url = (f"https://disclosures-clerk.house.gov/public_disc/financial-pdfs/"
+           f"{year}FD.xml")
+    try:
+        r = requests.get(
+            url,
+            headers={"User-Agent": "trading-system politician-monitor "
+                                   "mikosbartlomiej@gmail.com"},
+            timeout=30,
+        )
+    except requests.RequestException as e:
+        print(f"  STOCK Act houseclerk GET exception: {e}")
+        return []
+    if r.status_code != 200:
+        print(f"  STOCK Act houseclerk GET: HTTP {r.status_code}")
+        return []
+
+    try:
+        root = ET.fromstring(r.content)
+    except ET.ParseError as e:
+        print(f"  STOCK Act houseclerk XML parse error: {e}")
+        return []
+
+    out: list[dict[str, Any]] = []
+    for member in root.findall("Member"):
+        filing_type = (member.findtext("FilingType") or "").strip()
+        # P = Periodic Transaction Report (the only filings with trades)
+        if filing_type != "P":
+            continue
+        last = (member.findtext("Last") or "").strip()
+        first = (member.findtext("First") or "").strip()
+        state_dst = (member.findtext("StateDst") or "").strip()
+        filing_date_str = (member.findtext("FilingDate") or "").strip()
+        doc_id = (member.findtext("DocID") or "").strip()
+
+        # Build "First Last" (skip Prefix honorific "Hon." and Suffix —
+        # whitelist uses just First Last format like "Nancy Pelosi"). Strip
+        # any embedded honorific from First field too as defensive measure.
+        for honorific in ("Hon.", "Hon", "Rep.", "Rep", "Mr.", "Ms.", "Mrs.", "Dr."):
+            if first.startswith(honorific + " "):
+                first = first[len(honorific) + 1:].strip()
+        full_name = f"{first} {last}".strip()
+
+        # Parse filing date MM/DD/YYYY → YYYY-MM-DD
+        filing_date = ""
+        try:
+            filing_date = datetime.strptime(
+                filing_date_str, "%m/%d/%Y"
+            ).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+
+        if not full_name or not doc_id:
+            continue
+
+        ptr_url = (f"https://disclosures-clerk.house.gov/public_disc/"
+                   f"ptr-pdfs/{year}/{doc_id}.pdf")
+
+        out.append({
+            "politician":       full_name,
+            "party":            "",
+            "chamber":          "House",
+            "state_dst":        state_dst,
+            "ticker":           "",                   # unknown from index
+            "side":             "UNKNOWN",
+            "bracket_label":    "",
+            "bracket_mid_usd":  0.0,                  # forces alert-only path
+            "transaction_date": "",
+            "disclosure_date":  filing_date,
+            "lag_days":         -1,
+            "ptr_url":          ptr_url,
+            "doc_id":           doc_id,
+            "source":           "houseclerk",
+            "filing_alert":     True,                 # marker — no ticker yet
+        })
+    return out
+
+
+def _normalize_housewatcher(raw: dict) -> Optional[dict[str, Any]]:
+    """Map House Stock Watcher entry to internal trade dict."""
+    try:
+        rep = (raw.get("representative") or raw.get("Representative") or "").strip()
+        # Strip "Hon. " honorific prefix if present
+        if rep.lower().startswith("hon. "):
+            rep = rep[5:].strip()
+
+        ticker = (raw.get("ticker") or raw.get("Ticker") or "").upper().strip()
+        side_raw = (raw.get("type") or raw.get("Type") or "").lower()
+        if "purchase" in side_raw or side_raw == "p":
+            side = "BUY"
+        elif "sale" in side_raw or side_raw == "s":
+            side = "SELL"
+        elif "exchange" in side_raw:
+            return None   # swaps/exchanges — informational only
+        else:
+            side = side_raw.upper() or "UNKNOWN"
+
+        bracket = (raw.get("amount") or raw.get("Amount") or "").strip()
+        bracket_mid = _bracket_to_mid(bracket)
+
+        # Date format varies: "05/19/2026" or "2026-05-19"
+        def _normalize_date(d: str) -> str:
+            d = (d or "").strip()
+            if not d:
+                return ""
+            if "/" in d:
+                # MM/DD/YYYY → YYYY-MM-DD
+                try:
+                    return datetime.strptime(d, "%m/%d/%Y").strftime("%Y-%m-%d")
+                except ValueError:
+                    return d
+            return d[:10]
+
+        tx_date = _normalize_date(raw.get("transaction_date") or "")
+        disc_date = _normalize_date(raw.get("disclosure_date") or "")
+
+        lag_days = -1
+        try:
+            tx_d = datetime.strptime(tx_date, "%Y-%m-%d").date()
+            disc_d = datetime.strptime(disc_date, "%Y-%m-%d").date()
+            lag_days = (disc_d - tx_d).days
+        except (ValueError, TypeError):
+            pass
+
+        if not rep or not ticker:
+            return None
+
+        return {
+            "politician":       rep,
+            "party":            "",            # housewatcher doesn't always include
+            "chamber":          "House",       # House-only by definition
+            "ticker":           ticker,
+            "side":             side,
+            "bracket_label":    bracket,
+            "bracket_mid_usd":  bracket_mid,
+            "transaction_date": tx_date,
+            "disclosure_date":  disc_date,
+            "lag_days":         lag_days,
+            "ptr_url":          raw.get("ptr_link") or raw.get("link") or "",
+            "source":           "housewatcher",
+        }
+    except Exception as e:
+        print(f"  STOCK Act housewatcher normalize exception: {e}")
         return None
 
 
@@ -263,8 +503,22 @@ def fetch_recent_ptrs(lookback_days: int = LOOKBACK_DAYS,
     """
     trades = fetch_capitoltrades()
     if not trades:
-        print(f"  STOCK Act: 0 trades from Capitol Trades (endpoint may be down)")
-        return []
+        print(f"  STOCK Act: 0 trades from Capitol Trades (endpoint may be "
+              f"503/blocked) — trying housewatcher fallback...")
+        trades = fetch_housewatcher_fallback()
+        if not trades:
+            print(f"  STOCK Act: housewatcher fallback returned 0 — "
+                  f"trying official House Clerk XML index (tier 3)...")
+            trades = fetch_houseclerk_index()
+            if not trades:
+                print(f"  STOCK Act: ALL 3 sources returned 0 — "
+                      f"likely temporary outage; next cron retries")
+                return []
+            print(f"  STOCK Act: houseclerk XML returned {len(trades)} "
+                  f"filing alerts (metadata only — no ticker/amount; "
+                  f"operator reads PDF via ptr_url)")
+        else:
+            print(f"  STOCK Act: housewatcher fallback returned {len(trades)} trades")
 
     cutoff = date.today() - timedelta(days=lookback_days)
     out: list[dict[str, Any]] = []
@@ -283,8 +537,9 @@ def fetch_recent_ptrs(lookback_days: int = LOOKBACK_DAYS,
             # Missing date → keep (let Curator decide)
             pass
 
-        # Bracket filter
-        if t["bracket_mid_usd"] < min_bracket_usd:
+        # Bracket filter — houseclerk filing_alert entries bypass (no ticker
+        # yet, so bracket unknown; they're metadata-only "operator review" alerts)
+        if not t.get("filing_alert") and t["bracket_mid_usd"] < min_bracket_usd:
             skipped_below_bracket += 1
             continue
 

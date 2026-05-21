@@ -424,6 +424,126 @@ class TestCuratorFilter(unittest.TestCase):
         self.assertEqual(len(filter_signals_via_curator([], curator_out)), 3)
 
 
+class TestHouseClerkFallback(unittest.TestCase):
+    """House Clerk XML index parsing (tier-3 fallback)."""
+
+    SAMPLE_XML = """<?xml version="1.0" encoding="utf-8"?>
+    <FinancialDisclosure>
+      <Member>
+        <Prefix>Hon.</Prefix>
+        <Last>Pelosi</Last>
+        <First>Nancy</First>
+        <Suffix/>
+        <FilingType>P</FilingType>
+        <StateDst>CA11</StateDst>
+        <Year>2026</Year>
+        <FilingDate>5/19/2026</FilingDate>
+        <DocID>20000001</DocID>
+      </Member>
+      <Member>
+        <Prefix>Hon.</Prefix>
+        <Last>McCaul</Last>
+        <First>Hon. Michael</First>
+        <Suffix/>
+        <FilingType>A</FilingType>
+        <StateDst>TX10</StateDst>
+        <Year>2026</Year>
+        <FilingDate>4/15/2026</FilingDate>
+        <DocID>20000002</DocID>
+      </Member>
+      <Member>
+        <Prefix/>
+        <Last>Smith</Last>
+        <First>Random</First>
+        <Suffix/>
+        <FilingType>P</FilingType>
+        <StateDst>XX99</StateDst>
+        <Year>2026</Year>
+        <FilingDate>3/01/2026</FilingDate>
+        <DocID>20000003</DocID>
+      </Member>
+    </FinancialDisclosure>
+    """
+
+    def test_strip_honorific_prefix(self):
+        from stockact_client import fetch_houseclerk_index
+        import requests
+
+        class FakeResp:
+            status_code = 200
+            content = self.SAMPLE_XML.encode("utf-8")
+
+        # 'A' (annual) entry filtered out; 2 PTRs remain
+        with patch.object(requests, "get", return_value=FakeResp()):
+            result = fetch_houseclerk_index(year=2026)
+
+        self.assertEqual(len(result), 2)
+        names = sorted(r["politician"] for r in result)
+        # Honorific "Hon." stripped from Prefix AND embedded in First
+        self.assertEqual(names, ["Nancy Pelosi", "Random Smith"])
+
+    def test_filing_alert_marker_set(self):
+        from stockact_client import fetch_houseclerk_index
+        import requests
+
+        class FakeResp:
+            status_code = 200
+            content = self.SAMPLE_XML.encode("utf-8")
+
+        with patch.object(requests, "get", return_value=FakeResp()):
+            result = fetch_houseclerk_index(year=2026)
+
+        for r in result:
+            self.assertTrue(r["filing_alert"])
+            self.assertEqual(r["source"], "houseclerk")
+            self.assertEqual(r["bracket_mid_usd"], 0.0)   # no amount in XML
+            self.assertEqual(r["ticker"], "")            # no ticker in XML
+            self.assertTrue(r["ptr_url"].endswith(".pdf"))
+            self.assertIn("ptr-pdfs", r["ptr_url"])
+
+    def test_only_ptr_type_included(self):
+        """Non-P FilingTypes (W/A/C/O) should be skipped."""
+        from stockact_client import fetch_houseclerk_index
+        import requests
+
+        class FakeResp:
+            status_code = 200
+            content = self.SAMPLE_XML.encode("utf-8")
+
+        with patch.object(requests, "get", return_value=FakeResp()):
+            result = fetch_houseclerk_index(year=2026)
+
+        # 1 'A' entry skipped; only 2 'P' entries kept
+        self.assertEqual(len(result), 2)
+        for r in result:
+            self.assertEqual(r["politician"] in ("Nancy Pelosi", "Random Smith"), True)
+
+
+class TestFilingAlertBracketBypass(unittest.TestCase):
+    def test_filing_alert_bypasses_bracket_filter(self):
+        """filing_alert entries have bracket_mid=0.0 but shouldn't be filtered."""
+        from stockact_client import fetch_recent_ptrs
+
+        with patch("stockact_client.fetch_capitoltrades", return_value=[]), \
+             patch("stockact_client.fetch_housewatcher_fallback", return_value=[]), \
+             patch("stockact_client.fetch_houseclerk_index", return_value=[
+                 {"politician": "Nancy Pelosi", "ticker": "", "side": "UNKNOWN",
+                  "bracket_label": "", "bracket_mid_usd": 0.0,
+                  "disclosure_date": date.today().isoformat(),
+                  "transaction_date": "", "lag_days": -1,
+                  "ptr_url": "https://...", "source": "houseclerk",
+                  "filing_alert": True, "party": "", "chamber": "House"}
+             ]):
+            result = fetch_recent_ptrs(
+                lookback_days=14,
+                whitelist={"nancy pelosi"},
+                min_bracket_usd=50000,
+            )
+        # Despite bracket_mid_usd=0 < min 50000, filing_alert bypasses filter
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]["filing_alert"])
+
+
 class TestEdgarParsing(unittest.TestCase):
     """Mock EDGAR HTTP responses to verify Atom + XML parsing."""
 
@@ -490,9 +610,23 @@ class TestEdgarParsing(unittest.TestCase):
     def test_parse_form4_xml(self):
         from edgar_client import fetch_form4_transactions
 
-        # Force the FIRST candidate URL to return our sample
+        # First call hits index.json for filename discovery; subsequent
+        # calls fetch the actual XML doc.
+        fake_index_json = """{
+          "directory": {
+            "name": "/Archives/edgar/data/1849635/000123456726000001",
+            "item": [
+              {"name": "0001234567-26-000001-index.htm", "type": "text"},
+              {"name": "primary_doc.xml", "type": "text.gif"},
+              {"name": "xslF345X05/wf-form4_x.xml", "type": "text"}
+            ]
+          }
+        }"""
+
         def fake_get(url, **kw):
-            if "primary_doc.xml" in url:
+            if url.endswith("index.json"):
+                return fake_index_json
+            if url.endswith("primary_doc.xml"):
                 return self.SAMPLE_FORM4
             return None
 

@@ -569,24 +569,80 @@ def run_scan() -> dict[str, Any]:
     )
     new_ptrs = [p for p in ptrs if p.get("ptr_url") not in seen_ptr]
     print(f"  Lane B: {len(ptrs)} PTRs total, {len(new_ptrs)} new")
-    ptr_candidates = filter_ptr_candidates(new_ptrs, whitelist)
-    print(f"  Lane B: {len(ptr_candidates)} candidates after whitelist enrich")
+
+    # Separate houseclerk "filing_alert" entries (no ticker yet — metadata
+    # only) from full PTRs with ticker/amount. Filing alerts get a separate
+    # email path; full PTRs flow to Curator.
+    filing_alerts = [p for p in new_ptrs if p.get("filing_alert")]
+    full_new_ptrs = [p for p in new_ptrs if not p.get("filing_alert")]
+    ptr_candidates = filter_ptr_candidates(full_new_ptrs, whitelist)
+    print(f"  Lane B: {len(ptr_candidates)} full candidates after whitelist enrich, "
+          f"{len(filing_alerts)} filing alerts (tier-3 fallback)")
 
     # ── Cluster aggregation (Lane B) — uses ALL PTRs not just new ────────
     # Rationale: cluster only makes sense across full lookback window;
-    # we dedupe at signal-emit level, not cluster-detect level.
-    all_ptr_for_cluster = filter_ptr_candidates(ptrs, whitelist)
+    # we dedupe at signal-emit level, not cluster-detect level. Filing
+    # alerts (no ticker) excluded from cluster math.
+    all_full_ptrs = [p for p in ptrs if not p.get("filing_alert")]
+    all_ptr_for_cluster = filter_ptr_candidates(all_full_ptrs, whitelist)
     clusters = compute_clusters(all_ptr_for_cluster)
     print(f"  Lane B: {len(clusters)} clusters detected")
 
+    # ── Filing alerts (tier-3 fallback path) ─────────────────────────────
+    # When Capitol Trades + housewatcher both down, House Clerk XML still
+    # tells us WHO filed a PTR — operator reads the PDF via ptr_url.
+    # Whitelist filter + cap at MAX_ALERTS_PER_RUN.
+    whitelisted_alerts = [
+        fa for fa in filing_alerts
+        if _politician_normalize(fa["politician"]) in whitelist
+    ]
+    filing_alerts_sent = 0
+    if whitelisted_alerts:
+        try:
+            from notify import notify_signal as _notify
+            for fa in whitelisted_alerts[:MAX_ALERTS_PER_RUN]:
+                body = "\n".join([
+                    "POLITICIAN-MONITOR — Filing Alert (House Clerk tier-3 fallback)",
+                    "",
+                    f"  Politician:   {fa['politician']}",
+                    f"  Chamber:      {fa.get('chamber', '?')}",
+                    f"  District:     {fa.get('state_dst', '?')}",
+                    f"  Filing date:  {fa.get('disclosure_date', '?')}",
+                    f"  DocID:        {fa.get('doc_id', '?')}",
+                    f"  PDF:          {fa.get('ptr_url', '?')}",
+                    "",
+                    "  NOTE: ticker + amount unknown from XML index — read PDF",
+                    "        to see actual transactions. Auto-execute: NEVER",
+                    "        for filing alerts (no ticker resolved).",
+                ])
+                _notify({
+                    "subject_prefix": "[POL-FILING]",
+                    "ticker":   "(unknown)",
+                    "side":     "ALERT",
+                    "size_usd": 0,
+                    "strategy": "politician-filing-alert",
+                    "rationale": f"{fa['politician']} filed PTR; read PDF",
+                    "body_extra": body,
+                }, alert_sent=False)
+                filing_alerts_sent += 1
+            print(f"  Filing alerts: {filing_alerts_sent} emails sent "
+                  f"(whitelisted politicians)")
+        except Exception as e:
+            print(f"  Filing alerts email exception: {e}")
+    else:
+        print(f"  Filing alerts: 0 whitelisted (skipped {len(filing_alerts)} "
+              f"off-whitelist)")
+
     if not djt_candidates and not ptr_candidates and not clusters:
-        print("  No candidates — scan complete")
+        print(f"  No trade candidates — scan complete "
+              f"(filing_alerts_sent={filing_alerts_sent})")
         state["seen_form4"] = list(seen_form4 | {tx["accession"] for tx in form4_txs
                                                   if tx.get("accession")})
         state["seen_ptr"]   = list(seen_ptr | {p["ptr_url"] for p in ptrs
                                                 if p.get("ptr_url")})
         _save_state(state)
-        return {"emitted": 0, "candidates": 0, "clusters": 0}
+        return {"emitted": 0, "candidates": 0, "clusters": 0,
+                "filing_alerts_sent": filing_alerts_sent}
 
     # ── Curator LLM call ─────────────────────────────────────────────────
     ctx = build_account_context()
@@ -628,25 +684,29 @@ def run_scan() -> dict[str, Any]:
                                             if p.get("ptr_url")})
     _save_state(state)
 
-    print(f"=== scan complete: {len(emitted)} emitted ===")
+    print(f"=== scan complete: {len(emitted)} emitted, "
+          f"{filing_alerts_sent} filing alerts ===")
     return {
-        "emitted":    len(emitted),
-        "candidates": len(candidates_payload),
-        "clusters":   len(clusters),
-        "signals":    emitted,
+        "emitted":            len(emitted),
+        "candidates":         len(candidates_payload),
+        "clusters":           len(clusters),
+        "filing_alerts_sent": filing_alerts_sent,
+        "signals":            emitted,
     }
 
 
 if __name__ == "__main__":
     summary = run_scan()
-    # Send summary email only if any signal was emitted (keeps quiet on no-op days)
-    if summary.get("emitted", 0) > 0:
+    # Send summary email only if any signal or filing alert was emitted
+    total_emitted = (summary.get("emitted", 0)
+                     + summary.get("filing_alerts_sent", 0))
+    if total_emitted > 0:
         try:
             from notify import notify_summary
             notify_summary(
                 monitor="politician-monitor",
                 signals_found=summary.get("candidates", 0),
-                alerts_sent=summary.get("emitted", 0),
+                alerts_sent=total_emitted,
             )
         except Exception as e:
             print(f"  summary email exception: {e}")

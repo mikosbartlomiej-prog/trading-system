@@ -177,18 +177,50 @@ def fetch_form4_transactions(cik: str, accession: str
     if not accession:
         return []
 
-    # Locate primary doc: try common Form 4 filename pattern
-    # ({accession}-index.htm has the file list; for MVP try wf-form4_*.xml).
+    # Discover the primary doc XML filename by fetching index.json for
+    # this accession. SEC EDGAR provides a directory listing JSON that
+    # enumerates all files in the filing — much more reliable than
+    # guessing common patterns (which vary between filing agents).
     base = EDGAR_BASE + _accession_path(cik, accession)
-    candidates = [
-        f"{base}/primary_doc.xml",
-        f"{base}/wf-form4_{accession.replace('-', '')}.xml",
-        f"{base}/form4.xml",
-    ]
-
     xml_text = None
-    for url in candidates:
+
+    time.sleep(RATE_SLEEP_S)
+    index_json_text = _http_get(f"{base}/index.json")
+    candidate_filenames: list[str] = []
+
+    if index_json_text:
+        try:
+            import json as _json
+            idx = _json.loads(index_json_text)
+            items = (idx.get("directory") or {}).get("item") or []
+            # Form 4 XML candidates: prefer primary_doc.xml, then
+            # *form4*.xml (handles wk-form4 / wf-form4 / form4 / etc.),
+            # then any .xml as last resort.
+            primary_first  = [it.get("name", "") for it in items
+                              if (it.get("name") or "").lower() == "primary_doc.xml"]
+            form4_named    = [it.get("name", "") for it in items
+                              if "form4" in (it.get("name") or "").lower()
+                              and (it.get("name") or "").lower().endswith(".xml")]
+            other_xml      = [it.get("name", "") for it in items
+                              if (it.get("name") or "").lower().endswith(".xml")
+                              and "form4" not in (it.get("name") or "").lower()]
+            candidate_filenames = primary_first + form4_named + other_xml
+        except (ValueError, TypeError) as e:
+            print(f"  EDGAR index.json parse error for {accession}: {e}")
+
+    # Fallback: try common guesses if index.json failed
+    if not candidate_filenames:
+        nodash = accession.replace("-", "")
+        candidate_filenames = [
+            "primary_doc.xml",
+            f"wf-form4_{nodash}.xml",
+            f"wk-form4_{nodash}.xml",
+            "form4.xml",
+        ]
+
+    for fname in candidate_filenames:
         time.sleep(RATE_SLEEP_S)
+        url = f"{base}/{fname}"
         t = _http_get(url)
         if t and "<ownershipDocument" in t:
             xml_text = t
