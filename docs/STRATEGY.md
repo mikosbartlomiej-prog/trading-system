@@ -1,8 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.5 — IntradayProfitGovernor (2026-05-14 LATE)
-**Major rewrite:** 3.0 — Aggressive Momentum + Event Switch (2026-05-12) supersedes 2.4
-**Effective from:** 2026-05-14 (v3.5 increment)
+**Version:** 3.9.1 — software_quality bucket + NOW (2026-05-21)
+**Recent increments:** 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
+**Effective from:** 2026-05-21 (v3.9.1)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -11,6 +11,26 @@ Every monitor, every strategies/*.md file, every agent prompt, and every
 iron rule in CLAUDE.md must agree with the numbers here. If a number
 appears in code that contradicts this document, **the document wins** —
 update the code.
+
+**v3.9.1 (2026-05-21) adds the `software_quality` bucket** — ServiceNow
+(NOW) plus 7 software/cloud compounders (CRM, ADBE, ORCL, INTU, WDAY,
+PANW, CRWD) opening a diversification path next to the AI/semis bucket.
+Lower beta, recurring revenue, less gap risk than semis. Preferred
+RISK_ON + NEUTRAL. Protected by new `software_cloud` correlated bucket
+at 65% cap. Senior PM agent recommendation after `ai_nasdaq_semis`
+hit 80% concentration.
+
+**v3.9.0 (2026-05-20):** SILENT-warning grace period — recently
+re-enabled strategies skip the "0 trades lifetime" warning for 5 days
+post `enabled_at`. Eliminates noise after auto-resume from `paused_until`
+or manual flip.
+
+**v3.8.9 (2026-05-19):** aggressive entry pricing (`_aggressive_entry`
+in `shared/alpaca_orders.py`): BUY @ q['ask'], SHORT @ q['bid'] —
+guaranteed marketable LIMIT, no spread sit-out. Plus equity-gap +
+RSI extreme alerts in analyzer for blind-spot detection. Plus
+daily-learning git push retry-on-non-fast-forward (3 attempts × pull
+--rebase).
 
 **v3.5 (2026-05-14 LATE) adds intraday profit protection** — a 7-state
 FSM (`shared/intraday_governor.py`) that defends intraday peak P&L.
@@ -216,10 +236,10 @@ aggressive sizing should be.
 
 | Regime | When inferred | Allowed buckets | Size mult | Options bias |
 |---|---|---|---|---|
-| **RISK_ON** | VIX < 25 AND SPY 5d ≥ +1.5% | ai_nasdaq_semis, crypto | 1.0× | long |
+| **RISK_ON** | VIX < 25 AND SPY 5d ≥ +1.5% | ai_nasdaq_semis, software_quality, crypto | 1.0× | long |
 | **INFLATION_SHOCK** | energy_5d > +3% AND SPY 5d ≤ -2% | inflation_energy, hedge_metals | 1.0× | null |
 | **RISK_OFF** | VIX ≥ 50 OR SPY 5d ≤ -4% | hedge_metals, hedge_bonds | 0.5× | short |
-| **NEUTRAL** | else (default) | ai_nasdaq_semis, inflation_energy, crypto | 0.7× | null |
+| **NEUTRAL** | else (default) | ai_nasdaq_semis, software_quality, inflation_energy, crypto | 0.7× | null |
 
 Detection mode (per `config/aggressive_profile.json::regime.detection_mode`):
 - `hybrid` (default) — read manual override from `learning-loop/state.json
@@ -236,6 +256,7 @@ Config: `config/watchlists.json`. Loaded via `shared/profile.load_watchlists()`.
 | Bucket | Tickers | Size per pos | SL / TP |
 |---|---|---|---|
 | `ai_nasdaq_semis` | QQQ, SMH, NVDA, AMD, AVGO, MSFT, META, GOOGL, AAPL, AMZN, TSLA | $10,000 | -6% / +18% |
+| `software_quality` (**v3.9.1**) | NOW, CRM, ADBE, ORCL, INTU, WDAY, PANW, CRWD | $15,000 | -7% / +14% |
 | `inflation_energy` | XLE, USO, XOM, CVX, OXY | $6,000 | -7% / +15% |
 | `crypto` | 11 coins (per crypto-monitor COIN_TIERS) | per-tier | per-tier |
 | `hedge_metals` | GLD, SLV | $8,000 | -5% / +12% |
@@ -243,6 +264,15 @@ Config: `config/watchlists.json`. Loaded via `shared/profile.load_watchlists()`.
 | `leveraged_etf_bull` | TQQQ, SPXL, UPRO, SOXL, FAS, TNA | $6,000 | -8% / +20% |
 | `leveraged_etf_bear` | SQQQ, SPXS, SPXU, SOXS, FAZ, TZA | $4,000 | -8% / +18% |
 | `defense_geo` | RTX, LMT, NOC, GD, BA, KTOS, PLTR, AXON, LDOS, SAIC, CACI, ITA, XAR, DFEN | $8,000 | -6% / +15% |
+
+**software_quality bucket** (v3.9.1 added 2026-05-21 — Senior PM
+diversification recommendation): software/cloud compounders, lower
+beta than semis (1.0-1.2 vs semis 1.3-1.8), recurring revenue,
+mainly enterprise SaaS. Used in RISK_ON + NEUTRAL alongside
+ai_nasdaq_semis. Protected by new `software_cloud` correlated bucket
+in `shared/portfolio_risk.py::CORRELATED_BUCKETS` (65% cap at
+AGGRESSIVE_PAPER). Avoid in RISK_OFF + INFLATION_SHOCK — high-multiple
+growth names sell off on rate fears.
 
 A ticker can be in multiple buckets implicitly (e.g. QQQ in ai_nasdaq_semis;
 the `defense_geo` ETF ITA is energy-correlated). Only `bucket_for_ticker()`
@@ -1250,6 +1280,7 @@ for backwards compatibility. New tickers go to `instrument_windows.json`.
 Current whitelist groups (see `.claude/rules/tickers-whitelist.md`):
 
 - Mega-cap US: AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+- **NEW v3.9.1** Software/Cloud Quality: NOW, CRM, ADBE, ORCL, INTU, WDAY, PANW, CRWD
 - Financials: JPM, V, MA, JNJ, BRK.B
 - Broad ETFs: SPY, QQQ, VOO, VTI, IWM, VXUS, VWO
 - Sector ETFs: XLK, XLF, XLE, XLV, XLY
@@ -1458,6 +1489,14 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 | **3.3** | **2026-05-13** | **Trend monitoring + emergency rescue + trailing stops** | Answer to 2026-05-12 reversal +$3,173 peak → -$184 (-4.5h to lose all gains). New `shared/peak_tracker.py` tracks intraday daily P&L peak in `state.json::daily_peak`, computes retrace_from_peak_pct, emits verdict NORMAL/WARN/PROFIT_LOCK (thresholds: peak ≥$1000, WARN at 30% retrace, PROFIT_LOCK at 50% retrace). Auto-reset at UTC midnight. `notify_peak_retrace` email per verdict. exit-monitor wired: PROFIT_LOCK priority over CLOSE_EMERGENCY, harvests winners ≥+8% via MARKET with `exit-profit-lock-*` tag. **Trailing stop ENABLED** (`TRAILING_STOP_ENABLED` default false→true) — 8% trail off peak per options position, 12h min-hold, `exit-trail-*` tag. Plus 4 LLM proposals shipped: `compute_position_audit()`, `open_positions` snapshot, `window_hours`+`lifetime_from_state` annotation, peak entry in rationale. Plus emergency-close-positions.yml workflow + script (rescue 4 stuck PUTs from 2026-05-12 with API 401 issue). 93/93 tests green. |
 | **3.4** | **2026-05-13 (afternoon)** | **Repo public + PAT-based workflow auto-sync** | User flipped repo to public → unlimited GitHub Actions. Built `scripts/workflow-templates/sync-workflows.yml` — every */15 mirrors `scripts/workflow-templates/*.yml` → `.github/workflows/*.yml` using **Classic PAT** (NOT fine-grained — only Classic has `workflow` scope) + `WORKFLOW_PAT` secret. Solves: OAuth proxy refuses `.github/workflows/` writes; downstream workflows after auto-merge use GITHUB_TOKEN (anti-recursion → don't trigger). Now agent edits template → push → sync auto-propagates. End-to-end verified. Default workflow cadences restored to aggressive post-public-repo. PAT rotates 90-day (next 2026-08-11). |
 | **3.4.5** | **2026-05-14** | **Emergency-close picker fix + SPY RSI gate + monitor-health OFF_HOURS + Lane 2 CI + peak_equity persistence + product docs** | Eight commits closing the audit findings: (I) Emergency-close script picker (`ls -t` non-deterministic on fresh GH runner checkout → filename-date `sort -r`) + `emergency_close_20260514.py` (canonical DELETE bypassing paper API options buying-power bug) + age check uses YYYYMMDD-in-filename. (II) exit-monitor `_emergency_close_window_ok()` — defer trade-window-blocked closes instead of routing to broken routine (zero overnight noise). (III) Wired Lane 2 PR #4 (`heuristic_spy_overbought_options_block` — SPY RSI > 75 → options-momentum paused +1 day regardless of paused_until expiry) + cherry-picked PR #3 (`heuristic_stale_exit_emergency` — surface stuck close attempts in rationale). (IV) monitor-health `_in_active_cron_window()` + new `OFF_HOURS` verdict eliminates false STALE for 6 market-hours-bounded workflows. (V) New `scripts/workflow-templates/learning-loop-ci.yml` — Lane 2 PR CI workflow runs `test_adapter` on every PR to `learning-loop/{adapter,test_adapter,llm_client,analyzer}.py`. (VI) v3.0 TODO #1 closed: `analyzer.py` persists `state['peak_equity'] = max(prior, today_eq)` after each daily-learning run → `max_drawdown_guard` stops fallback to `last_equity` proxy. (VII) Deleted 3 superseded emergency scripts → deterministic picker even pre-sync. (VIII) New `docs/PRODUCT.md` 1506-line product+architecture documentation (17 sections + 3 appendices). PR #3 + PR #4 auto-closed via force-push branches to main HEAD. 127/127 tests green. 8/8 E2E tests passed. HEAD: `fb5c36c`. |
+| **3.5** | **2026-05-14 LATE** | **IntradayProfitGovernor — 7-state FSM defending intraday peak** | Solves "+$5,000 → -$2,000 disaster pattern cannot recur". New `shared/intraday_governor.py` (FLAT→GREEN→STRONG_GREEN→GIVEBACK_WARN→PROFIT_LOCK→DEFEND_DAY→RED_DAY_AFTER_GREEN; per-state gross caps 1.50/1.25/1.00/0.50/0.25; options-first reduction; profit floor tiers $1k×0.25/$3k×0.40/$5k×0.50; per-position MFE harvest +8%/+12%/+20% × retrace 40/35/25%). New `shared/runtime_state.py` (separate from state.json — 5-min monitors can safely persist FSM state via `STATE_WRITE_ACTOR=intraday-monitor`). Wired into all 3 entry points (stocks/crypto/options) + exit-monitor + options-exit-monitor. State change emails `[INTRADAY-DEFEND]` / `[INTRADAY-RED-AFTER-GREEN]`. Capital section rewritten for full deployment (target_invested_ratio=1.00, min_invested_ratio=0.98, cash_reserve=0.00). 32 new tests including +$5k→-$2k literal walk-through. Doc: `docs/INTRADAY_PROTECTION.md`. |
+| **3.6** | **2026-05-14 NIGHT** | **Full autonomy chain end-to-end + Strategy Coherence Agent** | Three blockers solved: (a) workflow `git add learning-loop/allocations/` (was `-u` flag missing untracked). (b) `auto_execute_rebalance` flipped false→TRUE (system fully autonomous: allocator generates AND fires orders). (c) `_execute_one` BUY qty derivation from quote when not yet in portfolio. Plus new `entry-monitors-watchdog.yml` (cron `*/15 13-20 1-5`, matrix=[price-monitor, options-monitor], retriggers via WORKFLOW_PAT if > 10 min stale). Plus risk_officer hard check `account.buying_power < size_usd` → clean REJECT (stops 403 spam). New `tools/strategy_coherence_agent/` (sibling to System Consistency Agent, 15 check modules, 100 weight total): "does the trading strategy ACTUALLY behave like the intended aggressive contract?" Score 98.0/100. |
+| **3.7** | **2026-05-14 LATE-NIGHT** | **PDT/BP guard + Anthropic Routine 15/day budget** | New `shared/pdt_guard.py` (4 modes: OK/CAUTION/RESTRICTED/LOCKED from daytrade_count × pattern_day_trader × buying_power × equity × size_usd). New `shared/routine_budget.py` + `config/routine_budget.json` (3 priority tiers P0=4/P1=5/P2=5+1 buffer — P0 never starves). Both gates wired into 5 order paths + 3 routine sites. Emergency-close bypass invariant: SL/PROFIT_LOCK/governor/NEARDTH/REGIME/TRAIL never deferred. Audit JSONL per non-ALLOW decision. 48 new tests. |
+| **3.8** | **2026-05-14 EOD** | **PDT guard intent-aware redesign** | KRYTYCZNA poprawka filozofii v3.7: "day-trade = OPEN+CLOSE tego samego symbolu w tej samej sesji". Otwarcia NIGDY nie blokowane na PDT count, tylko na BP. Crypto exempt fully. Intent enum: `swing` (default — held ≥1 session) / `intraday` (same-day flip — DEFER w RESTRICTED+) / `emergency` (always proceed). Thresholds corrected: OK(0)/CAUTION(1)/RESTRICTED(2 save slot)/LOCKED(≥3). LIVE VERIFIED with dt=4 LOCKED account: OPEN SWING stock → ALLOW; OPEN SWING crypto → ALLOW; OPEN intraday-intent → DEFER; CLOSE crypto rotation → ALLOW; CLOSE emergency same-day → ALLOW; CLOSE same-day discretionary → BLOCK. 47 new PDT tests + 8 CI workflows fixed concurrency. |
+| **3.8.5–3.8.7** | **2026-05-16 EOD** | **Learning loop overhaul + geo refactor + cleanup** | (3.8.5 P0) UUID artifact prevention in `_strategy_from_client_id` + strict `_client_order_id` validation. LLM Anthropic 429: cron 21:00→04:00 UTC (rolling 24h cleanest 7h post-call) + Retry-After header parse + silent-day optimization (skip rounds 2+3 when cumulative_trades=0). Options TP DAY→GTC. (3.8.6 P1+P2+P3) `max_correlated_bucket_pct` 60→65 (unblocks AI semis Monday plan). `silent_strategy_warnings` ALLOCATOR_LEVEL_TAGS exclusion. `_is_close` extended with alloc-/op-correction-/emergency-close- prefixes + `position_intent` fallback. IntradayGovernor `min_profit_to_arm_usd` 1000→500. Allocator stamps PDT context on plan. Options-monitor SPY-regime PUT_TREND_BLOCK_RSI=75 + PUT_CAP=5/CALL_CAP=5 concentration cap. (3.8.7) **geo-monitor full direct-execution refactor** (`_classify_news_to_signals` + `execute_geo_signal` via `shared/alpaca_orders.execute_stock_signal`, replaces deprecated routine path). exit-monitor `place_emergency_close` pre-market defer (us_option / us_equity emergency close <13:30 UTC weekday OR weekend → return deferred). Cleanup 7 proposals + 2 one-shot workflows. Strategy Coherence 98.9/100. |
+| **3.8.9** | **2026-05-19** | **daily-learning push retry + aggressive entry + equity-gap + RSI alerts** | (P0) `daily-learning.yml` retry-on-non-fast-forward block (3 attempts × `pull --rebase` × `sleep $((attempt * 2))`). (P1.2) `shared/alpaca_orders.py::execute_stock_signal` — `_aggressive_entry(quote, side)` returns `q['ask']` for BUY / `q['bid']` for SHORT (guaranteed marketable LIMIT, no spread sit-out; fixes 37% fill_rate.unknown). (P1.3) `compute_equity_gap_alert(stats, prev_equity)` flags `\|equity_delta\| ≥ $500` AND `cumulative_trades=0`; WARN @ $1000+, INFO @ $500-1000. Wired to `today_stats['equity_gap_alert']` + rationale.md. (P1.4) `compute_oversold_alerts(rsi_snapshot, threshold=30)` per-symbol: RSI ≤30 → `pre-signal`, RSI ≥75 → `fade-risk`. Cleanup 8 proposals [x]. 11 new tests. |
+| **3.9.0** | **2026-05-20** | **SILENT-warning grace period (5 days post-enabled_at)** | LLM proposal 2026-05-17: re-enabled strategies skip the "SILENT — 0 trades lifetime" warning for 5 days. `adapt_strategy()` stamps `enabled_at` on False→True transition; `_flag_silent_strategies()` skips when grace not yet expired; malformed enabled_at falls through. State.json backfilled for 6 strategies (geo-* 2026-05-16, options/crypto-momentum 2026-05-19). Cleanup 3 more proposals [x]. 10 new tests. |
+| **3.9.1** | **2026-05-21** | **NOW + software_quality bucket — Senior PM diversification recommendation** | New `software_quality` bucket: NOW, CRM, ADBE, ORCL, INTU, WDAY, PANW, CRWD. Preferred in RISK_ON + NEUTRAL alongside `ai_nasdaq_semis`. $15k/pozycja, SL -7%, TP +14%. New `software_cloud` correlated bucket in `shared/portfolio_risk.py::CORRELATED_BUCKETS` (65% cap protects against re-concentration). Updated `buckets_per_regime` in `config/aggressive_profile.json`. NOW added to `state.json::tickers` with `enabled=true`, `enabled_at=2026-05-21` (v3.9.0 SILENT grace chroni). Whitelist updated. Allocator + price-monitor pick up automatically (dynamic JSON read). NVDA addition explicitly rejected (would push `ai_nasdaq_semis` further over 65% cap). |
 
 ---
 

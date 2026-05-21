@@ -1,7 +1,8 @@
 # Trading System — Product Documentation
 
-**Wersja dokumentu:** 1.0 (2026-05-14)
-**Stan systemu:** v3.4.5 (post-emergency-close fix, post-SPY-RSI-gate, post-monitor-health-OFF_HOURS)
+**Wersja dokumentu:** 1.2 (2026-05-21)
+**Stan systemu:** v3.9.1 (NOW + software_quality bucket + Senior PM diversification)
+**Recent increments:** 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
 **Tryb:** Alpaca Paper Trading (NIE live)
 **Repo:** `git@github.com:mikosbartlomiej-prog/trading-system.git`
 **Branch produkcyjny:** `main`
@@ -1502,6 +1503,14 @@ Run all: `python3 -m unittest discover -s tests -v && (cd learning-loop && pytho
 | v3.4 | 2026-05-13 | Repo public + PAT-based workflow auto-sync |
 | **v3.4.5** | **2026-05-14** | **Emergency-close picker fix + SPY RSI gate + monitor-health OFF_HOURS + Lane 2 CI + peak_equity persistence** |
 | **vNext** | **2026-05-14** | **ARCHITECTURE_VNEXT** — see §17 for migration. Full autonomy contract + code-autonomy loop + system_consistency_agent (99.1/100) + e2e_system_test_agent (220 tests). |
+| **v3.5** | **2026-05-14 LATE** | IntradayProfitGovernor — 7-state FSM defending intraday peak. Per-state gross caps + profit floor tiers + position MFE harvest. `docs/INTRADAY_PROTECTION.md` |
+| **v3.6** | **2026-05-14 NIGHT** | Full autonomy chain end-to-end + Strategy Coherence Agent (98.0/100). `auto_execute_rebalance=true` + `entry-monitors-watchdog.yml` + risk_officer BP check |
+| **v3.7** | **2026-05-14 LATE-NIGHT** | PDT/BP guard + Anthropic Routine 15/day budget. 4 modes + 3 priority tiers. Emergency-close bypass invariant |
+| **v3.8** | **2026-05-14 EOD** | PDT guard intent-aware redesign. Day-trade = OPEN+CLOSE same day. Opens NEVER blocked on PDT count. Crypto exempt. Intent enum (swing/intraday/emergency) |
+| **v3.8.5–7** | **2026-05-16 EOD** | UUID artifact prevention + LLM 04:00 UTC + bucket cap 60→65 + IntradayGovernor min_profit 1000→500 + geo-monitor direct execution refactor + emergency-close pre-market defer |
+| **v3.8.9** | **2026-05-19** | daily-learning push retry + aggressive entry pricing (BUY@ask/SHORT@bid) + equity-gap alert + RSI extreme alerts |
+| **v3.9.0** | **2026-05-20** | SILENT-warning grace period (5 days post-enabled_at) |
+| **v3.9.1** | **2026-05-21** | NOW + new `software_quality` bucket (Senior PM diversification recommendation). New `software_cloud` correlated bucket @65% cap |
 
 ---
 
