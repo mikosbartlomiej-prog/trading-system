@@ -1,1 +1,79 @@
-{"narrative":"Konto +$368 (+0.38%) na 21 maja — wynik zamknięcia ostatniej pozycji alokatorowej (alloc-exit 1 filled), nie sygnałów strategicznych. 0 otwartych pozycji na zamknięciu: system w 100% gotówce przez co najmniej 6. dzień z rzędu mimo mandatu 'all capital deployed'. Krytyczny problem: SPY RSI 68.2 trafia w martwą strefę options-momentum (powyżej CALL-ceiling 65, poniżej PUT-trigger 72) — monitor poprawnie milczy, ale konto nie pracuje na kapitale. RSI snapshot pokazuje min_12d=max_12d=today dla wszystkich symboli — jedynodniowe dane, regime detection bezużyteczna.","regime_assessment":"unclear","edge_assessment":"Brak potwierdzonych zamkniętych par trade w oknie 24h — cumulative_trades=0 pomimo 2 lifetime trades w lifetime_from_state (bug rekonstrukcji persystuje). SPY RSI 68.2 blokuje zarówno CALL-entry (>65 wykluczone) jak i PUT-entry (<72 niewystarczające) — dead zone architecture tworzy bezruch przy umiarkowanie wykupionym rynku. ETH RSI 32.2 zbliża się do oversold bounce territory: crypto-momentum ma potencjał jeśli pojawi się impuls 3-15% w 24h. Jedyny potwierdzony edge to alokator (100% fill rate na operacyjnych zleceniach) — nie sygnałowa alpha.","state_overrides":{"strategies":{"options-momentum":{"size_multiplier":0.5,"side_bias":"short","enabled":true,"rationale":"Bez zmian. SPY RSI 68.2 jest poniżej PUT-trigger 72 — monitor poprawnie nie emituje sygnałów. Jeśli SPY RSI przekroczy 72, PUT sygnał powinien wypalić automatycznie przy side_bias=short. ETH RSI 32.2 i BTC RSI 40.9 wspierają risk-off nastawienie. N=1 lifetime za mała próbka — nie zmieniam size_multiplier przed 5+ zamkniętymi tradami."},"crypto-momentum":{"size_multiplier":1.0,"side_bias":null,"enabled":true,"rationale":"Utrzymuję enabled. ETH RSI 32.2 zbliża się do bounce territory (<30). Strategia wymaga 3-15% impulsu w 24h — sam RSI nie wystarcza do wejścia. Pełny size gotowy na bounce signal. Override SILENT FLAG: brak trades jest poprawny jeśli warunek impulsu nie był spełniony przez 28 dni."}},"global_overrides":{"options_side_bias":null}},"new_heuristic_proposals":[{"title":"Obniż PUT RSI threshold z >72 do >67 gdy options side_bias=short","lane":"backlog","risk":"medium","rationale":"SPY RSI 68.2 trafia w dead zone między CALL-ceiling (65) a PUT-floor (72). Przy aktywnym side_bias=short obniżenie PUT-trigger do 67 generowałoby sygnały w overbought territory bez czekania na RSI ekstremalnie wykupiony (>72). Dziś potencjalny PUT setup na SPY RSI 68.2 przepadł przez zbyt wysoki próg.","effort_estimate":"2-3h","revisit_date":"2026-05-26","implementation_sketch":"options-monitor/monitor.py: dodaj PUT_RSI_THRESHOLD_NORMAL=72 i PUT_RSI_THRESHOLD_BIAS_SHORT=67. W pętli propozycji: threshold = PUT_RSI_THRESHOLD_BIAS_SHORT if current_side_bias=='short' else PUT_RSI_THRESHOLD_NORMAL. Wczytaj side_bias ze shared/learning_state.py::get_side_bias('options-momentum'). Backtest na SPY/QQQ/AAPL 90d z nowym progiem — WR>=40% na sample>=10 trades przed wdrożeniem. Ryzyko: więcej false positives w sideways markets przy niższym progu."},{"title":"Akumulacja historii RSI w state.json dla wiarygodnej regime detection","lane":"backlog","risk":"low","rationale":"Dziś min_12d=max_12d=today dla SPY/BTC/ETH — jedynodniowe dane, klasyfikacja regime nieuprawniona. Bez 12-dniowej historii nie można ocenić czy RSI 68.2 to szczyt czy kontynuacja trendu. Proste naprawienie w analyzer.py bez zależności zewnętrznych.","effort_estimate":"1h","revisit_date":"2026-05-23","implementation_sketch":"learning-loop/analyzer.py::compute_rsi_snapshot(): po wyliczeniu today_rsi per symbol, dopisz do state['rsi_history'][symbol][today_iso] = rsi_value. Prune wpisy starsze niż 14 dni. Oblicz min_12d/max_12d z zebranych wpisów — min 3 dni danych zanim używamy 'bullish'/'bearish', inaczej zwróć 'insufficient'. Zapisz rsi_history przy save_state(). Zero zależności zewnętrznych. Zamknie fundamentalny blind spot regime detection."},{"title":"Audit signal-monitor pipeline: czy price/crypto/twitter/reddit generują i wypełniają zlecenia sygnałowe?","lane":"backlog","risk":"medium","rationale":"cumulative_trades=0 po 28 dniach przy equity rosnącym do ATH. Nie wiadomo czy wzrost pochodzi z sygnałowych trade'ów (które analyzer nie widzi przez bug rekonstrukcji) czy z samego mark-to-market. Bez tego LLM zarządza portfelem analitycznie blind.","effort_estimate":"2-3h","revisit_date":"2026-05-22","implementation_sketch":"Krok 1: gh run list --workflow=price-monitor.yml --limit=7 i grep '>>> SYGNAL' w logach — ile sygnałów wyemitowano w 7 dniach. Krok 2: GET /v2/orders?limit=100&status=all&after=2026-05-14 — ile orders ma client_order_id pasujący do 'momentum-long-|crypto-momentum|geo-defense|geo-energy' regex. Krok 3: Jeśli orders istnieją ale analiza ich nie widzi — sprawdzić _strategy_from_client_id() i _is_close() w analyzer.py (UUID pollution fix z 2026-05-16 mógł nie pokryć wszystkich formatów). Krok 4: Jeśli 0 sygnałowych orders — sprawdzić journal/autonomy/ JSONL czy PDT/drawdown/concentration blokuje entry przez cały tydzień."}],"confidence":"low"}
+{
+  "narrative": "Equity wzrósł +$589 przy 0 przypisanych zamkniętych tradach w 24h oknie — wzrost pochodzi z mark-to-market na pozycjach alokacyjnych lub alloc-exit (1/1 wypełniony), poza oknem rekonstrukcji. Strategie sygnałowe milczą 28. dzień, ale krytyczne rozróżnienie: geo-energy i geo-gold składały zlecenia z 37% fill rate dwa dni temu (2026-05-19) — to problem cenowy limitów, nie martwy pipeline. ETH RSI 30.7 zbliża się do strefy oversold; jeśli 24h ruch przekroczy 3%, crypto-momentum powinno strzelić. SPY RSI 68.2 wspiera utrzymanie options-momentum PUT-side poniżej block gate (75).",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "Jedyny potwierdzony edge to alokator (100% fill rate, +$589 equity w 24h). Strategie sygnałowe nie zamknęły żadnej pary trade w oknie — brak danych do oceny EV. Fundamentalna ślepota analityczna: system zarabia, ale nie wiemy z jakiej strategii pochodzi alpha.",
+  "state_overrides": {
+    "strategies": {
+      "alloc-reduce": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Override silent flag — alloc-reduce jest strategią warunkową (fires only when rebalance plan zawiera REDUCE orders). 0 trades w 28 dniach jest poprawne jeśli alokator generował wyłącznie BUY i EXIT. Nie disable przed pierwszym planem z REDUCE."
+      },
+      "geo-defense": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Override silent flag — 5 dni live po v3.8.7 refaktorze. Brak sygnałów geo-obronnych przy SPY 68.2 i cicha geopolityka = poprawna cisza. Diagnozować pipeline osobno zanim disable. Ocena po 10 dniach live."
+      },
+      "geo-energy": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Override silent flag — fill_rate 37% na 2026-05-19 dowodzi aktywny pipeline; problem to limit pricing (zbyt ciasne limity relative to live ask). 0 lifetime trades przy aktywnych zleceniach = limit problem, nie dead strategy. Fix limitów w backlogu."
+      },
+      "geo-gold": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Override silent flag — ETH RSI 30.7 + BTC RSI 40.7 = mild risk-off w crypto wspiera safe-haven przepływy do GLD. 5 dni live. Fill rate issue blokuje ocenę P&L — najpierw fix limitów."
+      },
+      "geo-xom": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "side_bias": null,
+        "rationale": "Override silent flag — koreluje z geo-energy. 5 dni live po v3.8.7 direct-execution refaktorze. Ocena po 10 dniach realnego flow z nowym routingiem."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "enabled": true,
+        "side_bias": "short",
+        "rationale": "Potwierdzam 0.5/short — SPY RSI 68.2 poniżej PUT-block gate (75), crypto declining (ETH 30.7, BTC 40.7) wspiera PUT-side. N=1 lifetime za mała próbka. Nie podnoszę size_multiplier przed 5+ zamkniętymi tradami."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Distinguish truly-silent strategies from unfilling ones using fill_rate data",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "Silent flag traktuje '0 lifetime trades' jednakowo niezależnie od fill_rate. Strategia z 37% fill rate i zleceniami w pipeline jest innym problemem (zbyt ciasne limity) niż dead pipeline (0 prób). Nowa funkcja produkuje TRULY_SILENT vs UNFILLING klasyfikacje dla precyzyjniejszego rationale i zapobiega fałszywym disable rekomendacjom.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_silent_vs_unfilling(strategy_name: str, lifetime_trades: int, fill_rate_data: dict) -> tuple[str, str]:\n    \"\"\"\n    Classify a zero-lifetime-trade strategy as TRULY_SILENT, UNFILLING, or ACTIVE.\n    TRULY_SILENT: 0 order attempts in fill_rate window -> pipeline broken or signal rarely fires.\n    UNFILLING: orders placed but 0 fills -> limit price too aggressive.\n    ACTIVE: has lifetime trades or recent fills.\n    Returns (classification, rationale_string).\n    \"\"\"\n    if lifetime_trades > 0:\n        return \"ACTIVE\", \"\"\n    fr = fill_rate_data.get(strategy_name, {})\n    placed = fr.get(\"placed\", 0)\n    filled = fr.get(\"filled\", 0)\n    canceled = fr.get(\"canceled\", 0) + fr.get(\"expired\", 0)\n    if placed == 0:\n        return \"TRULY_SILENT\", (\n            f\"{strategy_name}: 0 order attempts in fill_rate window\"\n            f\" -- pipeline may be broken or signal rarely fires\"\n        )\n    if placed > 0 and filled == 0 and canceled > 0:\n        return \"UNFILLING\", (\n            f\"{strategy_name}: {placed} orders placed, 0 filled,\"\n            f\" {canceled} canceled -- limit price too tight\"\n        )\n    return \"ACTIVE\", \"\"",
+      "test_addition": "class TestSilentVsUnfilling(unittest.TestCase):\n    def test_truly_silent_no_fill_rate_entry(self):\n        classification, _ = heuristic_silent_vs_unfilling(\"geo-defense\", 0, {})\n        self.assertEqual(classification, \"TRULY_SILENT\")\n\n    def test_unfilling_with_canceled_orders(self):\n        fr = {\"geo-energy\": {\"placed\": 3, \"filled\": 0, \"canceled\": 3, \"expired\": 0}}\n        classification, rationale = heuristic_silent_vs_unfilling(\"geo-energy\", 0, fr)\n        self.assertEqual(classification, \"UNFILLING\")\n        self.assertIn(\"limit price too tight\", rationale)\n\n    def test_active_with_lifetime_trades(self):\n        classification, _ = heuristic_silent_vs_unfilling(\"options-momentum\", 1, {})\n        self.assertEqual(classification, \"ACTIVE\")\n\n    def test_truly_silent_explicit_zero_placed(self):\n        fr = {\"geo-xom\": {\"placed\": 0, \"filled\": 0}}\n        classification, _ = heuristic_silent_vs_unfilling(\"geo-xom\", 0, fr)\n        self.assertEqual(classification, \"TRULY_SILENT\")\n\n    def test_unfilling_counts_expired_as_canceled(self):\n        fr = {\"geo-gold\": {\"placed\": 2, \"filled\": 0, \"canceled\": 0, \"expired\": 2}}\n        classification, rationale = heuristic_silent_vs_unfilling(\"geo-gold\", 0, fr)\n        self.assertEqual(classification, \"UNFILLING\")\n        self.assertIn(\"2 canceled\", rationale)",
+      "wire_into_adapt_strategy": "in adapt() when building the SILENT rationale for strategies with lifetime_trades==0, call heuristic_silent_vs_unfilling(name, lifetime_trades, today_stats.get('fill_rate', {})) and replace the generic 'SILENT -- enabled but 0 trades lifetime' message with the returned classification + rationale_string"
+    },
+    {
+      "title": "Fix geo-order limit pricing -- use live quote ask + 0.3% buffer instead of prior-close",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Geo strategies show <40% fill rate. Root cause: geo-monitor uses prior-day close as limit reference; by market open the ask may be 0.5-1.5% higher. Fix uses real-time quote ask with small slippage buffer to raise fill rate from 37% to >70%.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-26",
+      "implementation_sketch": "1. In geo-monitor/monitor.py::execute_geo_signal(), fetch live ask via Alpaca /v2/stocks/{symbol}/quotes/latest\n2. Set limit_price = ask_price * 1.003 (0.3% above live ask for high fill probability)\n3. Keep time_in_force='day' (geo thesis = event-driven, stale next day)\n4. Log 'limit from live ask: ask=${ask} limit=${limit}' per order for audit\n5. Monitor fill_rate over next 5 geo-signal days -- expect improvement from 37% to >70%\n6. Rollback if new limit causes concentration violations (ask moved >2% since signal fire)"
+    },
+    {
+      "title": "Equity attribution gap -- identify MTM sources when delta > $300 with 0 attributed closed trades",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Recurring equity_gap_alert with 0 attributed trades (+$589 today) creates analytical blindness -- we know we made money but not from which strategy. Analyzer should cross-reference position snapshots to attribute mark-to-market vs closed-trade P&L.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-01",
+      "implementation_sketch": "1. In analyzer.py::build_today_stats(), when equity_gap_alert.delta_usd > 300 and attributed_trades == 0:\n2. Store open positions snapshot in runtime_state.json at end of each daily-learning run (symbol, qty, avg_entry, market_value)\n3. On next run, diff vs previous snapshot: closed_positions_pnl + open_mtm_delta\n4. Add 'mtm_attribution': {'closed_pnl': float, 'open_mtm': float, 'unexplained': float} to today_stats\n5. LLM sees 'Equity +$589: $320 from closed positions, $270 open MTM' instead of blind gap\n6. Unexplained residual flags dividends / corporate actions / settlement timing"
+    }
+  ],
+  "confidence": "medium"
+}
