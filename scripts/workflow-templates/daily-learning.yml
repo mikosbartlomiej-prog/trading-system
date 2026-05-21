@@ -119,7 +119,12 @@ jobs:
                 exit 1
               fi
               echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
-              git pull --rebase origin "$BRANCH" || true
+              # --autostash: analyzer may have modified runtime_state.json or
+              # other state files that aren't in our staged commit. Without
+              # autostash, pull --rebase aborts on "unstaged changes" and the
+              # retry loop becomes useless (root cause of 07:55 UTC + 14:02 UTC
+              # failed pushes 2026-05-21).
+              git pull --rebase --autostash origin "$BRANCH" || true
               # Exponential backoff: 4, 8, 16, 32, 60, 60 sec
               if [ "$attempt" -lt 5 ]; then
                 sleep $((attempt * attempt * 4))
