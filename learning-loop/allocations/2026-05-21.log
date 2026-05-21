@@ -45,3 +45,9 @@
 [14:51:13 INFO]   summary: 0 actionable + 7 hold; passed=0  failed=0
 [14:51:13 INFO] ── Step 8: plan complete ──
 [14:51:13 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[14:52:23 INFO] ============================================================
+[14:52:23 INFO] execute_orders() — auto-execute path
+[14:52:23 INFO] ============================================================
+[14:52:23 INFO]   market_status: open=True reason=open
+[14:52:23 INFO]   execution complete: 0 placed, 0 skipped, 0 failed
