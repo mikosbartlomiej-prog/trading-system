@@ -1,8 +1,8 @@
 # Trading System — Product Documentation
 
-**Wersja dokumentu:** 1.2 (2026-05-21)
-**Stan systemu:** v3.9.1 (NOW + software_quality bucket + Senior PM diversification)
-**Recent increments:** 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
+**Wersja dokumentu:** 1.3 (2026-05-21 LATE)
+**Stan systemu:** v3.9.3.1 (politician-monitor live — Trump + bipartisan Congressional insider tracker)
+**Recent increments:** 3.9.3.1 (politician-monitor email + sync fix), 3.9.3 (EDGAR XML discovery + 3-tier STOCK Act fallback), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
 **Tryb:** Alpaca Paper Trading (NIE live)
 **Repo:** `git@github.com:mikosbartlomiej-prog/trading-system.git`
 **Branch produkcyjny:** `main`
@@ -1511,6 +1511,9 @@ Run all: `python3 -m unittest discover -s tests -v && (cd learning-loop && pytho
 | **v3.8.9** | **2026-05-19** | daily-learning push retry + aggressive entry pricing (BUY@ask/SHORT@bid) + equity-gap alert + RSI extreme alerts |
 | **v3.9.0** | **2026-05-20** | SILENT-warning grace period (5 days post-enabled_at) |
 | **v3.9.1** | **2026-05-21** | NOW + new `software_quality` bucket (Senior PM diversification recommendation). New `software_cloud` correlated bucket @65% cap |
+| **v3.9.2** | **2026-05-21 LATE** | **NEW MONITOR — politician-monitor**: Trump family Form 4 (DJT auto-execute) + bipartisan STOCK Act PTRs (20-name whitelist, sector cluster aggregation, Capitol Trader Curator). 10 new files, 40 tests, free data sources only |
+| **v3.9.3** | **2026-05-21 LATE** | politician-monitor production fixes: EDGAR XML discovery via `/index.json`; 3-tier STOCK Act fallback (CapitolTrades → housewatcher → House Clerk official XML) bo CapitolTrades Lambda down |
+| **v3.9.3.1** | **2026-05-21 LATE** | politician-monitor email subject fix (`[POL-FILING]` zamiast misleading `[SELL]`) + workflow template moved to `scripts/workflow-templates/` for sync-workflows propagation |
 
 ---
 

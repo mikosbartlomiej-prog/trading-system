@@ -1,8 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.9.1 — software_quality bucket + NOW (2026-05-21)
-**Recent increments:** 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
-**Effective from:** 2026-05-21 (v3.9.1)
+**Version:** 3.9.3.1 — politician-monitor (Trump + bipartisan Congressional tracker, 2026-05-21 LATE)
+**Recent increments:** 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
+**Effective from:** 2026-05-21 LATE (v3.9.3.1)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -11,6 +11,17 @@ Every monitor, every strategies/*.md file, every agent prompt, and every
 iron rule in CLAUDE.md must agree with the numbers here. If a number
 appears in code that contradicts this document, **the document wins** —
 update the code.
+
+**v3.9.3.1 (2026-05-21 LATE) adds politician-monitor** — Trump family +
+bipartisan Congressional insider tracker. Two lanes: (A) DJT Form 4 via
+SEC EDGAR Atom + XML (~2 day lag, auto-execute eligible, $5k half-size);
+(B) STOCK Act PTRs via 3-tier fallback (Capitol Trades JSON → housewatcher
+S3 → House Clerk official XML index) with cluster aggregation (3+ pols
+same sector / 14d → sector ETF proxy) + single committee-chair escalation
+(weight ≥1.4 + bracket ≥$100k). 20-name bipartisan whitelist (10D + 8R +
+2 admin). Capitol Trader Curator persona validates noise vs signal.
+Default alert-only for STOCK Act, auto-execute for DJT Form 4. All 3
+data sources free; no paid aggregators.
 
 **v3.9.1 (2026-05-21) adds the `software_quality` bucket** — ServiceNow
 (NOW) plus 7 software/cloud compounders (CRM, ADBE, ORCL, INTU, WDAY,
@@ -1497,6 +1508,9 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 | **3.8.9** | **2026-05-19** | **daily-learning push retry + aggressive entry + equity-gap + RSI alerts** | (P0) `daily-learning.yml` retry-on-non-fast-forward block (3 attempts × `pull --rebase` × `sleep $((attempt * 2))`). (P1.2) `shared/alpaca_orders.py::execute_stock_signal` — `_aggressive_entry(quote, side)` returns `q['ask']` for BUY / `q['bid']` for SHORT (guaranteed marketable LIMIT, no spread sit-out; fixes 37% fill_rate.unknown). (P1.3) `compute_equity_gap_alert(stats, prev_equity)` flags `\|equity_delta\| ≥ $500` AND `cumulative_trades=0`; WARN @ $1000+, INFO @ $500-1000. Wired to `today_stats['equity_gap_alert']` + rationale.md. (P1.4) `compute_oversold_alerts(rsi_snapshot, threshold=30)` per-symbol: RSI ≤30 → `pre-signal`, RSI ≥75 → `fade-risk`. Cleanup 8 proposals [x]. 11 new tests. |
 | **3.9.0** | **2026-05-20** | **SILENT-warning grace period (5 days post-enabled_at)** | LLM proposal 2026-05-17: re-enabled strategies skip the "SILENT — 0 trades lifetime" warning for 5 days. `adapt_strategy()` stamps `enabled_at` on False→True transition; `_flag_silent_strategies()` skips when grace not yet expired; malformed enabled_at falls through. State.json backfilled for 6 strategies (geo-* 2026-05-16, options/crypto-momentum 2026-05-19). Cleanup 3 more proposals [x]. 10 new tests. |
 | **3.9.1** | **2026-05-21** | **NOW + software_quality bucket — Senior PM diversification recommendation** | New `software_quality` bucket: NOW, CRM, ADBE, ORCL, INTU, WDAY, PANW, CRWD. Preferred in RISK_ON + NEUTRAL alongside `ai_nasdaq_semis`. $15k/pozycja, SL -7%, TP +14%. New `software_cloud` correlated bucket in `shared/portfolio_risk.py::CORRELATED_BUCKETS` (65% cap protects against re-concentration). Updated `buckets_per_regime` in `config/aggressive_profile.json`. NOW added to `state.json::tickers` with `enabled=true`, `enabled_at=2026-05-21` (v3.9.0 SILENT grace chroni). Whitelist updated. Allocator + price-monitor pick up automatically (dynamic JSON read). NVDA addition explicitly rejected (would push `ai_nasdaq_semis` further over 65% cap). |
+| **3.9.2** | **2026-05-21 LATE** | **NEW MONITOR — politician-monitor MVP (Trump + bipartisan Congressional insider tracker)** | Two-lane monitor analog do reddit/crypto-monitor. Lane A: SEC EDGAR Atom feed + Form 4 XML parse dla CIK 0001849635 (Trump Media), $5k auto-execute. Lane B: Capitol Trades JSON (`bff.capitoltrades.com/trades`) for STOCK Act PTRs; bipartisan whitelist 20 polityków (`.claude/rules/politicians-whitelist.md`); sector cluster aggregation (3+ pols/14d → ETF proxy ITA/SMH/XLE/XLF/XLV/QQQ); single-committee-chair escalation. Capitol Trader Curator persona (`politician-monitor/curator-prompts.md`) 5-step process w P2_optional budget tier. 10 nowych plików + 40 tests + workflow YAML. Iron rules enforced: paper-only, whitelist tickers, stop-loss mandatory, default alert-only for STOCK Act. |
+| **3.9.3** | **2026-05-21 LATE** | **politician-monitor v3.9.2 production fixes: EDGAR XML discovery + 3-tier STOCK Act fallback** | First production run revealed 2 bugs: (a) EDGAR XML 404 — naive URL guess pattern; fix: fetch `/index.json` per accession to discover real XML filename. (b) Capitol Trades HTTP 503 (their CloudFront/Lambda backend down) + housewatcher S3 dead (403). Fix: added 3-tier fallback chain ending with NEW House Clerk official XML index (`disclosures-clerk.house.gov/public_disc/financial-pdfs/<year>FD.xml`). Tier-3 returns metadata-only entries (politician + DocID + PDF link, no ticker/amount); monitor emits `[POL-FILING]` alert with PDF link, NEVER auto-executes. Verified live: 214 PTR filings 2026 YTD, 6 match whitelist, 1 within 14d (Gottheimer 2026-05-19). |
+| **3.9.3.1** | **2026-05-21 LATE** | **politician-monitor email subject + workflow template location fixes** | Production verification revealed 2 issues: (a) filing alert email subject `[SELL] [politician-filing-alert] ? ? - $0` (reused notify_signal which assumes BUY/SELL+ticker); fix: switch to `send_email()` with custom subject `[POL-FILING] <name> filed PTR <date>`. (b) Workflow template was in `politician-monitor/workflow-templates/` but `sync-workflows.yml` only watches `scripts/workflow-templates/*.yml`; fix: copy to canonical location so sync propagates updates (incl. SEC_USER_AGENT email change) automatically. |
 
 ---
 
