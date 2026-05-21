@@ -1,0 +1,48 @@
+{
+  "narrative": "Dzień bez zamkniętych trade'ów sygnałowych — equity wzrosło $1,193 wyłącznie z mark-to-market na 7 pozycjach alokatorowych (SPY, QQQ, PANW, NOW, GLD + 2). Krytyczny bloker: fill_rate.unknown 0% na 28 zleceniach (21 anulowanych śr. po 231 min, 7 wygasłych) — bez per-monitor attribution nie możemy ustalić czy to wejściowe zlecenia geo/defense czy wychodzące TP exits z portfela alokatorowego, co blokuje celowe naprawy limitu. ETH RSI 31.2 = pierwszy wiarygodny oversold bounce setup od uruchomienia crypto-monitora; BTC RSI 40.4 wspierający — priorytetowe okno dla crypto-momentum.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Edge mierzalny tylko w portfelu alokatorowym (+$1,193 MTM, ~+1.25% na ~$95k deployed). Strategie sygnałowe: zero edge do zmierzenia przy fill_rate 0% i cumulative_trades=0. SPY RSI 67.9 = risk-on equity trending up; ETH RSI 31.2 = crypto odmienne środowisko, potencjalny bounce jako jedyna mierzalna okazja sygnałowa.",
+  "state_overrides": {
+    "strategies": {
+      "geo-defense": {
+        "enabled": true,
+        "rationale": "Grace period v3.9.0 wygasła 2026-05-21 ale fill_rate.unknown 0% na 28 zleceniach blokuje fair ocenę — nie wiadomo ile pochodzi z geo-monitora. Min. 10 dni po v3.8.7 refaktorze przed disable. Następna ocena 2026-05-26."
+      },
+      "geo-energy": {
+        "enabled": true,
+        "rationale": "Jak geo-defense. Systemowy fill_rate problem uniemożliwia fair ocenę przy 5 dniach live."
+      },
+      "geo-gold": {
+        "enabled": true,
+        "rationale": "Jak geo-defense. ETH/BTC oversold wspiera safe-haven flow do GLD — nie disable przed crypto bounce testem."
+      },
+      "geo-xom": {
+        "enabled": true,
+        "rationale": "Jak geo-defense. Energia koreluje z geo-energy. 5 dni live to za mało przy 0% fill na całym pipeline."
+      }
+    },
+    "global_overrides": {}
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Crypto oversold bounce boost — ETH RSI ≤ 30 + BTC RSI ≤ 45",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "ETH RSI 31.2 to pierwszy głęboki oversold od uruchomienia systemu. Historycznie ETH RSI < 30 przy BTC RSI < 45 poprzedza bounce 3-10% w 24-72h. Heurystyka zwiększa size_multiplier crypto-momentum do 1.3× wyłącznie gdy oba progi przekroczone — bounded (mieści się w 0.30-2.00), autorevert przy normalizacji RSI następnego dnia.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_crypto_oversold_boost(today_stats: dict) -> tuple:\n    \"\"\"Boost crypto-momentum size_multiplier when ETH deeply oversold and BTC approaching oversold.\n\n    Args:\n        today_stats: full today_stats dict (rsi_snapshot is top-level key).\n    Returns:\n        (fired: bool, multiplier: float, reason: str)\n    \"\"\"\n    rsi = today_stats.get(\"rsi_snapshot\", {})\n    eth_rsi = rsi.get(\"ETH/USD\", {}).get(\"today\", 50.0)\n    btc_rsi = rsi.get(\"BTC/USD\", {}).get(\"today\", 50.0)\n    if eth_rsi <= 30.0 and btc_rsi <= 45.0:\n        return True, 1.3, \"ETH RSI {:.1f} <=30 + BTC RSI {:.1f} <=45: oversold bounce setup\".format(eth_rsi, btc_rsi)\n    return False, 1.0, \"\"\n",
+      "test_addition": "class TestCryptoOversoldBoost(unittest.TestCase):\n    def test_fires_eth_oversold_btc_approaching(self):\n        stats = {\"rsi_snapshot\": {\"ETH/USD\": {\"today\": 28.5}, \"BTC/USD\": {\"today\": 40.0}}}\n        fired, mult, reason = heuristic_crypto_oversold_boost(stats)\n        self.assertTrue(fired)\n        self.assertAlmostEqual(mult, 1.3)\n        self.assertIn(\"28.5\", reason)\n    def test_no_fire_eth_above_threshold(self):\n        stats = {\"rsi_snapshot\": {\"ETH/USD\": {\"today\": 32.0}, \"BTC/USD\": {\"today\": 40.0}}}\n        fired, _, _ = heuristic_crypto_oversold_boost(stats)\n        self.assertFalse(fired)\n    def test_no_fire_btc_above_threshold(self):\n        stats = {\"rsi_snapshot\": {\"ETH/USD\": {\"today\": 28.0}, \"BTC/USD\": {\"today\": 50.0}}}\n        fired, _, _ = heuristic_crypto_oversold_boost(stats)\n        self.assertFalse(fired)\n    def test_boundary_values_fire(self):\n        stats = {\"rsi_snapshot\": {\"ETH/USD\": {\"today\": 30.0}, \"BTC/USD\": {\"today\": 45.0}}}\n        fired, mult, _ = heuristic_crypto_oversold_boost(stats)\n        self.assertTrue(fired)\n        self.assertAlmostEqual(mult, 1.3)\n    def test_missing_rsi_snapshot(self):\n        fired, mult, _ = heuristic_crypto_oversold_boost({})\n        self.assertFalse(fired)\n        self.assertAlmostEqual(mult, 1.0)\n",
+      "wire_into_adapt_strategy": "In adapt_strategy(), for strategy_name == 'crypto-momentum': after consecutive-loss and win-rate checks, call heuristic_crypto_oversold_boost(today_stats) where today_stats is the full stats dict in run()/adapt() scope. If fired=True and current size_multiplier < 1.3, set size_multiplier=1.3 and append reason to rationale_lines."
+    },
+    {
+      "title": "Per-monitor fill rate attribution via client_order_id prefix",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate.unknown 0% na 28 zleceniach to blinder operacyjny. Kluczowe pytanie: czy te 28 to wejściowe sygnały geo/defense/twitter które nie trafiają w rynek, czy TP exits z portfela alokatorowego czekające na cel +14%? Bez odpowiedzi każdy fix limitów to strzelanie na ślepo.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-28",
+      "implementation_sketch": "1. Każdy monitor który wywołuje execute_stock_signal prefixuje client_order_id: geo-monitor -> 'geo-{sym}-entry-{ts}', defense-monitor -> 'def-{sym}-entry-{ts}', twitter-monitor -> 'twit-{sym}-entry-{ts}'. 2. Allocator BUY entries -> 'alloc-buy-{sym}-{ts}' (distinct od alloc-tp). 3. analyzer.py::_strategy_from_client_id() rozszerza regex: r'^(geo|def|alloc|twit|reddit)-' -> source category. 4. fill_rate dict rozbity per-source: fill_rate.geo-monitor, fill_rate.defense-monitor, fill_rate.alloc-tp itp. 5. Adapter flaguje per-source fill_rate alert zamiast globalnego unknown. Docelowo fill_rate.unknown znika."
+    }
+  ],
+  "confidence": "medium"
+}
