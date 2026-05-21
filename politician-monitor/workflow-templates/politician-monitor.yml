@@ -41,8 +41,9 @@ jobs:
       AUTO_EXECUTE_DJT_FORM4:    "true"    # Lane A — real-time, eligible
       AUTO_EXECUTE_STOCK_ACT:    "false"   # Lane B — default alert-only
       MAX_ALERTS_PER_RUN:        "3"
-      # SEC compliance — change email to your contact
-      SEC_USER_AGENT:            "trading-system politician-monitor research@example.com"
+      # SEC compliance — User-Agent z prawdziwym kontaktem (mandatory per SEC policy).
+      # CIK 0001849635 zweryfikowane 2026-05-21 jako Trump Media & Technology Group Corp.
+      SEC_USER_AGENT:            "trading-system politician-monitor mikosbartlomiej@gmail.com"
       # Risk profile (inherited from main system)
       RISK_PROFILE:              "AGGRESSIVE_PAPER"
 
