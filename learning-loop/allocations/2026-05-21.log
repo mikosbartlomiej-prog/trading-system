@@ -51,3 +51,9 @@
 [14:52:23 INFO] ============================================================
 [14:52:23 INFO]   market_status: open=True reason=open
 [14:52:23 INFO]   execution complete: 0 placed, 0 skipped, 0 failed
+
+[16:25:37 INFO] ============================================================
+[16:25:37 INFO] execute_orders() — auto-execute path
+[16:25:37 INFO] ============================================================
+[16:25:37 INFO]   market_status: open=True reason=open
+[16:25:37 INFO]   execution complete: 0 placed, 0 skipped, 0 failed
