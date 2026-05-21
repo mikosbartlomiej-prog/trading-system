@@ -24,12 +24,13 @@
       ]
     },
     "P2_optional": {
-      "_doc": "Curators (Reddit, Crypto). Fail-soft if budget exhausted \u2014 pipeline already uses heuristic fallback when LLM unavailable. v3.8.8: tightened from 5 \u2192 4 to leave headroom for P0 3-round dialog when Anthropic 24h rolling window is tight.",
+      "_doc": "Curators (Reddit, Crypto, Twitter, Politician). Fail-soft if budget exhausted \u2014 pipeline already uses heuristic fallback when LLM unavailable. v3.8.8: tightened from 5 \u2192 4 to leave headroom for P0 3-round dialog when Anthropic 24h rolling window is tight. v3.9.2 (2026-05-21): added politician-curator (cron */2h 24/7, typically 0-2 calls/day \u2014 disclosures are sparse). Shared cap stays at 4; politician-curator inherits same fail-soft contract.",
       "cap": 4,
       "routines": [
         "reddit-curator",
         "crypto-curator",
-        "twitter-curator"
+        "twitter-curator",
+        "politician-curator"
       ]
     }
   },
