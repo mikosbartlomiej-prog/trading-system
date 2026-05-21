@@ -599,8 +599,10 @@ def run_scan() -> dict[str, Any]:
     filing_alerts_sent = 0
     if whitelisted_alerts:
         try:
-            from notify import notify_signal as _notify
+            from notify import send_email
             for fa in whitelisted_alerts[:MAX_ALERTS_PER_RUN]:
+                subject = (f"[POL-FILING] {fa['politician']} filed PTR "
+                           f"{fa.get('disclosure_date', '?')}")
                 body = "\n".join([
                     "POLITICIAN-MONITOR — Filing Alert (House Clerk tier-3 fallback)",
                     "",
@@ -614,16 +616,13 @@ def run_scan() -> dict[str, Any]:
                     "  NOTE: ticker + amount unknown from XML index — read PDF",
                     "        to see actual transactions. Auto-execute: NEVER",
                     "        for filing alerts (no ticker resolved).",
+                    "",
+                    "  Capitol Trades primary endpoint currently 503; this",
+                    "  alert is from official House Clerk XML index fallback.",
+                    "  When Capitol Trades recovers, full ticker/amount data",
+                    "  will flow through normal Curator pipeline automatically.",
                 ])
-                _notify({
-                    "subject_prefix": "[POL-FILING]",
-                    "ticker":   "(unknown)",
-                    "side":     "ALERT",
-                    "size_usd": 0,
-                    "strategy": "politician-filing-alert",
-                    "rationale": f"{fa['politician']} filed PTR; read PDF",
-                    "body_extra": body,
-                }, alert_sent=False)
+                send_email(subject, body)
                 filing_alerts_sent += 1
             print(f"  Filing alerts: {filing_alerts_sent} emails sent "
                   f"(whitelisted politicians)")
