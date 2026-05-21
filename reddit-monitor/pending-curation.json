@@ -1,5 +1,5 @@
 {
-  "narrative": "NVDA ogłosiło wyniki AH 2026-05-20: Q1 $81.62B (+85% YoY) vs est $79.19B, Q2 guidance $91B vs est $87.36B (+4.2% beat), Data Center $75.2B (+92% YoY), $80B dodatkowy buyback. Świeży catalyst <3h, organiczny spike: 20 wzmianek, spike_ratio 3× przy bazie 6.67, top post 3369 upvotów. Emituję NVDA post-earnings day-1 (1.3×) + META jako read-through (NVDA press release ogłosiło multi-year partnership z META AH dzisiaj, spike_ratio 8×). 7 innych kandydatów zabite: spike_ratio 99 to artefakt (rolling_avg=0), SMCI pauzowany systemowo, MSFT short walczy z AI risk-on regime po NVDA beat.",
+  "narrative": "NVDA post-earnings day-1: $81.62B revenue (+85% YoY, +3.1% beat vs $79.19B est), Q2 guide $91B (+4.2% beat), Data Center $75.2B (+92% YoY), $80B buyback, dywidenda 25c vs 1c. 19 WSB/stocks wzmianek, spike_ratio 3.17× na realnej bazie 6/dzień, 5091-upvote YOLO — organiczy retail engagement. Emituję NVDA post-earnings day-1 (1.3×) + META jako bezpośredni catalyst (NVDA earnings press release ogłosiło 'multi-year partnership with META spanning on-premises, cloud and AI infrastructure', spike_ratio 8×, skew 1.0). 4 inne kandydaty zabite: VOO/SPY brak edge intraday, AVGO zbyt słaby sygnał po fakcie, SMCI pauzowany systemowo.",
   "selected_signals": [
     {
       "ticker": "NVDA",
@@ -7,9 +7,9 @@
       "side": "BUY",
       "conviction": "high",
       "size_multiplier": 1.3,
-      "rationale": "NVDA Q1 FY2027 (ogłoszone AH 2026-05-20): revenue $81.62B vs est $79.19B (+3.1% beat), Data Center $75.2B (+92% YoY), Q2 guidance $91B vs est $87.36B (+4.2% beat), $80B buyback auth, dywidenda 25c vs 1c prior. 20 wzmianek WSB/stocks w 24h, spike_ratio 3× na realnych liczbach (nie hype), top post 3369 upvotów. Post-earnings momentum day-1 na clean beat + guidance raise = klasyczny setup przy VIX=17.",
+      "rationale": "NVDA Q1 FY2027 beat potwierdzone: revenue $81.62B vs est $79.19B (+3.1%), Data Center $75.2B (+92% YoY), Q2 guide $91B vs est $87.36B (+4.2% beat), $80B buyback auth, dywidenda 25c (25× poprzednia). 19 wzmianek WSB/stocks, spike_ratio 3.17× na rzeczywistej bazie 6/dzień (nie artefakt), 5091-upvote YOLO post + multiple earnings summary posts. Post-earnings day-1 momentum na clean beat + guidance raise + buyback = klasyczny setup przy VIX=17, czyste konto 0 otwartych pozycji.",
       "expected_horizon": "1-2d",
-      "key_risk": "NVDA może być już +8-10% AH przed otwarciem — gap-up entry jutro rano to FOMO ryzyko; jeśli gap >8% na open zmniejsz size do 0.5×. Lepsza ekspresja 3× ruchu: SOXL (semis 3× ETF)."
+      "key_risk": "NVDA już otworzył +6-10% gap — jeśli gap >10% na open zmniejsz size do 0.5×; day-2 IV crush na options-holders może wymusić profit-taking. Lepsza ekspresja 3× ruchu: SOXL (semis 3× ETF) zamiast NVDA dla większego leverage."
     },
     {
       "ticker": "META",
@@ -17,41 +17,29 @@
       "side": "BUY",
       "conviction": "medium",
       "size_multiplier": 1.0,
-      "rationale": "NVDA earnings press release (2026-05-20 AH) ogłosiło 'multi-year partnership with META spanning on-premises, cloud and AI infrastructure' — bezpośredni catalyst embedded w NVDA wyniku. Spike_ratio 8× (8 wzmianek vs avg 1), dedykowany META DD (1900 shares, lizard-king thesis) + NVDA wyniki w tym samym wątku. AI hyperscaler capex cycle potwierdzony przez NVDA liczby = META AI spending validated.",
+      "rationale": "NVDA earnings press release (2026-05-20 AH) zawiera explicit: 'Announced a multi-year partnership with META spanning on-premises, cloud and AI infrastructure' — bezpośredni catalyst wbudowany w NVDA wynik. spike_ratio 8× (8 wzmianek vs avg 1), skew 1.0, top post 1610 upvotów. AI hyperscaler capex cycle potwierdzony przez NVDA liczby = META AI spending validated. Konto czyste (0 pozycji), VIX 17, risk-on regime.",
       "expected_horizon": "1-2d",
-      "key_risk": "Pośredni catalyst (read-through, nie własne wyniki META); jeśli NVDA open rozczaruje lub AI sentiment cofnie się po initial pop, META traci read-through driver szybko."
+      "key_risk": "Pośredni catalyst (read-through NVDA, nie własne wyniki META); jeśli NVDA open rozczaruje lub retail rotuje profit do cash, META traci read-through driver szybko. Sprawdź czy META już gapuje w górę przed wejściem."
     }
   ],
   "rejected_signals": [
     {
-      "ticker": "USO",
-      "reason": "Sprzeczna teza: poster 'in USO calls' (bullish) ale narracja mówi $150 oil jest głupie i SPADNIE — incoherent position; 1 wzmianka, spike_ratio 99 = artefakt pierwszego dnia (rolling_avg_7d=0)."
-    },
-    {
-      "ticker": "AAPL",
-      "reason": "Zero AAPL-specific catalyst — best_post to teoria spiskowa o MSFT/semis, drugi post to dyskusja o 0DTE dyscyplinie; spike_ratio 99 = artefakt, 2 wzmianki przypadkowe."
-    },
-    {
       "ticker": "VOO",
-      "reason": "Pasywny ETF indeksowy — zero edge na 1-72h; best_post to 18-miesięczna analiza (RSP outperform SPX) i filozoficzne 'czy ktoś bije VOO' — długoterminowe narracje, nie momentum catalyst."
-    },
-    {
-      "ticker": "AVGO",
-      "reason": "Pre-earnings pozycjonowanie (55 upvotów, spike_ratio 2) — catalyst stale, NVDA już raportowało; słaba jakość sygnału, ten sam post co SMCI."
-    },
-    {
-      "ticker": "SMCI",
-      "reason": "Ticker systemowo pauzowany (paused_until=null, no auto-resume) po backteście: 4 trades / 0% WR / -$4,473 — hard kill."
-    },
-    {
-      "ticker": "MSFT",
-      "reason": "Short MSFT walczy z reżimem: NVDA beat potwierdza AI capex = MSFT Azure AI beneficiary; skew -0.25 słaby; teoria spiskowa o MSFT rally 5/15 to vague thesis bez konkretnego catalyst."
+      "reason": "Pasywny ETF indeksowy — zero edge na 1-72h momentum; spike_ratio 99 = artefakt pierwszego dnia (rolling_avg_7d=0); posty to filozoficzna debata VOO vs active trading, nie żaden świeży catalyst."
     },
     {
       "ticker": "SPY",
-      "reason": "Spike_ratio 1.5, 2 wzmianki — za słaby sygnał; top post to 0DTE anegdota gains, congressional disclosure dotyczy AT&T nie SPY; brak SPY-specific catalyst."
+      "reason": "spike_ratio 12 z 18 wzmianek, ale oba top posty dotyczą AT&T congressional disclosure Rep. Tim Moore + analizy insider buying — brak SPY-specific catalyst; NVDA/META dają czystszy, skoncentrowany exposure na tym samym risk-on driverze."
+    },
+    {
+      "ticker": "AVGO",
+      "reason": "2 wzmianki, spike_ratio 2 — zbyt słaby sygnał; post to pre-earnings positioning napisany przed NVDA wynikami; teraz gdy NVDA już raportowało, ten setup jest spóźniony i hype-only bez własnego catalyst."
+    },
+    {
+      "ticker": "SMCI",
+      "reason": "Systemowo pauzowany (paused_until=null, no auto-resume) po backteście: 4 trades / 0% WR / -$4,473 — hard kill niezależnie od catalyst."
     }
   ],
-  "macro_context": "Risk-on: VIX 17 niski, NVDA earnings beat potwierdza AI capex cycle kontynuację; reżim sprzyja long AI/semis w nadchodzącej sesji.",
+  "macro_context": "Risk-on: VIX 17, NVDA mega-beat potwierdza AI capex supercycle kontynuację Q2; reżim sprzyja long AI/semis/hyperscalers w sesji 2026-05-21.",
   "confidence_in_curation": "high"
 }
