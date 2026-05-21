@@ -319,3 +319,13 @@
 - 2026-05-19 · peak-tracker: intraday: peak $+1,399 at 774+00:0 current $+1,399 giveback 0% state=GREEN max_gross=1.50 floor=$350
 - 2026-05-19 · peak_equity advanced $95,281 -> $95,387
 
+- 2026-05-21 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-21 · alloc-reduce: SILENT — enabled but 0 trades lifetime (28 days tracked); consider disable or remove
+- 2026-05-21 · geo-defense: SILENT — enabled but 0 trades lifetime (28 days tracked); consider disable or remove
+- 2026-05-21 · geo-energy: SILENT — enabled but 0 trades lifetime (28 days tracked); consider disable or remove
+- 2026-05-21 · geo-gold: SILENT — enabled but 0 trades lifetime (28 days tracked); consider disable or remove
+- 2026-05-21 · geo-xom: SILENT — enabled but 0 trades lifetime (28 days tracked); consider disable or remove
+- 2026-05-21 · fill-rate alert [unknown]: fill rate 7% below 50% (0 canceled / 15 placed) — limits too tight or quote stale
+- 2026-05-21 · rsi-alert [oversold]: ETH/USD RSI=29.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-21 · peak_equity advanced $95,387 -> $95,592
+
