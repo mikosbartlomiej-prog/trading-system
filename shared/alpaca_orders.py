@@ -646,13 +646,25 @@ def execute_stock_signal(signal: dict) -> dict | None:
     tp_abs = signal.get("take_profit")
     entry  = None
 
+    # v3.8.9 (2026-05-21): aggressive entry pricing — buy at ask, sell at bid.
+    # LLM-flagged 2026-05-19: fill_rate.unknown 37% (16 cancelled / 30 placed)
+    # avg_cancel=82.4 min — geo-USO/OXY/GLD LIMITs placed at q["mid"] sat
+    # in queue 80+ min then expired. For 24/7-news-driven entries (geo /
+    # defense / twitter / reddit) we prefer guaranteed fill over 0.5×spread
+    # price improvement. Stocks/ETFs spread ~0.01-0.05 typically → cost is
+    # negligible vs missed fills.
+    def _aggressive_entry(quote: dict, side_: str) -> float:
+        if side_ == "buy":
+            return float(quote.get("ask") or quote.get("mid"))
+        return float(quote.get("bid") or quote.get("mid"))
+
     if sl_abs and tp_abs:
-        # Need a fresh entry price. Use mid of latest quote.
+        # Need a fresh entry price. Use ask (BUY) / bid (SHORT) for aggressive fill.
         q = get_latest_quote(sym)
         if not q:
             print(f"  {sym}: quote unavailable -> skip")
             return None
-        entry = q["mid"]
+        entry = _aggressive_entry(q, side)
     else:
         # Fallback path: SL/TP given as percentages
         sl_pct = float(signal.get("sl_pct", 0))
@@ -664,7 +676,9 @@ def execute_stock_signal(signal: dict) -> dict | None:
         if not q:
             print(f"  {sym}: quote unavailable -> skip")
             return None
-        entry = q["mid"]
+        # v3.8.9: aggressive fill — ask for BUY, bid for SHORT. SL/TP still
+        # computed relative to entry, so % thresholds preserved.
+        entry = _aggressive_entry(q, side)
         if side == "buy":
             sl_abs = entry * (1 + sl_pct / 100.0)   # sl_pct is negative
             tp_abs = entry * (1 + tp_pct / 100.0)

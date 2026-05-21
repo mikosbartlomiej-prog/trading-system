@@ -721,6 +721,102 @@ def compute_rsi_snapshot() -> dict:
     return out
 
 
+# ─── Equity-gap + ETH-oversold alerts (v3.8.9, 2026-05-21) ─────────────────
+
+
+def compute_equity_gap_alert(today_stats, prev_equity):
+    """
+    LLM-flagged 2026-05-18: "Analyzer ślepy na źródło returnu". When
+    daily equity moves > $500 in absolute value but cumulative_trades=0,
+    flag the gap so operator + LLM can investigate.
+
+    Returns:
+      {
+        "delta_usd":           +/-N,
+        "prev_equity":         95387.0,
+        "current_equity":      94800.0,
+        "attributed_trades":   0,
+        "severity":            "WARN" | "INFO",
+        "message":             "Equity dropped $587 with 0 attributed trades…"
+      }
+    OR None when no gap (delta < $500 OR attributed trades > 0).
+    """
+    try:
+        eq = float(today_stats.get("equity", 0))
+        prev = float(prev_equity or 0)
+    except (TypeError, ValueError):
+        return None
+    if eq <= 0 or prev <= 0:
+        return None
+
+    delta = eq - prev
+    if abs(delta) < 500:
+        return None
+
+    attributed = int(today_stats.get("cumulative_trades", 0))
+    if attributed > 0:
+        # Trades closed and attributed — gap explained by strategy P&L.
+        return None
+
+    severity = "WARN" if abs(delta) >= 1000 else "INFO"
+    direction = "increased" if delta > 0 else "dropped"
+    return {
+        "delta_usd":         round(delta, 2),
+        "prev_equity":       round(prev, 2),
+        "current_equity":    round(eq, 2),
+        "attributed_trades": attributed,
+        "severity":          severity,
+        "message": (
+            f"Equity {direction} ${abs(delta):,.0f} (${prev:,.0f} → ${eq:,.0f}) "
+            f"with 0 attributed closed trades. Likely sources: open-position "
+            f"mark-to-market, unfilled LIMITs, allocator order side-effects, "
+            f"or stale attribution. Cross-check positions tab + recent orders."
+        ),
+    }
+
+
+def compute_oversold_alerts(rsi_snapshot: dict, threshold: float = 30.0) -> list[dict]:
+    """
+    LLM-flagged 2026-05-18: flag crypto RSI < 30 as potential pre-signal.
+    Returns one alert per oversold symbol from rsi_snapshot.
+
+    Symmetric: also flags overbought (RSI > 75) as fade-the-trend warning
+    for short-side strategies (relevant to options-momentum PUT setups).
+    """
+    alerts: list[dict] = []
+    if not rsi_snapshot:
+        return alerts
+    for sym, rsi_data in rsi_snapshot.items():
+        rsi_today = rsi_data.get("today")
+        if rsi_today is None:
+            continue
+        if rsi_today <= threshold:
+            alerts.append({
+                "symbol":   sym,
+                "rsi":      rsi_today,
+                "regime":   "oversold",
+                "kind":     "pre-signal",
+                "message": (
+                    f"{sym} RSI={rsi_today:.1f} ≤ {threshold:.0f} — deep oversold. "
+                    f"Statistically high bounce probability. "
+                    f"crypto-momentum / momentum-long should watch for entry."
+                ),
+            })
+        elif rsi_today >= 75:
+            alerts.append({
+                "symbol":   sym,
+                "rsi":      rsi_today,
+                "regime":   "overbought",
+                "kind":     "fade-risk",
+                "message": (
+                    f"{sym} RSI={rsi_today:.1f} ≥ 75 — overbought, fade-the-trend "
+                    f"risk for new long entries. Options PUT entries blocked "
+                    f"by v3.8.6 regime gate; broader long-side caution warranted."
+                ),
+            })
+    return alerts
+
+
 # ─── Position audit (2026-05-13 — proposal from 2026-05-10) ─────────────────
 
 def compute_position_audit(positions: list[dict], orders: list[dict]) -> list[dict]:
@@ -1061,6 +1157,8 @@ def run():
     # See compute_position_audit below.
     position_audit = compute_position_audit(open_positions_snapshot, orders)
 
+    rsi_snapshot = compute_rsi_snapshot()
+
     today_stats = {
         "as_of":             date_iso,
         "window_hours":      24,                             # all *_24h fields scoped here
@@ -1071,7 +1169,7 @@ def run():
         "by_source":         {},   # placeholder for future per-source attribution
         "fill_rate":         compute_fill_rate(orders),
         "tp_hit_rate":       compute_tp_hit_rate(orders),  # 10-day data-collect for trailing-stop decision
-        "rsi_snapshot":      compute_rsi_snapshot(),       # macro context for LLM "dormant vs broken" check
+        "rsi_snapshot":      rsi_snapshot,                  # macro context for LLM "dormant vs broken" check
         # 2026-05-13 fixes:
         "open_positions":    open_positions_snapshot,         # full portfolio snapshot — fills "60% blind spot"
         "lifetime_from_state": lifetime_from_state,           # ground truth vs 24h window
@@ -1079,6 +1177,18 @@ def run():
         "cumulative_trades": len(trades),
         "cumulative_pnl_usd": round(sum(t["pnl_usd"] for t in trades), 2),
     }
+
+    # v3.8.9 (2026-05-21): equity-gap + oversold alerts. Both surface to
+    # LLM payload + rationale.md so Senior PM has visibility into
+    # "analyzer ślepy na źródło returnu" (LLM-flagged 2026-05-19).
+    prior_state_for_alerts = load_state()
+    prev_eq_for_alert = float(prior_state_for_alerts.get("peak_equity") or 0)
+    equity_gap = compute_equity_gap_alert(today_stats, prev_eq_for_alert)
+    if equity_gap:
+        today_stats["equity_gap_alert"] = equity_gap
+    oversold = compute_oversold_alerts(rsi_snapshot)
+    if oversold:
+        today_stats["rsi_alerts"] = oversold
 
     # Load prior state, run deterministic adapter
     old_state = load_state()
@@ -1334,6 +1444,17 @@ def run():
         full_rationale.append(
             f"{date_iso} · position-audit: {s['symbol']} {s['reason']} "
             f"(mv=${s['market_value']:.0f})"
+        )
+
+    # v3.8.9 (2026-05-21): equity-gap + RSI alerts → rationale
+    eg = today_stats.get("equity_gap_alert")
+    if eg:
+        full_rationale.append(
+            f"{date_iso} · equity-gap [{eg['severity']}]: {eg['message']}"
+        )
+    for a in (today_stats.get("rsi_alerts") or []):
+        full_rationale.append(
+            f"{date_iso} · rsi-alert [{a['regime']}]: {a['message']}"
         )
 
     # Peak-tracker snapshot → rationale (so weekly retro sees intraday volatility)

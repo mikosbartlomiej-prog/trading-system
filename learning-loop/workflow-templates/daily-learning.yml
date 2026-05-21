@@ -92,6 +92,14 @@ jobs:
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: daily update ${DATE}"
-            git push origin "$BRANCH"
-            echo "Pushed learning state for ${DATE} to ${BRANCH}."
+            # v3.8.9 (2026-05-21): retry-on-non-fast-forward.
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed learning state for ${DATE} to ${BRANCH} on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
           fi

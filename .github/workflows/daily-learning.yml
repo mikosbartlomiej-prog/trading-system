@@ -80,5 +80,18 @@ jobs:
           else
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: daily update ${DATE}"
-            git push origin "$BRANCH"
+            # v3.8.9 (2026-05-21): retry-on-non-fast-forward. Daily-learning
+            # takes 5-15 min to run (3-round LLM dialog); during that window
+            # exit-monitor / health / sync workflows push to main. Without
+            # this retry, daily-learning silently failed 4× over 2026-05-20/21.
+            # Pattern mirrors exit-monitor and morning-allocator commit blocks.
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed daily-learning state on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 2))
+            done
           fi
