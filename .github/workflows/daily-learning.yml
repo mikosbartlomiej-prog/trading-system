@@ -99,33 +99,49 @@ jobs:
             echo "No state changes to commit (no orders this window or no parameter shifts)."
           else
             DATE=$(date -u +%Y-%m-%d)
+            # v3.9.4.3 (2026-05-21 PM3): bulletproof retry — capture file
+            # list, commit, then on retry RESET HARD to origin + checkout
+            # our files from commit-sha + re-add + re-commit. Bypasses
+            # rebase conflict mechanics entirely. Analyzer is authoritative
+            # writer for learning-loop/state.json (per state_policy.py),
+            # so OVERWRITING concurrent changes to that file is correct.
+            #
+            # Previous attempts failed:
+            # - v3.8.9: 3 attempts insufficient
+            # - v3.9.4: pull --rebase aborted on unstaged changes
+            # - v3.9.4.2: --autostash hit merge conflict, broke working tree
+            STAGED_FILES=$(git diff --cached --name-only | tr '\n' ' ')
             git commit -m "learning: daily update ${DATE}"
-            # v3.8.9 (2026-05-21): retry-on-non-fast-forward.
-            # v3.9.4 (2026-05-21 PM): bumped 3 → 6 attempts + exponential backoff
-            # because 2026-05-21 07:55 UTC run lost all 3 retries to concurrent
-            # exit-monitor/health-snapshot/politician-monitor pushes (creating
-            # 2026-05-21.json plan that never reached origin → morning-allocator
-            # had no plan to execute). 6 attempts × 4s/8s/16s/32s/60s/60s =
-            # ~3 min total budget — enough to outlast any other monitor's tick.
+            COMMIT_SHA=$(git rev-parse HEAD)
+
             for attempt in 1 2 3 4 5 6; do
               if git push origin "$BRANCH"; then
-                echo "Pushed learning state for ${DATE} to ${BRANCH} on attempt ${attempt}."
+                echo "Pushed learning state for ${DATE} on attempt ${attempt}."
                 break
               fi
               if [ "$attempt" -eq 6 ]; then
-                echo "ERROR: all 6 push attempts failed — plan ${DATE} did NOT reach origin"
-                echo "        morning-allocator will have no plan to execute today"
-                echo "        manual `gh workflow run daily-learning.yml` needed"
+                echo "ERROR: 6 push attempts failed — plan ${DATE} not on origin"
                 exit 1
               fi
-              echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
-              # --autostash: analyzer may have modified runtime_state.json or
-              # other state files that aren't in our staged commit. Without
-              # autostash, pull --rebase aborts on "unstaged changes" and the
-              # retry loop becomes useless (root cause of 07:55 UTC + 14:02 UTC
-              # failed pushes 2026-05-21).
-              git pull --rebase --autostash origin "$BRANCH" || true
-              # Exponential backoff: 4, 8, 16, 32, 60, 60 sec
+              echo "Push attempt ${attempt} failed — hard-reset + re-apply + retry"
+
+              # Wipe local state, get fresh origin
+              git reset --hard HEAD 2>/dev/null || true
+              git clean -fd 2>/dev/null || true
+              git fetch origin "$BRANCH"
+              git reset --hard "origin/$BRANCH"
+
+              # Re-apply our files from the commit we made
+              if [ -n "$STAGED_FILES" ]; then
+                git checkout "$COMMIT_SHA" -- $STAGED_FILES 2>/dev/null || true
+                git add $STAGED_FILES 2>/dev/null || true
+                if ! git diff --cached --quiet; then
+                  git commit -m "learning: daily update ${DATE} (retry ${attempt})"
+                  COMMIT_SHA=$(git rev-parse HEAD)
+                fi
+              fi
+
+              # Backoff: 4, 8, 16, 32, 60 sec
               if [ "$attempt" -lt 5 ]; then
                 sleep $((attempt * attempt * 4))
               else
