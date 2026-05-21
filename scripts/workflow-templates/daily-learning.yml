@@ -14,6 +14,14 @@ permissions:
   contents:      write
   pull-requests: write
 
+# Prevent concurrent runs racing on state.json + allocations/*.json commits.
+# `cancel-in-progress: false` because a half-completed daily run might leave
+# pending-llm-*.json files orphaned — letting it finish + retry on next cron
+# is safer than killing mid-LLM-dialog.
+concurrency:
+  group: daily-learning-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   analyze-and-adapt:
     runs-on: ubuntu-latest
