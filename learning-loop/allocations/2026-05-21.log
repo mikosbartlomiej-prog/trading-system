@@ -1,59 +1,47 @@
-[14:51:10 INFO] ============================================================
-[14:51:10 INFO] AccountAwareAllocator — daily plan 2026-05-21
-[14:51:10 INFO] ============================================================
-[14:51:10 INFO] ── Step 1: fetching account state ──
-[14:51:10 INFO]   equity=$  95594.89  cash=$ 240835.99  buying_power=$ 288633.44
-[14:51:10 INFO] ── Step 2: fetching open positions ──
-[14:51:10 INFO]   7 positions, invested_ratio=0.9926 (target=1.00, min=0.98)
-[14:51:10 DBG ]     AMD        long  qty=38.0000 mv=$ 16545.01  pct_eq=17.31%  pl=-1.24%
-[14:51:10 DBG ]     CRWD       long  qty=26.0000 mv=$ 16825.12  pct_eq=17.60%  pl=-0.28%
-[14:51:10 DBG ]     GLD        long  qty=23.0000 mv=$  9504.06  pct_eq=9.94%  pl=-0.07%
-[14:51:10 DBG ]     NOW        long  qty=171.0000 mv=$ 17275.28  pct_eq=18.07%  pl=+0.79%
-[14:51:10 DBG ]     PANW       long  qty=67.0000 mv=$ 16682.33  pct_eq=17.45%  pl=-1.10%
-[14:51:10 DBG ]     QQQ        long  qty=13.0000 mv=$  9203.74  pct_eq=9.63%  pl=-0.45%
-[14:51:10 DBG ]     SPY        long  qty=12.0000 mv=$  8854.32  pct_eq=9.26%  pl=-0.32%
-[14:51:10 INFO]   PDT mode=OK  dt_remaining=3
-[14:51:10 INFO] ── Step 3: defensive mode check ──
-[14:51:10 INFO]   defensive_mode OFF → proceed with deployment
-[14:51:10 INFO] ── Step 4: regime detection ──
-[14:51:10 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[14:51:10 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[14:51:10 INFO] ── Step 5: scoring allowed universe ──
-[14:51:13 DBG ]     CRWD     score=+0.636  bucket=software_quality
-[14:51:13 DBG ]     PANW     score=+0.543  bucket=software_quality
-[14:51:13 DBG ]     NOW      score=+0.384  bucket=software_quality
-[14:51:13 DBG ]     AMD      score=+0.350  bucket=ai_nasdaq_semis
-[14:51:13 DBG ]     USO      score=+0.202  bucket=inflation_energy
-[14:51:13 INFO] ── Step 6: target weight construction ──
-[14:51:13 INFO]   reason: regime=NEUTRAL | primary_picks=4(72%) | fallback=['SPY', 'QQQ', 'GLD']
-[14:51:13 INFO]   target_invested_ratio_after_plan = 1.0000
-[14:51:13 DBG ]     CRWD       target_weight=0.1800 ($17207.08)
-[14:51:13 DBG ]     PANW       target_weight=0.1800 ($17207.08)
-[14:51:13 DBG ]     NOW        target_weight=0.1800 ($17207.08)
-[14:51:13 DBG ]     AMD        target_weight=0.1800 ($17207.08)
-[14:51:13 DBG ]     SPY        target_weight=0.1000 ($9559.49)
-[14:51:13 DBG ]     QQQ        target_weight=0.1000 ($9559.49)
-[14:51:13 DBG ]     GLD        target_weight=0.0800 ($7647.59)
-[14:51:13 INFO] ── Step 7: rebalance order generation ──
-[14:51:13 INFO]     AMD      HOLD    current=$ 16545.01 target=$ 17207.08 delta=$  +662.07  -- |delta +0.69%| < min_diff 2.00%
-[14:51:13 INFO]     CRWD     HOLD    current=$ 16825.12 target=$ 17207.08 delta=$  +381.96  -- |delta +0.40%| < min_diff 2.00%
-[14:51:13 INFO]     GLD      HOLD    current=$  9504.06 target=$  7647.59 delta=$ -1856.47  -- |delta -1.94%| < min_diff 2.00%
-[14:51:13 INFO]     NOW      HOLD    current=$ 17275.28 target=$ 17207.08 delta=$   -68.20  -- |delta -0.07%| < min_diff 2.00%
-[14:51:13 INFO]     PANW     HOLD    current=$ 16682.33 target=$ 17207.08 delta=$  +524.75  -- |delta +0.55%| < min_diff 2.00%
-[14:51:13 INFO]     QQQ      HOLD    current=$  9203.74 target=$  9559.49 delta=$  +355.75  -- |delta +0.37%| < min_diff 2.00%
-[14:51:13 INFO]     SPY      HOLD    current=$  8854.32 target=$  9559.49 delta=$  +705.17  -- |delta +0.74%| < min_diff 2.00%
-[14:51:13 INFO]   summary: 0 actionable + 7 hold; passed=0  failed=0
-[14:51:13 INFO] ── Step 8: plan complete ──
-[14:51:13 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[14:52:23 INFO] ============================================================
-[14:52:23 INFO] execute_orders() — auto-execute path
-[14:52:23 INFO] ============================================================
-[14:52:23 INFO]   market_status: open=True reason=open
-[14:52:23 INFO]   execution complete: 0 placed, 0 skipped, 0 failed
-
-[16:25:37 INFO] ============================================================
-[16:25:37 INFO] execute_orders() — auto-execute path
-[16:25:37 INFO] ============================================================
-[16:25:37 INFO]   market_status: open=True reason=open
-[16:25:37 INFO]   execution complete: 0 placed, 0 skipped, 0 failed
+[22:16:27 INFO] ============================================================
+[22:16:27 INFO] AccountAwareAllocator — daily plan 2026-05-21
+[22:16:27 INFO] ============================================================
+[22:16:27 INFO] ── Step 1: fetching account state ──
+[22:16:27 INFO]   equity=$  96821.87  cash=$ 240222.51  buying_power=$ 288633.44
+[22:16:27 INFO] ── Step 2: fetching open positions ──
+[22:16:27 INFO]   7 positions, invested_ratio=0.9927 (target=1.00, min=0.98)
+[22:16:27 DBG ]     AMD        long  qty=38.0000 mv=$ 17100.00  pct_eq=17.66%  pl=+2.07%
+[22:16:27 DBG ]     CRWD       long  qty=26.0000 mv=$ 16848.00  pct_eq=17.40%  pl=-0.14%
+[22:16:27 DBG ]     GLD        long  qty=23.0000 mv=$  9586.40  pct_eq=9.90%  pl=+0.80%
+[22:16:27 DBG ]     NOW        long  qty=171.0000 mv=$ 17459.10  pct_eq=18.03%  pl=+1.87%
+[22:16:27 DBG ]     PANW       long  qty=67.0000 mv=$ 16889.48  pct_eq=17.44%  pl=+0.12%
+[22:16:27 DBG ]     QQQ        long  qty=13.0000 mv=$  9308.39  pct_eq=9.61%  pl=+0.68%
+[22:16:27 DBG ]     SPY        long  qty=12.0000 mv=$  8925.60  pct_eq=9.22%  pl=+0.49%
+[22:16:27 INFO]   PDT mode=OK  dt_remaining=3
+[22:16:27 INFO] ── Step 3: defensive mode check ──
+[22:16:27 INFO]   defensive_mode OFF → proceed with deployment
+[22:16:27 INFO] ── Step 4: regime detection ──
+[22:16:27 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:16:27 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[22:16:27 INFO] ── Step 5: scoring allowed universe ──
+[22:16:28 DBG ]     PANW     score=+0.709  bucket=software_quality
+[22:16:28 DBG ]     CRWD     score=+0.680  bucket=software_quality
+[22:16:28 DBG ]     AMD      score=+0.537  bucket=ai_nasdaq_semis
+[22:16:28 DBG ]     NOW      score=+0.366  bucket=software_quality
+[22:16:28 DBG ]     SMH      score=+0.324  bucket=ai_nasdaq_semis
+[22:16:28 INFO] ── Step 6: target weight construction ──
+[22:16:28 INFO]   reason: regime=NEUTRAL | primary_picks=4(72%) | fallback=['SPY', 'QQQ', 'GLD']
+[22:16:28 INFO]   target_invested_ratio_after_plan = 1.0000
+[22:16:28 DBG ]     PANW       target_weight=0.1800 ($17427.94)
+[22:16:28 DBG ]     CRWD       target_weight=0.1800 ($17427.94)
+[22:16:28 DBG ]     AMD        target_weight=0.1800 ($17427.94)
+[22:16:28 DBG ]     NOW        target_weight=0.1800 ($17427.94)
+[22:16:28 DBG ]     SPY        target_weight=0.1000 ($9682.19)
+[22:16:28 DBG ]     QQQ        target_weight=0.1000 ($9682.19)
+[22:16:28 DBG ]     GLD        target_weight=0.0800 ($7745.75)
+[22:16:28 INFO] ── Step 7: rebalance order generation ──
+[22:16:28 INFO]     AMD      HOLD    current=$ 17100.00 target=$ 17427.94 delta=$  +327.94  -- |delta +0.34%| < min_diff 2.00%
+[22:16:28 INFO]     CRWD     HOLD    current=$ 16848.00 target=$ 17427.94 delta=$  +579.94  -- |delta +0.60%| < min_diff 2.00%
+[22:16:28 INFO]     GLD      HOLD    current=$  9586.40 target=$  7745.75 delta=$ -1840.65  -- |delta -1.90%| < min_diff 2.00%
+[22:16:28 INFO]     NOW      HOLD    current=$ 17459.10 target=$ 17427.94 delta=$   -31.16  -- |delta -0.03%| < min_diff 2.00%
+[22:16:28 INFO]     PANW     HOLD    current=$ 16889.48 target=$ 17427.94 delta=$  +538.46  -- |delta +0.56%| < min_diff 2.00%
+[22:16:28 INFO]     QQQ      HOLD    current=$  9308.39 target=$  9682.19 delta=$  +373.80  -- |delta +0.39%| < min_diff 2.00%
+[22:16:28 INFO]     SPY      HOLD    current=$  8925.60 target=$  9682.19 delta=$  +756.59  -- |delta +0.78%| < min_diff 2.00%
+[22:16:28 INFO]   summary: 0 actionable + 7 hold; passed=0  failed=0
+[22:16:28 INFO] ── Step 8: plan complete ──
+[22:16:28 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
