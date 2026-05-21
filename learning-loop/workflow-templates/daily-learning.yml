@@ -99,18 +99,13 @@ jobs:
             echo "No state changes to commit (no orders this window or no parameter shifts)."
           else
             DATE=$(date -u +%Y-%m-%d)
-            # v3.9.4.3 (2026-05-21 PM3): bulletproof retry — capture file
-            # list, commit, then on retry RESET HARD to origin + checkout
-            # our files from commit-sha + re-add + re-commit. Bypasses
-            # rebase conflict mechanics entirely. Analyzer is authoritative
-            # writer for learning-loop/state.json (per state_policy.py),
-            # so OVERWRITING concurrent changes to that file is correct.
-            #
-            # Previous attempts failed:
+            # v3.9.4.4 (2026-05-21 PM4): cherry-pick retry. Earlier
+            # versions failed:
             # - v3.8.9: 3 attempts insufficient
             # - v3.9.4: pull --rebase aborted on unstaged changes
-            # - v3.9.4.2: --autostash hit merge conflict, broke working tree
-            STAGED_FILES=$(git diff --cached --name-only | tr '\n' ' ')
+            # - v3.9.4.2: --autostash hit merge conflict
+            # - v3.9.4.3: reset + checkout missed deleted-files restore,
+            #             retry was no-op ("Everything up-to-date")
             git commit -m "learning: daily update ${DATE}"
             COMMIT_SHA=$(git rev-parse HEAD)
 
@@ -121,25 +116,26 @@ jobs:
               fi
               if [ "$attempt" -eq 6 ]; then
                 echo "ERROR: 6 push attempts failed — plan ${DATE} not on origin"
+                git log --oneline -3
                 exit 1
               fi
-              echo "Push attempt ${attempt} failed — hard-reset + re-apply + retry"
+              echo "Push attempt ${attempt} failed — fetch + cherry-pick + retry"
 
-              # Wipe local state, get fresh origin
+              # Wipe any uncommitted state, fetch fresh origin
               git reset --hard HEAD 2>/dev/null || true
               git clean -fd 2>/dev/null || true
               git fetch origin "$BRANCH"
-              git reset --hard "origin/$BRANCH"
 
-              # Re-apply our files from the commit we made
-              if [ -n "$STAGED_FILES" ]; then
-                git checkout "$COMMIT_SHA" -- $STAGED_FILES 2>/dev/null || true
-                git add $STAGED_FILES 2>/dev/null || true
-                if ! git diff --cached --quiet; then
-                  git commit -m "learning: daily update ${DATE} (retry ${attempt})"
-                  COMMIT_SHA=$(git rev-parse HEAD)
-                fi
+              # Cherry-pick our commit on top of fresh origin
+              git reset --hard "origin/$BRANCH"
+              if ! git cherry-pick --strategy=recursive -X theirs "$COMMIT_SHA" 2>&1; then
+                echo "  cherry-pick failed — aborting + using empty conflict resolution"
+                git cherry-pick --abort 2>/dev/null || true
+                # Fallback: replay commit using read-tree
+                git read-tree -m -u HEAD "$COMMIT_SHA"
+                git commit --no-edit -m "learning: daily update ${DATE} (retry ${attempt})" || true
               fi
+              COMMIT_SHA=$(git rev-parse HEAD)
 
               # Backoff: 4, 8, 16, 32, 60 sec
               if [ "$attempt" -lt 5 ]; then
