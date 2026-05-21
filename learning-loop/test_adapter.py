@@ -367,3 +367,33 @@ class TestStaleExitEmergency(unittest.TestCase):
     def test_no_trigger_missing_key(self):
         fired, _ = heuristic_stale_exit_emergency({})
         self.assertFalse(fired)
+
+
+# ─── Lane2 auto-added test for: Crypto oversold bounce boost — ETH RSI ≤ 30 + BTC RSI ≤ 45 ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_crypto_oversold_boost  # noqa: E402,F401
+
+class TestCryptoOversoldBoost(unittest.TestCase):
+    def test_fires_eth_oversold_btc_approaching(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 28.5}, "BTC/USD": {"today": 40.0}}}
+        fired, mult, reason = heuristic_crypto_oversold_boost(stats)
+        self.assertTrue(fired)
+        self.assertAlmostEqual(mult, 1.3)
+        self.assertIn("28.5", reason)
+    def test_no_fire_eth_above_threshold(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 32.0}, "BTC/USD": {"today": 40.0}}}
+        fired, _, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertFalse(fired)
+    def test_no_fire_btc_above_threshold(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 28.0}, "BTC/USD": {"today": 50.0}}}
+        fired, _, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertFalse(fired)
+    def test_boundary_values_fire(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 30.0}, "BTC/USD": {"today": 45.0}}}
+        fired, mult, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertTrue(fired)
+        self.assertAlmostEqual(mult, 1.3)
+    def test_missing_rsi_snapshot(self):
+        fired, mult, _ = heuristic_crypto_oversold_boost({})
+        self.assertFalse(fired)
+        self.assertAlmostEqual(mult, 1.0)

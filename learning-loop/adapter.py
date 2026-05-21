@@ -666,3 +666,20 @@ def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
             "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
         )
     return False, ""
+
+
+# ─── Lane2 auto-added — Crypto oversold bounce boost — ETH RSI ≤ 30 + BTC RSI ≤ 45 ────────────
+def heuristic_crypto_oversold_boost(today_stats: dict) -> tuple:
+    """Boost crypto-momentum size_multiplier when ETH deeply oversold and BTC approaching oversold.
+
+    Args:
+        today_stats: full today_stats dict (rsi_snapshot is top-level key).
+    Returns:
+        (fired: bool, multiplier: float, reason: str)
+    """
+    rsi = today_stats.get("rsi_snapshot", {})
+    eth_rsi = rsi.get("ETH/USD", {}).get("today", 50.0)
+    btc_rsi = rsi.get("BTC/USD", {}).get("today", 50.0)
+    if eth_rsi <= 30.0 and btc_rsi <= 45.0:
+        return True, 1.3, "ETH RSI {:.1f} <=30 + BTC RSI {:.1f} <=45: oversold bounce setup".format(eth_rsi, btc_rsi)
+    return False, 1.0, ""
