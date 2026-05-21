@@ -93,13 +93,30 @@ jobs:
             DATE=$(date -u +%Y-%m-%d)
             git commit -m "learning: daily update ${DATE}"
             # v3.8.9 (2026-05-21): retry-on-non-fast-forward.
-            for attempt in 1 2 3; do
+            # v3.9.4 (2026-05-21 PM): bumped 3 → 6 attempts + exponential backoff
+            # because 2026-05-21 07:55 UTC run lost all 3 retries to concurrent
+            # exit-monitor/health-snapshot/politician-monitor pushes (creating
+            # 2026-05-21.json plan that never reached origin → morning-allocator
+            # had no plan to execute). 6 attempts × 4s/8s/16s/32s/60s/60s =
+            # ~3 min total budget — enough to outlast any other monitor's tick.
+            for attempt in 1 2 3 4 5 6; do
               if git push origin "$BRANCH"; then
                 echo "Pushed learning state for ${DATE} to ${BRANCH} on attempt ${attempt}."
                 break
               fi
+              if [ "$attempt" -eq 6 ]; then
+                echo "ERROR: all 6 push attempts failed — plan ${DATE} did NOT reach origin"
+                echo "        morning-allocator will have no plan to execute today"
+                echo "        manual `gh workflow run daily-learning.yml` needed"
+                exit 1
+              fi
               echo "Push attempt ${attempt} failed — rebasing on origin and retrying."
               git pull --rebase origin "$BRANCH" || true
-              sleep $((attempt * 2))
+              # Exponential backoff: 4, 8, 16, 32, 60, 60 sec
+              if [ "$attempt" -lt 5 ]; then
+                sleep $((attempt * attempt * 4))
+              else
+                sleep 60
+              fi
             done
           fi
