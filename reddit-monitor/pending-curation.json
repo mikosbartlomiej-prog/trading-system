@@ -1,5 +1,5 @@
 {
-  "narrative": "NVDA rozstrzeliło konsensus: Q1 revenue $81.6B vs est. $79.2B (+85% YoY), Q2 guide $91B vs est. $87.4B, Data Center +92% YoY, dywidenda 25× podniesiona, buyback +$80B — post-earnings day-1 momentum jest LIVE i retail FOMO dopiero wchodzi (WSB YOLO 5215 ups, 19 wzmianek, spike_ratio 3.17×). AVGO jako AI-networking read-through przy tym samym catalyst — drugorzędny ale fundamentalnie uzasadniony po potwierdzeniu AI capex. Reszta zabita: VOO artefakt (rolling_avg=0), AMD już w portfelu na -4% bez nowego catalyst, SMCI paused do 2026-06-01, SPY i VXUS brak edge intraday.",
+  "narrative": "NVDA Q1 FY2027 blowout: $81.6B vs $79.19B est (+85% YoY), Q2 guide $91B vs $87.36B est, Data Center +92% YoY, $80B buyback, dywidenda raised 25× ($0.01→$0.25) — to jest katalog historyczny dla AI capex bulls; 17 wzmianek, spike 2.83×, skew 0.63, WSB YOLO 600k z 5272 upvotami = retail fomo dopiero wchodzi. Wybieram NVDA 1.3× — wszystkie pozostałe zabite: VOO/VXUS to filozofia inwestycyjna bez sygnału, SPY już trzymany @ 9.3%, AVGO zbyt cienki sygnał (2 wzmianki, cleaner przez NVDA direct), SMCI paused (0% backtest WR), AMD = book review bez tezy.",
   "selected_signals": [
     {
       "ticker": "NVDA",
@@ -7,43 +7,37 @@
       "side": "BUY",
       "conviction": "high",
       "size_multiplier": 1.3,
-      "rationale": "NVDA Q1 FY27 beat na wszystkich liniach: revenue $81.6B vs est. $79.2B (+3.1%), Q2 guide $91B vs est. $87.4B (+4.2%), Data Center $75.2B (+92% YoY), dywidenda 25× podniesiona ($0.01→$0.25), buyback +$80B auth. Świeży AH catalyst z wczoraj, dzisiaj post-earnings day-1: 19 wzmianek WSB/stocks, spike_ratio 3.17× na realnej bazie 6/dzień (nie artefakt), YOLO post 5215 ups to organic retail momentum wchodzący WCZEŚNIE — nie late FOMO.",
-      "expected_horizon": "1d",
-      "key_risk": "Gap-up overnight >8% = late entry — sprawdź pre-market przed execution; jeśli NVDA już up >8% od close yesterday, skip; lepsza ekspresja 3× tego samego ruchu: SOXL (semis 3× ETF)."
-    },
-    {
-      "ticker": "AVGO",
-      "lane": "sub",
-      "side": "BUY",
-      "conviction": "medium",
-      "size_multiplier": 1.0,
-      "rationale": "NVDA Data Center +92% YoY potwierdza eksplozję AI capex — bezpośredni read-through na AVGO (custom silicon + AI networking dla hyperscalerów: Google TPU, Meta MTIA). Post z r/stocks wskazał AVGO pre-earnings jako play na Blackwell deployment; catalyst teraz fundamentalnie potwierdzony wynikami NVDA.",
-      "expected_horizon": "1d",
-      "key_risk": "AVGO nie ma własnego catalyst dzisiaj — może underperformować NVDA jeśli rynek gra tylko direct beat; NVDA jest czystszą ekspresją tego samego tematu przy słabszym sygnale (mentions 2, spike_ratio 2)."
+      "rationale": "NVDA Q1 FY2027 właśnie opublikowane: revenue $81.6B vs est. $79.19B (+85% YoY, Data Center +92% YoY, Hyperscale $37.9B +115%), GAAP Net Income $58.3B (+211% YoY), Q2 guide $91B vs est. $87.36B (+4.2% beat na guidance) — triple beat na wszystkich liniach. $80B nowy buyback + dywidenda raised 25× ($0.01→$0.25/sh). WSB YOLO 600k post z 5272 upvotami + 17 Reddit wzmianek spike 2.83× na realnej bazie (nie artefakt) = retail fomo wchodzi wcześnie, nie late. NVDA nie w portfelu → czyste wejście, 0% koncentracja.",
+      "expected_horizon": "2-3d",
+      "key_risk": "Jeśli NVDA jest już up >10% od poprzedniego zamknięcia (overnight gap), wejście jest FOMO — sprawdź cenę przed egzekucją i skip jeśli powyżej tego progu; lepsza 3× ekspresja tego samego ruchu: SOXL."
     }
   ],
   "rejected_signals": [
     {
       "ticker": "VOO",
-      "reason": "Spike_ratio=99 to artefakt (rolling_avg_7d=0, pierwszy dzień) — post to pasywna filozofia indeksowa bez żadnego świeżego katalizatora momentum."
+      "reason": "Spike_ratio=99 to artefakt (rolling_avg_7d=0, brak historii) — posty to filozofia inwestycyjna pasywna bez żadnego świeżego catalyst momentum."
     },
     {
       "ticker": "VXUS",
-      "reason": "UNCLEAR direction, single mention, ten sam post filozoficzny o portfelach długoterminowych — zero actionable edge."
+      "reason": "Side UNCLEAR — brak kierunku, ta sama post filozoficzny co VOO, 1 wzmianka, zero tezy tradingowej."
     },
     {
       "ticker": "SPY",
-      "reason": "Już w portfelu (9.2% equity, -0.15%); posty dotyczą metodologii analizy congressional disclosures AT&T i insider buying ogólnie — brak specyficznego świeżego catalyst dla SPY."
+      "reason": "Już trzymany na 9.3% equity; posty dotyczą Tim Moore AT&T ($T, off-whitelist) i ogólnej analizy insider-buy patterns — brak świeżego SPY-specific catalyst."
     },
     {
-      "ticker": "AMD",
-      "reason": "Już w portfelu (17.5% equity, -4% unrealized); jedyne wywołanie pochodzi z recenzji książki Petera Lyncha bez konkretnego katalizatora — nie jest to sygnał tradingowy."
+      "ticker": "AVGO",
+      "reason": "Tylko 2 wzmianki, spike_ratio 2× — zbyt cienki sygnał Reddit; pojedynczy user pre-positioning przed NVDA earnings; NVDA jest czystszą i bezpośredniejszą ekspresją tego samego AI-capex katalizatora."
     },
     {
       "ticker": "SMCI",
-      "reason": "Ticker paused w state.json do 2026-06-01 (backtest high-beta basket: 0% WR / -$2,109) — wymagany momentum-confirmation filter przed re-enable, niezależnie od NVDA beat."
+      "reason": "Ticker paused — backtest high-beta basket 0% WR, -$4,473 combined; momentum-confirmation filter nie wdrożony; niezależnie od NVDA beat."
+    },
+    {
+      "ticker": "AMD",
+      "reason": "Źródłowy post to recenzja książki 'One Up on Wall Street' Petera Lyncha bez AMD-specific tezy; już trzymany na 17.5% equity (blisko 40% cap przy aggressive sizing)."
     }
   ],
-  "macro_context": "RISK_ON: VIX 17, NVDA earnings potwierdzają dalszą ekspansję AI capex supercycle Q2 — środowisko sprzyja momentum long na AI/semis; portfel 99%+ deployed ale margin dostępny dla selektywnych high-conviction wejść.",
+  "macro_context": "RISK_ON: VIX 17 (spokojny), NVDA Q1 FY2027 blowout potwierdza AI capex supercycle kontynuację — środowisko sprzyja momentum long na AI/semis; NVDA to jedyna czysta ekspresja dzisiaj.",
   "confidence_in_curation": "high"
 }
