@@ -32,8 +32,8 @@
     "options_side_bias": null
   },
   "last_updated": "2026-05-19T07:47:43.595469+00:00",
-  "last_validated_at": "2026-05-21T07:41:46.721875+00:00",
-  "last_write_reason": "v3.9.0: backfill enabled_at for SILENT grace period (LLM proposal 2026-05-17)",
+  "last_validated_at": "2026-05-21T12:00:00+00:00",
+  "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
   "next_actions": [],
   "peak_equity": 95387.41,
@@ -321,6 +321,13 @@
     }
   },
   "tickers": {
+    "NOW": {
+      "enabled": true,
+      "enabled_at": "2026-05-21",
+      "rationale": "ADDED 2026-05-21 v3.9.1 \u2014 Senior PM agent diversification recommendation. ServiceNow: cloud workflow leader, 25%+ revenue growth, $11B+ ARR, enterprise stickiness, lower beta than NVDA/AMD/SMH (correlated_bucket ai_nasdaq_semis already at 80% > 65% cap). New software_quality bucket opens RISK_ON/NEUTRAL allocation alongside semis without further concentrating AI semis exposure. Target size $15k (~15.6% equity at ~$925/share = 16 shares), SL -7%, TP +14%.",
+      "paused_until": null,
+      "review_after": "2026-06-21 (30-day review or after 3 trades)"
+    },
     "MSTR": {
       "enabled": false,
       "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",

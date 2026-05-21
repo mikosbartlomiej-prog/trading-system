@@ -76,5 +76,14 @@
     "stop_loss_pct":    0.06,
     "take_profit_pct":  0.15,
     "_comment":         "Defense bucket, used by defense-monitor + geo-monitor. Surfaces in INFLATION_SHOCK (geo escalation correlates with oil shocks) and RISK_OFF (flight to government-revenue safety)."
+  },
+
+  "software_quality": {
+    "tickers":          ["NOW", "CRM", "ADBE", "ORCL", "INTU", "WDAY", "PANW", "CRWD"],
+    "preferred_in":     ["RISK_ON", "NEUTRAL"],
+    "size_per_position_usd": 15000,
+    "stop_loss_pct":    0.07,
+    "take_profit_pct":  0.14,
+    "_comment":         "Software/cloud quality compounders. Added 2026-05-21 v3.9.1 — Senior PM agent flagged NOW (ServiceNow) as diversification opportunity vs 80% ai_nasdaq_semis concentration. Lower beta than semis (1.0-1.2), recurring revenue, less gap risk. Use in RISK_ON (alongside semis) and NEUTRAL (preferred over semis when score similar). Avoid in RISK_OFF / INFLATION_SHOCK — high-multiple growth names sell off on rate fears."
   }
 }

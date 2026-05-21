@@ -58,6 +58,8 @@ CORRELATED_BUCKETS: dict[str, set[str]] = {
     "energy":       {"XLE", "XOM", "CVX", "USO", "OXY"},
     "leveraged_3x": {"TQQQ", "SQQQ", "SPXL", "SPXS", "UPRO", "SPXU",
                      "SOXL", "SOXS", "FAS", "FAZ", "TNA", "TZA"},
+    "software_cloud": {"NOW", "CRM", "ADBE", "ORCL", "INTU", "WDAY",
+                       "PANW", "CRWD"},
 }
 
 

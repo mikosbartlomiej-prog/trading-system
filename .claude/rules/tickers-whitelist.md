@@ -7,6 +7,15 @@
 AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
 **v3.0 added:** AMD, AVGO (semis trinity completed)
 
+## Software / Cloud Quality (v3.9.1 — added 2026-05-21)
+NOW, CRM, ADBE, ORCL, INTU, WDAY, PANW, CRWD
+
+Senior PM diversification bucket (`software_quality` w `config/watchlists.json`).
+Lower beta niż semis, recurring revenue, mniej gap risk. Preferowane
+w RISK_ON i NEUTRAL obok ai_nasdaq_semis. Per-position $15k, SL -7%,
+TP +14%. Korelacja własna bucket `software_cloud` w
+`shared/portfolio_risk.py::CORRELATED_BUCKETS` — 65% cap (AGGRESSIVE_PAPER).
+
 ## Financials
 JPM, V, MA, JNJ, BRK.B
 

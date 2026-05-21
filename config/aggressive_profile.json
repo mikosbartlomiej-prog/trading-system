@@ -72,11 +72,11 @@
 
   "buckets_per_regime": {
     "RISK_ON": {
-      "allowed_buckets":   ["ai_nasdaq_semis", "crypto"],
+      "allowed_buckets":   ["ai_nasdaq_semis", "software_quality", "crypto"],
       "size_multiplier":   1.0,
       "options_side_bias": "long",
       "max_alt_positions": 4,
-      "_comment":          "AI/semis momentum + crypto beta. Options long calls preferred."
+      "_comment":          "AI/semis momentum + software/cloud quality + crypto beta. Options long calls preferred. software_quality added v3.9.1 for diversification vs 80% semis concentration."
     },
     "INFLATION_SHOCK": {
       "allowed_buckets":   ["inflation_energy", "hedge_metals"],
@@ -93,11 +93,11 @@
       "_comment":          "Defensive: GLD + TLT. Put spreads on SPY/QQQ (if multi-leg supported). Half-size all entries. No alt longs."
     },
     "NEUTRAL": {
-      "allowed_buckets":   ["ai_nasdaq_semis", "inflation_energy", "crypto"],
+      "allowed_buckets":   ["ai_nasdaq_semis", "software_quality", "inflation_energy", "crypto"],
       "size_multiplier":   0.7,
       "options_side_bias": null,
       "max_alt_positions": 2,
-      "_comment":          "Hedge bets. Only top-scored momentum setups. 70% size."
+      "_comment":          "Hedge bets. Only top-scored momentum setups. 70% size. software_quality added v3.9.1 — prefer over pure semis when score similar (lower gap risk)."
     }
   },
 
