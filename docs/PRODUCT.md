@@ -1517,6 +1517,7 @@ Run all: `python3 -m unittest discover -s tests -v && (cd learning-loop && pytho
 | **v3.9.4 → 4.4** | **2026-05-21 PM** | daily-learning push race condition resolved via cherry-pick retry (4 iterations) — system was NEVER in cash idle, 7 positions including NOW @ +0.79% had been at-target |
 | **v3.9.5** | **2026-05-22** | **PR #8 (Lane 2 LLM) crypto oversold bounce boost wired** — boost crypto-momentum size_multiplier to 1.3× when ETH RSI ≤30 AND BTC RSI ≤45. Function + 5 unit tests from LLM, 4 integration tests + adapt() wire-in commit (8a899d7). Triggers today live (ETH RSI 27.5, BTC RSI 40.4). 43/43 tests green |
 | **v3.9.5.1** | **2026-05-22** | LLM `POLL_MAX_S` 480→600 (+25% headroom for claude.ai latency spikes after today's 04:00 UTC routine timeout at 517s) + closed `[2026-05-17] SILENT grace` backlog item ([x] with verification note) |
+| **v3.9.6** | **2026-05-22 EOD** | **RECREATE_EXIT_PLAN incident fix** (see `docs/INCIDENT-2026-05-22-positions-closed.md`). 5 changes + 13 tests: (1) bracket TIF day→gtc; (2) new `place_oco_exit` helper; (3) `_do_recreate_exit_plan` rewritten — fetches position, places OCO LIMIT@TP+STOP@SL not market close; (4) `REMEDIATION_DISABLE_RECREATE` env kill-switch; (5) `autonomous-remediation.yml` contents:read→write + audit journal commit step. 4 P1 backlog items closed in single commit `8f338dc`. |
 
 ---
 
