@@ -3,6 +3,26 @@
 > Open queue of heuristic ideas suggested by the daily LLM
 > annotator + weekly retrospective. Tick the box `[x]` when
 > implemented in `learning-loop/adapter.py`. Older entries
+
+## P1 — URGENT (added 2026-05-22 post-incident)
+
+- [ ] [2026-05-22] **Fix `_do_recreate_exit_plan` — docstring says SELL LIMIT, code does MARKET CLOSE** _(risk: HIGH — time bomb, effort: 2-3h, revisit: 2026-05-23)_
+  - **Incident:** 2026-05-22 13:30 UTC — all 7 positions auto-closed via MARKET SELL because bracket DAY children expired at 20:00 UTC yesterday, autonomous-remediation correctly detected "no exit order" but its RECREATE_EXIT_PLAN action delegates to `execute_emergency_close` (MARKET SELL) instead of creating fresh LIMIT SELL @ TP + STOP SELL @ SL. See `docs/INCIDENT-2026-05-22-positions-closed.md` for full timeline.
+  - **Fix sketch:**
+    1. `shared/remediation.py::_do_recreate_exit_plan` — query position (qty, avg_entry_price)
+    2. Compute fresh SL/TP from `config/aggressive_profile.json::exits.stocks_etf` (or crypto/options per asset class)
+    3. Submit `LIMIT SELL` @ `avg_entry * (1 + tp_pct)` (GTC) + `STOP SELL` @ `avg_entry * (1 - sl_pct)` (GTC)
+    4. Tag client_order_id `recreate-exit-{symbol}-{ts}` for audit attribution
+    5. Emit JSONL audit event with action=RECREATE_EXIT_PLAN, new TP/SL prices, no position close
+  - **Test:** scenario where bracket expired but position alive → RECREATE_EXIT_PLAN should result in 2 new orders + position UNCHANGED
+- [ ] [2026-05-22] **Interim safety: add `REMEDIATION_DISABLE_RECREATE` env flag** _(risk: low, effort: 15 min, revisit: until fix above lands)_
+  - When `true`, skip RECREATE_EXIT_PLAN action entirely. Positions stay naked overnight but no auto-liquidation. Operator reviews manually each morning.
+- [ ] [2026-05-22] **Verify Alpaca paper supports GTC bracket children (test before changing default)** _(risk: low, effort: 30 min, revisit: 2026-05-23)_
+  - If yes: change `shared/alpaca_orders.py::place_stock_bracket` default TIF "day" → "gtc". Brackets survive across sessions. Eliminates need for RECREATE_EXIT_PLAN entirely.
+- [ ] [2026-05-22] **Add audit JSONL emission to all remediation actions** _(risk: low, effort: 1h, revisit: 2026-05-24)_
+  - Today's incident has 0 audit events for the position closures despite 7 separate market sells. `_do_*` handlers should emit JSONL like governor does. Required for forensic visibility.
+
+
 > kept indefinitely so we can audit which ideas worked.
 
 - [x] [2026-05-07] Emergency exit orders (exit-emergency-*) muszą używać MARKET order ✅ DONE — exit-monitor.place_emergency_close + options-exit-monitor SL→MARKET (commits c4bc437, 0f7ce0b)
