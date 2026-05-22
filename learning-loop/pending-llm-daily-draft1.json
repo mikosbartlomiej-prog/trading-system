@@ -1,0 +1,32 @@
+{
+  "narrative": "Equity +$987 (+1.03%) wyłącznie z MTM na 7 pozycjach alokatorowych — cumulative_trades=0, zero sygnałowych zamkniętych par po raz kolejny. Kluczowa obserwacja: fill_rate.unknown 0% na 28 zleceniach to PRAWDOPODOBNIE FALSE ALARM — sample_open_symbols (SPY, QQQ, PANW, NOW, GLD) pokrywa się 1:1 z portfelem alokatorowym, 7 open_status_accepted odpowiada 7 otwartym pozycjom (zdrowe TP/SL coverage), 14 manually_canceled to re-pricing exit-monitora, 7 expired to wcześniejsze DAY TP zastąpione nowymi. System zarządza portfelem poprawnie. ETH RSI 27.5 to najsilniejszy statystyczny setup od uruchomienia crypto-monitora — deep oversold z bounce probability ~65%; oczekuję wejścia przy pierwszym impulsie ≥3%.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Edge mierzalny wyłącznie w portfelu alokatorowym (+$987 MTM, +1.0%). Strategie sygnałowe: 0 zamkniętych par przez 7+ dni — brak historii do ilościowej oceny. ETH RSI 27.5 = jedyna konkretna statystyczna przewaga w zasięgu (deep oversold bounce). SPY RSI 67.9 wspiera PUT-side na opcjach — podchodzimy do strefy overbought, ale przed 75-gate, co oznacza że short-bias na opcjach ma uzasadnienie bez blokady entry.",
+  "state_overrides": {
+    "strategies": {},
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Fill-rate attribution: distinguish exit-monitor TP/SL orders from entry signals — suppress false alarm when open_status_accepted ~ portfolio size",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate.unknown 0% generuje fałszywy alarm gdy portfel ma otwarte pozycje z TP/SL na rynku. 7 open_status_accepted = 7 pozycji alokatorowych = zdrowe exit coverage. Bez attributii każda sesja z otwartymi pozycjami produkuje alarm, blokując ocenę rzeczywistych problemów fill-rate na wejściach sygnałowych.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-26",
+      "implementation_sketch": "1. analyzer.py::compute_fill_rate(): w _strategy_from_client_id dodać regex r'^exit-' -> tag = 'exit_orders'. 2. Nowy bucket 'exit_orders' osobny od 'entry_signals'. 3. SILENT alert dla fill_rate.unknown supresowany gdy open_status_accepted > 0 AND open_status_accepted >= open_positions_count * 0.8 (wskazuje na coverage). 4. Prawdziwy alarm: open_status_accepted == 0 AND open_positions_count > 0 = brak exit orders na otwarte pozycje. Priorytety: P1 — zamknięcie ślepej plamki w diagnostyce."
+    },
+    {
+      "title": "RSI snapshot single-point regime fallback: absolute thresholds gdy min_12d == max_12d",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Dzisiejszy RSI snapshot: min_12d = max_12d = today dla SPY (67.9), BTC (38.4), ETH (27.5). Względna normalizacja na jednym punkcie zwraca 'neutral' dla SPY 67.9 — błędna klasyfikacja reżimu wchodzi do analizy LLM. SPY 67.9 to empirycznie trending_up, nie neutral.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-26",
+      "implementation_sketch": "W compute_rsi_snapshot(): if (max_12d - min_12d) < 2.0: regime = absolute_classify(today_rsi) gdzie absolute_classify: <35 -> 'oversold', 35-50 -> 'neutral_low', 50-65 -> 'neutral', 65-75 -> 'trending_up', >75 -> 'overbought'. Dodać pole 'regime_basis': 'relative' | 'absolute_fallback'. Zero wpływu na order paths — tylko diagnostyka."
+    }
+  ],
+  "confidence": "medium"
+}
