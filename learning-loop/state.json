@@ -3,34 +3,37 @@
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
-    "starting_equity": 95976.18
+    "starting_equity": 96427.97
   },
   "daily_peak": {
-    "date": "2026-05-21",
-    "peak_pl_usd": 947.5300000000134,
-    "peak_pl_pct": 0.009872553794076961,
-    "peak_at": "2026-05-21T23:32:30.649250+00:00",
-    "peak_equity": 96923.71,
-    "current_pl_usd": 947.4700000000012,
-    "current_equity": 96923.65,
-    "retrace_from_peak": 6.332253333638276e-05,
-    "verdict": "GREEN",
-    "verdict_at": "2026-05-21T23:34:38.189377+00:00",
-    "alerts_sent": {},
+    "date": "2026-05-22",
+    "peak_pl_usd": 1404.9700000000012,
+    "peak_pl_pct": 0.014570150133825292,
+    "peak_at": "2026-05-22T13:57:46.148307+00:00",
+    "peak_equity": 97832.94,
+    "current_pl_usd": 1404.9700000000012,
+    "current_equity": 97832.94,
+    "retrace_from_peak": 0.0,
+    "verdict": "GIVEBACK_WARN",
+    "verdict_at": "2026-05-22T21:36:40.741603+00:00",
+    "alerts_sent": {
+      "GIVEBACK_WARN": "2026-05-22T11:33:18.305255+00:00",
+      "legacy:WARN": "2026-05-22T11:33:18.304633+00:00"
+    },
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 30,
+  "days_tracked": 31,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-22T01:29:09.330422+00:00",
+  "last_updated": "2026-05-22T21:54:59.601625+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
   "next_actions": [],
-  "peak_equity": 96962.65,
+  "peak_equity": 97832.94,
   "pending_emergency_close": {
     "prior_pending": {
       "created_at": "2026-05-14T05:08:00Z",
