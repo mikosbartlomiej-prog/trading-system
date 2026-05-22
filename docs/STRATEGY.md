@@ -1,8 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.9.3.1 — politician-monitor (Trump + bipartisan Congressional tracker, 2026-05-21 LATE)
-**Recent increments:** 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
-**Effective from:** 2026-05-21 LATE (v3.9.3.1)
+**Version:** 3.9.5.1 — crypto oversold boost wired + LLM poll headroom (2026-05-22)
+**Recent increments:** 3.9.5.1 (POLL_MAX_S 480→600), 3.9.5 (PR #8 crypto oversold boost), 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
+**Effective from:** 2026-05-22 (v3.9.5.1)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
@@ -1511,6 +1511,21 @@ These are reflected verbatim in `CLAUDE.md`. Source of truth for numbers:
 | **3.9.2** | **2026-05-21 LATE** | **NEW MONITOR — politician-monitor MVP (Trump + bipartisan Congressional insider tracker)** | Two-lane monitor analog do reddit/crypto-monitor. Lane A: SEC EDGAR Atom feed + Form 4 XML parse dla CIK 0001849635 (Trump Media), $5k auto-execute. Lane B: Capitol Trades JSON (`bff.capitoltrades.com/trades`) for STOCK Act PTRs; bipartisan whitelist 20 polityków (`.claude/rules/politicians-whitelist.md`); sector cluster aggregation (3+ pols/14d → ETF proxy ITA/SMH/XLE/XLF/XLV/QQQ); single-committee-chair escalation. Capitol Trader Curator persona (`politician-monitor/curator-prompts.md`) 5-step process w P2_optional budget tier. 10 nowych plików + 40 tests + workflow YAML. Iron rules enforced: paper-only, whitelist tickers, stop-loss mandatory, default alert-only for STOCK Act. |
 | **3.9.3** | **2026-05-21 LATE** | **politician-monitor v3.9.2 production fixes: EDGAR XML discovery + 3-tier STOCK Act fallback** | First production run revealed 2 bugs: (a) EDGAR XML 404 — naive URL guess pattern; fix: fetch `/index.json` per accession to discover real XML filename. (b) Capitol Trades HTTP 503 (their CloudFront/Lambda backend down) + housewatcher S3 dead (403). Fix: added 3-tier fallback chain ending with NEW House Clerk official XML index (`disclosures-clerk.house.gov/public_disc/financial-pdfs/<year>FD.xml`). Tier-3 returns metadata-only entries (politician + DocID + PDF link, no ticker/amount); monitor emits `[POL-FILING]` alert with PDF link, NEVER auto-executes. Verified live: 214 PTR filings 2026 YTD, 6 match whitelist, 1 within 14d (Gottheimer 2026-05-19). |
 | **3.9.3.1** | **2026-05-21 LATE** | **politician-monitor email subject + workflow template location fixes** | Production verification revealed 2 issues: (a) filing alert email subject `[SELL] [politician-filing-alert] ? ? - $0` (reused notify_signal which assumes BUY/SELL+ticker); fix: switch to `send_email()` with custom subject `[POL-FILING] <name> filed PTR <date>`. (b) Workflow template was in `politician-monitor/workflow-templates/` but `sync-workflows.yml` only watches `scripts/workflow-templates/*.yml`; fix: copy to canonical location so sync propagates updates (incl. SEC_USER_AGENT email change) automatically. |
+| **3.9.4 → 3.9.4.4** | **2026-05-21 PM** | **daily-learning push race condition — 4 iterations to find working retry** | User reported "I do not see anything. something is wrong" leading to deep investigation. Root cause: 2026-05-20 + 21 daily-learning crons lost plan via push race with concurrent exit-monitor/health/politician-monitor commits. 4 retry iterations attempted: v3.9.4 (3→6 attempts), v3.9.4.1 (concurrency block restore), v3.9.4.2 (--autostash), v3.9.4.3 (reset+checkout — failed silently as no-op). **Final fix v3.9.4.4** (`6cfe1f4`) uses `git cherry-pick -X theirs $COMMIT_SHA` — replays full commit including deleted files, auto-resolves conflicts. Plus diagnosed: system was NEVER in cash idle; 7 positions including NOW @ +0.79% had been at-target since v3.9.1 deployment. |
+| **3.9.5** | **2026-05-22** | **PR #8 wired — crypto oversold bounce boost (Lane 2 LLM-proposed heuristic)** | LLM Lane 2 PR #8 from 2026-05-21 daily-learning proposed `heuristic_crypto_oversold_boost(today_stats)` — boost crypto-momentum size_multiplier to 1.3× when ETH RSI ≤30 AND BTC RSI ≤45 (bounded, fail-soft). Today's wire-in commit `8a899d7` integrates into `adapter.adapt()` loop AFTER per-strategy adapt for crypto-momentum (only when enabled, only if current multiplier <1.3 — never downgrades). 4 new integration tests verify the wire-in path (43/43 total green). **Triggers today:** ETH RSI 27.5 (2nd day deep oversold), BTC RSI 40.4. Squash-merged as commit `88fde6e`. |
+| **3.9.5.1** | **2026-05-22** | **LLM poll timeout 480 → 600 + close SILENT-grace backlog** | (a) Daily-learning 04:00 UTC fell back to deterministic-only because Senior PM Round 1 timed out at 517s. NOT 429, NOT budget — claude.ai backend latency spike. `POLL_MAX_S` bumped 480→600 (+25% headroom; workflow timeout-minutes=30 still has ~22 min worst-case slack). (b) Closed `[2026-05-17] Suppress SILENT adapter flag for strategies within 5 days of re-enable` backlog item — already shipped as v3.9.0 (commit `4ad5ee4` 2026-05-20), marked [x] with full verification note. Verified in production: geo-* strategies passed 5-day grace correctly (expired 2026-05-21), now showing SILENT; options-momentum + crypto-momentum still within grace (expires 2026-05-24). |
+
+**Production verification — v3.5 IntradayProfitGovernor (2026-05-22 11:33 UTC):**
+First live GIVEBACK_WARN cascade — peak +$1,227 → current +$824, giveback 32.8%.
+All 5 cascade actions verified:
+- FSM transition GREEN → GIVEBACK_WARN (audit JSONL)
+- `max_gross_target` 1.50 → 1.25 (runtime_state.json persisted)
+- `profit_floor_usd` $306.83 armed
+- Email `[INTRADAY-WARN] peak $+1,227 current $+824 (33% giveback)` sent
+- Workflow log shows transition + email send confirmation
+Closes 2026-05-13 backlog item "Verify PROFIT_LOCK cascade fires correctly in production"
+(GIVEBACK_WARN is the entry tier of the same cascade — PROFIT_LOCK at 35% would
+escalate further but didn't trigger today).
 
 ---
 

@@ -1,8 +1,8 @@
 # Trading System — Product Documentation
 
-**Wersja dokumentu:** 1.3 (2026-05-21 LATE)
-**Stan systemu:** v3.9.3.1 (politician-monitor live — Trump + bipartisan Congressional insider tracker)
-**Recent increments:** 3.9.3.1 (politician-monitor email + sync fix), 3.9.3 (EDGAR XML discovery + 3-tier STOCK Act fallback), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
+**Wersja dokumentu:** 1.4 (2026-05-22)
+**Stan systemu:** v3.9.5.1 (crypto oversold boost wired + LLM poll headroom + first live GIVEBACK_WARN verification)
+**Recent increments:** 3.9.5.1 (LLM POLL_MAX_S 480→600 + SILENT-grace [x]), 3.9.5 (PR #8 crypto oversold boost merged + wired), 3.9.4 → 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor email + sync fix), 3.9.3 (EDGAR XML discovery + 3-tier STOCK Act fallback), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
 **Tryb:** Alpaca Paper Trading (NIE live)
 **Repo:** `git@github.com:mikosbartlomiej-prog/trading-system.git`
 **Branch produkcyjny:** `main`
@@ -1514,6 +1514,9 @@ Run all: `python3 -m unittest discover -s tests -v && (cd learning-loop && pytho
 | **v3.9.2** | **2026-05-21 LATE** | **NEW MONITOR — politician-monitor**: Trump family Form 4 (DJT auto-execute) + bipartisan STOCK Act PTRs (20-name whitelist, sector cluster aggregation, Capitol Trader Curator). 10 new files, 40 tests, free data sources only |
 | **v3.9.3** | **2026-05-21 LATE** | politician-monitor production fixes: EDGAR XML discovery via `/index.json`; 3-tier STOCK Act fallback (CapitolTrades → housewatcher → House Clerk official XML) bo CapitolTrades Lambda down |
 | **v3.9.3.1** | **2026-05-21 LATE** | politician-monitor email subject fix (`[POL-FILING]` zamiast misleading `[SELL]`) + workflow template moved to `scripts/workflow-templates/` for sync-workflows propagation |
+| **v3.9.4 → 4.4** | **2026-05-21 PM** | daily-learning push race condition resolved via cherry-pick retry (4 iterations) — system was NEVER in cash idle, 7 positions including NOW @ +0.79% had been at-target |
+| **v3.9.5** | **2026-05-22** | **PR #8 (Lane 2 LLM) crypto oversold bounce boost wired** — boost crypto-momentum size_multiplier to 1.3× when ETH RSI ≤30 AND BTC RSI ≤45. Function + 5 unit tests from LLM, 4 integration tests + adapt() wire-in commit (8a899d7). Triggers today live (ETH RSI 27.5, BTC RSI 40.4). 43/43 tests green |
+| **v3.9.5.1** | **2026-05-22** | LLM `POLL_MAX_S` 480→600 (+25% headroom for claude.ai latency spikes after today's 04:00 UTC routine timeout at 517s) + closed `[2026-05-17] SILENT grace` backlog item ([x] with verification note) |
 
 ---
 
