@@ -59,9 +59,12 @@ POLL_INTERVAL_S    = 15        # how often we git fetch + check for pending file
 # 2026-05-08 first manual: 139 s. 2026-05-09 manual #1 (post auto-merge):
 # 247 s. 2026-05-09 manual #2: 325 s (race — file arrived 25 s after the
 # prior 300 s timeout fired). Bumped 180->300->480 to give 2x headroom
-# over worst observed. With 3-round daily dialog the workflow's
-# timeout-minutes is bumped to 30 so each leg gets a full 480 s budget.
-POLL_MAX_S         = 480
+# over worst observed. 2026-05-22 04:00 UTC cron timed out at 517 s
+# (LLM session alive but routine slow) — bumped 480->600 for +25%
+# headroom against claude.ai backend latency spikes. Workflow
+# timeout-minutes=30 still has plenty of room (600s × 3 rounds + git
+# ops + analyzer = ~22 min worst case).
+POLL_MAX_S         = 600
 GIT_OP_TIMEOUT_S   = 30
 
 LEARNING_DIR = os.path.dirname(os.path.abspath(__file__))
