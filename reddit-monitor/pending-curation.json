@@ -1,0 +1,20 @@
+{
+  "narrative": "Dziś zero sygnałów wartych emisji. Spike_ratio=99 we wszystkich kandydatach to artefakt rolling_avg_7d=0 — pierwsze wystąpienie tickera, nie prawdziwy spike. SOXL: post WSB to stand-up komedia o haremie kobiet z Azji bez żadnego katalizatora finansowego (faktyczna pozycja autora to SOXD przy $200, czyli niedźwiedzi). LLM: nie istnieje jako instrument inwestycyjny. NOW: fałszywy odczyt — monitor wyekstrahował słowo 'now' z 'NOW google has capped' zamiast tickera ServiceNow $NOW.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "SOXL",
+      "reason": "Meme post — cały DD to historyjka o haremie kobiet; brak katalizatora finansowego; rzeczywista pozycja autora to SOXD (niedźwiedzia), nie SOXL long; spike_ratio=99 to artefakt rolling_avg=0."
+    },
+    {
+      "ticker": "LLM",
+      "reason": "Nie jest to instrument inwestycyjny ani ticker notowany na giełdzie — błędna ekstrakcja skrótu z treści posta."
+    },
+    {
+      "ticker": "NOW",
+      "reason": "Fałszywy odczyt tickera — monitor wyekstrahował słowo 'now' (przysłówek) z frazy 'NOW google has capped' zamiast tickera $NOW (ServiceNow); post nie dotyczy ServiceNow."
+    }
+  ],
+  "macro_context": "Reżim RISK_ON: VIX=17, konto +1.46% dzisiaj, zero pozycji — dobry dzień, ale Reddit nie dostarcza dziś żadnych actionable sygnałów.",
+  "confidence_in_curation": "high"
+}
