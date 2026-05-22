@@ -421,6 +421,19 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
         old = (state.get("strategies", {}) if state else {}).get(strat_name, {})
         new = adapt_strategy(strat_name, old, strat_stats, today_stats.get("equity", 0))
 
+        # Lane 2 PR #8 (2026-05-21) — Crypto oversold bounce boost.
+        # Applied AFTER per-strategy adapt so it can override the
+        # baseline multiplier. Bounded by clamp inside adapt_strategy
+        # rules (0.30-2.00). Fires only when both ETH ≤30 AND BTC ≤45.
+        if strat_name == "crypto-momentum" and new.get("enabled"):
+            fired, boost_mult, boost_reason = heuristic_crypto_oversold_boost(today_stats)
+            if fired and new.get("size_multiplier", 1.0) < boost_mult:
+                new["size_multiplier"] = boost_mult
+                existing_rat = new.get("rationale", "") or ""
+                new["rationale"] = (
+                    f"{existing_rat} | {boost_reason}" if existing_rat else boost_reason
+                )
+
         # Detect changes vs old for rationale + next_actions
         old_mult = old.get("size_multiplier", 1.0)
         new_mult = new["size_multiplier"]
