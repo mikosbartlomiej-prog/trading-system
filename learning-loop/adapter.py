@@ -421,6 +421,19 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
         old = (state.get("strategies", {}) if state else {}).get(strat_name, {})
         new = adapt_strategy(strat_name, old, strat_stats, today_stats.get("equity", 0))
 
+        # Lane 2 PR #8 (2026-05-21) — Crypto oversold bounce boost.
+        # Applied AFTER per-strategy adapt so it can override the
+        # baseline multiplier. Bounded by clamp inside adapt_strategy
+        # rules (0.30-2.00). Fires only when both ETH ≤30 AND BTC ≤45.
+        if strat_name == "crypto-momentum" and new.get("enabled"):
+            fired, boost_mult, boost_reason = heuristic_crypto_oversold_boost(today_stats)
+            if fired and new.get("size_multiplier", 1.0) < boost_mult:
+                new["size_multiplier"] = boost_mult
+                existing_rat = new.get("rationale", "") or ""
+                new["rationale"] = (
+                    f"{existing_rat} | {boost_reason}" if existing_rat else boost_reason
+                )
+
         # Detect changes vs old for rationale + next_actions
         old_mult = old.get("size_multiplier", 1.0)
         new_mult = new["size_multiplier"]
@@ -666,3 +679,20 @@ def heuristic_stale_exit_emergency(fill_stats: dict) -> tuple[bool, str]:
             "— stale LIMIT orders suspected; run cancel-stale-emergency-orders workflow"
         )
     return False, ""
+
+
+# ─── Lane2 auto-added — Crypto oversold bounce boost — ETH RSI ≤ 30 + BTC RSI ≤ 45 ────────────
+def heuristic_crypto_oversold_boost(today_stats: dict) -> tuple:
+    """Boost crypto-momentum size_multiplier when ETH deeply oversold and BTC approaching oversold.
+
+    Args:
+        today_stats: full today_stats dict (rsi_snapshot is top-level key).
+    Returns:
+        (fired: bool, multiplier: float, reason: str)
+    """
+    rsi = today_stats.get("rsi_snapshot", {})
+    eth_rsi = rsi.get("ETH/USD", {}).get("today", 50.0)
+    btc_rsi = rsi.get("BTC/USD", {}).get("today", 50.0)
+    if eth_rsi <= 30.0 and btc_rsi <= 45.0:
+        return True, 1.3, "ETH RSI {:.1f} <=30 + BTC RSI {:.1f} <=45: oversold bounce setup".format(eth_rsi, btc_rsi)
+    return False, 1.0, ""

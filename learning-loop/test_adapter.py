@@ -367,3 +367,120 @@ class TestStaleExitEmergency(unittest.TestCase):
     def test_no_trigger_missing_key(self):
         fired, _ = heuristic_stale_exit_emergency({})
         self.assertFalse(fired)
+
+
+# ─── Lane2 auto-added test for: Crypto oversold bounce boost — ETH RSI ≤ 30 + BTC RSI ≤ 45 ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_crypto_oversold_boost  # noqa: E402,F401
+
+class TestCryptoOversoldBoost(unittest.TestCase):
+    def test_fires_eth_oversold_btc_approaching(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 28.5}, "BTC/USD": {"today": 40.0}}}
+        fired, mult, reason = heuristic_crypto_oversold_boost(stats)
+        self.assertTrue(fired)
+        self.assertAlmostEqual(mult, 1.3)
+        self.assertIn("28.5", reason)
+    def test_no_fire_eth_above_threshold(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 32.0}, "BTC/USD": {"today": 40.0}}}
+        fired, _, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertFalse(fired)
+    def test_no_fire_btc_above_threshold(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 28.0}, "BTC/USD": {"today": 50.0}}}
+        fired, _, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertFalse(fired)
+    def test_boundary_values_fire(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 30.0}, "BTC/USD": {"today": 45.0}}}
+        fired, mult, _ = heuristic_crypto_oversold_boost(stats)
+        self.assertTrue(fired)
+        self.assertAlmostEqual(mult, 1.3)
+    def test_missing_rsi_snapshot(self):
+        fired, mult, _ = heuristic_crypto_oversold_boost({})
+        self.assertFalse(fired)
+        self.assertAlmostEqual(mult, 1.0)
+
+
+# ─── PR #8 wire-in integration test (2026-05-22) ──────────────────────────
+# Verifies that heuristic_crypto_oversold_boost is actually applied in
+# adapt() loop, not just defined as standalone function.
+
+from adapter import adapt  # noqa: E402
+
+
+class TestCryptoOversoldBoostWiredIntoAdapt(unittest.TestCase):
+    def _base_stats(self, rsi_snapshot):
+        return {
+            "as_of":            "2026-05-22",
+            "equity":           95000.0,
+            "starting_equity":  95000.0,
+            "by_strategy": {
+                "crypto-momentum": {
+                    "trades_7d":         0,
+                    "trades_lifetime":   0,
+                    "win_rate_7d":       0.0,
+                    "win_rate_lifetime": 0.0,
+                    "pnl_usd_7d":        0.0,
+                    "pnl_usd_lifetime":  0.0,
+                    "consecutive_losses": 0,
+                },
+            },
+            "by_asset_class": {},
+            "by_source":      {},
+            "rsi_snapshot":   rsi_snapshot,
+        }
+
+    def test_boost_applied_when_oversold(self):
+        """Wire-in: ETH RSI 27.5 + BTC RSI 40.0 → size_multiplier=1.3."""
+        stats = self._base_stats({
+            "ETH/USD": {"today": 27.5},
+            "BTC/USD": {"today": 40.0},
+        })
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.0, "enabled": True}}}
+        new_state, rationale = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        self.assertAlmostEqual(cm["size_multiplier"], 1.3)
+        # Rationale should mention the boost
+        self.assertTrue(
+            any("oversold" in r.lower() or "27.5" in r for r in rationale),
+            f"Expected oversold mention in rationale: {rationale}",
+        )
+
+    def test_no_boost_when_eth_above_threshold(self):
+        """ETH RSI 35 → no boost, multiplier stays default."""
+        stats = self._base_stats({
+            "ETH/USD": {"today": 35.0},
+            "BTC/USD": {"today": 40.0},
+        })
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.0, "enabled": True}}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        self.assertAlmostEqual(cm["size_multiplier"], 1.0)
+
+    def test_no_boost_when_disabled(self):
+        """Disabled crypto-momentum gets no boost even if RSI qualifies."""
+        stats = self._base_stats({
+            "ETH/USD": {"today": 25.0},
+            "BTC/USD": {"today": 40.0},
+        })
+        # consec losses = 0 but enabled=False
+        state = {"strategies": {"crypto-momentum": {
+            "size_multiplier": 1.0,
+            "enabled": False,
+            "paused_until": "2026-06-01",
+        }}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        # Still 1.0 because boost only applies when enabled
+        self.assertAlmostEqual(cm["size_multiplier"], 1.0)
+
+    def test_boost_doesnt_overwrite_higher_multiplier(self):
+        """If current multiplier already ≥1.3 (e.g. WR-warm-up), no downgrade."""
+        stats = self._base_stats({
+            "ETH/USD": {"today": 25.0},
+            "BTC/USD": {"today": 40.0},
+        })
+        # Start with size_multiplier 1.5
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.5, "enabled": True}}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        # Should stay 1.5 (heuristic only boosts UP to 1.3, never down)
+        self.assertGreaterEqual(cm["size_multiplier"], 1.3)
