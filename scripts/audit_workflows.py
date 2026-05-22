@@ -64,6 +64,12 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # state.json + learning-loop/runtime_state.json (enforced by
     # workflow's explicit `git add` lines).
     "politician-monitor.yml",
+    # v3.9.6 (2026-05-22 post-incident) — autonomous-remediation commits
+    # audit JSONL events to journal/autonomy/<date>.jsonl. Previously
+    # contents:read meant audit writes never reached origin (2026-05-22
+    # incident had 0 audit events for 7+ position-affecting remediation
+    # runs). Allowed write scope = ONLY journal/autonomy/.
+    "autonomous-remediation.yml",
 }
 
 # Workflows allowed to create PRs.

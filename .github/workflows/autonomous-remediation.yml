@@ -24,7 +24,11 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read   # remediation never commits — audit is append-only to journal/
+  contents: write   # v3.9.6 (2026-05-22): write so audit JSONL reaches origin.
+                    # Previously read-only — meaning remediation took actions
+                    # (e.g. RECREATE_EXIT_PLAN, EMERGENCY_CLOSE) but JSONL writes
+                    # stayed on runner, never reaching origin. 2026-05-22 incident
+                    # had 0 audit events for 7+ remediation runs.
 
 jobs:
   remediate:
@@ -57,9 +61,52 @@ jobs:
           NOTIFY_EMAIL:                        ${{ secrets.NOTIFY_EMAIL }}
           AUTONOMOUS_PANIC_CLOSE_OPTIONS:      'true'
           REMEDIATION_DRY_RUN:                 ${{ inputs.dry_run || 'false' }}
+          # v3.9.6: operator kill-switch for RECREATE_EXIT_PLAN action.
+          # Set to 'true' to skip recreate (positions left naked overnight
+          # — operator reviews manually). Default false now that v3.9.6
+          # ships proper LIMIT+STOP OCO recreation.
+          REMEDIATION_DISABLE_RECREATE:        'false'
         run: |
           DRY_FLAG=""
           if [ "$REMEDIATION_DRY_RUN" = "true" ]; then DRY_FLAG="--dry-run"; fi
           python3 scripts/autonomous_remediation.py $DRY_FLAG --out-json /tmp/remediation.json || true
           echo "=== summary ==="
           cat /tmp/remediation.json || echo "no summary file written"
+
+      - name: Commit audit journal
+        # v3.9.6: persist audit JSONL to origin. Remediation actions
+        # (RECREATE_EXIT_PLAN, CANCEL_STALE_ORDERS, etc.) write events
+        # to journal/autonomy/<date>.jsonl via shared/audit.py. Without
+        # this step, events stayed on runner and were lost.
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add journal/autonomy/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No new audit events this tick."
+            exit 0
+          fi
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          DATE=$(date -u +%Y-%m-%d_%H%M)
+          git commit -m "remediation: audit ${DATE} [automerge]"
+
+          # Cherry-pick retry pattern (v3.9.4.4) — survives concurrent
+          # pushes from exit-monitor / health snapshots / etc.
+          COMMIT_SHA=$(git rev-parse HEAD)
+          for attempt in 1 2 3 4; do
+            if git push origin "$BRANCH"; then
+              echo "Pushed audit on attempt ${attempt}."
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              echo "WARN: 4 push attempts failed — audit event recorded locally only"
+              exit 0   # don't fail the workflow over audit-only commit
+            fi
+            git reset --hard HEAD 2>/dev/null || true
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            git cherry-pick --strategy=recursive -X theirs "$COMMIT_SHA" 2>&1 || \
+              git cherry-pick --abort 2>/dev/null || true
+            COMMIT_SHA=$(git rev-parse HEAD)
+            sleep $((attempt * 3))
+          done

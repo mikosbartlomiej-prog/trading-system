@@ -394,13 +394,21 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     except Exception as e:
         print(f"  risk-officer unavailable ({type(e).__name__}: {e}); proceeding")
 
+    # v3.9.6 (2026-05-22 — post-incident fix). TIF was "day" which caused
+    # bracket OCO children (SL+TP) to EXPIRE at market close, leaving
+    # positions naked overnight. autonomous-remediation then detected
+    # "no exit order" and force-closed at next market open — see
+    # docs/INCIDENT-2026-05-22-positions-closed.md.
+    # GTC keeps both bracket children alive across sessions. Alpaca
+    # paper supports GTC bracket; if rejected, env REMEDIATION_DISABLE_RECREATE
+    # is the operator safety net.
     payload = {
         "symbol":         symbol,
         "qty":            str(int(qty)),
         "side":           side,
         "type":           "limit",
         "limit_price":    str(round(entry_price, 2)),
-        "time_in_force":  "day",
+        "time_in_force":  "gtc",
         "order_class":    "bracket",
         "take_profit":    {"limit_price": str(round(take_profit, 2))},
         "stop_loss":      {"stop_price":  str(round(stop_loss, 2))},
@@ -594,6 +602,92 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
         return None
     except Exception as e:
         print(f"  Alpaca simple buy exception: {e}")
+        return None
+
+
+# ─── OCO exit (TP LIMIT + SL STOP paired) — for RECREATE_EXIT_PLAN ────────────
+
+def place_oco_exit(symbol: str, qty: int, tp_price: float, sl_price: float,
+                    side: str = "sell", client_order_id_prefix: str = "recreate-exit",
+                    ) -> dict | None:
+    """
+    Place an OCO (One-Cancels-Other) exit order pair: LIMIT @ TP + STOP @ SL.
+    When one fills, the other auto-cancels at the broker. GTC TIF — both
+    orders survive across sessions (unlike bracket DAY children which
+    expire at session close).
+
+    Use case: `_do_recreate_exit_plan` in shared/remediation.py — restore
+    exit protection for a position whose bracket children expired (DAY TIF).
+    Replaces the previous behavior of `_do_recreate_exit_plan` which
+    incorrectly market-closed the position. See
+    `docs/INCIDENT-2026-05-22-positions-closed.md`.
+
+    Args:
+      symbol:     stock/ETF symbol (no slash for crypto — OCO not supported on crypto)
+      qty:        number of shares (integer, > 0)
+      tp_price:   take-profit limit price (absolute, must be on right side of mid)
+      sl_price:   stop-loss stop price (absolute, must be on right side of mid)
+      side:       "sell" for long exit, "buy_to_cover" for short exit
+      client_order_id_prefix: prefix for client_order_id (timestamp appended)
+
+    Returns Alpaca order JSON on success, None on failure.
+    """
+    if qty < 1 or tp_price <= 0 or sl_price <= 0:
+        print(f"  oco reject: qty={qty} tp={tp_price} sl={sl_price}")
+        return None
+    if side not in ("sell", "buy_to_cover"):
+        print(f"  oco reject: bad side '{side}' (must be sell|buy_to_cover)")
+        return None
+
+    # Sanity: for SELL exit (long position), tp > sl
+    if side == "sell" and tp_price <= sl_price:
+        print(f"  oco reject: SELL exit but tp ({tp_price}) <= sl ({sl_price})")
+        return None
+    if side == "buy_to_cover" and tp_price >= sl_price:
+        print(f"  oco reject: BUY-TO-COVER exit but tp ({tp_price}) >= sl ({sl_price})")
+        return None
+
+    ts = int(time.time())
+    coid = f"{client_order_id_prefix}-{symbol.replace('/','')}-{ts}"
+
+    payload = {
+        "symbol":         symbol,
+        "qty":            str(int(qty)),
+        "side":           side,
+        "type":           "limit",
+        "limit_price":    str(round(tp_price, 2)),
+        "time_in_force":  "gtc",
+        "order_class":    "oco",
+        "stop_loss":      {"stop_price": str(round(sl_price, 2))},
+        "client_order_id": coid,
+    }
+
+    try:
+        r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
+                           headers=_headers(), json=payload, timeout=10)
+        if r.status_code in (200, 201):
+            data = r.json()
+            print(f"  OCO exit placed {symbol}: TP ${tp_price:.2f} / SL ${sl_price:.2f} "
+                  f"id={data.get('id','?')[:8]}")
+            return data
+        print(f"  Alpaca OCO error {r.status_code}: {r.text[:200]}")
+        return None
+    except Exception as e:
+        print(f"  Alpaca OCO exception: {e}")
+        return None
+
+
+def _fetch_single_position(symbol: str) -> dict | None:
+    """GET /v2/positions/{symbol} — returns position dict or None if not found."""
+    try:
+        # URL-encode symbol (crypto BTC/USD → BTC%2FUSD)
+        from urllib.parse import quote
+        r = requests.get(f"{ALPACA_BASE_URL}/v2/positions/{quote(symbol, safe='')}",
+                          headers=_headers(), timeout=10)
+        if r.status_code == 200:
+            return r.json()
+        return None
+    except Exception:
         return None
 
 

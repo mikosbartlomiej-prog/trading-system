@@ -212,22 +212,136 @@ def _do_cancel_stale(action: RemediationAction) -> dict:
 
 def _do_recreate_exit_plan(action: RemediationAction) -> dict:
     """
-    Recreating an exit plan from scratch needs current quote + entry. Rather
-    than reimplement the per-strategy exit logic, we delegate to
-    emergency_engine: a position with no exit plan is by definition an
-    emergency-close target (the engine produces the right kind of close).
+    Restore exit protection (LIMIT @ TP + STOP @ SL paired as OCO, GTC) for
+    a position whose bracket children expired or were canceled.
+
+    v3.9.6 (2026-05-22 post-incident fix). Previous behavior was to call
+    `execute_emergency_close` which MARKET-closes the position — but
+    docstring intent was always "restore protection". The 2026-05-22
+    incident (see docs/INCIDENT-2026-05-22-positions-closed.md) revealed
+    this docstring/code divergence: every overnight bracket DAY-TIF
+    expiration triggered a market close at next session open. v3.9.6
+    behavior:
+
+      1. Fetch current position (qty, avg_entry_price, side)
+      2. Compute TP/SL prices from asset-class strategy defaults
+         (stocks_etf: TP +18%, SL -6%; crypto tier1: +20% / -7%;
+         options: handled separately via options-exit-monitor)
+      3. Submit OCO exit pair (LIMIT @ TP + STOP @ SL, GTC TIF)
+      4. Position remains OPEN — only protection restored
+
+    Returns dict with ok / placed orders.
+
+    Env safety: REMEDIATION_DISABLE_RECREATE=true skips this action.
     """
     sym = action.subject
-    # Build a synthetic target
+
+    # Env safety net — operator can disable RECREATE_EXIT_PLAN entirely
+    # while the proper fix is being verified. Default behavior is enabled.
+    if os.environ.get("REMEDIATION_DISABLE_RECREATE", "").lower() == "true":
+        return {
+            "ok":      False,
+            "skipped": True,
+            "reason":  "REMEDIATION_DISABLE_RECREATE env flag set "
+                       "(positions left naked overnight per operator override)",
+        }
+
+    # Fetch position from Alpaca
     try:
-        from emergency_engine import EmergencyTarget
-    except ImportError:  # pragma: no cover
-        from shared.emergency_engine import EmergencyTarget  # type: ignore
-    target = EmergencyTarget(
-        symbol=sym, reason=action.reason,
-        suggested_action="CANCEL_AND_DELETE",
-    )
-    return execute_emergency_close(target, actor="remediation")
+        from alpaca_orders import _fetch_single_position, place_oco_exit
+    except ImportError:
+        from shared.alpaca_orders import _fetch_single_position, place_oco_exit  # type: ignore
+
+    pos = _fetch_single_position(sym)
+    if not pos:
+        return {"ok": False, "reason": f"position {sym} not found in Alpaca"}
+
+    try:
+        qty = int(abs(float(pos.get("qty", 0))))
+        entry = float(pos.get("avg_entry_price", 0))
+        pos_side = (pos.get("side") or "long").lower()
+    except (TypeError, ValueError) as e:
+        return {"ok": False, "reason": f"position {sym} unparseable: {e}"}
+
+    if qty < 1 or entry <= 0:
+        return {"ok": False, "reason": f"position {sym} qty={qty} entry={entry} invalid"}
+
+    # Load TP/SL pct from strategy defaults per asset class
+    is_crypto = "/" in sym
+    is_option = len(sym) > 7 and any(ch.isdigit() for ch in sym)
+
+    if is_option:
+        # Options are handled by options-exit-monitor; remediation should
+        # not touch them. Return skip.
+        return {
+            "ok":      False,
+            "skipped": True,
+            "reason":  f"{sym} is an option — options-exit-monitor handles exits",
+        }
+
+    # Stock/ETF defaults from aggressive_profile.json
+    tp_pct = 0.18   # +18% take_profit_full_pct
+    sl_pct = 0.06   # -6% stop_loss_pct
+    try:
+        from profile import load_profile
+    except ImportError:
+        try:
+            from shared.profile import load_profile  # type: ignore
+        except ImportError:
+            load_profile = None  # type: ignore
+
+    if load_profile:
+        try:
+            prof = load_profile() or {}
+            exits = prof.get("exits") or {}
+            if is_crypto:
+                cdef = exits.get("crypto") or {}
+                tp_pct = float(cdef.get("tier1_tp_pct") or tp_pct)
+                sl_pct = float(cdef.get("tier1_sl_pct") or sl_pct)
+            else:
+                sdef = exits.get("stocks_etf") or {}
+                tp_pct = float(sdef.get("take_profit_full_pct") or tp_pct)
+                sl_pct = float(sdef.get("stop_loss_pct") or sl_pct)
+        except Exception:
+            pass  # fall back to hardcoded defaults
+
+    # Crypto: Alpaca paper doesn't support OCO on crypto — skip with reason
+    if is_crypto:
+        return {
+            "ok":      False,
+            "skipped": True,
+            "reason":  f"{sym} is crypto — OCO not supported; rely on price polling",
+        }
+
+    # Compute TP/SL absolute prices
+    if pos_side == "long":
+        tp_price = round(entry * (1 + tp_pct), 2)
+        sl_price = round(entry * (1 - sl_pct), 2)
+        side = "sell"
+    else:  # short
+        tp_price = round(entry * (1 - tp_pct), 2)
+        sl_price = round(entry * (1 + sl_pct), 2)
+        side = "buy_to_cover"
+
+    # Submit OCO
+    result = place_oco_exit(sym, qty, tp_price, sl_price, side=side,
+                             client_order_id_prefix="recreate-exit")
+
+    if result:
+        return {
+            "ok":         True,
+            "symbol":     sym,
+            "qty":        qty,
+            "entry":      entry,
+            "tp_price":   tp_price,
+            "sl_price":   sl_price,
+            "order_id":   result.get("id", "")[:12],
+            "client_order_id": result.get("client_order_id", ""),
+        }
+    return {
+        "ok":     False,
+        "reason": f"OCO submission failed for {sym} qty={qty} tp={tp_price} sl={sl_price}",
+    }
 
 
 def _do_block_new_entries(action: RemediationAction) -> dict:
@@ -342,21 +456,31 @@ def remediate(health_result: dict, *, dry_run: bool = False,
         result = handler(action)
         _stamp_cooldown(action.action, action.subject)
 
+        # v3.9.6: RECREATE_EXIT_PLAN is now REVERSIBLE (places OCO exit
+        # orders; doesn't close position). PANIC_CLOSE_OPTIONS still
+        # irreversible (market sells real positions).
+        decision_status = "FAILED"
+        if result.get("ok"):
+            decision_status = "EXECUTED"
+        elif result.get("skipped"):
+            decision_status = "SKIPPED"
+
         d = make_decision(
             decision_type=_decision_type_for(action.action),
-            decision="EXECUTED" if result.get("ok") else "FAILED",
+            decision=decision_status,
             reason=action.reason,
             actor=actor,
             inputs=action.__dict__,
             affected_symbols=[action.subject] if action.subject != "*" else [],
             risk_metrics={"severity": action.severity},
-            reversible=action.action not in ("RECREATE_EXIT_PLAN",
-                                              "PANIC_CLOSE_OPTIONS"),
-            rollback_action="re-place SL/TP if needed" if action.action == "RECREATE_EXIT_PLAN"
-                            else "",
+            reversible=action.action != "PANIC_CLOSE_OPTIONS",
+            rollback_action=(
+                "cancel OCO + place fresh" if action.action == "RECREATE_EXIT_PLAN"
+                else ""
+            ),
             action_taken=action.action,
-            result="ok" if result.get("ok") else "failed",
-            errors=[] if result.get("ok") else [str(result)],
+            result=decision_status.lower(),
+            errors=[] if result.get("ok") or result.get("skipped") else [str(result)],
         )
         write_audit_event(d, kind="trading")
         report.actions_taken.append({
