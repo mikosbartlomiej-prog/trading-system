@@ -434,6 +434,19 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
                     f"{existing_rat} | {boost_reason}" if existing_rat else boost_reason
                 )
 
+            # Lane 2 PR #9 (2026-05-23) — Deep oversold amplifier.
+            # Fires AFTER PR #8 base boost. ETH ≤25 (vs ≤30) = deep
+            # capitulation territory, historically larger bounce. Overrides
+            # upward to 1.5× (vs 1.3× from base). Same clamp (≤2.00) +
+            # never downgrades existing multiplier.
+            fired2, deep_mult, deep_reason = heuristic_crypto_deep_oversold_boost(today_stats)
+            if fired2 and new.get("size_multiplier", 1.0) < deep_mult:
+                new["size_multiplier"] = deep_mult
+                existing_rat = new.get("rationale", "") or ""
+                new["rationale"] = (
+                    f"{existing_rat} | {deep_reason}" if existing_rat else deep_reason
+                )
+
         # Detect changes vs old for rationale + next_actions
         old_mult = old.get("size_multiplier", 1.0)
         new_mult = new["size_multiplier"]
@@ -695,4 +708,18 @@ def heuristic_crypto_oversold_boost(today_stats: dict) -> tuple:
     btc_rsi = rsi.get("BTC/USD", {}).get("today", 50.0)
     if eth_rsi <= 30.0 and btc_rsi <= 45.0:
         return True, 1.3, "ETH RSI {:.1f} <=30 + BTC RSI {:.1f} <=45: oversold bounce setup".format(eth_rsi, btc_rsi)
+    return False, 1.0, ""
+
+
+# ─── Lane2 auto-added — Deep oversold crypto amplifier: ETH ≤ 25 → boost crypto-momentum to 1.5x (vs 1.3x at ≤ 30) ────────────
+def heuristic_crypto_deep_oversold_boost(today_stats: dict) -> tuple:
+    """Amplify crypto-momentum size_multiplier to 1.5x when ETH RSI <= 25 (deep capitulation).
+    Complements heuristic_crypto_oversold_boost (<=30 -> 1.3x); this overrides upward for deeper signal.
+    Wire AFTER heuristic_crypto_oversold_boost in adapt_strategy so the deeper threshold wins.
+    """
+    rsi = today_stats.get("rsi_snapshot", {})
+    eth_rsi = rsi.get("ETH/USD", {}).get("today", 50)
+    btc_rsi = rsi.get("BTC/USD", {}).get("today", 50)
+    if eth_rsi <= 25 and btc_rsi <= 45:
+        return True, 1.5, f"ETH RSI {eth_rsi:.1f} <= 25 (deep capitulation) + BTC RSI {btc_rsi:.1f} <= 45"
     return False, 1.0, ""
