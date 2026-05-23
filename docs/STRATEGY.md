@@ -1,8 +1,8 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.9.6 — RECREATE_EXIT_PLAN incident fix (2026-05-22 EOD)
-**Recent increments:** 3.9.6 (OCO exit recreate + GTC brackets + audit journal commit), 3.9.5.1 (POLL_MAX_S 480→600), 3.9.5 (PR #8 crypto oversold boost), 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
-**Effective from:** 2026-05-22 EOD (v3.9.6)
+**Version:** 3.9.8 — PR #9 deep oversold amplifier (2026-05-23)
+**Recent increments:** 3.9.8 (PR #9 ETH≤25 → 1.5× crypto-momentum), 3.9.7 (governor NEW_DAY peak reset fix), 3.9.6 (OCO exit recreate + GTC brackets + audit journal commit), 3.9.5.1 (POLL_MAX_S 480→600), 3.9.5 (PR #8 crypto oversold boost), 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
+**Effective from:** 2026-05-23 (v3.9.8)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
