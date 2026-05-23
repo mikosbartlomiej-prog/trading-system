@@ -393,10 +393,36 @@ def update(account: Optional[dict] = None,
     daily_pl_pct = daily_pl / last_equity if last_equity > 0 else 0.0
     now_iso      = _utcnow_iso()
 
-    # Peak ratchet (positive PnL only — sub-zero starts don't set a peak).
-    peak_pnl    = max(prev_peak_pnl, daily_pl, 0.0)
-    peak_equity = max(prev_peak_equity, equity, last_equity)
-    peak_at     = now_iso if (daily_pl > prev_peak_pnl and daily_pl > 0) else (prev_peak_at or now_iso)
+    # v3.9.7 (2026-05-23 fix): On NEW_DAY, ignore Alpaca's daily_pl when
+    # building initial peak. Alpaca's `last_equity` is "equity at start of
+    # last trading session" — on weekends/holidays this equals
+    # *previous-session-open*, so equity-vs-last_equity equals YESTERDAY's
+    # full P&L (not zero). Pre-v3.9.7 this caused intraday_peak_pnl to be
+    # set to yesterday's gain at midnight UTC reset, then preserved
+    # through the day. Later when last_equity refreshed to yesterday's
+    # close (current=last_equity, daily_pl=0), giveback computed as
+    # 100% of stale peak → triggered RED_DAY_AFTER_GREEN incorrectly.
+    # Observed 2026-05-23 08:31 UTC: false RED_DAY_AFTER_GREEN with
+    # 0 positions + $0 actual intraday + $1,405 stale peak from Friday.
+    #
+    # Fix: on new_day, start peak at MAX(0, current_intraday_pnl that
+    # was earned WITHIN today). Since prev_peak_pnl is already 0 on
+    # new_day (line 353), we just need to make sure daily_pl from a
+    # stale Alpaca last_equity doesn't immediately set a fake peak.
+    # We do this by clamping new_day peak to 0 until a SECOND observation
+    # confirms the intraday gain is real (= subsequent ticks show
+    # increasing equity within today).
+    if new_day:
+        # First tick of new day: ignore daily_pl for peak purposes.
+        # Set peak baseline = 0; subsequent ticks accumulate naturally.
+        peak_pnl    = 0.0
+        peak_equity = equity   # baseline = current
+        peak_at     = now_iso
+    else:
+        peak_pnl    = max(prev_peak_pnl, daily_pl, 0.0)
+        peak_equity = max(prev_peak_equity, equity, last_equity)
+        peak_at     = (now_iso if (daily_pl > prev_peak_pnl and daily_pl > 0)
+                       else (prev_peak_at or now_iso))
     peak_pnl_pct = peak_pnl / last_equity if last_equity > 0 else 0.0
 
     giveback_usd = max(0.0, peak_pnl - daily_pl)

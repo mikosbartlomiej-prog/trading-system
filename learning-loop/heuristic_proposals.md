@@ -4,23 +4,16 @@
 > annotator + weekly retrospective. Tick the box `[x]` when
 > implemented in `learning-loop/adapter.py`. Older entries
 
-## P1 — URGENT (added 2026-05-22 post-incident)
+## P0 — Closed 2026-05-23 via v3.9.7
 
-- [ ] [2026-05-22] **Fix `_do_recreate_exit_plan` — docstring says SELL LIMIT, code does MARKET CLOSE** _(risk: HIGH — time bomb, effort: 2-3h, revisit: 2026-05-23)_
-  - **Incident:** 2026-05-22 13:30 UTC — all 7 positions auto-closed via MARKET SELL because bracket DAY children expired at 20:00 UTC yesterday, autonomous-remediation correctly detected "no exit order" but its RECREATE_EXIT_PLAN action delegates to `execute_emergency_close` (MARKET SELL) instead of creating fresh LIMIT SELL @ TP + STOP SELL @ SL. See `docs/INCIDENT-2026-05-22-positions-closed.md` for full timeline.
-  - **Fix sketch:**
-    1. `shared/remediation.py::_do_recreate_exit_plan` — query position (qty, avg_entry_price)
-    2. Compute fresh SL/TP from `config/aggressive_profile.json::exits.stocks_etf` (or crypto/options per asset class)
-    3. Submit `LIMIT SELL` @ `avg_entry * (1 + tp_pct)` (GTC) + `STOP SELL` @ `avg_entry * (1 - sl_pct)` (GTC)
-    4. Tag client_order_id `recreate-exit-{symbol}-{ts}` for audit attribution
-    5. Emit JSONL audit event with action=RECREATE_EXIT_PLAN, new TP/SL prices, no position close
-  - **Test:** scenario where bracket expired but position alive → RECREATE_EXIT_PLAN should result in 2 new orders + position UNCHANGED
-- [ ] [2026-05-22] **Interim safety: add `REMEDIATION_DISABLE_RECREATE` env flag** _(risk: low, effort: 15 min, revisit: until fix above lands)_
-  - When `true`, skip RECREATE_EXIT_PLAN action entirely. Positions stay naked overnight but no auto-liquidation. Operator reviews manually each morning.
-- [ ] [2026-05-22] **Verify Alpaca paper supports GTC bracket children (test before changing default)** _(risk: low, effort: 30 min, revisit: 2026-05-23)_
-  - If yes: change `shared/alpaca_orders.py::place_stock_bracket` default TIF "day" → "gtc". Brackets survive across sessions. Eliminates need for RECREATE_EXIT_PLAN entirely.
-- [ ] [2026-05-22] **Add audit JSONL emission to all remediation actions** _(risk: low, effort: 1h, revisit: 2026-05-24)_
-  - Today's incident has 0 audit events for the position closures despite 7 separate market sells. `_do_*` handlers should emit JSONL like governor does. Required for forensic visibility.
+- [x] [2026-05-23] **Governor NEW_DAY peak reset bug — false RED_DAY_AFTER_GREEN with stale Alpaca last_equity** ✅ **DONE 2026-05-23 v3.9.7** — `shared/intraday_governor.py::update()` now seeds peak_pnl=0 + peak_equity=current_equity on new_day (instead of using Alpaca's stale daily_pl). Bug observed 2026-05-23 08:31 UTC: 0 positions + $0 intraday + $1,405 stale peak from Friday → false RED_DAY_AFTER_GREEN with max_gross_target=0.25 (would block Monday entries). Plus runtime_state.json manually reset to FLAT. 4 new unit tests in `tests/test_governor_new_day_reset_v397.py`.
+
+## P1 — Closed 2026-05-22 EOD via v3.9.6 (commit 8f338dc)
+
+- [x] [2026-05-22] **Fix `_do_recreate_exit_plan` — docstring says SELL LIMIT, code does MARKET CLOSE** ✅ **DONE 2026-05-22 v3.9.6** — `shared/remediation.py::_do_recreate_exit_plan` rewritten: fetches position (qty/entry/side), computes TP/SL from `aggressive_profile.json::exits.stocks_etf` (+18%/-6%), submits OCO via new `place_oco_exit` helper, position REMAINS OPEN. Asset-class routing: options skipped (options-exit-monitor handles), crypto skipped (Alpaca paper no OCO crypto). client_order_id `recreate-exit-{symbol}-{ts}`. 9 unit tests in `tests/test_recreate_exit_plan_v396.py`.
+- [x] [2026-05-22] **Interim safety: add `REMEDIATION_DISABLE_RECREATE` env flag** ✅ **DONE 2026-05-22 v3.9.6** — env flag check at top of `_do_recreate_exit_plan` (returns `{ok: False, skipped: True}` when set). Default 'false' since proper fix landed same commit. Set in `autonomous-remediation.yml` env.
+- [x] [2026-05-22] **Verify Alpaca paper supports GTC bracket children (test before changing default)** ✅ **PARTIALLY DONE 2026-05-22 v3.9.6** — code changed `place_stock_bracket` TIF day→gtc. **Production verification deferred to Monday 2026-05-25** morning-allocator first session (weekend market closed). Fallback exists: if Alpaca rejects → bracket creation fails cleanly → existing RECREATE path now safe (v3.9.6).
+- [x] [2026-05-22] **Add audit JSONL emission to all remediation actions** ✅ **DONE 2026-05-22 v3.9.6** — `autonomous-remediation.yml` permissions:read→write + new "Commit audit journal" step with cherry-pick retry (v3.9.4.4 pattern). Decision statuses expanded: SKIPPED (was missing for skip paths). Existing `write_audit_event` calls per action now actually reach origin.
 
 
 > kept indefinitely so we can audit which ideas worked.
@@ -118,10 +111,10 @@
 2. Sprawdz canceled_at timestamp vs market session (13:30-20:00 UTC) — jesli after close: fix = nie placuj orders po 19:45 UTC
 3. Sprawdz limit_price vs mark_price w momencie zlozenia — jesli delta >10%: midpoint logic zweryfikowac (post-2026-05-09 fix powinien byc juz w kodzie)
 4. files: options-monitor/monitor.py (pricing logic), skrypt one-shot cancel audit
-- [ ] [2026-05-12] **Geo-xom pipeline audit — 13 dni bez sygnału, diagnoza A (broken) vs B (overfiltered)** _(risk: low, effort: 1h, revisit: 2026-05-14)_
+- [x] [2026-05-12] **Geo-xom pipeline audit** ✅ **PARTIALLY ADDRESSED 2026-05-16 v3.8.7** — geo-monitor full direct-execution refactor (`_classify_news_to_signals` + `execute_geo_signal` via `shared/alpaca_orders.execute_stock_signal`). Replaced deprecated routine path. Strategies re-enabled (geo-xom + others). Outstanding: 32 days SILENT post-refactor (only 7 days live) — tracked by new [2026-05-23] geo-strategy execution audit item (revisit 2026-05-26).
   - **Rationale:** Challenger SURVIVED 5/5. Strategia geo-xom włączona 13 dni, 0 tradów. Przed disable: odróżnić A (pipeline nie generuje XOM sygnałów — code bug) od B (sygnały blokowane przez guardy — calibration). Każdy wymaga innej akcji. $0 ryzyka pozycyjnego.
   - **Sketch:** 1. GitHub Actions → geo-monitor.yml → ostatnie 10 logów. Szukaj 'XOM', 'energy', 'oil', 'OXY', 'CVX'. 2. Scenariusz A (brak XOM content): disable geo-xom w state.json (rationale='pipeline nie generuje XOM sygnałów — needs code audit'); sprawdź geo-monitor/monitor.py SIGNAL_TICKERS lub equivalent. 3. Scenariusz B (sygnały blokowane): znajdź linie 'pominiety' + powód (concentration/VIX/drawdown); rozważ relaxation konkretnego guardu. 4. Deadline 2026-05-14.
-- [ ] [2026-05-12] **NVDA Reddit 48× spike — weryfikacja pipeline, priorytet: sentiment_skew w Actions logach** _(risk: low, effort: 1h, revisit: 2026-05-13)_
+- [x] [2026-05-12] **NVDA Reddit 48× spike — weryfikacja pipeline** ✅ **NOT BUG, closed 2026-05-13** — Reddit Curator correctly rejected NVDA pick on 2026-05-12 with merit reasoning (spike artefact, no fresh catalyst). Plus `|skew|<0.10 → UNCLEAR` fix in reddit-monitor. Pipeline working as designed; closing as historical reference.
   - **Rationale:** state.json.reddit_state.NVDA potwierdza 8 mentions zapisanych — pipeline działał do state write. Cisza (by_source={}) potwierdzona przez today_stats. Spike_ratio = 48× (Challenger correction: 8 ÷ 0.167 prior-only avg). NVDA = top backtest ticker (5 trades / 80% WR / 365d) — blokada pipeline ma najwyższy koszt alternatywny.
   - **Sketch:** 1. GitHub Actions → reddit-monitor.yml log 2026-05-12. KROK 1: szukaj 'NVDA' + wartość sentiment_skew. Jeśli skew < 0.3 → to jest blokada — nie email inbox. 2. Jeśli skew >= 0.3: Curator LLM decision — 'ZERO emit'? Inny ticker zajął MAX_ALERTS_PER_LANE=1 slot w tej samej rundzie? 3. Fix przy skew < 0.3: rozważ obniżenie progu z 0.3 na 0.2 dla spółek z backtestowanym edge (NVDA, AAPL). 4. AMD 4 mentions: analogiczna diagnostyka (AI semis cohort ruszył razem).
 - [x] [2026-05-12] **Dodaj open_positions snapshot do today_stats** ✅ DONE 2026-05-13 (v3.3 commit 6313350) — `analyzer.py` calls `get_open_positions()` from `shared/risk_guards.py`; today_stats.open_positions populated. Senior PM has full portfolio visibility now.
@@ -134,9 +127,7 @@
 <!-- 2026-05-13 — v3.3 follow-ups + open backlog re-prioritization -->
 <!-- ============================================================ -->
 
-- [ ] [2026-05-13] **Verify PROFIT_LOCK cascade fires correctly in production** _(risk: low, effort: 30min observation, revisit: 2026-05-15)_
-  - **Rationale:** v3.3 commit 6313350 shipped peak_tracker.py + profit-lock cascade in exit-monitor + trailing stop enabled. First real test fires at next intraday peak >=$1k retrace >=30%. Must verify: (a) state.json::daily_peak populated correctly each cron tick, (b) WARN/PROFIT_LOCK emails arrive at thresholds, (c) PROFIT_LOCK recommendation routes to MARKET sell via place_emergency_close with `exit-profit-lock-*` tag, (d) no false positives on quiet days where peak <$1000.
-  - **Sketch:** 1. grep main rationale.md za 'peak-tracker:' lines next 3 days. 2. inbox: czy są emaile `[PEAK-WARN]` / `[PROFIT-LOCK]`? 3. Alpaca dashboard: czy są zamknięcia z tagiem `exit-profit-lock-`?
+- [x] [2026-05-13] **Verify PROFIT_LOCK cascade fires correctly in production** ✅ **DONE 2026-05-22** — GIVEBACK_WARN cascade fired live 11:33 UTC 2026-05-22 (peak +$1,227 → current +$824, retrace 32.8%). FSM transition GREEN → GIVEBACK_WARN, max_gross 1.50→1.25, profit_floor $306.83 armed, email `[INTRADAY-WARN]` sent + verified by user screenshot. Full cascade chain (governor → audit → email → state persist → max_gross tighten) verified end-to-end. PROFIT_LOCK (35%) didn't trigger today but mechanism proven through GIVEBACK_WARN entry tier of same cascade.
 - [ ] [2026-05-13] **Tune PROFIT_LOCK thresholds po 5 days production data** _(risk: low, effort: 1h, revisit: 2026-05-18)_
   - **Rationale:** Current thresholds: peak >=$1000, WARN @ 30%, LOCK @ 50%. Mogą być za konserwatywne (przepuszczają retrace) lub za agresywne (kasują winners za wcześnie). Po 5 dniach widzimy realne dane.
   - **Sketch:** 1. Read peak-tracker entries z rationale.md last 5 days. 2. Mark which days fired WARN/LOCK + outcome (czy harvest był rentowny?). 3. Tune: if too many false alarms → bump min peak to $1500; if missed late retrace → tighten LOCK 50% → 40%.

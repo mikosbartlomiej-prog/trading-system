@@ -244,13 +244,16 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
         return []                          # not enough history yet
 
     # v3.8.6 (2026-05-16): exclude allocator-level tags from SILENT check.
-    # alloc-exit, allocator-rebalance, op-correction are NOT strategies —
-    # they're allocator's order tagging for operational flows. Their
-    # "0 trades lifetime" is meaningless because trades are attributed
-    # to the underlying signal strategy, not the allocator tag.
+    # alloc-exit, alloc-reduce, allocator-rebalance, op-correction are
+    # NOT strategies — they're allocator's order tagging for operational
+    # flows. Their "0 trades lifetime" is meaningless because trades are
+    # attributed to the underlying signal strategy, not the allocator tag.
+    # v3.9.8 (2026-05-23): added alloc-reduce (was being flagged daily;
+    # same allocator-tag category as alloc-exit per shared/allocator.py).
     ALLOCATOR_LEVEL_TAGS = {
-        "alloc-exit", "allocator-rebalance", "op-correction",
-        "operational-correction", "emergency-close", "unknown",
+        "alloc-exit", "alloc-reduce", "allocator-rebalance",
+        "op-correction", "operational-correction",
+        "emergency-close", "unknown",
     }
 
     # v3.9.0 (2026-05-21, LLM proposal 2026-05-17): grant 5-day grace
