@@ -246,3 +246,12 @@
 3. Jesli format alloc-rebalance-<ticker>-<ts> nie jest parsowany: add regex case w _strategy_from_client_id
 4. Jesli allocator nie ustawia client_order_id w ogole: dodaj w _exec_buy() w allocator.py
 5. Verify w nastepnym daily run — fill_rate.alloc-rebalance powinien zastapic fill_rate.unknown
+- [ ] [2026-05-23] **Auto-disable geo-strategies after 10 silent days post-enable_at** _(risk: medium, effort: 2-3h, revisit: 2026-05-26)_
+  - **Rationale:** Cztery strategie geo (defense/energy/gold/xom) mają 0 transakcji przez 7 dni od refaktoru v3.8.7 (enabled_at=2026-05-16). Ręczny review co kilka dni jest kosztowny i reaktywny. Adapter powinien automatycznie wyłączać strategie bez dowodu execution po 10 dniach od enabled_at — eliminuje potrzebę manualnej interwencji i zamyka pętlę.
+  - **Sketch:** 1. Nowa funkcja heuristic_no_execution_disable(name, stats, state) w adapter.py.
+2. Warunki: name.startswith('geo-') AND enabled=True AND trades_lifetime==0 AND enabled_at in state.
+3. Oblicz: days_since_enable = (today - date.fromisoformat(state[name]['enabled_at'])).days.
+4. Jezeli days_since_enable >= 10: return True, 'AUTO-DISABLED: 0 trades 10+ days post-enable_at — no execution evidence'.
+5. Wire-in adapt() po silent-flag warnings, przed win_rate thresholds.
+6. enabled -> False, paused_until=None; wymaga manualnego re-enable (lub dowodu ze geo-monitor pipeline dziala).
+7. Docelowo uogolnic prefix do konfigurowalnej listy.

@@ -391,3 +391,21 @@
 - 2026-05-23 · rsi-alert [oversold]: ETH/USD RSI=20.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-23 · peak-tracker: intraday: peak $+1,405 at 591+00:0 current $+1,405 giveback 0% state=GREEN max_gross=1.50 floor=$351
 
+- 2026-05-23 · LLM[medium] regime=choppy: Sobota bez transakcji — system w normie. ETH/USD RSI odbiło minimalnie (20.7→27.9) ale utrzymuje się w głębokim oversoldzie; crypto-momentum 1.3x z PR #8 poprawnie ustawione. SPY RSI 72 (overbought) uzasadnia PUT-side dla options-momentum — potwierdzam strategy-level side_bias=short mimo resetu globalnego przez adapter. Krytyczna uwaga operacyjna: poniedziałek 2026-05-25 to Memorial Day (USA) — instrument_windows.py powinno zablokować morning-allocator 13:35 UTC, ale warto zweryfikować logi.
+-   · crypto-momentum.size_multiplier: 1.3 -> 1.3
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.rationale: ETH RSI 20.7 ≤ 30 + BTC RSI 30.5 ≤ 45 — PR #8 heurystyka aktywna. Ustawiam jawnie 1.3 żeby sygnał był widoczny w state.json niezależnie od kolejności operacji w adapt(). Deep oversold amplifier (1.5x przy ETH≤25) jest w propozycji auto_pr — jeśli PR się zmerguje przed kolejnym cyklem, następna sesja z ETH≤25 wygeneruje 1.5x automatycznie. -> ETH RSI 27.9 ≤ 30 AND BTC RSI 35.6 ≤ 45 — PR #8 heurystyka spełniona. Bounce 20.7→27.9 wskazuje kapitulację blisko dna; 1.3x uzasadniony do końca tygodnia. PR #9 (1.5x przy ETH≤25) NIE kwalifikuje dziś (ETH 27.9 > 25) — bez dalszego wychylenia w górę.
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.side_bias: short -> short
+-   · options-momentum.enabled: True -> True
+-   · options-momentum.rationale: SPY RSI 72 — overbought, PUT-side otwarty (blok 75 jeszcze nie aktywny). N=1 trade lifetime, size_multiplier=0.5 to cool-down policy nie kara za WR przy tak małej próbce. Zachowuję short bias na całą sesję. Jeśli SPY RSI dotknie 75 dzisiaj, PUT-block z v3.8.6 automatycznie zablokuje nowe entries. -> Potwierdzam strategy-level side_bias=short mimo resetu global options_side_bias przez adapter. SPY RSI 72 = overbought = makro-uzasadnienie PUT-side; global reset do null poprawny (0 danych 7d) ale strategy-level short musi pozostać — inaczej następna CALL w overbought SPY przejdzie przez filtr. size_multiplier=0.5 cool-down niezmieniony — N=1 trade to za mała próbka do podwyższenia.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-23 · LLM edge: Crypto: ETH RSI 27.9 + BTC RSI 35.6 — obie warunki PR #8 spełnione; bounce setup o wysokim prawdopodobieństwie przy tak głębokim oversoldzie. Equities: SPY 72 = overbought = makro put-friendly, ale N=1 trade lifetime options-momentum nie pozwala potwierdzić edge empirycznie. Geo-strategies: 0 transakcji lifetime po 7 dniach od refaktoru — brak dowodu edge; ocena zaplanowana 2026-05-26.
+- 2026-05-23 · options_side_bias reset to null (zero supporting data in 7d window — proposal 2026-05-09)
+- 2026-05-23 · geo-defense: SILENT — enabled but 0 trades lifetime (33 days tracked); consider disable or remove
+- 2026-05-23 · geo-energy: SILENT — enabled but 0 trades lifetime (33 days tracked); consider disable or remove
+- 2026-05-23 · geo-gold: SILENT — enabled but 0 trades lifetime (33 days tracked); consider disable or remove
+- 2026-05-23 · geo-xom: SILENT — enabled but 0 trades lifetime (33 days tracked); consider disable or remove
+- 2026-05-23 · rsi-alert [oversold]: ETH/USD RSI=27.9 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
