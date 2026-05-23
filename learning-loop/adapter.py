@@ -434,6 +434,19 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
                     f"{existing_rat} | {boost_reason}" if existing_rat else boost_reason
                 )
 
+            # Lane 2 PR #9 (2026-05-23) — Deep oversold amplifier.
+            # Fires AFTER PR #8 base boost. ETH ≤25 (vs ≤30) = deep
+            # capitulation territory, historically larger bounce. Overrides
+            # upward to 1.5× (vs 1.3× from base). Same clamp (≤2.00) +
+            # never downgrades existing multiplier.
+            fired2, deep_mult, deep_reason = heuristic_crypto_deep_oversold_boost(today_stats)
+            if fired2 and new.get("size_multiplier", 1.0) < deep_mult:
+                new["size_multiplier"] = deep_mult
+                existing_rat = new.get("rationale", "") or ""
+                new["rationale"] = (
+                    f"{existing_rat} | {deep_reason}" if existing_rat else deep_reason
+                )
+
         # Detect changes vs old for rationale + next_actions
         old_mult = old.get("size_multiplier", 1.0)
         new_mult = new["size_multiplier"]

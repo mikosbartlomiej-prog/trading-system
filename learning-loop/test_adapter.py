@@ -510,3 +510,67 @@ class TestCryptoDeepOversoldBoost(unittest.TestCase):
         fired, mult, _ = heuristic_crypto_deep_oversold_boost({})
         self.assertFalse(fired)
         self.assertEqual(mult, 1.0)
+
+
+# ─── PR #9 wire-in integration tests (2026-05-23) ─────────────────────────
+# Verifies that heuristic_crypto_deep_oversold_boost is actually applied
+# in adapt() loop AFTER the PR #8 base boost, overriding upward.
+
+
+class TestCryptoDeepOversoldBoostWiredIntoAdapt(unittest.TestCase):
+    def _base_stats(self, eth_rsi, btc_rsi):
+        return {
+            "as_of": "2026-05-23",
+            "equity": 95000.0,
+            "starting_equity": 95000.0,
+            "by_strategy": {
+                "crypto-momentum": {
+                    "trades_7d": 0, "trades_lifetime": 0,
+                    "win_rate_7d": 0.0, "win_rate_lifetime": 0.0,
+                    "pnl_usd_7d": 0.0, "pnl_usd_lifetime": 0.0,
+                    "consecutive_losses": 0,
+                },
+            },
+            "by_asset_class": {}, "by_source": {},
+            "rsi_snapshot": {
+                "ETH/USD": {"today": eth_rsi},
+                "BTC/USD": {"today": btc_rsi},
+            },
+        }
+
+    def test_deep_oversold_fires_15x(self):
+        """ETH 20.7 + BTC 30.5 (today's actual) → size_multiplier=1.5."""
+        stats = self._base_stats(eth_rsi=20.7, btc_rsi=30.5)
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.0, "enabled": True}}}
+        new_state, rationale = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        self.assertAlmostEqual(cm["size_multiplier"], 1.5,
+                                msg="PR #9: ETH ≤25 should boost to 1.5x")
+        # Rationale should mention deep capitulation
+        self.assertTrue(any("capitulation" in r.lower() or "1.50" in r for r in rationale),
+                         f"Expected deep capitulation in rationale: {rationale}")
+
+    def test_middle_oversold_fires_13x_only(self):
+        """ETH 28 (NOT ≤25) → only PR #8 base boost 1.3x fires, not 1.5x."""
+        stats = self._base_stats(eth_rsi=28.0, btc_rsi=40.0)
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.0, "enabled": True}}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        # PR #8 fires (ETH ≤30), PR #9 doesn't (ETH > 25) → 1.3x not 1.5x
+        self.assertAlmostEqual(cm["size_multiplier"], 1.3)
+
+    def test_neither_oversold_fires(self):
+        """ETH 35 → neither PR #8 nor PR #9, default 1.0x."""
+        stats = self._base_stats(eth_rsi=35.0, btc_rsi=50.0)
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.0, "enabled": True}}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        self.assertAlmostEqual(cm["size_multiplier"], 1.0)
+
+    def test_deep_doesnt_downgrade(self):
+        """If existing multiplier already ≥1.5 (e.g. WR-warm), no downgrade."""
+        stats = self._base_stats(eth_rsi=20.0, btc_rsi=30.0)
+        state = {"strategies": {"crypto-momentum": {"size_multiplier": 1.8, "enabled": True}}}
+        new_state, _ = adapt(state, stats)
+        cm = new_state["strategies"]["crypto-momentum"]
+        self.assertGreaterEqual(cm["size_multiplier"], 1.5)
