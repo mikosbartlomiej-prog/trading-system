@@ -239,3 +239,19 @@
   - **Sketch:** W geo-monitor/monitor.py::execute_geo_signal: (1) przed wywołaniem execute_stock_signal, dodaj Alpaca REST call do /v2/stocks/{symbol}/quotes/latest (papier API, te same klucze). (2) limit_price = float(quote['ask_price']) * 1.0025 dla BUY, float(quote['bid_price']) * 0.9975 dla SELL. (3) Fallback: jeśli quote endpoint zwróci błąd, użyj close_price * 1.005 (szerszy buffer z close). (4) Przekaż limit_price do shared/alpaca_orders.py::place_stock_bracket (sprawdź signature — może wymagać dodania parametru). Test: mockuj /v2/stocks/USO/quotes/latest → ask=78.50; assert limit_price == 78.50 * 1.0025 = 78.696. Precedens: options-monitor/monitor.py::_resolve_limit_price (midpoint z 2026-05-09). Pliki: geo-monitor/monitor.py, shared/alpaca_orders.py (opcjonalnie).- [ ] [2026-05-21] **Per-monitor fill rate attribution via client_order_id prefix** _(risk: low, effort: 2-3h, revisit: 2026-05-28)_
   - **Rationale:** fill_rate.unknown 0% na 28 zleceniach to blinder operacyjny. Kluczowe pytanie: czy te 28 to wejściowe sygnały geo/defense/twitter które nie trafiają w rynek, czy TP exits z portfela alokatorowego czekające na cel +14%? Bez odpowiedzi każdy fix limitów to strzelanie na ślepo.
   - **Sketch:** 1. Każdy monitor który wywołuje execute_stock_signal prefixuje client_order_id: geo-monitor -> 'geo-{sym}-entry-{ts}', defense-monitor -> 'def-{sym}-entry-{ts}', twitter-monitor -> 'twit-{sym}-entry-{ts}'. 2. Allocator BUY entries -> 'alloc-buy-{sym}-{ts}' (distinct od alloc-tp). 3. analyzer.py::_strategy_from_client_id() rozszerza regex: r'^(geo|def|alloc|twit|reddit)-' -> source category. 4. fill_rate dict rozbity per-source: fill_rate.geo-monitor, fill_rate.defense-monitor, fill_rate.alloc-tp itp. 5. Adapter flaguje per-source fill_rate alert zamiast globalnego unknown. Docelowo fill_rate.unknown znika.
+- [ ] [2026-05-23] **Geo-strategy execution audit: 32 days SILENT — verify v3.8.7 direct-exec chain before disable** _(risk: low, effort: 1h, revisit: 2026-05-26)_
+  - **Rationale:** Geo-defense/energy/gold/xom mają 0 trades w 32 dniach. Przed disable'em trzeba odróżnić 'brak qualifying newsów' od 'broken execution chain'. V3.8.7 (2026-05-16) dodał direct-exec przez execute_stock_signal — nie wiemy czy ta ścieżka kiedykolwiek odpalała w produkcji.
+  - **Sketch:** 1. GH Actions -> geo-monitor workflow logs ostatnie 7 dni
+2. Szukaj '_classify_news_to_signals' hits — ile razy znalazł kwalifikujący news?
+3. Szukaj 'execute_geo_signal' hits — ile razy weszło do execution path?
+4. Jesli 0 klasyfikacji: środowisko spokojne, strategie poprawnie uśpione — NIE disable
+5. Jesli klasyfikacja jest ale 0 execute_geo_signal: wiring bug w v3.8.7 — fix urgent
+6. Jesli execute fires ale 0 Alpaca orders: sprawdź VIX/drawdown/concentration guards
+7. Disable tylko jesli bug potwierdzony AND brak qualifying events >21 dni
+- [ ] [2026-05-23] **Strategy attribution fix: 7/7 allocator fills tagged 'unknown' — verify client_order_id format post-v3.9.6** _(risk: low, effort: 1h, revisit: 2026-05-26)_
+  - **Rationale:** fill_rate pokazuje 7 fills attributed to 'unknown'. V3.8.5 miało naprawić UUID pollution — albo tag alloc-rebalance nie przechodzi przez _strategy_from_client_id, albo allocator nie ustawia client_order_id. Kiedy wszystko trafia jako unknown, TP hit rate i strategy scorecard są ślepe.
+  - **Sketch:** 1. Sprawdź client_order_id format w allocations/2026-05-22.execution.json dla placed orders
+2. Porownaj z _strategy_from_client_id regex patterns w analyzer.py
+3. Jesli format alloc-rebalance-<ticker>-<ts> nie jest parsowany: add regex case w _strategy_from_client_id
+4. Jesli allocator nie ustawia client_order_id w ogole: dodaj w _exec_buy() w allocator.py
+5. Verify w nastepnym daily run — fill_rate.alloc-rebalance powinien zastapic fill_rate.unknown

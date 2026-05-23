@@ -6,29 +6,26 @@
     "starting_equity": 96427.97
   },
   "daily_peak": {
-    "date": "2026-05-22",
+    "date": "2026-05-23",
     "peak_pl_usd": 1404.9700000000012,
     "peak_pl_pct": 0.014570150133825292,
-    "peak_at": "2026-05-22T13:57:46.148307+00:00",
+    "peak_at": "2026-05-23T01:22:07.360591+00:00",
     "peak_equity": 97832.94,
     "current_pl_usd": 1404.9700000000012,
     "current_equity": 97832.94,
     "retrace_from_peak": 0.0,
-    "verdict": "GIVEBACK_WARN",
-    "verdict_at": "2026-05-22T21:36:40.741603+00:00",
-    "alerts_sent": {
-      "GIVEBACK_WARN": "2026-05-22T11:33:18.305255+00:00",
-      "legacy:WARN": "2026-05-22T11:33:18.304633+00:00"
-    },
+    "verdict": "GREEN",
+    "verdict_at": "2026-05-23T01:22:07.360591+00:00",
+    "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 31,
+  "days_tracked": 32,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
-    "options_side_bias": null
+    "options_side_bias": "short"
   },
-  "last_updated": "2026-05-22T21:54:59.601625+00:00",
+  "last_updated": "2026-05-23T01:22:57.344504+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
@@ -235,9 +232,9 @@
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "OVERRIDE SILENT FLAG — ETH RSI 25.7 to głęboki oversold; historycznie bounce przy RSI < 30 jest statystycznie prawdopodobny. BTC RSI 36 zbliża się do wejścia. 0 trades w 14 dniach jest poprawne jeśli ceny nie spełniały warunków entry (brak impulsu 3-15% w 24h). Nie wyłączam na tydzień przed potencjalnym sygnałem bounced ETH.",
+      "rationale": "ETH RSI 20.7 ≤ 30 + BTC RSI 30.5 ≤ 45 — PR #8 heurystyka aktywna. Ustawiam jawnie 1.3 żeby sygnał był widoczny w state.json niezależnie od kolejności operacji w adapt(). Deep oversold amplifier (1.5x przy ETH≤25) jest w propozycji auto_pr — jeśli PR się zmerguje przed kolejnym cyklem, następna sesja z ETH≤25 wygeneruje 1.5x automatycznie.",
       "side_bias": null,
-      "size_multiplier": 1.0,
+      "size_multiplier": 1.3,
       "trades_7d": 0,
       "trades_lifetime": 0,
       "win_rate_7d": 0.0,
@@ -292,7 +289,7 @@
       "paused_until": "2026-05-19",
       "pnl_usd_7d": -0.6,
       "pnl_usd_lifetime": -0.6,
-      "rationale": "CONFIRM yesterday override: paused_until=2026-05-19 wygasła. SPY RSI 73.2 (overbought, poniżej PUT-block gate 75) + ETH RSI 25.7 + BTC RSI 36 = risk-off środowisko uzasadniające PUT-side. N=1 lifetime za mała próbka — trzymam size_multiplier=0.5 (cool-down policy, nie kara za WR). Nie podnoszę przed 5+ zamkniętymi tradami.",
+      "rationale": "SPY RSI 72 — overbought, PUT-side otwarty (blok 75 jeszcze nie aktywny). N=1 trade lifetime, size_multiplier=0.5 to cool-down policy nie kara za WR przy tak małej próbce. Zachowuję short bias na całą sesję. Jeśli SPY RSI dotknie 75 dzisiaj, PUT-block z v3.8.6 automatycznie zablokuje nowe entries.",
       "review_after": "2026-05-14 (post daily-learning)",
       "side_bias": "short",
       "size_multiplier": 0.5,
