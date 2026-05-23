@@ -484,3 +484,29 @@ class TestCryptoOversoldBoostWiredIntoAdapt(unittest.TestCase):
         cm = new_state["strategies"]["crypto-momentum"]
         # Should stay 1.5 (heuristic only boosts UP to 1.3, never down)
         self.assertGreaterEqual(cm["size_multiplier"], 1.3)
+
+
+# ─── Lane2 auto-added test for: Deep oversold crypto amplifier: ETH ≤ 25 → boost crypto-momentum to 1.5x (vs 1.3x at ≤ 30) ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_crypto_deep_oversold_boost  # noqa: E402,F401
+
+class TestCryptoDeepOversoldBoost(unittest.TestCase):
+    def test_fires_at_eth_20_btc_30(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 20.7}, "BTC/USD": {"today": 30.5}}}
+        fired, mult, reason = heuristic_crypto_deep_oversold_boost(stats)
+        self.assertTrue(fired)
+        self.assertEqual(mult, 1.5)
+        self.assertIn("deep capitulation", reason)
+    def test_no_fire_at_eth_27(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 27.0}, "BTC/USD": {"today": 40.0}}}
+        fired, mult, _ = heuristic_crypto_deep_oversold_boost(stats)
+        self.assertFalse(fired)
+        self.assertEqual(mult, 1.0)
+    def test_no_fire_btc_over_45(self):
+        stats = {"rsi_snapshot": {"ETH/USD": {"today": 22.0}, "BTC/USD": {"today": 46.0}}}
+        fired, _, _ = heuristic_crypto_deep_oversold_boost(stats)
+        self.assertFalse(fired)
+    def test_empty_rsi_snapshot_safe(self):
+        fired, mult, _ = heuristic_crypto_deep_oversold_boost({})
+        self.assertFalse(fired)
+        self.assertEqual(mult, 1.0)
