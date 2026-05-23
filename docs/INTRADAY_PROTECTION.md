@@ -1,11 +1,15 @@
-# Intraday Profit Protection — v3.5 (2026-05-14)
+# Intraday Profit Protection — v3.5 (2026-05-14), v3.9.7 fix (2026-05-23)
 
-**Status:** LIVE
+**Status:** LIVE (verified live 2026-05-22 GIVEBACK_WARN cascade)
 **Module:** `shared/intraday_governor.py`
 **Persistence:** `learning-loop/runtime_state.json` (separate from `state.json`)
 **Source of truth (config):** `config/aggressive_profile.json` →
 `intraday_profit_protection` + `profit_floor` + `intraday_exposure_reduction`
 **Audit:** `journal/autonomy/YYYY-MM-DD.jsonl`
+
+**Production verifications:**
+- **2026-05-22 11:33 UTC** — GIVEBACK_WARN cascade fired LIVE (peak +$1,227 → current +$824, 32.8% retrace). All 5 cascade actions verified: FSM transition, max_gross 1.50→1.25, profit_floor $307 armed, email sent, audit JSONL written. First production demonstration.
+- **2026-05-23** — v3.9.7 fix: NEW_DAY transition now seeds `peak_pnl=0` + `peak_equity=current_equity` (instead of using Alpaca's stale `last_equity` which on weekends returns previous-SESSION-OPEN). Pre-fix: false RED_DAY_AFTER_GREEN at 08:31 UTC Sat with 0 positions + $0 actual intraday + $1,405 stale peak from Friday → max_gross_target clamped to 0.25 → would have blocked Monday allocator. Tests in `tests/test_governor_new_day_reset_v397.py`.
 
 ---
 

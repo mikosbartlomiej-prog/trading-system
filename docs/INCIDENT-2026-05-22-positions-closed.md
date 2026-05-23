@@ -171,3 +171,87 @@ Operator manually reviews each morning.
    captured FSM transitions (governor), not the remediation actions.
    `_do_recreate_exit_plan` should emit an event so operators see
    "Remediation closed AMD at $477 — reason: no exit order" in JSONL.
+
+## Resolution (2026-05-22 EOD — v3.9.6 + 2026-05-23 — v3.9.7)
+
+**All 4 P1 backlog items SHIPPED** in single commit `8f338dc` same day
+(2026-05-22 EOD, ~30 min after incident closed). Plus follow-up fix
+`2e2f505` (v3.9.7, 2026-05-23) for governor NEW_DAY peak preservation
+bug that would have blocked Monday's open.
+
+### v3.9.6 — Direct incident fix (commit `8f338dc`)
+
+1. **GTC bracket TIF** (`shared/alpaca_orders.py::place_stock_bracket`)
+   — `time_in_force: "day"` → `"gtc"`. Eliminates the original
+   trigger condition (DAY-TIF expiration at market close).
+
+2. **`place_oco_exit` helper** (`shared/alpaca_orders.py`, new)
+   — paired LIMIT@TP + STOP@SL with GTC TIF + guards (qty/prices/side
+   validation, TP/SL inversion check for long+short). Used by
+   `_do_recreate_exit_plan` as the proper recovery mechanism.
+
+3. **`_do_recreate_exit_plan` rewritten** (`shared/remediation.py`)
+   — fetches position from Alpaca, computes TP/SL from
+   `aggressive_profile.json::exits.stocks_etf` (+18%/-6%), submits
+   OCO via `place_oco_exit`. **Position REMAINS OPEN.** Options +
+   crypto correctly skipped (asset-class aware). client_order_id
+   prefix `recreate-exit-` for audit attribution.
+
+4. **`REMEDIATION_DISABLE_RECREATE` env flag** (operator kill-switch)
+   — when `true`, skips RECREATE_EXIT_PLAN entirely. Default `false`.
+   Set in `autonomous-remediation.yml` env.
+
+5. **`autonomous-remediation.yml`** — `permissions: contents: read` →
+   `write` + new "Commit audit journal" step with cherry-pick retry
+   pattern (v3.9.4.4). Closes the forensic gap of 0 audit events for
+   7+ position-affecting actions during this incident.
+
+6. **Decision status SKIPPED** added to remediation audit emission
+   (previously only EXECUTED/FAILED for skip paths). `RECREATE_EXIT_PLAN`
+   now flagged `reversible=true` (rollback = cancel OCO + replace).
+
+13 unit tests in `tests/test_recreate_exit_plan_v396.py`.
+
+### v3.9.7 — Governor NEW_DAY follow-up fix (commit `2e2f505`)
+
+Saturday morning audit discovered a separate bug exposed by the same
+underlying mechanic:
+
+**Symptom:** runtime_state.json showed `RED_DAY_AFTER_GREEN` at
+2026-05-23 08:31 UTC with 0 positions, $0 actual intraday P&L, and
+`intraday_peak_pnl: $1,404.97` (preserved from Friday). `max_gross_target`
+clamped to 0.25 — would have blocked Monday's allocator BUY orders.
+
+**Root cause:** `shared/intraday_governor.py::update()` on new_day
+seeded `peak_pnl` from `max(prev_peak_pnl, daily_pl, 0.0)`. On
+weekends/holidays, Alpaca's `last_equity` returns
+previous-SESSION-OPEN (not previous-session-CLOSE), so daily_pl
+computed yesterday's full P&L. Combined with NEW_DAY transition
+preserving the alerts_sent dict, the governor effectively carried
+yesterday's peak into today.
+
+**Fix:** on new_day, hard-set `peak_pnl = 0` + `peak_equity = equity`
+(baseline = current). Subsequent ticks accumulate naturally. Plus
+manual reset of runtime_state.json to FLAT (commit included).
+
+4 unit tests in `tests/test_governor_new_day_reset_v397.py` including
+the 2026-05-23 incident replay scenario.
+
+### Verification plan (Monday 2026-05-25)
+
+See `docs/VERIFICATION-2026-05-25-monday.md` — 8-checkpoint plan to
+verify v3.9.6 + v3.9.7 in production conditions:
+- Sunday 04:00 UTC daily-learning generates plan
+- Monday 01:30 UTC governor NEW_DAY transition with clean peak=0
+- Monday 13:35 UTC morning-allocator opens 7 BUYs with GTC brackets
+- Monday 20:00 UTC market close — brackets DO NOT expire
+- 20:15+ UTC remediation — 0 actions taken (positions intact)
+- Tuesday morning — positions still alive
+
+Success criteria: positions stay alive Mon → Tue, no MARKET SELLs
+by remediation.
+
+Fallback path: if Alpaca paper rejects GTC bracket → v3.9.6
+`_do_recreate_exit_plan` kicks in with proper OCO recreation (not
+market close) → positions still protected, just via different
+mechanism.
