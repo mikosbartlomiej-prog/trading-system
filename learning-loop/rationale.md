@@ -429,3 +429,30 @@
 - 2026-05-24 · rsi-alert [oversold]: BTC/USD RSI=27.8 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-24 · rsi-alert [oversold]: ETH/USD RSI=19.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-24 · WEEKLY[medium] regime=transitional: Tydzień 18-24 maja: +$3,902 (+4.15%) wyłącznie z mark-to-market na 7 pozycjach alokatorowych (AMD, CRWD, GLD, NOW, PANW, QQQ, SPY) otwartych w poniedziałek 2026-05-19 przy 100% fill rate. Po 35 dniach
+-   · crypto-momentum.size_multiplier: 1.3 -> 1.5
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.rationale: ETH RSI 27.9 ≤ 30 AND BTC RSI 35.6 ≤ 45 — PR #8 heurystyka spełniona. Bounce 20.7→27.9 wskazuje kapitulację blisko dna; 1.3x uzasadniony do końca tygodnia. PR #9 (1.5x przy ETH≤25) NIE kwalifikuje dziś (ETH 27.9 > 25) — bez dalszego wychylenia w górę. -> ETH RSI=19.7 ≤ 25 AND BTC RSI=27.8 ≤ 45 — PR #9 deep oversold amplifier kwalifikuje (ETH poniżej 25 przez cały weekend). 1.5x uzasadniony na kolejne 3-5 sesji. Automatyczny reset do 1.3x (PR #8 baseline) gdy ETH RSI > 35 przez 2 sesje z rzędu. Side_bias=null — crypto-momentum jest long-only z natury (crypto-breakdown disabled strukturalnie).
+-   · geo-defense.size_multiplier: 1.0 -> 1.0
+-   · geo-defense.side_bias: None -> None
+-   · geo-defense.enabled: True -> True
+-   · geo-defense.rationale: Grace period v3.9.0 wygasła 2026-05-21 ale fill_rate.unknown 0% na 28 zleceniach blokuje fair ocenę — nie wiadomo ile pochodzi z geo-monitora. Min. 10 dni po v3.8.7 refaktorze przed disable. Następna ocena 2026-05-26. -> Utrzymuję enabled z twardym deadline 2026-05-30. Warunek: min 1 fill po limit pricing fix. Bez fills do 2026-05-30 → disable wszystkich 4 geo-strategies bez override. Nie przedłużam SILENT override bezterminowo.
+-   · geo-energy.size_multiplier: 1.0 -> 1.0
+-   · geo-energy.side_bias: None -> None
+-   · geo-energy.enabled: True -> True
+-   · geo-energy.rationale: Jak geo-defense. Systemowy fill_rate problem uniemożliwia fair ocenę przy 5 dniach live. -> Jak geo-defense. Hard deadline 2026-05-30. Limit pricing fix (ask-price BUY) jest warunkiem koniecznym do fair oceny.
+-   · geo-gold.size_multiplier: 1.0 -> 1.0
+-   · geo-gold.side_bias: None -> None
+-   · geo-gold.enabled: True -> True
+-   · geo-gold.rationale: Jak geo-defense. ETH/BTC oversold wspiera safe-haven flow do GLD — nie disable przed crypto bounce testem. -> Jak geo-defense. Hard deadline 2026-05-30. ETH oversold może generować risk-off safe-haven flow do GLD — ale tylko jeśli limit fix pozwoli nam złapać ten ruch.
+-   · geo-xom.size_multiplier: 1.0 -> 1.0
+-   · geo-xom.side_bias: None -> None
+-   · geo-xom.enabled: True -> True
+-   · geo-xom.rationale: Jak geo-defense. Energia koreluje z geo-energy. 5 dni live to za mało przy 0% fill na całym pipeline. -> Jak geo-defense. Hard deadline 2026-05-30. Energia koreluje z geo-energy — jeśli jedna nie wypełnia, druga też nie.
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.side_bias: short -> short
+-   · options-momentum.enabled: True -> True
+-   · options-momentum.rationale: Potwierdzam strategy-level side_bias=short mimo resetu global options_side_bias przez adapter. SPY RSI 72 = overbought = makro-uzasadnienie PUT-side; global reset do null poprawny (0 danych 7d) ale strategy-level short musi pozostać — inaczej następna CALL w overbought SPY przejdzie przez filtr. size_multiplier=0.5 cool-down niezmieniony — N=1 trade to za mała próbka do podwyższenia. -> SPY RSI=72-73 overbought potwierdza PUT-side przez kolejny tydzień. N=1 trade lifetime — size_multiplier=0.5 cool-down policy pozostaje (minimum 5 zamkniętych tradów przed podniesieniem). Pierwsze okno po Memorial Day: wtorek 2026-05-27. 0 nowych fills do 2026-05-31 → pipeline diagnostic needed.
+-   · global_overrides.options_side_bias: None -> None
+
