@@ -1,0 +1,138 @@
+{
+  "week_pl_story": "Tydzień 18-24 maja: +$3,902 (+4.15%) wyłącznie z mark-to-market na 7 pozycjach alokatorowych (AMD, CRWD, GLD, NOW, PANW, QQQ, SPY) otwartych w poniedziałek 2026-05-19 przy 100% fill rate. Po 35 dniach systemu strategie sygnałowe zamknęły łącznie 1 trade (options-momentum, -$0.60) — zero alpha ze źródeł geo/crypto/options; system zarabia jako pasywny ETF-portfolio, nie jako aktywny trader sygnałowy. Przełomowy setup końca tygodnia: ETH RSI=19.7 + BTC RSI=27.8 to historyczny oversold krypto — PR #9 kwalifikuje, crypto-momentum 1.5x to właściwa odpowiedź na wysokie bounce probability. Geo-strategies dostają twardy deadline 2026-05-30: 0 fills do tej daty = pipeline uszkodzony strukturalnie, wszystkie 4 wyłączamy bez dalszego override.",
+  "market_regime": "transitional",
+  "strategy_scorecard": [
+    {"name": "allocator-rebalance", "rank": 1, "pnl_usd": 3902.53, "verdict": "keep"},
+    {"name": "options-momentum", "rank": 2, "pnl_usd": -0.60, "verdict": "keep"},
+    {"name": "crypto-momentum", "rank": 3, "pnl_usd": 0.0, "verdict": "boost"},
+    {"name": "geo-defense", "rank": 4, "pnl_usd": 0.0, "verdict": "cut"},
+    {"name": "geo-energy", "rank": 4, "pnl_usd": 0.0, "verdict": "cut"},
+    {"name": "geo-gold", "rank": 4, "pnl_usd": 0.0, "verdict": "cut"},
+    {"name": "geo-xom", "rank": 4, "pnl_usd": 0.0, "verdict": "cut"},
+    {"name": "overbought-short", "rank": 5, "pnl_usd": 0.0, "verdict": "cut"}
+  ],
+  "allocation_recommendation": {
+    "stocks_pct": 65.0,
+    "leveraged_etf_pct": 0.0,
+    "crypto_pct": 20.0,
+    "options_pct": 10.0,
+    "defense_geo_pct": 5.0,
+    "twitter_pct": 0.0,
+    "rationale": "Allocator portfolio napędził 100% P&L tygodnia — utrzymujemy stocks/ETF jako core (65%). ETH RSI=19.7 = historyczny oversold: podnosić crypto allocation do 20% jeśli crypto-momentum odblokuje się bounce'em (1.5x aktywne od tej retro). Opcje: PUT-side przy overbought SPY uzasadnione, 10% caps, size_multiplier=0.5 do 5+ zamkniętych tradów. Geo: zredukować do 5% dopóki fill_rate nie potwierdzi sprawnego pipeline'u — bez fills do 2026-05-30 idzie do zera. Leveraged ETF: pominąć (overbought equities + crypto kapitulacja = wysoka korelacja w dół przy odwrocie)."
+  },
+  "best_sources": [
+    {"source": "allocator (morning-allocator portfolio — 7 positions opened 2026-05-19)", "win_rate": 1.0, "pnl": 3902.53}
+  ],
+  "worst_sources": [
+    {"source": "geo-monitors (all 4 combined — 0 fills, 8 days live post-refactor)", "win_rate": 0.0, "pnl": 0.0},
+    {"source": "allocator-rebalance (transaction friction on 14 fills)", "win_rate": 0.0, "pnl": -47.58}
+  ],
+  "structural_mistakes": [
+    {
+      "description": "Geo-monitor limit pricing stale — execute_geo_signal używa stale mid-price zamiast ask-price dla BUY-ów. Efekt: avg_cancel=82.4 min (zlecenia expirują zanim rynek do nich dotrze), fill_rate=0-37% przez cały tydzień. v3.8.9 naprawiło identyczny bug w alpaca_orders.execute_stock_signal przejściem na q['ask'], ale geo-monitor/monitor.py nie dostał tego samego fix'a. To jest root cause 0 fills przez 8 dni live.",
+      "lost_usd": 0.0,
+      "remediation": "W geo-monitor/monitor.py::execute_geo_signal: zmień entry limit_price z q['mid'] na q['ask'] dla side=BUY i q['bid'] dla side=SELL_SHORT. Identyczny wzorzec co alpaca_orders._aggressive_entry (v3.8.9). Szacunek: 30 min kodu + deploy przez sync-workflows. Priorytet P1 przed kolejną sesją."
+    },
+    {
+      "description": "Signal strategy attribution blind spot — fill_rate.unknown bez per-monitor tagging blokuje empiryczną ocenę geo/options pipeline. Po 35 dniach system nie może odróżnić zleceń geo-monitora od zleceń alokatora ani options-monitora. Konsekwencja: SILENT flag fałszywie sugeruje 'strategie nie generują sygnałów' gdy w rzeczywistości generują, ale nie wiemy ile.",
+      "lost_usd": 0.0,
+      "remediation": "Dodać prefix monitora do client_order_id w geo-monitor/monitor.py: 'geo-defense-RTX-<ts>', 'geo-energy-XLE-<ts>'. Analyzer.py już parsuje client_order_id — wystarczy spójny naming. Identyczna zmiana jak ta, która naprawiła options-monitor attribution (commit c4bc437). Szacunek: 1h."
+    },
+    {
+      "description": "SILENT flag fałszywie pozytywny dla options-momentum 2026-05-24 — raport wyświetla '0 trades lifetime (35 days tracked)' mimo że per-strategy table pokazuje trades_7d=1, trades_lifetime=1 ($-0.60). Analyzer nie może atrybucji zamkniętego trade'u do 'options-momentum' przez niespójny client_order_id format. Blokuje warm-up/cooldown heurystyki dla tej strategii.",
+      "lost_usd": 0.0,
+      "remediation": "Sprawdzić analyzer.py::_strategy_from_client_id dla formatu 'options-momentum-<contract>-<ts>'. Diagnostyk: git log --all --grep='options-momentum' -- journal/ i sprawdzić faktyczny client_order_id format. Quick fix: upewnić się że parser obsługuje 4-segment ('options-momentum-AMZN260520P00270000-1746538200') zamiast 3-segment."
+    }
+  ],
+  "experiments_next_week": [
+    {
+      "hypothesis": "Geo-monitor limit pricing fix (ask-price BUY) zwiększy fill rate z 0% do >50% w pierwszych 5 sesjach po wdrożeniu (2026-05-27 do 2026-05-30).",
+      "metric": "fill_rate dla geo-defense/geo-energy/geo-gold w history/<date>.md: >50% przez min 3 z 5 sesji roboczych",
+      "revert_if": "fill_rate >0% ale wszystkie geo trades dają WR <30% po 5 fills — wtedy sygnał jest zły, nie pricing; disable geo-* w kolejnym weekly retro"
+    },
+    {
+      "hypothesis": "ETH RSI=19.7 jest blisko historycznego bounce'u kapitulacyjnego. Crypto-momentum z 1.5x (PR #9) wygeneruje pierwszy profitable crypto trade w ciągu 5 sesji po otwarciu (2026-05-27 do 2026-05-31).",
+      "metric": "crypto-momentum: min 1 zamknięty trade z P&L > 0 i size >= 1.5x base w tygodniu 2026-05-27 do 2026-05-31",
+      "revert_if": "ETH spada dalej do RSI < 15 przez 3 sesje bez odbicia — zredukować crypto-momentum do 1.0x i zbadać czy 24h-momentum filter blokuje wejście nawet przy bounce"
+    },
+    {
+      "hypothesis": "Options-monitor nie generuje nowych fills po re-enable 2026-05-19 z powodu premium poza budżetem lub brak setupów przy SPY RSI 72-73 (PUT-gate aktywne). Manual workflow trigger + log review ujawni czy to problem pipeline'u czy rynku.",
+      "metric": "options-momentum: min 1 nowy zamknięty trade (poza istniejącym N=1) do 2026-05-31",
+      "revert_if": "Po manual log review: pipeline sprawny, 0 fills = brak rynkowych setupów przy SPY RSI 72-73 — czekamy na SPY RSI retrace <70 przed diagnozą problemu"
+    },
+    {
+      "hypothesis": "Geo-strategies po fix limitów wykażą min 1 fill dla co najmniej jednej strategii do 2026-05-30. Jeśli nie — pipeline jest strukturalnie uszkodzony i pricing nie jest jedynym problemem.",
+      "metric": "geo-defense LUB geo-energy LUB geo-gold LUB geo-xom: min 1 filled order do 2026-05-30 (EOD)",
+      "revert_if": "0 fills do 2026-05-30 mimo limit fix → disable wszystkich 4 geo-strategies natychmiast bez override; zapisać jako 'pipeline broken — needs full diagnostic'"
+    },
+    {
+      "hypothesis": "Memorial Day 2026-05-25 instrument_windows.py poprawnie blokuje morning-allocator o 13:35 UTC. Zero zleceń w poniedziałek = poprawne zachowanie systemu.",
+      "metric": "morning-allocator log 2026-05-25: 'market closed' lub 'holiday' — zero placed orders",
+      "revert_if": "Jakiekolwiek placed orders w poniedziałek 2026-05-25 → EMERGENCY: instrument_windows.py US holiday logic bug, manual cancel wszystkich zleceń"
+    }
+  ],
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "ETH RSI=19.7 ≤ 25 AND BTC RSI=27.8 ≤ 45 — PR #9 deep oversold amplifier kwalifikuje (ETH poniżej 25 przez cały weekend). 1.5x uzasadniony na kolejne 3-5 sesji. Automatyczny reset do 1.3x (PR #8 baseline) gdy ETH RSI > 35 przez 2 sesje z rzędu. Side_bias=null — crypto-momentum jest long-only z natury (crypto-breakdown disabled strukturalnie)."
+      },
+      "geo-defense": {
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "Utrzymuję enabled z twardym deadline 2026-05-30. Warunek: min 1 fill po limit pricing fix. Bez fills do 2026-05-30 → disable wszystkich 4 geo-strategies bez override. Nie przedłużam SILENT override bezterminowo."
+      },
+      "geo-energy": {
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "Jak geo-defense. Hard deadline 2026-05-30. Limit pricing fix (ask-price BUY) jest warunkiem koniecznym do fair oceny."
+      },
+      "geo-gold": {
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "Jak geo-defense. Hard deadline 2026-05-30. ETH oversold może generować risk-off safe-haven flow do GLD — ale tylko jeśli limit fix pozwoli nam złapać ten ruch."
+      },
+      "geo-xom": {
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "Jak geo-defense. Hard deadline 2026-05-30. Energia koreluje z geo-energy — jeśli jedna nie wypełnia, druga też nie."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "side_bias": "short",
+        "enabled": true,
+        "rationale": "SPY RSI=72-73 overbought potwierdza PUT-side przez kolejny tydzień. N=1 trade lifetime — size_multiplier=0.5 cool-down policy pozostaje (minimum 5 zamkniętych tradów przed podniesieniem). Pierwsze okno po Memorial Day: wtorek 2026-05-27. 0 nowych fills do 2026-05-31 → pipeline diagnostic needed."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Geo-monitor hard-disable after 14 days live with 0 fills",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Geo-strategies mają 8 dni live post-refactor z 0 fills. Obecny mechanizm pozwala na indefinite LLM override SILENT flagi — potrzebna twarda reguła, która nie może być obejdźscieżką narracyjną.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-30",
+      "implementation_sketch": "New function in adapter.py: heuristic_geo_stale_disable(name, today_stats, state). Checks: name.startswith('geo-') AND enabled_at in state AND (today - date.fromisoformat(enabled_at)).days >= 14 AND trades_lifetime == 0. Returns disable recommendation with rationale 'geo-stale-14d'. Wire into adapt() BEFORE LLM override can run — operator must re-enable explicitly after confirming limit pricing fix is working and orders are filling. Files: adapter.py, test_adapter.py."
+    },
+    {
+      "title": "Geo-monitor aggressive entry pricing (ask-price BUY)",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate=0-37% tygodnia jest bezpośrednio wynikiem stale mid-price limitów w execute_geo_signal. v3.8.9 naprawiło identyczny bug w alpaca_orders.execute_stock_signal — ten sam fix musi trafić do geo-monitor/monitor.py.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-27",
+      "implementation_sketch": "In geo-monitor/monitor.py::execute_geo_signal: locate entry limit_price calculation. Replace mid/last/close with q['ask'] for side=BUY and q['bid'] for side=SELL_SHORT (same as alpaca_orders._aggressive_entry pattern). Verify Alpaca snapshot quote dict has 'ask'/'bid' keys. Add unit test: mock quote {'ask': 100.5, 'bid': 100.0} -> BUY limit_price == 100.5. P1 priority — deploy via sync-workflows."
+    }
+  ],
+  "confidence": "medium"
+}
