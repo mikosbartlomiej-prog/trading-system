@@ -1,0 +1,55 @@
+{
+  "narrative": "Sobota bez transakcji — konto czyste ($97,832, 100% cash, +$1,405 zysku z tygodnia). ETH RSI obniżył się do 22.4 (głębiej niż wczorajsze 27.9), co kwalifikuje PR #9 (ETH≤25 → 1.5x), ale proposed_state utknął na 1.3x — overriding ręcznie do 1.5x na wtorek. Poniedziałek 26 maja to Memorial Day (US zamknięte), pierwsze wykonanie dopiero we wtorek 27 maja. SPY RSI 72 potwierdza PUT-side dla options-momentum; blok na 75 nieaktywny.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Crypto: ETH 22.4 + BTC 29.5 — obie warunki PR #9 spełnione; bounce historycznie wysokoprawdopodobny przy tak ekstremalnym oversoldzie wchodzącym w długi weekend. Equities: SPY 72 (overbought) uzasadnia makro PUT-side, ale N=1 trade lifetime options-momentum = brak empirycznej walidacji edge.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "ETH RSI=22.4 ≤ 25 + BTC RSI=29.5 ≤ 45 — PR #9 deep oversold amplifier kwalifikuje, ale adapt() pokazał 1.3x (prawdopodobnie wire-in nie zadziałał w tym cyklu). Overriding do 1.5x ręcznie. Bounce setup: weekend przebywania w głębokim oversoldzie → wtorek 27 maja pierwsza US sesja."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "side_bias": "short",
+        "enabled": true,
+        "rationale": "SPY RSI=72 uzasadnia PUT-side (blok na 75 nieaktywny). N=1 trade lifetime, size_multiplier=0.5 to cool-down policy — za mała próbka żeby zmieniać sizing."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Auto-adjust options-momentum side_bias based on SPY RSI regime",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "SPY RSI jest najlepszym dostępnym signal dla PUT/CALL bias w options-momentum. Obecna state.json wymaga manualnego ustawiania side_bias przez PM w każdym cyklu. Heurystyka 72/45 jest prosta, testowalna, idempotentna i eliminuje ręczną interwencję.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_options_bias_from_spy_rsi(stats: dict, today_stats: dict) -> dict | None:\n    \"\"\"Auto-adjust options-momentum side_bias based on SPY RSI regime.\n    SPY RSI >= 72 => short (PUT side); clears when RSI <= 45.\n    Returns {side_bias, reason} or None if no change needed.\n    \"\"\"\n    rsi_data = today_stats.get(\"rsi_snapshot\", {}).get(\"SPY\", {})\n    spy_rsi = rsi_data.get(\"today\", 50)\n    current_bias = stats.get(\"side_bias\")\n    if spy_rsi >= 72 and current_bias != \"short\":\n        return {\"side_bias\": \"short\", \"reason\": f\"SPY RSI={spy_rsi:.0f} >= 72 overbought — PUT side\"}\n    if spy_rsi <= 45 and current_bias == \"short\":\n        return {\"side_bias\": None, \"reason\": f\"SPY RSI={spy_rsi:.0f} <= 45 — overbought thesis invalidated\"}\n    return None\n",
+      "test_addition": "class TestOptionsBiasFromSpyRsi(unittest.TestCase):\n    def test_sets_short_when_overbought_and_bias_none(self):\n        stats = {\"side_bias\": None}\n        today = {\"rsi_snapshot\": {\"SPY\": {\"today\": 73}}}\n        r = heuristic_options_bias_from_spy_rsi(stats, today)\n        self.assertIsNotNone(r)\n        self.assertEqual(r[\"side_bias\"], \"short\")\n    def test_no_change_already_short_overbought(self):\n        stats = {\"side_bias\": \"short\"}\n        today = {\"rsi_snapshot\": {\"SPY\": {\"today\": 72}}}\n        self.assertIsNone(heuristic_options_bias_from_spy_rsi(stats, today))\n    def test_clears_short_when_spy_neutral(self):\n        stats = {\"side_bias\": \"short\"}\n        today = {\"rsi_snapshot\": {\"SPY\": {\"today\": 44}}}\n        r = heuristic_options_bias_from_spy_rsi(stats, today)\n        self.assertIsNotNone(r)\n        self.assertIsNone(r[\"side_bias\"])\n    def test_no_change_neutral_range(self):\n        stats = {\"side_bias\": None}\n        today = {\"rsi_snapshot\": {\"SPY\": {\"today\": 60}}}\n        self.assertIsNone(heuristic_options_bias_from_spy_rsi(stats, today))\n",
+      "wire_into_adapt_strategy": "For strategy_name == 'options-momentum' in adapt_strategy() loop: call result = heuristic_options_bias_from_spy_rsi(strategy_stats, today_stats); if result is not None, set state['strategies']['options-momentum']['side_bias'] = result['side_bias'] and append result['reason'] to rationale. Insert after existing side_bias handling, before final state write."
+    },
+    {
+      "title": "Verify PR #9 deep oversold amplifier wire-in correctness",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "ETH RSI=22.4 kwalifikuje PR #9 (ETH≤25 → 1.5x) ale proposed_state pokazuje 1.3x. Albo heuristic_crypto_deep_oversold_boost nie jest wired w adapt() dla crypto-momentum, albo RSI widziany przez adapter w czasie run był >25. Wymaga weryfikacji przed wtorek 27 maja.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-27",
+      "implementation_sketch": "1. grep adapter.py for 'heuristic_crypto_deep_oversold_boost' — verify called in adapt_strategy()\n2. If wired: add debug log showing today_stats.rsi_snapshot.ETH/USD.today at adapt() run time\n3. If not wired: add call in adapt_strategy() for crypto-momentum block\n4. Verify tests: test_adapter.py::TestCryptoDeepOversoldBoost shows 1.5x at ETH=22\n5. Confirm PR #9 squash merge 34cac03 function signature matches today_stats shape"
+    },
+    {
+      "title": "Memorial Day / US holiday gate verification for morning-allocator",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Poniedziałek 26 maja to Memorial Day (US market zamknięty). Morning-allocator cron '35 13 * * 1-5' odpali Monday — jeśli instrument_windows.py nie ma 2026-05-26 na liście US_HOLIDAYS, może próbować złożyć zlecenia na zamkniętym rynku.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-27",
+      "implementation_sketch": "1. Check instrument_windows.py US_HOLIDAYS includes 2026-05-26 (Memorial Day observed)\n2. Test: can_trade_now('SPY', 'us_equity') on 2026-05-26 13:35 UTC → should return False\n3. If missing: add '2026-05-26' to US_HOLIDAYS constant\n4. Verify sync-workflows propagates the fix before Monday 13:35 UTC\n5. Tuesday 2026-05-27: confirm morning-allocator log shows 7 BUY entries from today's plan"
+    }
+  ],
+  "confidence": "medium"
+}
