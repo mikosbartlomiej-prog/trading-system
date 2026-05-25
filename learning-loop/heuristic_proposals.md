@@ -263,3 +263,17 @@
 - [ ] [2026-05-25] **Holiday-aware SILENT threshold: licz trading days nie calendar days** _(risk: low, effort: 2-3h, revisit: 2026-06-01)_
   - **Rationale:** Adapter flaguje 6 strategii SILENT po '36 dniach tracked' ale ~14 z tych dni to weekendy i święta US (włącznie z Memorial Day) — 0 możliwości wejścia. Efektywny czas rynkowy to ~22 sesje. Próg silent powinien bazować na sesjach rynkowych (trading days), nie dniach kalendarzowych. Eliminuje fałszywe alarmy dla strategii w weekend/holiday periods.
   - **Sketch:** W adapter.py _flag_silent_strategies(): zamiast (today - enabled_at).days oblicz liczbę dni roboczych wykluczając US holidays. Opcja A (prosta): numpy.busday_count z US holiday list (MLK, Presidents, Memorial, Independence, Labor, Thanksgiving, Christmas). Opcja B (dokładna): dodaj 'trading_days_active' counter do state.json per strategy, inkrementowany przez analyzer.py tylko gdy Alpaca /v2/clock is_open=true w momencie uruchomienia. Próg silent: 15 trading_days zamiast obecnych 21 calendar_days (wzrost do ~30 calendar_days). Pliki: learning-loop/adapter.py (_flag_silent_strategies), learning-loop/state.json (nowe pole per strategy), learning-loop/analyzer.py (inkrementacja counter).
+- [ ] [2026-05-25] **Auto-disable geo strategies after N days with 0 trades (deadline enforcement)** _(risk: low, effort: 1h, revisit: 2026-05-30)_
+  - **Rationale:** Geo-defense/energy/gold/xom mają twardy deadline 2026-05-30 ustawiony manualnie w rationale. Bez automatyzacji operator musi pamiętać o ręcznym disable. Heurystyka porównuje enabled_at z datą dzisiejszą i liczbą trades_lifetime — jeśli oba progi przekroczone, auto-disable i zapis rationale.
+  - **Sketch:** W adapter.py: def _auto_disable_stale_enabled(strategies, today, max_days_silent=42):
+    for name, s in strategies.items():
+        if not s.get('enabled'): continue
+        enabled_at = s.get('enabled_at')
+        if not enabled_at: continue
+        days_enabled = (today - date.fromisoformat(enabled_at)).days
+        trades_lt = s.get('trades_lifetime', 0)
+        if days_enabled >= max_days_silent and trades_lt == 0:
+            s['enabled'] = False
+            s['paused_until'] = None
+            s['rationale'] = f'AUTO-DISABLED {today} — {days_enabled} days enabled, 0 trades lifetime'
+Wire do adapt_strategy() po pętli warm-up/cool-down.
