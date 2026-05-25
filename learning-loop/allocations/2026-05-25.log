@@ -51,3 +51,16 @@
 [13:55:21 WARN]     QQQ BUY: skipped — market not open
 [13:55:21 WARN]     GLD BUY: skipped — market not open
 [13:55:21 INFO]   execution complete: 0 placed, 7 skipped, 0 failed
+
+[16:08:28 INFO] ============================================================
+[16:08:28 INFO] execute_orders() — auto-execute path
+[16:08:28 INFO] ============================================================
+[16:08:28 INFO]   market_status: open=False reason=holiday
+[16:08:28 WARN]     CRWD BUY: skipped — market not open
+[16:08:28 WARN]     PANW BUY: skipped — market not open
+[16:08:28 WARN]     AMD BUY: skipped — market not open
+[16:08:28 WARN]     NOW BUY: skipped — market not open
+[16:08:28 WARN]     SPY BUY: skipped — market not open
+[16:08:28 WARN]     QQQ BUY: skipped — market not open
+[16:08:28 WARN]     GLD BUY: skipped — market not open
+[16:08:28 INFO]   execution complete: 0 placed, 7 skipped, 0 failed
