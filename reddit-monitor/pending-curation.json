@@ -1,43 +1,36 @@
 {
-  "narrative": "NOW (ServiceNow) potwierdzone drugi raz z rzędu — dwa niezależne źródła konwergują na saaspocalypse reversal: post 493 ups na /r/stocks ('AI agents still need workflow control layers, NOW is the control layer') + poprzednie Gottheimer PTR 2026-05-19 (politician-monitor). Reszta kandydatów to śmieciowe artefakty: spike_ratio=99 wszędzie (rolling_avg_7d=0), AMD/TSLA/MSFT wyciągnięte z nostalgicznej anegdoty RDDT, PLTR/TSLA wymienione EXPLICITE jako przewartościowane (217x/394x PE) w valuation post, NVDA zdominowana przez bearish Capex Unwind Thesis 2027-28, LLM nie jest tickerem. Rynek zamknięty dziś (Memorial Day) — wykonanie we wtorek 2026-05-26.",
-  "selected_signals": [
-    {
-      "ticker": "NOW",
-      "lane": "sub",
-      "side": "BUY",
-      "conviction": "medium",
-      "size_multiplier": 1.0,
-      "rationale": "2 niezależne źródła: (1) /r/stocks post 493 ups — konkretna teza: AI agenci potrzebują workflow control layers (permissions, approvals, integrations, audit logs), NOT mniej; rynek przecenił AI disruption risk dla ServiceNow; autor pre-pozycjonuje się przed Q2; (2) Gottheimer PTR 2026-05-19 potwierdzony przez politician-monitor. Skew 0.714 z 3 wzmianek. Konto 0 pozycji, VIX 17 = czyste środowisko wejścia. NOW jest na whitelist software_quality bucket (v3.9.1) z target $15k.",
-      "expected_horizon": "2-3d",
-      "key_risk": "Q2 earnings (4-6 tygodni) może potwierdzić lub obalić thesis — pozycja swing, exit przed earnings jeśli brak momentum potwierdzenia w pierwszym tygodniu. Rynek zamknięty dziś: wykonanie we wtorek 13:35 UTC przez morning-allocator."
-    }
-  ],
+  "narrative": "7 kandydatów, 0 emisji. spike_ratio=99 to artefakt na wszystkich (rolling_avg_7d=0 = pierwsze wykrycie po przerwie). Dominujący post to makro-teza capex unwind 2027-2028 — NVDA/MSFT/PLTR/TSLA wymienione jako 'shovel-makers' czekające na unwind, nie sygnały BUY; sentiment inversion. QQQ SHORT = loss porn z $26.4k straty w janeiro, zero tezy kierunkowej. NOW jedyny z realnym DD (saaspocalypse reversal, workflow layer moat), ale 'no position yet, seriously considering before Q2' = brak konwersji narracji w momentum — horyzont kwartalny nie 1-72h. LLM nie jest tickerem. Rynek zamknięty dziś i jutro (Memorial Day) — zero edge do wykonania.",
+  "selected_signals": [],
   "rejected_signals": [
     {
-      "ticker": "LLM",
-      "reason": "Nie jest tickerem giełdowym — 'LLM' to skrót od 'large language model', czysty artefakt regex ticker extraction z postów o AI capex."
-    },
-    {
-      "ticker": "AMD",
-      "reason": "Artefakt ekstrakcji: jedyna wzmianka to nostalgiczna anegdota w poście o RDDT ('yolowałem AMD MSFT TSLA w 2020') — zero bullish thesis na AMD."
+      "ticker": "PLTR",
+      "reason": "Wymieniony w poście jako przykład skrajnie przewartościowanego aktywa (217x trailing PE) w kontekście S&P 500 valuation analysis — to bearish context, nie sygnał BUY; skew=1.0 to artefakt ekstrakcji."
     },
     {
       "ticker": "TSLA",
-      "reason": "Sentiment inversion: S&P 500 valuation post (665 ups best_post) explicite cytuje TSLA 394x trailing PE jako przykład SKRAJNEGO przewartościowania. Skew=1.0 to extraction artifact, rzeczywisty ton bearish."
+      "reason": "Ten sam valuation post — TSLA cytowana explicite jako extreme overvaluation (394x trailing PE); skew=1.0 inversion; brak bullish thesis."
     },
     {
-      "ticker": "PLTR",
-      "reason": "Ten sam valuation post wymienia PLTR 217x trailing PE jako przykład extreme overvaluation — post jest bearish na PLTR, nie bullish. Sentiment inversion."
+      "ticker": "LLM",
+      "reason": "Nie istnieje jako ticker giełdowy — 'LLM' to skrót od large language model, czysty błąd regex ticker extraction z postów o AI capex cycle."
     },
     {
-      "ticker": "MSFT",
-      "reason": "Wyłącznie tangential mentions: nostalgiczna anegdota w poście RDDT + tło w Capex Unwind thesis + teaser 'mam analizę na Now, ADBE i MSFT też'. Brak samodzielnego MSFT thesis."
+      "ticker": "QQQ",
+      "reason": "Post to loss porn — ktoś dzieli się stratą $26.4k na QQQ puts ze stycznia jako lessons-learned story; zero tezy kierunkowej na QQQ SHORT; shorting QQQ na podstawie cudzego loss porn = FOMO trap."
     },
     {
       "ticker": "NVDA",
-      "reason": "6 mentions zdominowane przez bearish Capex Unwind Thesis 2027-28 — post argumentuje że NVDA jako shovel-maker straci gdy AI capex cycle się skończy. Skew 0.538 mixed. State.json pokazuje NVDA miało 5-8 mentions/dzień w maju, dziś 6 to normalny poziom, nie spike."
+      "reason": "Główny post (capex unwind 2027-2028, 109 ups) to niedźwiedzia teza makro; NVDA wymieniona jako shovel-maker w szczytowej fazie AI capex cycle — brak świeżego bullish katalizatora na 1-72h; skew 0.538 mixed na tle bearish primary source."
+    },
+    {
+      "ticker": "MSFT",
+      "reason": "Jedyna wzmianka: jednolinijkowy teaser na końcu analizy TOST ('I have rundown on Now, ADBE, and MSFT too') — nie DD, zero tezy, nie actionable."
+    },
+    {
+      "ticker": "NOW",
+      "reason": "Teza saaspocalypse-reversal intelektualnie solidna (AI agents need workflow control, nie likwidują SaaS moatu), ale 'no position yet, seriously considering before Q2' = narracja bez momentum; Q2 earnings w lipcu to horyzont kwartalny, nie 1-72h. NOW jest już w software_quality bucket allocatora — to jego decyzja, nie Curatora."
     }
   ],
-  "macro_context": "VIX 17 = risk-on. Rynek zamknięty dziś (Memorial Day 2026-05-25). Account 100% cash, 0 pozycji — idealne warunki do selective entry we wtorek. Spike_ratio=99 dla wszystkich kandydatów to artefakt (rolling_avg_7d=0, 11-dniowa luka od ostatniego state update) — selekcja oparta wyłącznie na jakości postów i logice tez.",
-  "confidence_in_curation": "medium"
+  "macro_context": "VIX=17, risk-on reżim, account 0 pozycji i 100% cash — idealne warunki strukturalnie, ale Reddit dostarcza dziś wyłącznie makro-narracje i ticker extraction artefakty bez świeżych event-driven katalizatorów. Rynek zamknięty dziś (niedziela) i jutro (Memorial Day 2026-05-26); pierwsze okno wykonania: wtorek 2026-05-27 13:30 UTC.",
+  "confidence_in_curation": "high"
 }
