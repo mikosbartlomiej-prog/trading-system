@@ -1,5 +1,5 @@
 {
-  "narrative": "Jedyny czysty setup dzisiaj to NOW (ServiceNow) — narracja 'saaspocalypse' słabnie, /r/stocks i /r/ValueInvesting konwergują na odwróceniu: AI agenci potrzebują workflow layer który ServiceNow dostarcza, do tego potwierdzone zakupy congressmanów (Gottheimer PTR 2026-05-19). Reszta kandydatów to śmieciowe artefakty: spike_ratio=99 wszędzie (rolling_avg_7d=0 = brak baseline), NVDA/AMZN/MSFT wyekstrahowane z BEARISH Capex Unwind Thesis, AMD/TSLA incydentalne wzmianki z RDDT DD, LLM nie jest tickerem.",
+  "narrative": "NOW (ServiceNow) potwierdzone drugi raz z rzędu — dwa niezależne źródła konwergują na saaspocalypse reversal: post 493 ups na /r/stocks ('AI agents still need workflow control layers, NOW is the control layer') + poprzednie Gottheimer PTR 2026-05-19 (politician-monitor). Reszta kandydatów to śmieciowe artefakty: spike_ratio=99 wszędzie (rolling_avg_7d=0), AMD/TSLA/MSFT wyciągnięte z nostalgicznej anegdoty RDDT, PLTR/TSLA wymienione EXPLICITE jako przewartościowane (217x/394x PE) w valuation post, NVDA zdominowana przez bearish Capex Unwind Thesis 2027-28, LLM nie jest tickerem. Rynek zamknięty dziś (Memorial Day) — wykonanie we wtorek 2026-05-26.",
   "selected_signals": [
     {
       "ticker": "NOW",
@@ -7,9 +7,9 @@
       "side": "BUY",
       "conviction": "medium",
       "size_multiplier": 1.0,
-      "rationale": "2 posty na /r/stocks (474 ups) i /r/ValueInvesting konwergują na tej samej tezie: rynek przecenił AI disruption risk dla SaaS — workflow layer (permissions, approvals, integrations) jest bardziej potrzebny przy agentach AI, nie mniej; NOW down od highs mimo fundamentalnie solidnej pozycji; Q2 earnings jako catalyst dla narratywnego odwrócenia. Potwierdzone zakupy congressmanów (Gottheimer 2026-05-19 PTR) = 2 niezależne źródła. Skew 0.714, 3 wzmianki, konto 0 pozycji = brak concentration risk.",
+      "rationale": "2 niezależne źródła: (1) /r/stocks post 493 ups — konkretna teza: AI agenci potrzebują workflow control layers (permissions, approvals, integrations, audit logs), NOT mniej; rynek przecenił AI disruption risk dla ServiceNow; autor pre-pozycjonuje się przed Q2; (2) Gottheimer PTR 2026-05-19 potwierdzony przez politician-monitor. Skew 0.714 z 3 wzmianek. Konto 0 pozycji, VIX 17 = czyste środowisko wejścia. NOW jest na whitelist software_quality bucket (v3.9.1) z target $15k.",
       "expected_horizon": "2-3d",
-      "key_risk": "Q2 earnings miss lub guidance cut potwierdza SaaS disruption thesis — exit przed earnings jeśli brak dodatkowego potwierdzenia trendów; pozycja swing nie intraday."
+      "key_risk": "Q2 earnings (4-6 tygodni) może potwierdzić lub obalić thesis — pozycja swing, exit przed earnings jeśli brak momentum potwierdzenia w pierwszym tygodniu. Rynek zamknięty dziś: wykonanie we wtorek 13:35 UTC przez morning-allocator."
     }
   ],
   "rejected_signals": [
@@ -18,30 +18,26 @@
       "reason": "Nie jest tickerem giełdowym — 'LLM' to skrót od 'large language model', czysty artefakt regex ticker extraction z postów o AI capex."
     },
     {
-      "ticker": "NVDA",
-      "reason": "12 wzmianek pochodzi z Capex Unwind Thesis (340 ups) która jest EXPLICITE bearish na NVDA jako 'shovel-maker który straci po zakończeniu capex cycle 2027-2028'; skew BUY 0.538 to artefakt keyword counting wokół bearish mentions."
-    },
-    {
-      "ticker": "AMZN",
-      "reason": "Capex Unwind Thesis explicite cytuje Amazon projecting negative free cash flow po raz pierwszy ever z powodu capex spend — kontekst jest bearish, BUY signal to artefakt ticker extraction."
-    },
-    {
-      "ticker": "MSFT",
-      "reason": "Dominujące posty: Capex Unwind bearish na all AI names + RDDT DD (incydentalna wzmianka MSFT z paper trading 2020). Zero aktualnego catalysty dla MSFT BUY; skew 0.556 z 4 wzmianek w bearish/incidental kontekście."
+      "ticker": "AMD",
+      "reason": "Artefakt ekstrakcji: jedyna wzmianka to nostalgiczna anegdota w poście o RDDT ('yolowałem AMD MSFT TSLA w 2020') — zero bullish thesis na AMD."
     },
     {
       "ticker": "TSLA",
-      "reason": "Jedyna istotna wzmianka to TSLA na 394x trailing P/E jako przykład ekstremalnego przewartościowania w valuation analysis — bearish context; skew BUY jest artefaktem."
+      "reason": "Sentiment inversion: S&P 500 valuation post (665 ups best_post) explicite cytuje TSLA 394x trailing PE jako przykład SKRAJNEGO przewartościowania. Skew=1.0 to extraction artifact, rzeczywisty ton bearish."
     },
     {
-      "ticker": "AMD",
-      "reason": "Jedyna wzmianka: autor RDDT DD wspomina AMD jako jedną z akcji w klasowym paper trading 2020 — brak jakiegokolwiek aktualnego catalysty ani tezy dla AMD."
+      "ticker": "PLTR",
+      "reason": "Ten sam valuation post wymienia PLTR 217x trailing PE jako przykład extreme overvaluation — post jest bearish na PLTR, nie bullish. Sentiment inversion."
     },
     {
-      "ticker": "META",
-      "reason": "UNCLEAR skew null, 14 ups, post o różnicach między Reddit a Meta Forums (off-topic) — nie setup tradingowy, zero edge."
+      "ticker": "MSFT",
+      "reason": "Wyłącznie tangential mentions: nostalgiczna anegdota w poście RDDT + tło w Capex Unwind thesis + teaser 'mam analizę na Now, ADBE i MSFT też'. Brak samodzielnego MSFT thesis."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "6 mentions zdominowane przez bearish Capex Unwind Thesis 2027-28 — post argumentuje że NVDA jako shovel-maker straci gdy AI capex cycle się skończy. Skew 0.538 mixed. State.json pokazuje NVDA miało 5-8 mentions/dzień w maju, dziś 6 to normalny poziom, nie spike."
     }
   ],
-  "macro_context": "VIX=17 risk-on, konto 100% cash po porannym allocatorze — środowisko sprzyja selective entry, ale jakość kandydatów dzisiaj jest niska; spike_ratio=99 wszędzie to artefakt first-run, realna selekcja oparta wyłącznie na jakości postów i logice tez.",
+  "macro_context": "VIX 17 = risk-on. Rynek zamknięty dziś (Memorial Day 2026-05-25). Account 100% cash, 0 pozycji — idealne warunki do selective entry we wtorek. Spike_ratio=99 dla wszystkich kandydatów to artefakt (rolling_avg_7d=0, 11-dniowa luka od ostatniego state update) — selekcja oparta wyłącznie na jakości postów i logice tez.",
   "confidence_in_curation": "medium"
 }
