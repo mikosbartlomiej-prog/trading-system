@@ -456,3 +456,38 @@
 -   · options-momentum.rationale: Potwierdzam strategy-level side_bias=short mimo resetu global options_side_bias przez adapter. SPY RSI 72 = overbought = makro-uzasadnienie PUT-side; global reset do null poprawny (0 danych 7d) ale strategy-level short musi pozostać — inaczej następna CALL w overbought SPY przejdzie przez filtr. size_multiplier=0.5 cool-down niezmieniony — N=1 trade to za mała próbka do podwyższenia. -> SPY RSI=72-73 overbought potwierdza PUT-side przez kolejny tydzień. N=1 trade lifetime — size_multiplier=0.5 cool-down policy pozostaje (minimum 5 zamkniętych tradów przed podniesieniem). Pierwsze okno po Memorial Day: wtorek 2026-05-27. 0 nowych fills do 2026-05-31 → pipeline diagnostic needed.
 -   · global_overrides.options_side_bias: None -> None
 
+- 2026-05-25 · LLM[medium] regime=risk_on: System wchodzi w wtorek 27.05 z $97,832 gotówki i 0 pozycji — doskonała pozycja startowa po Memorial Day. ETH RSI=23 i BTC RSI=32 oba kwalifikują do boostu 1.5× (PR #9: ETH≤25 + BTC≤45); pierwsze wejście crypto-momentum we wtorek będzie rozstrzygającym testem pipeline'u po 36 dniach ciszy. SPY RSI=72 utwierdza PUT-side dla options-momentum, ale jesteśmy 3 punkty od progu auto-block=75 — kolejna sesja wzrostowa i options-monitor zablokuje nowe wejścia automatycznie. Geo-deadline 2026-05-30 twardy: 4 sesje robocze do zero-tolerance cutoff na 4 strategie.
+-   · crypto-momentum.size_multiplier: 1.5 -> 1.5
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.rationale: ETH RSI=19.7 ≤ 25 AND BTC RSI=27.8 ≤ 45 — PR #9 deep oversold amplifier kwalifikuje (ETH poniżej 25 przez cały weekend). 1.5x uzasadniony na kolejne 3-5 sesji. Automatyczny reset do 1.3x (PR #8 baseline) gdy ETH RSI > 35 przez 2 sesje z rzędu. Side_bias=null — crypto-momentum jest long-only z natury (crypto-breakdown disabled strukturalnie). -> Utrzymuję 1.5× (PR #9 deep oversold amplifier) — ETH RSI=23 spełnia kryterium ≤25, BTC RSI=32 spełnia ≤45. ETH lekko odbił z 19.7→23 ale wciąż w strefie deep oversold przez 3+ dni. Adapter flaguje SILENT, ale '36 dni tracked' obejmuje ~14 dni bez sesji rynkowej (weekendy + Memorial Day) — efektywny czas aktywny to ~22 sesje giełdowe. Nie redukuję boostu przed pierwszą sesją live we wtorek 27.05. Auto-reset do 1.3× (PR #8 baseline) gdy ETH RSI > 35 przez 2 kolejne sesje.
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.side_bias: short -> short
+-   · options-momentum.enabled: True -> True
+-   · options-momentum.rationale: SPY RSI=72-73 overbought potwierdza PUT-side przez kolejny tydzień. N=1 trade lifetime — size_multiplier=0.5 cool-down policy pozostaje (minimum 5 zamkniętych tradów przed podniesieniem). Pierwsze okno po Memorial Day: wtorek 2026-05-27. 0 nowych fills do 2026-05-31 → pipeline diagnostic needed. -> Utrzymuję cool-down 0.5× i side_bias=short. N=1 trade lifetime (-$0.60) — zbyt mała próbka do jakiejkolwiek zmiany. SPY RSI=72 potwierdza PUT-side. OSTRZEŻENIE: SPY RSI jest 3 punkty od progu auto-block=75 (heuristic_spy_overbought_options_block). Jeśli SPY wzrośnie we wtorek, options-monitor automatycznie zablokuje nowe wejścia — to zachowanie prawidłowe, nie ingerować. Warunek podwyższenia size_multiplier: minimum 5 zamkniętych tradów z WR>50%.
+-   · geo-defense.size_multiplier: 1.0 -> 1.0
+-   · geo-defense.side_bias: None -> None
+-   · geo-defense.enabled: True -> True
+-   · geo-defense.rationale: Utrzymuję enabled z twardym deadline 2026-05-30. Warunek: min 1 fill po limit pricing fix. Bez fills do 2026-05-30 → disable wszystkich 4 geo-strategies bez override. Nie przedłużam SILENT override bezterminowo. -> Utrzymuję enabled — deadline 2026-05-30 (4 sesje robocze). Adapter poprawnie flaguje SILENT 0 fills/36 dni. Decyzja po 2026-05-30: bez min 1 confirmed fill → disable geo-defense + geo-energy + geo-gold + geo-xom wszystkie naraz, bez dalszego override. Nie przedłużam.
+-   · geo-energy.size_multiplier: 1.0 -> 1.0
+-   · geo-energy.side_bias: None -> None
+-   · geo-energy.enabled: True -> True
+-   · geo-energy.rationale: Jak geo-defense. Hard deadline 2026-05-30. Limit pricing fix (ask-price BUY) jest warunkiem koniecznym do fair oceny. -> Jak geo-defense. Deadline 2026-05-30 twardy. Energia korelowana — jeśli geo-defense nie wypełnia, geo-energy też nie.
+-   · geo-gold.size_multiplier: 1.0 -> 1.0
+-   · geo-gold.side_bias: None -> None
+-   · geo-gold.enabled: True -> True
+-   · geo-gold.rationale: Jak geo-defense. Hard deadline 2026-05-30. ETH oversold może generować risk-off safe-haven flow do GLD — ale tylko jeśli limit fix pozwoli nam złapać ten ruch. -> Jak geo-defense. ETH oversold może generować risk-off flow do GLD — ostatnia szansa testu przed cutoff 2026-05-30.
+-   · geo-xom.size_multiplier: 1.0 -> 1.0
+-   · geo-xom.side_bias: None -> None
+-   · geo-xom.enabled: True -> True
+-   · geo-xom.rationale: Jak geo-defense. Hard deadline 2026-05-30. Energia koreluje z geo-energy — jeśli jedna nie wypełnia, druga też nie. -> Jak geo-defense. XOM korelowany z geo-energy. Deadline 2026-05-30 = ta sama decyzja co pozostałe 3 geo-strategie.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-25 · LLM edge: Brak potwierdzonych edge'y w 24h oknie (rynek zamknięty — Memorial Day US). Strukturalnie jedyna konkretna okazja: ETH/BTC deep oversold (ETH RSI=23 vs 19.7 wczoraj — nieznaczne odbicie, wciąż poniżej 25 przez 3+ dni). SPY RSI=72 tworzy asymetryczny PUT-setup dla options-momentum, ale N=1 trade to zbyt mała próbka do oceny czy edge jest realny.
+- 2026-05-25 · crypto-momentum: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · geo-defense: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · geo-energy: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · geo-gold: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · geo-xom: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · options-momentum: SILENT — enabled but 0 trades lifetime (36 days tracked); consider disable or remove
+- 2026-05-25 · rsi-alert [oversold]: ETH/USD RSI=23.0 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
