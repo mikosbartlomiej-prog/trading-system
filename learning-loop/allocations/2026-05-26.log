@@ -38,3 +38,23 @@
 [01:31:02 INFO]   summary: 7 actionable + 0 hold; passed=7  failed=0
 [01:31:02 INFO] ── Step 8: plan complete ──
 [01:31:02 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[14:16:23 INFO] ============================================================
+[14:16:23 INFO] execute_orders() — auto-execute path
+[14:16:23 INFO] ============================================================
+[14:16:23 INFO]   market_status: open=True reason=open
+[14:16:26 INFO]     CRWD BUY: derived qty=25 from target=$17,610 @ $680.62 (no prior position)
+[14:16:28 INFO]     CRWD BUY placed: BUY 25.0000 @ $680.62  id=8116e147-29e3-467b-b69b-ecb16a7a892b
+[14:16:29 INFO]     PANW BUY: derived qty=67 from target=$17,610 @ $260.36 (no prior position)
+[14:16:31 INFO]     PANW BUY placed: BUY 67.0000 @ $260.36  id=cf6e06cc-2c7e-4a8a-8e86-cf33694a2b90
+[14:16:31 INFO]     AMD BUY: derived qty=35 from target=$17,610 @ $493.31 (no prior position)
+[14:16:33 INFO]     AMD BUY placed: BUY 35.0000 @ $493.31  id=d93fbbf7-1f6f-40ac-b835-e02238c3f4bf
+[14:16:35 INFO]     NOW BUY: derived qty=169 from target=$17,610 @ $103.88 (no prior position)
+[14:16:37 INFO]     NOW BUY placed: BUY 169.0000 @ $103.89  id=b397a1e7-1a47-4442-af33-5a961c7c2bdf
+[14:16:37 INFO]     SPY BUY: derived qty=13 from target=$9,783 @ $751.43 (no prior position)
+[14:16:40 INFO]     SPY BUY placed: BUY 13.0000 @ $751.43  id=a32d52b6-9dbc-40c4-a082-94d127d99ee5
+[14:16:40 INFO]     QQQ BUY: derived qty=13 from target=$9,783 @ $728.84 (no prior position)
+[14:16:43 INFO]     QQQ BUY placed: BUY 13.0000 @ $728.84  id=4b6d5b64-2a6f-43ef-8efc-d8ea9995c3f4
+[14:16:44 INFO]     GLD BUY: derived qty=18 from target=$7,827 @ $414.06 (no prior position)
+[14:16:47 INFO]     GLD BUY placed: BUY 18.0000 @ $414.06  id=935a68eb-7fa9-4c88-abe9-abded50c9617
+[14:16:47 INFO]   execution complete: 7 placed, 0 skipped, 0 failed
