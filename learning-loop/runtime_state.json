@@ -7,17 +7,17 @@
       "legacy:PROFIT_LOCK": "2026-05-26T21:01:48.564561+00:00"
     },
     "block_new_entries": true,
-    "current_equity": 97403.06,
-    "current_intraday_pnl": -429.820000000007,
-    "current_intraday_pnl_pct": -0.004393410477132095,
+    "current_equity": 97333.32,
+    "current_intraday_pnl": -499.5599999999977,
+    "current_intraday_pnl_pct": -0.005106258754725381,
     "date": "2026-05-26",
-    "giveback_pct_of_peak": 1.46719057401551,
-    "giveback_usd": 1349.8300000000017,
+    "giveback_pct_of_peak": 1.5429940978902408,
+    "giveback_usd": 1419.5699999999924,
     "intraday_peak_equity": 98752.89,
     "intraday_peak_pnl": 920.0099999999948,
     "intraday_peak_pnl_pct": 0.009403893660290843,
-    "last_action": "red_after_green_close_intraday_block_until_next_session",
-    "last_update_at": "2026-05-26T21:01:47.357164+00:00",
+    "last_action": "noop",
+    "last_update_at": "2026-05-26T21:16:11.493577+00:00",
     "max_gross_target": 0.25,
     "options_first_reduction": true,
     "peak_at": "2026-05-26T19:15:06.557094+00:00",
@@ -30,14 +30,14 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.02601,
-      "last_seen_at": "2026-05-26T21:01:48.565948+00:00",
+      "last_pct": 0.02605,
+      "last_seen_at": "2026-05-26T21:16:11.494404+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
       "first_seen_at": "2026-05-21T14:27:38.386809+00:00",
-      "last_pct": -0.01696,
-      "last_seen_at": "2026-05-26T21:01:48.566665+00:00",
+      "last_pct": -0.0183,
+      "last_seen_at": "2026-05-26T21:16:11.494989+00:00",
       "peak_pct": 0.01593
     },
     "GLD": {
@@ -48,8 +48,8 @@
     },
     "NOW": {
       "first_seen_at": "2026-05-21T14:27:38.387537+00:00",
-      "last_pct": -0.01853,
-      "last_seen_at": "2026-05-26T21:01:48.567275+00:00",
+      "last_pct": -0.01823,
+      "last_seen_at": "2026-05-26T21:16:11.495552+00:00",
       "peak_pct": 0.022950000000000005
     },
     "NVDA": {
@@ -66,8 +66,8 @@
     },
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
-      "last_pct": -0.0149,
-      "last_seen_at": "2026-05-26T21:01:48.568156+00:00",
+      "last_pct": -0.01803,
+      "last_seen_at": "2026-05-26T21:16:11.496106+00:00",
       "peak_pct": 0.01755
     },
     "QQQ": {
