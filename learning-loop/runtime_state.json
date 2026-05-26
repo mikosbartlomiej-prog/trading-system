@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 98752.89,
-    "current_intraday_pnl": 920.0099999999948,
-    "current_intraday_pnl_pct": 0.009403893660290843,
+    "current_equity": 98567.05,
+    "current_intraday_pnl": 734.1699999999983,
+    "current_intraday_pnl_pct": 0.007504327788367246,
     "date": "2026-05-26",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
+    "giveback_pct_of_peak": 0.20199780437168896,
+    "giveback_usd": 185.8399999999965,
     "intraday_peak_equity": 98752.89,
     "intraday_peak_pnl": 920.0099999999948,
     "intraday_peak_pnl_pct": 0.009403893660290843,
     "last_action": "noop",
-    "last_update_at": "2026-05-26T19:15:06.557094+00:00",
+    "last_update_at": "2026-05-26T19:36:44.521575+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-26T19:15:06.557094+00:00",
@@ -27,14 +27,14 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.029899999999999996,
-      "last_seen_at": "2026-05-26T19:15:06.557768+00:00",
+      "last_pct": 0.02499,
+      "last_seen_at": "2026-05-26T19:36:44.522345+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
       "first_seen_at": "2026-05-21T14:27:38.386809+00:00",
-      "last_pct": 0.01593,
-      "last_seen_at": "2026-05-26T19:15:06.558264+00:00",
+      "last_pct": 0.01471,
+      "last_seen_at": "2026-05-26T19:36:44.522940+00:00",
       "peak_pct": 0.01593
     },
     "GLD": {
@@ -45,8 +45,8 @@
     },
     "NOW": {
       "first_seen_at": "2026-05-21T14:27:38.387537+00:00",
-      "last_pct": -0.00783,
-      "last_seen_at": "2026-05-26T19:15:06.558730+00:00",
+      "last_pct": -0.01127,
+      "last_seen_at": "2026-05-26T19:36:44.523531+00:00",
       "peak_pct": 0.022950000000000005
     },
     "NVDA": {
@@ -63,8 +63,8 @@
     },
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
-      "last_pct": 0.01755,
-      "last_seen_at": "2026-05-26T19:15:06.559182+00:00",
+      "last_pct": 0.01653,
+      "last_seen_at": "2026-05-26T19:36:44.524107+00:00",
       "peak_pct": 0.01755
     },
     "QQQ": {
