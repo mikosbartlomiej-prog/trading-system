@@ -531,3 +531,15 @@
 - 2026-05-26 · options-momentum: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
 - 2026-05-26 · rsi-alert [oversold]: ETH/USD RSI=27.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-26 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-26 · options_side_bias reset to null (zero supporting data in 7d window — proposal 2026-05-09)
+- 2026-05-26 · crypto-momentum: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · geo-defense: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · geo-energy: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · geo-gold: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · geo-xom: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · options-momentum: SILENT — enabled but 0 trades lifetime (39 days tracked); consider disable or remove
+- 2026-05-26 · fill-rate alert [unknown]: fill rate 13% below 50% (12 canceled / 23 placed) — limits too tight or quote stale
+- 2026-05-26 · rsi-alert [oversold]: ETH/USD RSI=26.0 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-26 · peak-tracker: intraday: peak $+920 at 094+00:0 current $-500 giveback 154% state=RED_DAY_AFTER_GREEN max_gross=0.25 BLOCK_ENTRIES
+
