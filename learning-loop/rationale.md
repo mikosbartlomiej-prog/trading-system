@@ -510,3 +510,24 @@
 - 2026-05-25 · options-momentum: SILENT — enabled but 0 trades lifetime (37 days tracked); consider disable or remove
 - 2026-05-25 · rsi-alert [oversold]: ETH/USD RSI=24.2 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-26 · LLM[medium] regime=trending_up: Wtorek po Memorial Day — rachunek $97,832 bez zmian, zero pozycji, czyste wejście. Allocator przygotował plan na dziś z NEUTRAL regime: CRWD score=0.766 (+48% 20d momentum, breakout), PANW=0.697 (+46% 20d) jako top picks w software_quality bucket. ETH RSI odbił z 24.2→27.7 — PR #9 (≤25) technicznie wygasł, PR #8 (≤30) wciąż aktywny; redukuję crypto-momentum z 1.5× do 1.3× zgodnie z regułą, thesis bounce nienaruszona. Adapter słusznie zresetował options_side_bias do null z powodu braku 7d danych, ale SPY RSI=72 to twarda makro-evidencja niezależna od historii tradów — przywracam 'short'; geo-strategie mają 4 dni do deadline'u 2026-05-30 bez jednego wypełnienia w 38 dniach.
+-   · crypto-momentum.size_multiplier: 1.5 -> 1.3
+-   · crypto-momentum.side_bias: None -> None
+-   · crypto-momentum.enabled: True -> True
+-   · crypto-momentum.rationale: Utrzymuję 1.5× — ETH RSI=24.2 spełnia kryterium PR #9 (≤25), BTC RSI=33.4 spełnia (≤45). Oversold przez 3+ dni bez poprawy = wyższe prawdopodobieństwo bounce'u. Reset do 1.3× (PR #8) gdy ETH RSI > 35 przez 2 kolejne sesje. -> Redukuję 1.5→1.3× — ETH RSI odbił do 27.7, powyżej progu PR #9 (≤25). PR #8 (ETH ≤30 AND BTC ≤45) wciąż spełniony = 1.3× jest regułową wartością na dziś. Thesis bounce zachowana — ETH 4+ dni w strefie oversold to statystycznie dodatnia EV. Auto-reset do 1.0× gdy ETH RSI > 35 przez 2 kolejne sesje rynkowe.
+-   · options-momentum.size_multiplier: 0.5 -> 0.5
+-   · options-momentum.side_bias: short -> short
+-   · options-momentum.enabled: True -> True
+-   · options-momentum.rationale: Utrzymuję cool-down 0.5× i side_bias=short. N=1 lifetime trade to zbyt mała próbka do zmiany parametrów. SPY RSI=72 wspiera PUT-side. UWAGA: SPY o 3 punkty od auto-block=75 — jeśli SPY wzrośnie we wtorek, heuristic_spy_overbought_options_block automatycznie wstrzyma wpisy. Nie ingerować w auto-block. -> Utrzymuję 0.5× i side_bias=short wbrew resetowi adaptera. SPY RSI=72 = rozszerzona hossa, PUT-side asymetria makro. N=1 trade lifetime niewystarczające do oceny WR. Auto-block heuristic_spy_overbought_options_block (próg=75) jest 3 punkty od SPY — jeden silny dzień górny i wejścia automatycznie wstrzymane; nie ingerować.
+-   · global_overrides.options_side_bias: None -> short
+- 2026-05-26 · LLM edge: Jedyna potwierdzalna konfiguracja: ETH/USD bounce po 4+ dniach głębokiego oversold (RSI=27.7, PR #8 aktywny = 1.3×) — BTC RSI=35.1 neutral, brak potwierdzenia z dużego brata, co zwiększa ryzyko false-bounce. SPY RSI=72 tworzy PUT-side asymetrię dla options-momentum, ale N=1 lifetime trade (-$0.60) uniemożliwia ocenę edge'a; 0.5× cool-down prawidłowy. Geo: 38 dni / 0 wypełnień = strukturalna awaria egzekucji kodu, nie brak sygnałów.
+- 2026-05-26 · LLM auto-PR: https://github.com/mikosbartlomiej-prog/trading-system/pull/10
+- 2026-05-26 · options_side_bias reset to null (zero supporting data in 7d window — proposal 2026-05-09)
+- 2026-05-26 · crypto-momentum: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · geo-defense: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · geo-energy: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · geo-gold: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · geo-xom: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · options-momentum: SILENT — enabled but 0 trades lifetime (38 days tracked); consider disable or remove
+- 2026-05-26 · rsi-alert [oversold]: ETH/USD RSI=27.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+

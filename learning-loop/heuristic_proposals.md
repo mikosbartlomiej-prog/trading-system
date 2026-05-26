@@ -277,3 +277,11 @@
             s['paused_until'] = None
             s['rationale'] = f'AUTO-DISABLED {today} — {days_enabled} days enabled, 0 trades lifetime'
 Wire do adapt_strategy() po pętli warm-up/cool-down.
+- [ ] [2026-05-26] **Auto-disable geo-strategies on deadline when lifetime trades == 0** _(risk: medium, effort: 2-3h, revisit: 2026-05-30)_
+  - **Rationale:** Cztery geo-strategie mają twardy deadline 2026-05-30 z 38 dniami i 0 wypełnieniami. Deadline istnieje jako tekst w rationale, nie jako kod. Bez auto-disable mechanizmu, strategie kontynuują konsumowanie VIX/drawdown guard calls bez żadnego efektu, i wymagają ręcznej interwencji operatora per sesję.
+  - **Sketch:** 1. Add 'deadline' date field to geo-* entries in state.json (e.g. '2026-05-30')
+2. In adapter.py adapt(): for each strategy, if state has 'deadline' AND deadline < today AND trades_lifetime == 0: set enabled=False, rationale='Auto-disabled: deadline {} reached with 0 lifetime fills'.format(deadline)
+3. Append to rationale_lines: 'auto-disabled by deadline: {name}'
+4. Target: geo-defense, geo-energy, geo-gold, geo-xom
+5. Tests: deadline_yesterday + 0 trades -> disabled; deadline_tomorrow -> unchanged; deadline_past + 1 trade -> unchanged
+6. Safety: only applies when trades_lifetime==0
