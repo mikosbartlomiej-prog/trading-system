@@ -404,6 +404,16 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             f"{today_iso} · options_side_bias reset to null "
             f"(zero supporting data in 7d window — proposal 2026-05-09)"
         )
+        # PR #10 (2026-05-26): macro fallback — when trade data is thin,
+        # derive options_side_bias from SPY RSI rather than leaving null.
+        # SPY ≥72 → short (PUT-favored), ≤35 → long (CALL-favored). Skips
+        # neutral zone (35-72) and missing data → no override.
+        macro_bias, macro_reason = heuristic_options_bias_from_spy_rsi(today_stats)
+        if macro_bias is not None:
+            new_state["global_overrides"]["options_side_bias"] = macro_bias
+            rationale.append(
+                f"{today_iso} · options_side_bias={macro_bias} via macro fallback — {macro_reason}"
+            )
     # TP feedback loop (LLM proposal 2026-05-09): tighten suggested_tp_
     # multiplier when realised hit rate is poor.
     for line in _apply_tp_feedback(new_state, today_stats):

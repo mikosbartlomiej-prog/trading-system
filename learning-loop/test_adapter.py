@@ -611,3 +611,68 @@ class TestOptionsBiasFromSpyRsi(unittest.TestCase):
         stats = {"rsi_snapshot": {"SPY": {"today": 35}}}
         bias, _ = heuristic_options_bias_from_spy_rsi(stats)
         self.assertEqual(bias, "long")
+
+
+class TestOptionsBiasMacroFallbackWiredIntoAdapt(unittest.TestCase):
+    """PR #10 wire-in: macro fallback fires after _reset_options_bias_if_no_data
+    clears the bias, when SPY RSI is decisive (≥72 or ≤35)."""
+
+    def _base_state(self, current_bias):
+        return {
+            "strategies": {
+                "options-momentum": {
+                    "size_multiplier": 1.0, "enabled": True,
+                    "trades_7d": 0, "trades_lifetime": 1,  # thin sample triggers reset
+                    "win_rate_7d": 0.0, "pnl_7d_usd": 0.0,
+                    "consec_losses": 0,
+                },
+            },
+            "asset_classes": {}, "sources": {}, "next_actions": [],
+            "global_overrides": {"options_side_bias": current_bias},
+            "cumulative": {"total_trades": 0, "total_pnl_usd": 0.0, "starting_equity": 100000.0},
+        }
+
+    def test_macro_fallback_applies_short_when_spy_overbought(self):
+        state = self._base_state(current_bias="long")  # stale long bias to be reset
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 0, "win_rate_7d": 0}},
+            "rsi_snapshot": {"SPY": {"today": 73.5}},
+        }
+        new_state, rationale = adapt(state, stats)
+        self.assertEqual(new_state["global_overrides"]["options_side_bias"], "short")
+        self.assertTrue(any("macro fallback" in r and "short" in r for r in rationale))
+
+    def test_macro_fallback_applies_long_when_spy_oversold(self):
+        state = self._base_state(current_bias="short")
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 0, "win_rate_7d": 0}},
+            "rsi_snapshot": {"SPY": {"today": 30.0}},
+        }
+        new_state, _ = adapt(state, stats)
+        self.assertEqual(new_state["global_overrides"]["options_side_bias"], "long")
+
+    def test_macro_fallback_keeps_null_in_neutral_zone(self):
+        state = self._base_state(current_bias="short")
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 0, "win_rate_7d": 0}},
+            "rsi_snapshot": {"SPY": {"today": 55.0}},
+        }
+        new_state, _ = adapt(state, stats)
+        # reset cleared to None, macro neutral → stays None
+        self.assertIsNone(new_state["global_overrides"]["options_side_bias"])
+
+    def test_macro_fallback_does_not_override_when_trade_data_sufficient(self):
+        # trades_7d=10 → _reset_options_bias_if_no_data returns False → macro skipped
+        state = self._base_state(current_bias="long")
+        state["strategies"]["options-momentum"]["trades_7d"] = 10
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 10, "win_rate_7d": 0.6}},
+            "rsi_snapshot": {"SPY": {"today": 73.5}},  # would suggest short
+        }
+        new_state, _ = adapt(state, stats)
+        # trade-based bias preserved (long), macro fallback not triggered
+        self.assertEqual(new_state["global_overrides"]["options_side_bias"], "long")
