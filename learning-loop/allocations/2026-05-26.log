@@ -58,3 +58,23 @@
 [14:16:44 INFO]     GLD BUY: derived qty=18 from target=$7,827 @ $414.06 (no prior position)
 [14:16:47 INFO]     GLD BUY placed: BUY 18.0000 @ $414.06  id=935a68eb-7fa9-4c88-abe9-abded50c9617
 [14:16:47 INFO]   execution complete: 7 placed, 0 skipped, 0 failed
+
+[16:57:45 INFO] ============================================================
+[16:57:45 INFO] execute_orders() — auto-execute path
+[16:57:45 INFO] ============================================================
+[16:57:45 INFO]   market_status: open=True reason=open
+[16:57:45 INFO]     CRWD BUY: derived qty=26 from target=$17,610 @ $665.40 (no prior position)
+[16:57:47 ERR ]     CRWD BUY failed
+[16:57:47 INFO]     PANW BUY: derived qty=68 from target=$17,610 @ $258.40 (no prior position)
+[16:57:47 ERR ]     PANW BUY failed
+[16:57:47 INFO]     AMD BUY: derived qty=36 from target=$17,610 @ $484.31 (no prior position)
+[16:57:48 ERR ]     AMD BUY failed
+[16:57:48 INFO]     NOW BUY: derived qty=173 from target=$17,610 @ $101.58 (no prior position)
+[16:57:49 ERR ]     NOW BUY failed
+[16:57:49 INFO]     SPY BUY: derived qty=13 from target=$9,783 @ $749.08 (no prior position)
+[16:57:50 INFO]     SPY BUY placed: BUY 13.0000 @ $749.08  id=7c3e2b35-34e1-4324-9e9f-8dd7f8822fa9
+[16:57:51 INFO]     QQQ BUY: derived qty=13 from target=$9,783 @ $727.75 (no prior position)
+[16:57:52 INFO]     QQQ BUY placed: BUY 13.0000 @ $727.75  id=609ed7c3-372c-4dda-b025-ceffd552ada7
+[16:57:52 INFO]     GLD BUY: derived qty=18 from target=$7,827 @ $413.61 (no prior position)
+[16:57:53 INFO]     GLD BUY placed: BUY 18.0000 @ $413.61  id=7cbb35e7-fc76-447c-95ce-2c8fa86d6055
+[16:57:53 INFO]   execution complete: 3 placed, 0 skipped, 4 failed
