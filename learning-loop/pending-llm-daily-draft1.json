@@ -1,0 +1,49 @@
+{
+  "narrative": "Pierwszy dzień po Memorial Day zakończył się stratą ~$463 przy zaledwie 3 odtworzonych tradach (−$37.60) — ~$425 różnicy prawdopodobnie pochodzi z nieodwzorowanych zamknięć bracket-dzieci (SL-hits) dla 10 wpisów allokatora. Krytyczny sygnał operacyjny: 8 otwartych zleceń OCO dla NOW/AMD/PANW przy empty open_positions = orphaned GTC bracket legs wymagające pilnego anulowania przez remediation. SPY RSI=71.6 (overbought) tłumaczy masowe SL-hity — allocator kupował w ogon trendu bez potwierdzenia retracement'u przy overextended bull. ETH RSI=26 przez 5+ dni oversold, PR #8 aktywny przy 1.3×, ale 0 tradów crypto-momentum w 39 dniach = problem strukturalny monitora, nie sygnału.",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "N=3 lifetime trades zbyt małe na ocenę edge'a; jedyna statystycznie uzasadniona pozycja to ETH/USD oversold RSI=26 z pozytywną asymetrią EV przy bounce — ale monitor nie strzelił przez 39 dni mimo spełnionych progów, co degraduje tę tezę do 'sygnał bez egzekucji'. Wchodzenie w overextended SPY (RSI=71.6) przez allocatora jest źródłem obecnych strat — brak filtra retracement'u przy overbought generuje SL-hity zamiast TP-hits.",
+  "state_overrides": {
+    "strategies": {
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "side_bias": "short",
+        "enabled": true,
+        "rationale": "Przywracam side_bias=short po błędnym resecie adaptera do null (reguła 7d bez danych). SPY RSI=71.6 jest niezależną makro-evidencją — nie potrzebuję historii tradów żeby rozpoznać overextended bull z PUT-side asymetrią. N=1 lifetime trade za mało na ocenę WR; cool-down 0.5× prawidłowy. Auto-block przy SPY RSI=75 jest 3.4 punkty wyżej — nie ingerować."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Geo-strategy auto-disable na twardy deadline z 0 lifetime trades",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "Cztery geo-strategie (geo-defense/energy/gold/xom) mają pre-committed deadline 2026-05-30 (4 sesje od dziś) ustawiony w state.json rationale. Heuristic auto-disable zamiast manualnej interwencji: gdy date >= deadline_disable_date AND trades_lifetime==0 → enabled=False. Operator musi dodać 'deadline_disable_date': '2026-05-30' do każdej z 4 geo-strategii w state.json.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_deadline_disable(strategy_name: str, stats: dict, state_strategy: dict, today_iso: str) -> tuple[bool, str]:\n    \"\"\"Auto-disable a strategy that hit its hard deadline with zero lifetime trades.\"\"\"\n    deadline = state_strategy.get('deadline_disable_date')\n    if not deadline:\n        return False, ''\n    if stats.get('trades_lifetime', 0) > 0:\n        return False, ''\n    try:\n        from datetime import date\n        if date.fromisoformat(today_iso) >= date.fromisoformat(deadline):\n            return True, f'deadline {deadline} reached with 0 lifetime trades -- auto-disabled'\n    except (ValueError, TypeError):\n        return False, ''\n    return False, ''\n",
+      "test_addition": "class TestDeadlineDisable(unittest.TestCase):\n    def test_fires_at_deadline_zero_trades(self):\n        fired, reason = heuristic_deadline_disable(\n            'geo-defense', {'trades_lifetime': 0},\n            {'deadline_disable_date': '2026-05-30'}, '2026-05-30')\n        self.assertTrue(fired)\n        self.assertIn('deadline', reason)\n\n    def test_fires_after_deadline(self):\n        fired, _ = heuristic_deadline_disable(\n            'geo-defense', {'trades_lifetime': 0},\n            {'deadline_disable_date': '2026-05-30'}, '2026-05-31')\n        self.assertTrue(fired)\n\n    def test_no_fire_before_deadline(self):\n        fired, _ = heuristic_deadline_disable(\n            'geo-defense', {'trades_lifetime': 0},\n            {'deadline_disable_date': '2026-05-30'}, '2026-05-29')\n        self.assertFalse(fired)\n\n    def test_no_fire_if_has_trades(self):\n        fired, _ = heuristic_deadline_disable(\n            'geo-defense', {'trades_lifetime': 1},\n            {'deadline_disable_date': '2026-05-30'}, '2026-05-30')\n        self.assertFalse(fired)\n\n    def test_no_fire_without_deadline_key(self):\n        fired, _ = heuristic_deadline_disable(\n            'geo-defense', {'trades_lifetime': 0}, {}, '2026-05-30')\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": "After consecutive-loss check and before win-rate threshold check: call heuristic_deadline_disable(name, stats, state.get('strategies', {}).get(name, {}), today_iso); if fired: set strategy['enabled']=False, append rationale message, continue to next strategy. Note: operator must add 'deadline_disable_date': '2026-05-30' to each geo-* strategy entry in state.json for this to activate on May 30."
+    },
+    {
+      "title": "Orphaned GTC bracket order auto-cancel w autonomous-remediation",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "8 otwartych bracket exit-orders (NOW×2, AMD×2, PANW + 3 inne) przy empty open_positions to orphaned OCO legs po zamknięciu pozycji bez cancel partnera — blokują buying power i fałszują fill_rate stats (13% fill rate przy avg cancel 211 min).",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-28",
+      "implementation_sketch": "1. shared/remediation.py: nowa condition ORPHANED_BRACKET_ORDERS\n2. GET /v2/orders?status=open → filtruj type in [limit, stop]\n3. Dla każdego: GET /v2/positions/{symbol_encoded} → 404 = brak pozycji AND order.created_at > 5 min temu → DELETE /v2/orders/{order_id}\n4. Guard: pomiń crypto (Alpaca paper ma inne zachowanie OCO na crypto); pomiń orders < 5 min stare\n5. Audit JSONL emit per cancel + batch email [ORPHANED-ORDERS-CANCELED]\n6. Wire do autonomous-remediation.yml z cooldown 1h"
+    },
+    {
+      "title": "Crypto-monitor volume threshold diagnostics (ETH oversold 39 dni bez trades)",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "ETH RSI=26 przez 5+ dni oversold, PR #8 aktywny (1.3×), BTC RSI=32.5 — oba warunki spełnione — ale 0 tradów crypto-momentum przez 39 dni. Hipoteza: volume 3.0× threshold dla Tier 2 altcoinów zbyt restrykcyjny przy obecnej płynności, lub BTC dominance guard blokuje alt longs systematycznie.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-27",
+      "implementation_sketch": "1. Sprawdź ostatnie 5 runs crypto-monitor w GH Actions logs: szukaj 'volume below', 'dominance guard', 'no_signal' per symbol\n2. Jeśli ETH volume ratio < 3.0× sistemicznie → obniż Tier 2 threshold do 2.0× w COIN_TIERS\n3. Jeśli BTC dominance guard blokuje → sprawdź czy guard używa poprawnego symbolu i oblicza dominance vs USDT\n4. Zamknąć po pierwszym potwierdzonym crypto fill"
+    }
+  ],
+  "confidence": "medium"
+}
