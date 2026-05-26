@@ -404,6 +404,16 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             f"{today_iso} · options_side_bias reset to null "
             f"(zero supporting data in 7d window — proposal 2026-05-09)"
         )
+        # PR #10 (2026-05-26): macro fallback — when trade data is thin,
+        # derive options_side_bias from SPY RSI rather than leaving null.
+        # SPY ≥72 → short (PUT-favored), ≤35 → long (CALL-favored). Skips
+        # neutral zone (35-72) and missing data → no override.
+        macro_bias, macro_reason = heuristic_options_bias_from_spy_rsi(today_stats)
+        if macro_bias is not None:
+            new_state["global_overrides"]["options_side_bias"] = macro_bias
+            rationale.append(
+                f"{today_iso} · options_side_bias={macro_bias} via macro fallback — {macro_reason}"
+            )
     # TP feedback loop (LLM proposal 2026-05-09): tighten suggested_tp_
     # multiplier when realised hit rate is poor.
     for line in _apply_tp_feedback(new_state, today_stats):
@@ -726,3 +736,23 @@ def heuristic_crypto_deep_oversold_boost(today_stats: dict) -> tuple:
     if eth_rsi <= 25 and btc_rsi <= 45:
         return True, 1.5, f"ETH RSI {eth_rsi:.1f} <= 25 (deep capitulation) + BTC RSI {btc_rsi:.1f} <= 45"
     return False, 1.0, ""
+
+
+# ─── Lane2 auto-added — Set options_side_bias from SPY RSI when trade sample is thin ────────────
+def heuristic_options_bias_from_spy_rsi(today_stats):
+    """Derive options side_bias from SPY RSI when trade data is thin.
+
+    Returns (bias, reason) where bias is 'short', 'long', or None.
+    Prevents adapter from losing directional conviction after holiday/silent periods
+    when trade-based data resets to zero but macro signal is clear.
+    """
+    rsi_snapshot = today_stats.get("rsi_snapshot", {})
+    spy_info = rsi_snapshot.get("SPY", {})
+    spy_rsi = spy_info.get("today")
+    if spy_rsi is None:
+        return None, "no SPY RSI data available"
+    if spy_rsi >= 72:
+        return "short", "SPY RSI={} >= 72 -- extended market; PUT-side statistically favored".format(spy_rsi)
+    if spy_rsi <= 35:
+        return "long", "SPY RSI={} <= 35 -- oversold market; CALL-side statistically favored".format(spy_rsi)
+    return None, "SPY RSI={} -- neutral zone; no directional override".format(spy_rsi)
