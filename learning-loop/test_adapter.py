@@ -574,3 +574,40 @@ class TestCryptoDeepOversoldBoostWiredIntoAdapt(unittest.TestCase):
         new_state, _ = adapt(state, stats)
         cm = new_state["strategies"]["crypto-momentum"]
         self.assertGreaterEqual(cm["size_multiplier"], 1.5)
+
+
+# ─── Lane2 auto-added test for: Set options_side_bias from SPY RSI when trade sample is thin ─────
+# Auto-injected by lane2_pr to expose new symbols to the test:
+from adapter import heuristic_options_bias_from_spy_rsi  # noqa: E402,F401
+
+class TestOptionsBiasFromSpyRsi(unittest.TestCase):
+    def test_overbought_returns_short(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 74}}}
+        bias, reason = heuristic_options_bias_from_spy_rsi(stats)
+        self.assertEqual(bias, "short")
+        self.assertIn("74", reason)
+
+    def test_oversold_returns_long(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 30}}}
+        bias, reason = heuristic_options_bias_from_spy_rsi(stats)
+        self.assertEqual(bias, "long")
+
+    def test_neutral_returns_none(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 55}}}
+        bias, reason = heuristic_options_bias_from_spy_rsi(stats)
+        self.assertIsNone(bias)
+
+    def test_missing_rsi_data_returns_none(self):
+        bias, reason = heuristic_options_bias_from_spy_rsi({})
+        self.assertIsNone(bias)
+        self.assertIn("no SPY RSI", reason)
+
+    def test_boundary_exactly_72_returns_short(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 72}}}
+        bias, _ = heuristic_options_bias_from_spy_rsi(stats)
+        self.assertEqual(bias, "short")
+
+    def test_boundary_exactly_35_returns_long(self):
+        stats = {"rsi_snapshot": {"SPY": {"today": 35}}}
+        bias, _ = heuristic_options_bias_from_spy_rsi(stats)
+        self.assertEqual(bias, "long")
