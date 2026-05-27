@@ -17,29 +17,29 @@
     "peak_pl_pct": 0.009403893660290843,
     "peak_at": "2026-05-26T19:15:06.557094+00:00",
     "peak_equity": 98752.89,
-    "current_pl_usd": -499.5599999999977,
-    "current_equity": 97333.32,
-    "retrace_from_peak": 1.5429940978902408,
+    "current_pl_usd": -344.25,
+    "current_equity": 97488.63,
+    "retrace_from_peak": 1.3741807154270083,
     "verdict": "RED_DAY_AFTER_GREEN",
-    "verdict_at": "2026-05-26T21:16:11.493577+00:00",
+    "verdict_at": "2026-05-26T23:39:15.577843+00:00",
     "alerts_sent": {
       "RED_DAY_AFTER_GREEN": "2026-05-26T21:01:48.565175+00:00",
       "legacy:PROFIT_LOCK": "2026-05-26T21:01:48.564561+00:00"
     },
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 39,
+  "days_tracked": 40,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-26T22:14:16.374990+00:00",
+  "last_updated": "2026-05-27T01:34:36.025509+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
   "next_actions": [],
-  "peak_equity": 97832.94,
+  "peak_equity": 98446.36,
   "pending_emergency_close": {
     "prior_pending": {
       "created_at": "2026-05-14T05:08:00Z",

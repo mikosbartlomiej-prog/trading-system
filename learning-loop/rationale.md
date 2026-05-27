@@ -543,3 +543,14 @@
 - 2026-05-26 · rsi-alert [oversold]: ETH/USD RSI=26.0 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-26 · peak-tracker: intraday: peak $+920 at 094+00:0 current $-500 giveback 154% state=RED_DAY_AFTER_GREEN max_gross=0.25 BLOCK_ENTRIES
 
+- 2026-05-27 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-27 · crypto-momentum: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · geo-defense: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · geo-energy: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · geo-gold: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · geo-xom: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · options-momentum: SILENT — enabled but 0 trades lifetime (40 days tracked); consider disable or remove
+- 2026-05-27 · fill-rate alert [unknown]: fill rate 13% below 50% (12 canceled / 23 placed) — limits too tight or quote stale
+- 2026-05-27 · rsi-alert [oversold]: ETH/USD RSI=27.2 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-27 · peak_equity advanced $97,833 -> $98,446
+
