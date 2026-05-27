@@ -214,30 +214,32 @@ def place_emergency_close(ep: dict) -> dict | None:
     except Exception as e:
         print(f"  {reason_tag}-close DELETE exception: {e} — trying POST fallback")
 
-    # FALLBACK: POST /v2/orders MARKET sell (original v3.3 path)
+    # FALLBACK: route through safe_close (v3.9.10) — pre-flight position check,
+    # eliminates risk of MARKET sell creating naked short if position
+    # disappeared between DELETE 404 and POST. Also emits audit JSONL.
     close_side = "sell" if side == "long" else "buy"
-    payload = {
-        "symbol":          symbol,
-        "qty":             str(int(qty)) if qty == int(qty) else str(qty),
-        "side":            close_side,
-        "type":            "market",
-        "time_in_force":   "gtc" if "/" in symbol else "day",
-        "client_order_id": client_order_id,
-    }
+    is_crypto = "/" in symbol
     try:
-        r = requests.post(
-            f"{ALPACA_BASE_URL}/v2/orders",
-            headers=headers,
-            json=payload,
-            timeout=15,
-        )
-        if r.status_code in (200, 201):
-            return r.json()
-        print(f"  {reason_tag}-close POST error {r.status_code}: {r.text[:200]}")
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from alpaca_orders import safe_close  # type: ignore
+    except ImportError:
+        print(f"  {reason_tag}-close safe_close import failed — refusing POST fallback")
         return None
-    except Exception as e:
-        print(f"  {reason_tag}-close POST exception: {e}")
-        return None
+    sc = safe_close(
+        symbol=symbol,
+        intent_qty=float(qty),
+        intent_side=close_side,
+        reason_tag=f"exit-{reason_tag}",
+        order_type="market",
+        time_in_force="gtc" if is_crypto else "day",
+        is_crypto=is_crypto,
+        allow_market=True,
+    )
+    if sc["status"] == "placed":
+        return {"id": sc["alpaca_order_id"], "status": "accepted",
+                "symbol": symbol, "qty": sc["actual_qty"]}
+    print(f"  {reason_tag}-close POST {sc['status']}: {sc['reason']}")
+    return None
 
 
 def get_open_positions() -> list[dict]:

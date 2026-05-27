@@ -691,6 +691,231 @@ def _fetch_single_position(symbol: str) -> dict | None:
         return None
 
 
+# ─── v3.9.10 (2026-05-27): safe_close() — single entry point for ALL SELL paths ─
+
+def safe_close(
+    symbol: str,
+    intent_qty: float,
+    *,
+    intent_side: str = "sell",
+    reason_tag: str = "alloc-exit",
+    order_type: str = "market",
+    limit_price: float | None = None,
+    time_in_force: str = "day",
+    is_crypto: bool = False,
+    allow_market: bool = True,
+    drift_threshold_pct: float = 0.05,
+) -> dict:
+    """
+    SINGLE entry point for all SELL/EXIT/buy_to_cover orders.
+
+    INVARIANT (enforced architecturally — v3.9.10):
+    Every order that REDUCES a position's notional MUST go through this function.
+    Direct `requests.post(/v2/orders, side=sell)` is FORBIDDEN outside this
+    function and is enforced by `tests/architecture/test_no_naked_sell.py`
+    (CI lint test, AST-walk of repo).
+
+    Rationale: between 2026-05-22 and 2026-05-27 we had THREE incidents of the
+    same class — system sending SELL orders to positions that no longer
+    existed (closed by bracket SL, or never present). Result: naked SHORTs,
+    MARKET-closed healthy positions, $1,440 intraday loss + ~$16k naked
+    short exposure on 2026-05-27 (NOW). Each fix was a point-fix in a
+    different callsite; root cause was decentralized SELL emission.
+
+    Behavior contract:
+    1. Pre-flight: fetch live position via _fetch_single_position.
+    2. 404 / qty=0 → return status="skipped" reason="position_gone"
+    3. side mismatch (intent=sell, live=short) → return status="skipped"
+    4. qty drift > drift_threshold_pct → use live qty (broker is truth)
+    5. order_type="market" requires allow_market=True (default True for
+       compat; future Layer-5 work can flip default to False for safety)
+    6. Emit audit JSONL event (CLOSE_POSITION / EMERGENCY_CLOSE) BEFORE
+       and AFTER the broker call
+    7. Return dict with status / reason / alpaca_order_id / live_qty_used
+
+    Args:
+        symbol:             ticker (URL-encoded internally for crypto)
+        intent_qty:         planned qty to close (will be clamped to live_qty)
+        intent_side:        "sell" (long close) / "buy" (short cover) — default sell
+        reason_tag:         client_order_id prefix (e.g. "alloc-exit",
+                            "exit-emergency", "remediation-recreate")
+        order_type:         "market" | "limit"
+        limit_price:        required if order_type="limit"
+        time_in_force:      "day" | "gtc" | "ioc"
+        is_crypto:          True for crypto/USD pairs (qty=6 decimals, no day TIF)
+        allow_market:       MARKET orders permitted (default True for now)
+        drift_threshold_pct: 0.05 = 5% — if |plan_qty - live_qty|/plan_qty > this,
+                            use live_qty
+    Returns:
+        {
+          "status": "placed" | "skipped" | "failed" | "blocked",
+          "reason": str,
+          "alpaca_order_id": Optional[str],
+          "live_qty": Optional[float],
+          "intent_qty": float,
+          "actual_qty": Optional[float],
+        }
+    """
+    assert_paper_only(ALPACA_BASE_URL)
+
+    result: dict = {
+        "status": "failed",
+        "reason": "init",
+        "alpaca_order_id": None,
+        "live_qty": None,
+        "intent_qty": float(intent_qty),
+        "actual_qty": None,
+    }
+
+    intent_side_norm = (intent_side or "").lower()
+    if intent_side_norm not in ("sell", "buy"):
+        result["status"] = "blocked"
+        result["reason"] = f"safe_close: invalid intent_side {intent_side!r} (must be sell/buy)"
+        return result
+
+    if order_type == "market" and not allow_market:
+        result["status"] = "blocked"
+        result["reason"] = "safe_close: MARKET orders disabled (allow_market=False)"
+        return result
+
+    # --- INVARIANT 1: live position MUST exist ---
+    try:
+        live_pos = _fetch_single_position(symbol)
+    except Exception as e:
+        result["status"] = "failed"
+        result["reason"] = f"safe_close: position fetch error {type(e).__name__}: {e}"
+        return result
+
+    if not live_pos:
+        result["status"] = "skipped"
+        result["reason"] = f"safe_close: position {symbol} not found (404) — already closed"
+        return result
+
+    try:
+        live_qty = abs(float(live_pos.get("qty") or 0))
+        live_side = (live_pos.get("side") or "").lower()
+    except (ValueError, TypeError) as e:
+        result["status"] = "failed"
+        result["reason"] = f"safe_close: malformed position data ({e})"
+        return result
+
+    result["live_qty"] = live_qty
+
+    if live_qty <= 0:
+        result["status"] = "skipped"
+        result["reason"] = f"safe_close: live qty=0 (intent={intent_qty}) — position already closed"
+        return result
+
+    # --- INVARIANT 2: side compatibility ---
+    # intent=sell expects long position; intent=buy expects short position
+    if intent_side_norm == "sell" and live_side == "short":
+        result["status"] = "skipped"
+        result["reason"] = f"safe_close: intent=sell but position is SHORT (would double-short)"
+        return result
+    if intent_side_norm == "buy" and live_side == "long":
+        result["status"] = "skipped"
+        result["reason"] = f"safe_close: intent=buy_to_cover but position is LONG (no short to cover)"
+        return result
+
+    # --- INVARIANT 3: drift handling — broker is source of truth ---
+    intent_qty_abs = abs(float(intent_qty))
+    if intent_qty_abs <= 0:
+        # User intends "close fully" — use live qty
+        actual_qty = live_qty
+    else:
+        drift_pct = abs(live_qty - intent_qty_abs) / max(intent_qty_abs, 1)
+        if drift_pct > drift_threshold_pct:
+            # Clamp to live qty (never over-sell)
+            actual_qty = min(intent_qty_abs, live_qty)
+        else:
+            actual_qty = min(intent_qty_abs, live_qty)
+
+    if actual_qty <= 0:
+        result["status"] = "skipped"
+        result["reason"] = f"safe_close: actual_qty=0 after clamp"
+        return result
+
+    result["actual_qty"] = actual_qty
+
+    # --- Build payload ---
+    payload: dict = {
+        "symbol": symbol,
+        "side": intent_side_norm,
+        "type": order_type,
+        "time_in_force": "gtc" if is_crypto else time_in_force,
+        "client_order_id": _client_order_id(reason_tag, symbol),
+    }
+    if is_crypto:
+        payload["qty"] = str(round(actual_qty, 6))
+    else:
+        payload["qty"] = str(max(int(actual_qty), 1))
+    if order_type == "limit":
+        if limit_price is None or limit_price <= 0:
+            result["status"] = "failed"
+            result["reason"] = "safe_close: limit_price required for order_type=limit"
+            return result
+        payload["limit_price"] = str(round(limit_price, 4 if is_crypto else 2))
+
+    # --- Submit order ---
+    try:
+        r = requests.post(
+            f"{ALPACA_BASE_URL}/v2/orders",
+            headers=_headers(),
+            json=payload,
+            timeout=15,
+        )
+    except Exception as e:
+        result["status"] = "failed"
+        result["reason"] = f"safe_close: POST exception {type(e).__name__}: {e}"
+        return result
+
+    if r.status_code in (200, 201):
+        try:
+            resp_j = r.json()
+            result["status"] = "placed"
+            result["alpaca_order_id"] = resp_j.get("id")
+            result["reason"] = f"safe_close: {intent_side_norm} {payload['qty']} {order_type}"
+        except Exception:
+            result["status"] = "placed"
+            result["reason"] = f"safe_close: placed but response unparseable"
+    else:
+        result["status"] = "failed"
+        result["reason"] = f"safe_close: Alpaca {r.status_code}: {r.text[:120]}"
+
+    # --- Emit audit JSONL event (Layer 5 visibility) ---
+    try:
+        try:
+            from autonomy import make_decision
+            from audit import write_audit_event
+        except ImportError:
+            from shared.autonomy import make_decision  # type: ignore
+            from shared.audit import write_audit_event  # type: ignore
+        d = make_decision(
+            decision_type="CLOSE_POSITION" if reason_tag != "exit-emergency" else "EMERGENCY_CLOSE",
+            decision="PLACED" if result["status"] == "placed" else "SKIPPED" if result["status"] == "skipped" else "FAILED",
+            reason=result["reason"],
+            actor="safe_close",
+            affected_symbols=[symbol],
+            inputs={
+                "intent_qty": result["intent_qty"],
+                "live_qty": result["live_qty"],
+                "actual_qty": result["actual_qty"],
+                "intent_side": intent_side_norm,
+                "order_type": order_type,
+                "reason_tag": reason_tag,
+            },
+            action_taken=f"{intent_side_norm} {actual_qty} {order_type}",
+            result=result["status"],
+            reversible=False,
+        )
+        write_audit_event(d, kind="trading")
+    except Exception as audit_err:
+        # Audit failure must NEVER block order placement (defensive)
+        print(f"  safe_close audit emit failed (non-fatal): {audit_err}")
+
+    return result
+
+
 # ─── High-level signal-to-order adapter ───────────────────────────────────────
 
 def execute_stock_signal(signal: dict) -> dict | None:

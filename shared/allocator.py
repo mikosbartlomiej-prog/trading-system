@@ -1104,17 +1104,12 @@ class AccountAwareAllocator:
 
     def _exec_reduce(self, order: dict, sym: str, qty: float,
                       is_crypto: bool, result: dict) -> dict:
-        """Partial close — sell |qty| shares."""
-        import requests
-        import urllib.parse
+        """Partial close — sell |qty| shares via safe_close (v3.9.10)."""
         try:
-            from alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL, get_latest_quote
+            from alpaca_orders import safe_close, get_latest_quote
         except ImportError:
-            from shared.alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL, get_latest_quote
+            from shared.alpaca_orders import safe_close, get_latest_quote
 
-        qty_abs = abs(qty)
-        side = "sell"
-        # Stock: LIMIT slightly under bid; crypto: simple LIMIT at current mid
         q = get_latest_quote(sym)
         ref_price = (q or {}).get("bid") if q else order.get("current_price")
         if not ref_price or ref_price <= 0:
@@ -1123,75 +1118,44 @@ class AccountAwareAllocator:
             self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
             return result
 
-        payload = {
-            "symbol":          sym,
-            "side":            side,
-            "type":            "limit",
-            "limit_price":     str(round(ref_price * 0.998, 2) if not is_crypto else round(ref_price, 4)),
-            "time_in_force":   "day" if not is_crypto else "gtc",
-            "client_order_id": _client_order_id("alloc-reduce", sym),
-        }
-        if is_crypto:
-            payload["qty"] = str(round(qty_abs, 6))
+        limit_price = round(ref_price * 0.998, 2) if not is_crypto else round(ref_price, 4)
+        sc = safe_close(
+            symbol=sym, intent_qty=abs(qty), intent_side="sell",
+            reason_tag="alloc-reduce", order_type="limit",
+            limit_price=limit_price, time_in_force="day",
+            is_crypto=is_crypto, allow_market=False,
+        )
+        result["status"] = sc["status"]
+        result["alpaca_order_id"] = sc["alpaca_order_id"]
+        result["reason"] = sc["reason"]
+        if sc["status"] == "placed":
+            self.trace.info(f"{sym} REDUCE placed: {sc['reason']}", indent=2)
+        elif sc["status"] == "skipped":
+            self.trace.info(f"{sym} REDUCE skipped: {sc['reason']}", indent=2)
         else:
-            payload["qty"] = str(max(int(qty_abs), 1))
-
-        try:
-            r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
-                              headers=_headers(), json=payload, timeout=15)
-            if r.status_code in (200, 201):
-                resp_j = r.json()
-                result["status"] = "placed"
-                result["alpaca_order_id"] = resp_j.get("id")
-                result["reason"] = f"REDUCE {payload['qty']} @ ${payload['limit_price']}"
-                self.trace.info(f"{sym} REDUCE placed: {result['reason']}", indent=2)
-            else:
-                result["status"] = "failed"
-                result["reason"] = f"Alpaca {r.status_code}: {r.text[:120]}"
-                self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
-        except Exception as e:
-            result["status"] = "failed"
-            result["reason"] = f"{type(e).__name__}: {e}"
-            self.trace.err(f"{sym} REDUCE: {result['reason']}", indent=2)
+            self.trace.err(f"{sym} REDUCE: {sc['reason']}", indent=2)
         return result
 
     def _exec_exit(self, order: dict, sym: str, qty: float,
                     is_crypto: bool, result: dict) -> dict:
-        """Full close — MARKET SELL entire position."""
-        import requests
+        """Full close — MARKET SELL entire position via safe_close (v3.9.10)."""
         try:
-            from alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL
+            from alpaca_orders import safe_close
         except ImportError:
-            from shared.alpaca_orders import _headers, _client_order_id, ALPACA_BASE_URL
+            from shared.alpaca_orders import safe_close
 
-        qty_abs = abs(qty)
-        payload = {
-            "symbol":          sym,
-            "side":            "sell",
-            "type":            "market",
-            "time_in_force":   "day" if not is_crypto else "gtc",
-            "client_order_id": _client_order_id("alloc-exit", sym),
-        }
-        if is_crypto:
-            payload["qty"] = str(round(qty_abs, 6))
+        sc = safe_close(
+            symbol=sym, intent_qty=abs(qty), intent_side="sell",
+            reason_tag="alloc-exit", order_type="market",
+            time_in_force="day", is_crypto=is_crypto, allow_market=True,
+        )
+        result["status"] = sc["status"]
+        result["alpaca_order_id"] = sc["alpaca_order_id"]
+        result["reason"] = sc["reason"]
+        if sc["status"] == "placed":
+            self.trace.info(f"{sym} EXIT placed: {sc['reason']}", indent=2)
+        elif sc["status"] == "skipped":
+            self.trace.info(f"{sym} EXIT skipped: {sc['reason']}", indent=2)
         else:
-            payload["qty"] = str(max(int(qty_abs), 1))
-
-        try:
-            r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
-                              headers=_headers(), json=payload, timeout=15)
-            if r.status_code in (200, 201):
-                resp_j = r.json()
-                result["status"] = "placed"
-                result["alpaca_order_id"] = resp_j.get("id")
-                result["reason"] = f"EXIT MARKET {payload['qty']}"
-                self.trace.info(f"{sym} EXIT placed: {result['reason']}", indent=2)
-            else:
-                result["status"] = "failed"
-                result["reason"] = f"Alpaca {r.status_code}: {r.text[:120]}"
-                self.trace.err(f"{sym} EXIT: {result['reason']}", indent=2)
-        except Exception as e:
-            result["status"] = "failed"
-            result["reason"] = f"{type(e).__name__}: {e}"
-            self.trace.err(f"{sym} EXIT: {result['reason']}", indent=2)
+            self.trace.err(f"{sym} EXIT: {sc['reason']}", indent=2)
         return result

@@ -70,6 +70,11 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # incident had 0 audit events for 7+ position-affecting remediation
     # runs). Allowed write scope = ONLY journal/autonomy/.
     "autonomous-remediation.yml",
+    # v3.9.10 (2026-05-27) — forensic-position-origin commits audit JSONL
+    # findings (provenance audit). Operator-triggered workflow_dispatch only.
+    # Allowed write scope = ONLY journal/autonomy/ (enforced by workflow's
+    # explicit `git add journal/autonomy/`).
+    "forensic-position-origin.yml",
 }
 
 # Workflows allowed to create PRs.

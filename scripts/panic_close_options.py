@@ -129,25 +129,29 @@ def get_option_quote(symbol: str) -> dict | None:
 
 
 def submit_sell_limit(symbol: str, qty: int, limit_price: float) -> dict | None:
-    ts = datetime.now(timezone.utc).strftime("%H%M%S%f")[:-3]
-    coid = f"panic-close-{symbol.replace('/', '')}-{ts}"
-    payload = {
-        "symbol":          symbol,
-        "qty":             str(int(qty)),
-        "side":            "sell",
-        "type":            "limit",
-        "limit_price":     str(round(limit_price, 2)),
-        "time_in_force":   "day",
-        "client_order_id": coid,
-    }
+    """v3.9.10 (2026-05-27): route through safe_close — position pre-check
+    eliminates naked-short risk if position vanished between scan and submit."""
     try:
-        r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
-                          headers=headers(), json=payload, timeout=15)
-        if r.status_code in (200, 201):
-            return r.json()
-        print(f"  Alpaca rejected sell {symbol}: {r.status_code} {r.text[:200]}")
-    except Exception as e:
-        print(f"  exception sending sell {symbol}: {e}")
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from alpaca_orders import safe_close  # type: ignore
+    except ImportError:
+        print(f"  panic_close safe_close import failed for {symbol}")
+        return None
+    sc = safe_close(
+        symbol=symbol,
+        intent_qty=float(qty),
+        intent_side="sell",
+        reason_tag="panic-close",
+        order_type="limit",
+        limit_price=limit_price,
+        time_in_force="day",
+        is_crypto=False,
+        allow_market=False,
+    )
+    if sc["status"] == "placed":
+        return {"id": sc["alpaca_order_id"], "status": "accepted",
+                "symbol": symbol, "qty": sc["actual_qty"]}
+    print(f"  panic_close {sc['status']} {symbol}: {sc['reason']}")
     return None
 
 

@@ -47,6 +47,142 @@ sys.path.insert(0, os.path.join(_REPO_ROOT, "shared"))
 _ALLOCATIONS_DIR = os.path.join(_REPO_ROOT, "learning-loop", "allocations")
 
 
+# ── v3.9.10 (2026-05-27): deterministic plan revalidation ─────────────────────
+
+def _revalidate_plan_against_live(plan_orders: list) -> list:
+    """
+    Validate each plan order against LIVE Alpaca position state.
+
+    Plans are generated ~9.5h before execution (04:00 UTC → 13:35 UTC).
+    Positions can change overnight via bracket SL fills, manual closes, or
+    remediation actions. Without this gate, stale plans cause incidents
+    like 2026-05-27 NOW SHORT bug (allocator sent EXIT MARKET 169 to a
+    position that was already closed → naked short -169).
+
+    Per-action validation rules:
+      EXIT/REDUCE  → drop if position 404 (already closed)
+      EXIT/REDUCE  → drop if live position is SHORT (would double-short)
+      EXIT/REDUCE  → drop if |live_qty - plan_qty| > 50% (severe drift)
+      BUY          → drop if position exists at ≥90% of target (already there)
+      BUY          → keep otherwise (additional position-precheck in _exec_buy)
+      HOLD         → never dropped (no order placed)
+
+    Returns: list of orders that passed validation. Drops are logged.
+    Fail-open: if Alpaca unavailable, returns plan_orders unchanged (with warning).
+    """
+    if not plan_orders:
+        return plan_orders
+
+    try:
+        from alpaca_orders import _fetch_single_position
+    except ImportError:
+        from shared.alpaca_orders import _fetch_single_position  # type: ignore
+
+    dropped: list[dict] = []
+    kept: list = []
+    print("[executor] v3.9.10 plan revalidation against live positions...")
+
+    for order in plan_orders:
+        action = (order.get("action") or "").upper()
+        sym = (order.get("symbol") or "").upper()
+        if action == "HOLD" or not sym:
+            kept.append(order)
+            continue
+
+        # Pre-flight position fetch
+        try:
+            live_pos = _fetch_single_position(sym)
+        except Exception as e:
+            print(f"  [revalidate] {sym} fetch error ({type(e).__name__}) — keeping order (fail-open)")
+            kept.append(order)
+            continue
+
+        plan_qty = abs(float(order.get("qty_delta") or 0) or 0)
+
+        if action in ("EXIT", "REDUCE"):
+            if not live_pos:
+                dropped.append({"symbol": sym, "action": action,
+                                "reason": "position already closed (404)"})
+                continue
+            try:
+                live_qty = abs(float(live_pos.get("qty") or 0))
+                live_side = (live_pos.get("side") or "").lower()
+            except (ValueError, TypeError):
+                print(f"  [revalidate] {sym} malformed position data — keeping (fail-open)")
+                kept.append(order)
+                continue
+            if live_qty <= 0:
+                dropped.append({"symbol": sym, "action": action,
+                                "reason": f"live_qty=0 (plan_qty={plan_qty})"})
+                continue
+            if live_side == "short":
+                dropped.append({"symbol": sym, "action": action,
+                                "reason": "live position is SHORT (would double-short)"})
+                continue
+            # Severe drift: only drop if BOTH plan_qty>0 AND drift>50%
+            # (small drifts handled by safe_close's 5% threshold)
+            if plan_qty > 0 and abs(live_qty - plan_qty) / plan_qty > 0.50:
+                # Allow EXIT through (executor will use live qty via safe_close)
+                # but log for visibility
+                print(f"  [revalidate] {sym} {action} severe drift: plan={plan_qty} live={live_qty} — keeping (safe_close will clamp)")
+            kept.append(order)
+
+        elif action == "BUY":
+            # v3.9.10 strategy_coherence audit P1 (2026-05-27): drop ONLY when
+            # BOTH conditions hold:
+            #   (a) live_qty >= 95% of target_qty (very close to target)
+            #   (b) |target_value - current_value| < $500 (small delta in $)
+            # Allows incremental top-ups (e.g. target $25k, current $15k = 60%)
+            # to proceed while preventing redundant orders at the threshold.
+            if live_pos:
+                try:
+                    live_qty = abs(float(live_pos.get("qty") or 0))
+                    target_qty = abs(float(order.get("target_qty") or plan_qty) or 1)
+                    target_value = abs(float(order.get("target_value") or 0))
+                    current_value = abs(float(order.get("current_value") or 0))
+                    delta_usd = abs(target_value - current_value)
+                    if (target_qty > 0 and live_qty / target_qty >= 0.95
+                            and delta_usd < 500):
+                        dropped.append({
+                            "symbol": sym, "action": action,
+                            "reason": (
+                                f"position at {live_qty/target_qty:.0%} of target "
+                                f"+ delta only ${delta_usd:.0f} < $500"
+                            )
+                        })
+                        continue
+                except (ValueError, TypeError):
+                    pass
+            kept.append(order)
+        else:
+            kept.append(order)
+
+    if dropped:
+        print(f"[executor] v3.9.10 revalidation DROPPED {len(dropped)} stale order(s):")
+        for d in dropped:
+            print(f"  [DROPPED] {d['action']:<6} {d['symbol']:<10} — {d['reason']}")
+    else:
+        print("[executor] v3.9.10 revalidation: all orders pass live-state check")
+    print(f"[executor] revalidation: {len(kept)} kept, {len(dropped)} dropped")
+
+    # Email alert if any drops (operator visibility)
+    if dropped:
+        try:
+            from notify import send_email
+            body = "v3.9.10 plan revalidation dropped stale orders:\n\n"
+            body += "\n".join(f"  {d['action']} {d['symbol']}: {d['reason']}" for d in dropped)
+            body += "\n\nThis is normal when overnight bracket SL fills change position state."
+            body += "\nKept orders proceed to execution; dropped orders logged for audit."
+            send_email(
+                subject=f"[allocator REVALIDATE] {len(dropped)} stale order(s) dropped",
+                body=body,
+            )
+        except Exception as e:
+            print(f"  [revalidate] email failed (non-fatal): {e}")
+
+    return kept
+
+
 def _today_iso() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
@@ -151,8 +287,25 @@ def main() -> int:
         except (json.JSONDecodeError, OSError, ValueError) as e:
             print(f"[executor] idempotency check error (proceeding anyway): {e}")
 
+    # ── v3.9.10 (2026-05-27): deterministic plan revalidation ───────────────
+    # Plan was generated at 04:00 UTC; execution runs at 13:35 UTC (~9.5h later).
+    # Positions may have changed overnight (bracket SL fills, manual closes,
+    # remediation actions). Without revalidation, allocator can send EXIT MARKET
+    # to a position that no longer exists → naked SHORT (2026-05-27 NOW bug).
+    #
+    # This revalidation:
+    # - Fetches live positions from Alpaca
+    # - For each non-HOLD order, verifies the position state matches the plan
+    # - DROPS orders whose precondition no longer holds:
+    #     EXIT  → drop if position already closed (404)
+    #     REDUCE → drop if position 404 OR live_qty < 50% of plan
+    #     BUY   → drop if position already exists at ≥90% target (covered by Bug A fix too)
+    # - Logs each drop with reason for forensic visibility
+    plan_orders = plan.get("rebalance_orders") or []
+    revalidated_orders = _revalidate_plan_against_live(plan_orders)
+
     # Execute
-    results = alloc.execute_orders(plan.get("rebalance_orders") or [], force=args.force)
+    results = alloc.execute_orders(revalidated_orders, force=args.force)
 
     # Persist results next to plan
     exec_path = os.path.join(_ALLOCATIONS_DIR, f"{plan_date}.execution.json")

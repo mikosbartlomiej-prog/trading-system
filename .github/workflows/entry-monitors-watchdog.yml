@@ -92,6 +92,19 @@ jobs:
           - workflow: options-exit-monitor.yml
             staleness_minutes: 12      # cron */5 13-20 weekday
             session_only: true
+          # v3.9.10 (2026-05-27): added geo + politician + monitor-health
+          # after 2026-05-27 cron-skip audit revealed 6 BLACKHOLE hours
+          # (03/07/08/11/15 UTC = 0 runs). These were missing from the
+          # PAT-based retrigger matrix and were hit by GH cron-skip too.
+          - workflow: geo-monitor.yml
+            staleness_minutes: 35       # cron */15 24/7
+            session_only: false
+          - workflow: monitor-health.yml
+            staleness_minutes: 75       # cron */30 24/7 (slack for cron-skip)
+            session_only: false
+          - workflow: politician-monitor.yml
+            staleness_minutes: 180      # cron 0 */2 (2h) — alert at 3h
+            session_only: false
 
     steps:
       - name: Check ${{ matrix.workflow }} last run age

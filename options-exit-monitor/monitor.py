@@ -186,42 +186,47 @@ def place_sell_to_close(contract_symbol: str, qty: int,
     except Exception as e:
         print(f"  pdt-guard unavailable for {contract_symbol} ({type(e).__name__}: {e}) — proceeding")
 
-    # v3.8.5 (2026-05-16): LIMIT TP uses GTC (not DAY) so it survives the
-    # EOD cutoff. Previously DAY TIF caused TP orders to expire unfilled
-    # at EOD — LLM-flagged 2026-05-15: "fill_rate.emergency placed=1
-    # filled=0 expired=1 avg_minutes=390" was a DAY TIF LIMIT that
-    # expired without filling, leaving the position exposed overnight.
-    # GTC + MARKET fallback (other branches below) ensures every exit
-    # decision has a durable order at the broker.
+    # v3.9.10 (2026-05-27): route through alpaca_orders.safe_close.
+    # Provides position-existence pre-check (404 → skipped) so option
+    # sell-to-close orders cannot create naked shorts on Alpaca paper.
+    # Also emits audit JSONL automatically.
+    # v3.8.5 history (preserved): LIMIT TP uses GTC, MARKET for forced exits.
     tif = "day" if decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR") else "gtc"
-    payload: dict = {
-        "symbol":          contract_symbol,
-        "qty":             str(int(qty)),
-        "side":            "sell",
-        "time_in_force":   tif,
-        "client_order_id": _exit_client_order_id(reason, contract_symbol),
+    is_market = decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR")
+    reason_tag_map = {
+        "SL":       "exit-emergency",
+        "NEARDTH":  "exit-emergency",
+        "REGIME":   "exit-regime",
+        "TRAIL":    "exit-trail",
+        "GOVERNOR": "exit-governor",
+        "TP":       "exit-tp",
     }
-    # MARKET exit for any close that prioritises guaranteed fill over
-    # price discipline. GOVERNOR (intraday profit protection) joins the
-    # MARKET set because options-first reduction during DEFEND_DAY /
-    # RED_DAY_AFTER_GREEN cannot afford to sit in a limit queue while
-    # the giveback widens.
-    if decision in ("SL", "NEARDTH", "REGIME", "TRAIL", "GOVERNOR"):
-        payload["type"] = "market"
-    else:
-        payload["type"]        = "limit"
-        payload["limit_price"] = str(round(exit_price, 2))
+    reason_tag = reason_tag_map.get(decision, _exit_client_order_id(reason, contract_symbol).split("-")[0])
 
     try:
-        r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
-                          headers=alpaca_headers(), json=payload, timeout=15)
-        if r.status_code in (200, 201):
-            return r.json()
-        print(f"  sell-to-close error {r.status_code}: {r.text[:200]}")
+        from alpaca_orders import safe_close
+    except ImportError:
+        from shared.alpaca_orders import safe_close
+
+    sc = safe_close(
+        symbol=contract_symbol,
+        intent_qty=float(qty),
+        intent_side="sell",
+        reason_tag=reason_tag,
+        order_type="market" if is_market else "limit",
+        limit_price=exit_price if not is_market else None,
+        time_in_force=tif,
+        is_crypto=False,
+        allow_market=is_market,
+    )
+    if sc["status"] == "placed":
+        return {"id": sc["alpaca_order_id"], "status": "accepted",
+                "symbol": contract_symbol, "qty": sc["actual_qty"]}
+    if sc["status"] == "skipped":
+        print(f"  sell-to-close skipped {contract_symbol}: {sc['reason']}")
         return None
-    except Exception as e:
-        print(f"  sell-to-close exception: {e}")
-        return None
+    print(f"  sell-to-close {sc['status']} {contract_symbol}: {sc['reason']}")
+    return None
 
 
 # ─── Regime mismatch helpers (LLM proposal 2026-05-09, revisit 2026-05-14) ──

@@ -1,0 +1,71 @@
+name: Forensic Position Origin — provenance audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Comma-separated tickers (e.g. LMT,RTX)'
+        required: true
+        default: 'LMT,RTX'
+      hours_back:
+        description: 'How many hours back to search'
+        required: false
+        default: '24'
+
+concurrency:
+  group: forensic-${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONIOENCODING: utf-8
+      LC_ALL: C
+      LANG:  C
+      ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install requests
+      - name: Run forensic audit
+        run: |
+          AFTER=$(python3 -c "from datetime import datetime,timezone,timedelta; print((datetime.now(timezone.utc) - timedelta(hours=${{ inputs.hours_back }})).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+          BEFORE=$(python3 -c "from datetime import datetime,timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+          python3 scripts/forensic_position_origin.py \
+            --symbols "${{ inputs.symbols }}" \
+            --after "$AFTER" \
+            --before "$BEFORE" \
+            --emit-audit
+      - name: Commit audit journal
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -d journal/autonomy ]; then
+            for attempt in 1 2 3; do
+              git fetch origin main && git pull --rebase origin main || true
+              git add journal/autonomy/ || true
+              if git diff --cached --quiet; then
+                echo "No audit changes to commit"
+                break
+              fi
+              git commit -m "forensic: position-origin audit $(date -u +%Y-%m-%d_%H%M) [automerge]" || true
+              if git push origin main; then
+                echo "Push attempt $attempt succeeded"
+                break
+              fi
+              echo "Push attempt $attempt failed — retrying"
+              sleep $((attempt * 3))
+            done
+          fi
