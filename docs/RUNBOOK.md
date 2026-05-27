@@ -276,3 +276,64 @@ python3 -m unittest discover tests   # full test suite (some Python-3.10+ deps; 
   9 scenarios covering signal→risk→decision→audit flow + invariants
   (no naked short, no emergency for repairable, no-lookahead, DEFER not
   fail-open). 8/9 green (1 skipped on Python <3.10 due to PEP 604).
+
+## Troubleshooting
+
+### "E2E + Security Audit emails — both FAILED" (2026-05-27 EOD pattern)
+
+**Symptom:** 4 emails (2× E2E, 2× Security Audit) arrive within minutes
+of each other reporting `NameError` or similar in same unit test.
+
+**Likely cause:** new code shipped that uses a name not imported in scope.
+Caught by CI Python 3.11 but invisible to local Python 3.9 dev — entire
+test class skipped because `shared/alpaca_orders.py` uses PEP 604
+`dict | None` syntax (requires 3.10+) → module fails to load on 3.9 →
+`@unittest.skipIf(sys.version_info < (3, 10), ...)` decorator skips
+whole class → local `unittest` reports `OK (skipped=N)` which LOOKS
+like pass but is actually N untested cases.
+
+**First seen:** 2026-05-27 EOD — `safe_close()` in commit `ab7ff93`
+v3.9.10 called `assert_paper_only(ALPACA_BASE_URL)` without importing it.
+4 failure emails (E2E ×2 + Security Audit ×2). Fix in commit `63db126`:
+lazy import inside function.
+
+**Recovery procedure:**
+1. `gh run view <RUN_ID> --log-failed` to find exact undefined name
+2. Add lazy import inside the function (handles both `shared/`-on-path
+   and module-style sys.path):
+   ```python
+   try:
+       from autonomy import X
+   except ImportError:
+       from shared.autonomy import X  # type: ignore
+   ```
+3. Commit + push; next CI run (~5 min) should be green
+
+**Prevention** (memory/feedback_test_environment_parity.md):
+- Local `OK (skipped=N>0)` is NOT "tests green" — N = untested cases
+- Upgrade local `.venv` to Python 3.11 to match CI (`pyenv install 3.11.x`)
+- Function-call smoke beats AST lint: `python3 -c "from alpaca_orders
+  import safe_close; print(safe_close.__doc__[:50])"` — proves module
+  loads, not just parses
+- After every push touching `shared/alpaca_orders.py` or other PEP-604
+  modules, wait ~5 min and check `gh run list --limit 5 --status failure`
+  BEFORE claiming "shipped clean"
+
+### "Forensic Position Origin — FAILED" (pre-2026-05-27 behavior)
+
+**Symptom:** Email `[Forensic Position Origin] failed` after operator
+triggers `workflow_dispatch`.
+
+**Post-2026-05-27 (commit `18d3617`):** script returns exit 0 ALWAYS.
+If you see this email after that commit, indicates real infra failure
+(Alpaca auth, network), not anomaly discovery.
+
+**Pre-2026-05-27 (history):** script returned exit 2 when finding
+UNKNOWN orders — that's expected discovery, not workflow failure.
+Anomaly findings ARE reported via email body + audit JSONL; workflow
+status should reflect only INFRA success (commit + push + script ran),
+not whether findings happened.
+
+---
+
+*Last updated: 2026-05-27 EOD (v3.10.1 + lessons-learned troubleshooting section)*
