@@ -18,7 +18,10 @@ name: Morning Allocator — Capital Deployment Executor
 on:
   schedule:
     # 13:35 UTC = 09:35 ET (5 min after market open). Weekdays only.
-    - cron: '35 13 * * 1-5'
+    # v3.11 Phase H (2026-05-27): delayed 13:35 → 13:45 UTC (15 min after open)
+    # to avoid open-volatility + wider spreads typical in first 5-10 min.
+    # Full VWAP-style execution (split orders in tranches) deferred to backlog.
+    - cron: '45 13 * * 1-5'
   workflow_dispatch:
     inputs:
       force:

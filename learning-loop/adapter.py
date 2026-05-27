@@ -291,10 +291,38 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
             continue                       # has trades at some point
         if stats.get("trades_7d", 0) > 0:
             continue                       # active this week
-        out.append(
-            f"{name}: SILENT — enabled but 0 trades lifetime "
-            f"({days_tracked} days tracked); consider disable or remove"
-        )
+
+        # v3.11 (2026-05-27) — auto-prune after 21 days SILENT.
+        # Previously: warning only ("consider disable or remove").
+        # Now: ≥21 days SILENT + 0 trades lifetime → auto disable.
+        # Operator can override via cfg['hard_safety_override']=true to
+        # keep a known-good strategy alive during temporary signal famine.
+        AUTO_PRUNE_DAYS = 21
+        if days_tracked >= AUTO_PRUNE_DAYS:
+            override = bool(cfg.get("hard_safety_override"))
+            if override:
+                out.append(
+                    f"{name}: SILENT {days_tracked}d but hard_safety_override=true → keep enabled"
+                )
+            else:
+                cfg["enabled"] = False
+                cfg["paused_until"] = None
+                cfg["hard_safety"] = True
+                cfg["auto_pruned_at"] = today_iso
+                cfg["rationale"] = (
+                    f"AUTO-PRUNED: SILENT {days_tracked} days >= {AUTO_PRUNE_DAYS}, "
+                    f"0 trades lifetime. v3.11 zombie-prune policy."
+                )
+                out.append(
+                    f"{name}: AUTO-PRUNED (SILENT {days_tracked}d, 0 trades) — "
+                    f"enabled=False. To revive: set hard_safety_override=true OR "
+                    f"clear auto_pruned_at + manually flip enabled=True."
+                )
+        else:
+            out.append(
+                f"{name}: SILENT — enabled but 0 trades lifetime "
+                f"({days_tracked} days tracked, will auto-prune at {AUTO_PRUNE_DAYS}d)"
+            )
     return out
 
 
@@ -553,6 +581,26 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
 
     if not rationale:
         rationale.append(f"{today_iso} · no parameter changes (all strategies within thresholds)")
+
+    # v3.11 (2026-05-27) — final gates before state.json write.
+    try:
+        from edge_validator import enforce_edge_gate_on_state, enforce_regime_gate
+        # Phase E: regime-conditional enable (auto-pause strategy if regime
+        # incompatible; auto-resume when regime changes back)
+        current_regime = (today_stats.get("regime") or
+                          (today_stats.get("regime_data") or {}).get("regime") or "")
+        if current_regime:
+            new_state, regime_log = enforce_regime_gate(new_state, current_regime)
+            for line in regime_log:
+                rationale.append(f"{today_iso} · {line}")
+        # Phase A: backtest-gated enable (forces enabled=False without verified
+        # edge: WR ≥ 50%, PF ≥ 1.3, MDD < 20%, n ≥ 10 in realistic backtest)
+        new_state, edge_log = enforce_edge_gate_on_state(new_state)
+        for line in edge_log:
+            rationale.append(f"{today_iso} · {line}")
+    except Exception as e:
+        # Fail-soft: gate failure must NEVER prevent state write
+        rationale.append(f"{today_iso} · edge_validator unavailable ({type(e).__name__}: {e}) — skipped")
 
     return new_state, rationale
 

@@ -336,4 +336,74 @@ not whether findings happened.
 
 ---
 
-*Last updated: 2026-05-27 EOD (v3.10.1 + lessons-learned troubleshooting section)*
+## v3.11 EDGE-FIRST (2026-05-27)
+
+Shift from "infrastructure ready" to "high-probability positive-EV". Each
+new gate forces strategies to PROVE edge before consuming capital.
+
+**Phase A — `learning-loop/edge_validator.py`** — backtest-gated `enabled=true`.
+Strategy must show realistic-mode backtest pass (WR ≥ 50%, PF ≥ 1.3,
+MDD < 20%, n ≥ 10) within last 30d to remain enabled. Default OFF
+(`EDGE_GATE_DISABLED=true`) — operator opts in via env after backtesting
+all enabled strategies. Operational tags (alloc-*) exempt.
+
+**Phase B — auto-prune zombies.** After 21 days SILENT + 0 trades lifetime,
+adapter automatically sets `enabled=False`. Override via
+`hard_safety_override=true` per-strategy.
+
+**Phase D — `shared/kelly_sizing.py`** — quarter-Kelly fraction sizing.
+Strategy with 70% WR + 1.5 R:R → ~12.5% equity per position; 50% WR →
+falls back to base size. Floor 0.10×base, ceiling 2.0×base. Requires
+≥10 lifetime trades (else base).
+
+**Phase E — regime-conditional enable.** Strategies declare
+`compatible_regimes: ["RISK_ON", "NEUTRAL"]` in state.json. If current
+regime not in list → auto-pause with `paused_by_regime=true` (auto-resume
+when regime changes back). Backward compat: no field = all regimes allowed.
+
+**Phase G — `shared/earnings_calendar.py`** — earnings ±1d blackout for
+stocks (extends options-monitor pattern). Data: `config/earnings_calendar.json`
+JSON file populated manually OR by LLM daily-learning. Fail-OPEN if missing.
+
+**Phase H — execution window delay.** Morning-allocator cron 13:35 → **13:45 UTC**
+(15 min after open) to avoid open-volatility + wide spreads. Full VWAP-style
+tranching deferred.
+
+**Phase I — fill-rate gated sizing.** Already exists since v3.X
+(`heuristic_fill_rate_size_cut`); strategies with fill_rate < 50% over 5+
+orders get `size_multiplier × cancel_factor`. Verified active in adapter.
+
+### Deferred to v3.12 backlog (with justification)
+
+- **Phase C — edge dashboard separate workflow** (~30 min) — value lower
+  than D/E. Existing per-strategy metrics in `learning-loop/history/<date>.md`
+  serve as dashboard for now.
+- **Phase F — correlation cap** (~25 min implementation + N×N daily-bar
+  fetch tax) — properly done requires correlation matrix cache built daily.
+  Risk for v3.11 ship: heavy Alpaca API load. Current concentration_ok 40%
+  per-ticker + bucket caps (65% per correlated bucket) partially cover.
+
+### Migration plan to enforced edge gate
+
+1. Operator runs backtests for each currently-enabled strategy:
+   ```bash
+   .venv/bin/python3 -m backtest.run --strategy momentum-long \
+       --tickers AAPL MSFT NVDA --days 180 --mode both --walk-forward 3
+   ```
+   Results land in `backtest/results/`.
+2. Check edge_validator verdict per strategy:
+   ```bash
+   .venv/bin/python3 -c "
+   import sys; sys.path.insert(0, 'learning-loop')
+   from edge_validator import validate_strategy_edge
+   for s in ['momentum-long', 'crypto-momentum', 'options-momentum', ...]:
+       ok, m, r = validate_strategy_edge(s); print(f'{s}: {ok} — {r}')
+   "
+   ```
+3. When 100% of enabled strategies PASS, flip `EDGE_GATE_DISABLED=false`
+   in `.github/workflows/daily-learning.yml::env`.
+4. Next daily-learning will enforce; any strategy losing edge auto-disables.
+
+---
+
+*Last updated: 2026-05-27 EOD (v3.11 EDGE-FIRST — 7/9 phases shipped, 23 new tests)*
