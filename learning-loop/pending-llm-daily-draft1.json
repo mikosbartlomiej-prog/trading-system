@@ -1,0 +1,39 @@
+{
+  "narrative": "Dziś v3.11 zombie-prune poprawnie usunął 5 strategii po 41 dniach ciszy, ale timing jest niefortunny: ETH/USD RSI=24.3 (drugi dzień głęboko oversold) wystrzelił pre-signal dokładnie gdy crypto-momentum wylądowała w hard_safety=True — mamy sygnał bez pipeline'u wykonania. Equity -$1,899 dziś (z $98,242 do $96,343) NIE jest wyjaśnione przez -$18.48 z geo-defense; delta ~$1,880 pochodzi z unrealized P&L otwartych pozycji allokatora (NOW SHORT -169sh + LMT/RTX longs widoczne w fill_rate.unknown open_status), które nie zostały wciągnięte do open_positions — to bug zbierania danych, nie sygnał ryzyka. fill_rate 27% dla 'unknown' to false alarm: te 13 zleceń 'other' to GTC bracket OCO dzieci poprawnie czekające na trigger, nie zlecenia które powinny były się natychmiast wypełnić.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Brak potwierdzonego edge'u: geo-defense ma 2 trades lifetime (próba za mała), allocator-rebalance to warstwa operacyjna bez własnego edge'u. SPY RSI=66.2 sugeruje risk_on momentum — warunki sprzyjają swing-long, ale wszystkie analityczne strategie są uśpione lub auto-pruned. Crypto-momentum usunięta dokładnie gdy ETH oferuje statystycznie wysokie prawdopodobieństwo odbicia (RSI <25 historycznie >60% trafność 48h forward). To jest najkosztowniejszy gap operacyjny dziś.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "enabled": true,
+        "size_multiplier": 1.0,
+        "side_bias": "long",
+        "rationale": "ETH RSI=24.3 (głęboko oversold, drugi dzień) jest dokładnie scenariuszem docelowym dla crypto-momentum. 41 dni bez trade'ów może być wynikiem blokad systemowych (PDT/concentration/drawdown guards), nie braku sygnałów. Proponuję re-enable z bazowym size 1.0x. Jeśli hard_safety blokuje ten override, operator powinien manualnie wyczyścić auto_pruned_at i hard_safety w state.json — ETH RSI 24 jest zbyt silnym sygnałem żeby przegapić."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Zombie-prune policy: defer prune when matching RSI alert is active",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Dziś crypto-momentum auto-pruned za 41 dni ciszy, tego samego dnia ETH RSI=24.3 wysyła pre-signal. Policy nie ma exception gate dla aktywnego sygnału. Efekt: tracimy potencjalne wejście w statystycznie silny setup. Prune powinien być odraczany o 7 dni gdy rsi_alerts zawiera matching asset_class signal.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-05-29",
+      "implementation_sketch": "W adapter.py przed pętlą zombie-prune: zbuduj set active_signal_asset_classes z today_stats['rsi_alerts'] (ETH/USD → crypto, SPY/AAPL → stocks). Dla każdej strategii-kandydata do prune: jeśli jej asset_class jest w tym secie, ustaw state['strategies'][name]['prune_deferred_until'] = (today + 7 days).isoformat() i zaloguj PRUNE_DEFERRED zamiast PRUNED. Dodaj pole prune_deferred_until do schema. Files: learning-loop/adapter.py (zombie-prune loop ~line 200-250), learning-loop/state.json (nowe pole prune_deferred_until)."
+    },
+    {
+      "title": "open_positions fetch gap: positions missing when equity_gap fires",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Equity -$1,899 dziś ale open_positions=[] w today_stats pomimo 4 otwartych pozycji allokatora (widocznych jako open_status w fill_rate.unknown). Senior PM operuje bez informacji o P&L otwartych pozycji — equity_gap_alert nie może wyjaśnić delty. Likely bug: analyzer.py może nie mieć ALPACA_API_KEY w env lub ma silent empty-response.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-05-28",
+      "implementation_sketch": "W learning-loop/analyzer.py: dodaj explicit debug log przy fetch /v2/positions — loguj HTTP status i len(response). Sprawdź czy ALPACA_API_KEY jest w .github/workflows/daily-learning.yml env block. Porównaj z exit-monitor który poprawnie widzi pozycje. Fix: upewnić się że open_positions fetch jest wywoływane PRZED equity_gap_alert i że auth error jest logowany (nie swallowed). Files: learning-loop/analyzer.py."
+    }
+  ],
+  "confidence": "medium"
+}
