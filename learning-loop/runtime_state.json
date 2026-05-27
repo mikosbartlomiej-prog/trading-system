@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97019.95,
-    "current_intraday_pnl": -1222.729999999996,
-    "current_intraday_pnl_pct": -0.012446016334244912,
+    "current_equity": 97370.4,
+    "current_intraday_pnl": -872.2799999999988,
+    "current_intraday_pnl_pct": -0.008878829445613646,
     "date": "2026-05-27",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 1222.729999999996,
+    "giveback_usd": 872.2799999999988,
     "intraday_peak_equity": 98393.75,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-05-27T10:36:55.766422+00:00",
+    "last_update_at": "2026-05-27T14:00:29.304917+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-27T01:51:24.422607+00:00",
@@ -27,8 +27,8 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.03647,
-      "last_seen_at": "2026-05-27T10:36:55.767211+00:00",
+      "last_pct": 0.01884,
+      "last_seen_at": "2026-05-27T14:00:29.305679+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
@@ -45,8 +45,8 @@
     },
     "NOW": {
       "first_seen_at": "2026-05-21T14:27:38.387537+00:00",
-      "last_pct": -0.02756,
-      "last_seen_at": "2026-05-27T10:36:55.768513+00:00",
+      "last_pct": -0.00192,
+      "last_seen_at": "2026-05-27T14:00:29.306264+00:00",
       "peak_pct": 0.022950000000000005
     },
     "NVDA": {
@@ -81,8 +81,8 @@
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": -0.00159,
-      "last_seen_at": "2026-05-26T17:39:04.238567+00:00",
+      "last_pct": 3e-05,
+      "last_seen_at": "2026-05-27T14:00:29.306800+00:00",
       "peak_pct": 0.00756
     },
     "USO": {
