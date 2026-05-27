@@ -1,0 +1,54 @@
+{
+  "plan_date": "2026-05-27",
+  "executed_at": "2026-05-27T14:00:29Z",
+  "n_placed": 5,
+  "n_skipped": 0,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "NOW",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "EXIT MARKET 169",
+      "attempted_at": "2026-05-27T14:00:15Z",
+      "alpaca_order_id": "eb68bbd7-4695-4d99-9cb3-e5cfc2a9984b"
+    },
+    {
+      "symbol": "SMH",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 29.0000 @ $598.58",
+      "attempted_at": "2026-05-27T14:00:16Z",
+      "alpaca_order_id": "31f8b302-484c-49d7-9d7d-6caa12f0ae9a"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 13.0000 @ $750.38",
+      "attempted_at": "2026-05-27T14:00:18Z",
+      "alpaca_order_id": "90a14f9a-9dc2-41a8-bbdd-34540352ffc2"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 13.0000 @ $729.76",
+      "attempted_at": "2026-05-27T14:00:19Z",
+      "alpaca_order_id": "958e05d1-7409-4028-a933-9ef1ef300ffc"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "placed",
+      "reason": "BUY 19.0000 @ $406.51",
+      "attempted_at": "2026-05-27T14:00:28Z",
+      "alpaca_order_id": "1533a308-0559-4ed7-9cdc-d8c517ec08bc"
+    }
+  ]
+}

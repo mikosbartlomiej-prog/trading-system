@@ -43,3 +43,18 @@
 [01:45:26 INFO]   summary: 5 actionable + 3 hold; passed=5  failed=0
 [01:45:26 INFO] ── Step 8: plan complete ──
 [01:45:26 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[14:00:15 INFO] ============================================================
+[14:00:15 INFO] execute_orders() — auto-execute path
+[14:00:15 INFO] ============================================================
+[14:00:15 INFO]   market_status: open=True reason=open
+[14:00:16 INFO]     NOW EXIT placed: EXIT MARKET 169
+[14:00:17 INFO]     SMH BUY: derived qty=29 from target=$17,724 @ $598.58 (no prior position)
+[14:00:18 INFO]     SMH BUY placed: BUY 29.0000 @ $598.58  id=31f8b302-484c-49d7-9d7d-6caa12f0ae9a
+[14:00:18 INFO]     SPY BUY: derived qty=13 from target=$9,847 @ $750.38 (no prior position)
+[14:00:19 INFO]     SPY BUY placed: BUY 13.0000 @ $750.38  id=90a14f9a-9dc2-41a8-bbdd-34540352ffc2
+[14:00:19 INFO]     QQQ BUY: derived qty=13 from target=$9,847 @ $729.76 (no prior position)
+[14:00:28 INFO]     QQQ BUY placed: BUY 13.0000 @ $729.76  id=958e05d1-7409-4028-a933-9ef1ef300ffc
+[14:00:28 INFO]     GLD BUY: derived qty=19 from target=$7,877 @ $406.51 (no prior position)
+[14:00:29 INFO]     GLD BUY placed: BUY 19.0000 @ $406.51  id=1533a308-0559-4ed7-9cdc-d8c517ec08bc
+[14:00:29 INFO]   execution complete: 5 placed, 0 skipped, 0 failed
