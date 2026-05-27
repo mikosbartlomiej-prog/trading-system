@@ -48,8 +48,8 @@ class TestWorstOrdering(unittest.TestCase):
 class TestDecisionId(unittest.TestCase):
     def test_format(self):
         did = new_decision_id()
-        # 20260527T193045-a3f9b1
-        self.assertRegex(did, r"^\d{8}T\d{6}-[a-f0-9]{6}$")
+        # 20260527T193045123456-a3f9b1c2 (microsecond + 8 hex random)
+        self.assertRegex(did, r"^\d{8}T\d{12}-[a-f0-9]{8}$")
 
     def test_uniqueness(self):
         ids = {new_decision_id() for _ in range(1000)}

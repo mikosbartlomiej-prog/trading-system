@@ -190,7 +190,11 @@ def main() -> int:
         except Exception as e:
             print(f"Audit emission failed (non-fatal): {e}")
 
-    return 0 if unknown_count == 0 else 2
+    # v3.10 fix: workflow SUCCEEDED in its job (scan + JSONL emit + commit).
+    # Findings (UNKNOWN orders) are reported via JSONL + stdout, not via exit
+    # code. Previously returning 2 caused workflow to email "FAILED" when it
+    # actually completed and discovered an anomaly — confusing for operator.
+    return 0
 
 
 if __name__ == "__main__":

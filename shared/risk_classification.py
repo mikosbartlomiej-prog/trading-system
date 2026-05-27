@@ -102,11 +102,15 @@ def worst(*verdicts: RiskVerdict) -> RiskVerdict:
 def new_decision_id() -> str:
     """Generate a sortable, unique decision ID for audit correlation.
 
-    Format: <ts_compact>-<rand6>
-    Example: 20260527T193045-a3f9b1
-    Sortable lexicographically by time; collision-resistant for ~10^9 calls/sec."""
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    rand = secrets.token_hex(3)  # 6 hex chars = 24 bits
+    Format: <ts_compact_with_us>-<rand8>
+    Example: 20260527T193045123456-a3f9b1c2
+    Microsecond timestamp + 32 random bits = collision-resistant for 10^6+
+    calls/second (birthday paradox safe to ~65k IDs/sec).
+
+    Original 24-bit random was caught by test_uniqueness CI failure at
+    1000 IDs/run (~3% collision rate)."""
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+    rand = secrets.token_hex(4)  # 8 hex chars = 32 bits
     return f"{ts}-{rand}"
 
 
