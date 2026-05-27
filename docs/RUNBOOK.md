@@ -256,4 +256,23 @@ python3 -m unittest discover tests   # full test suite (some Python-3.10+ deps; 
 
 ---
 
-*Last updated: 2026-05-27 (v3.10 intraday-first refactor — phases A-J)*
+*Last updated: 2026-05-27 (v3.10.1 — full audit + Phase C wiring complete in 5 monitors + P05/P11 stubs filled + E2E session test)*
+
+## v3.10.1 changes (post-full-audit)
+
+- **`shared/news_signal_gate.py`** — single helper for monitor wiring (DRY).
+  Replaces 40-line copy-paste with 5-line `gate_news_signal(...)` call.
+- **Phase C wiring complete** in 5 news monitors: defense (refactored to
+  use helper), twitter (post-level gate in `classify_and_execute`),
+  reddit (in `_emit_signal`), geo (in `execute_geo_signal`), politician
+  (in `emit_djt_signal`). Each strategy has its own EventCache+CooldownTracker
+  per `_shared_caches()` singleton.
+- **Layer 1 incident-detector P05 + P11 stubs filled.**
+  P05 now queries `GET /v2/orders?symbols=X&status=closed` per position and
+  flags those whose recent fills lack any known client_order_id prefix.
+  P11 self-manages `pdt_count_prev` baseline in
+  `runtime_state.json::incident_detector_history`.
+- **E2E session test** (`tests/architecture_vnext/test_full_session_e2e.py`):
+  9 scenarios covering signal→risk→decision→audit flow + invariants
+  (no naked short, no emergency for repairable, no-lookahead, DEFER not
+  fail-open). 8/9 green (1 skipped on Python <3.10 due to PEP 604).

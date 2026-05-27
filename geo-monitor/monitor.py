@@ -354,6 +354,33 @@ def execute_geo_signal(signal: dict) -> bool:
         if has_open_position(sym):
             print(f"  >>> {signal['action']} {sym} pominięty (otwarta pozycja)")
             return False
+        # v3.10.1 — signal_confirmation gate
+        try:
+            from news_signal_gate import gate_news_signal, mark_signal_acted
+            strength = min(1.0, max(0.0, float(signal.get("confidence", 0.6))))
+            v = gate_news_signal(
+                symbol=sym, side=signal["action"],
+                signal_strength=strength,
+                headline=signal.get("headline", "")[:200],
+                source=f"geo/{signal.get('source', 'newsapi')}",
+                published_at=signal.get("published_at"),
+                strategy="geo-news",
+            )
+            v_str = v.verdict.value
+            if v_str == "BLOCK":
+                print(f"  >>> {signal['action']} {sym} BLOCKED — {v.reason}")
+                return False
+            if v_str == "ALERT_ONLY":
+                print(f"  >>> {signal['action']} {sym} ALERT_ONLY — {v.reason}")
+                try: notify_signal(signal, alert_sent=True)
+                except Exception: pass
+                return False
+            if v_str == "DOWNSIZE":
+                print(f"  >>> {signal['action']} {sym} DOWNSIZED × {v.size_multiplier:.2f}")
+                signal["size_usd"] = round(signal.get("size_usd", 8000) * v.size_multiplier)
+            mark_signal_acted(sym, "geo-news")
+        except Exception as e:
+            print(f"  geo signal-gate error ({type(e).__name__}: {e}) — proceeding")
         order = execute_stock_signal(signal)
         if order and order.get("id"):
             print(f"  Order {signal['action']} {sym}: id={order['id']} qty={order.get('qty')} @ ${order.get('limit_price')}")

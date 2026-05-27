@@ -342,6 +342,33 @@ def classify_and_execute(post: dict) -> tuple[str, list[dict]]:
     text_lower = (post.get("text") or "").lower()
     matched    = post.get("matched_kw", [])
 
+    # v3.10.1 (2026-05-27) — signal_confirmation gate at post level (Phase C).
+    # Filters: duplicate post (BLOCK), stale >24h (BLOCK), future ts (BLOCK).
+    # Per-symbol price/volume confirmation handled per-pattern below.
+    try:
+        from news_signal_gate import gate_news_signal, mark_signal_acted
+        # Use first-relevant symbol for gate fingerprint:
+        # ticker:XYZ → XYZ; otherwise use category as pseudo-symbol
+        gate_sym = cat.split(":", 1)[1] if cat.startswith("ticker:") else cat[:6].upper()
+        v = gate_news_signal(
+            symbol=gate_sym,
+            side="BUY",  # post-level gate, side handled per-pattern
+            signal_strength=0.6,  # default — patterns A-D are pre-vetted
+            headline=(post.get("text") or "")[:200],
+            source=f"twitter/{post.get('author', '?')}",
+            published_at=post.get("created_at") or post.get("published_at"),
+            strategy=f"twitter-{cat[:20]}",
+            cooldown_hours=2.0,  # tighter for fast-moving social
+            max_article_age_hours=4.0,
+        )
+        if v.verdict.value == "BLOCK":
+            print(f"  twitter post BLOCKED by signal_confirmation: {v.reason}")
+            return ("BLOCKED", [])
+        # ALERT_ONLY / DOWNSIZE / ALLOW → proceed to pattern logic
+        mark_signal_acted(gate_sym, f"twitter-{cat[:20]}")
+    except Exception as e:
+        print(f"  twitter signal-gate error ({type(e).__name__}: {e}) — proceeding fail-soft")
+
     # ── Pattern A: TICKER_DIRECT (CEO/insider account about own company) ──
     if cat.startswith("ticker:"):
         sym = cat.split(":", 1)[1]

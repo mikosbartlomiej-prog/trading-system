@@ -826,6 +826,42 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
         print(f"  {ticker}: pominięty (concentration {combined:.1f}% > 40%)")
         return False
 
+    # v3.10.1 (2026-05-27) — signal_confirmation gate (Phase C wiring).
+    # Reddit-specific: high noise; we BLOCK duplicate posts + future ts,
+    # DOWNSIZE on weak signals + no confirmation.
+    try:
+        from news_signal_gate import gate_news_signal, mark_signal_acted
+        # Reddit "strength" derived from upvotes_ratio + sub_weight + curator_size_mult
+        strength = min(1.0, max(0.0,
+            float(sig.get("upvotes_ratio", 0.6)) * float(sig.get("weight", 1.0))
+        ))
+        v = gate_news_signal(
+            symbol=ticker, side=sig.get("side", "BUY"),
+            signal_strength=strength,
+            headline=(sig.get("title") or sig.get("permalink", ""))[:200],
+            source=f"reddit/{sig.get('subreddit', '?')}",
+            published_at=sig.get("created_utc_iso") or sig.get("event_ts"),
+            strategy="reddit-sentiment",
+            cooldown_hours=6.0,  # reddit has 30-min cron, longer cooldown
+            max_article_age_hours=12.0,
+        )
+        v_str = v.verdict.value
+        if v_str == "BLOCK":
+            print(f"  {ticker}: BLOCKED by signal_confirmation — {v.reason}")
+            return False
+        if v_str == "ALERT_ONLY":
+            print(f"  {ticker}: ALERT_ONLY — {v.reason} (email only, no order)")
+            try: notify_signal(sig, alert_sent=True)
+            except Exception: pass
+            return False
+        if v_str == "DOWNSIZE":
+            print(f"  {ticker}: DOWNSIZED × {v.size_multiplier:.2f} — {v.reason}")
+            sized = round(sized * v.size_multiplier)
+            sig["size_usd"] = sized
+        mark_signal_acted(ticker, "reddit-sentiment")
+    except Exception as e:
+        print(f"  {ticker}: signal-gate error ({type(e).__name__}: {e}) — proceeding fail-soft")
+
     # event_scoring was designed for news monitors (twitter/defense/geo)
     # with REAL market_reaction data. For Reddit it would use placeholder
     # values (atr=0.5, vol=1.0, gap=0.0) → returns WAIT_FOR_CONFIRMATION

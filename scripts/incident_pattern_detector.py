@@ -262,12 +262,66 @@ def p04_stale_plan_executed(execution_log: Path, positions: list[dict]) -> list[
 
 
 def p05_unknown_position_origin(positions: list[dict]) -> list[dict]:
-    """Position has client_order_id prefix not in KNOWN_COID_PREFIXES.
-    Note: position object doesn't include coid directly; would need order
-    lookup. Use coid-via-recent-orders heuristic from forensic script."""
-    # For now, just flag positions whose symbol has no recent order in our
-    # known automation paths. Implementation deferred to forensic workflow.
-    return []  # Stub — full check requires GET /v2/orders per symbol
+    """v3.10.1 (2026-05-27): position has no recent order with known coid
+    prefix in last 7d. Implementation queries GET /v2/orders?symbols=X
+    for each position symbol (one call per position, batched).
+
+    Skips check if Alpaca creds missing (fail-soft → empty findings)."""
+    if not alpaca_headers()["APCA-API-KEY-ID"]:
+        return []
+    if not positions:
+        return []
+
+    findings = []
+    cutoff = (_now_utc() - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    for p in positions:
+        sym = (p.get("symbol") or "").upper()
+        if not sym:
+            continue
+        try:
+            r = requests.get(
+                f"{ALPACA_BASE}/v2/orders",
+                headers=alpaca_headers(),
+                params={"status": "closed", "symbols": sym,
+                        "after": cutoff, "limit": 50, "direction": "desc"},
+                timeout=8,
+            )
+            if r.status_code != 200:
+                continue
+            orders = r.json() or []
+            # Look at filled orders only — that's how position originated
+            filled = [o for o in orders if o.get("status") == "filled"]
+            if not filled:
+                # Position exists but no fills in 7d — old position, not anomaly
+                continue
+            # Check if ANY filled order has a known coid prefix
+            has_known = False
+            for o in filled:
+                coid = (o.get("client_order_id") or "")
+                if any(coid.startswith(p_) for p_ in KNOWN_COID_PREFIXES):
+                    has_known = True
+                    break
+            if not has_known:
+                # Most recent fill — report its coid for forensic visibility
+                most_recent = filled[0]
+                findings.append({
+                    "pattern": "P05_unknown_position_origin",
+                    "severity": WARN,
+                    "detail": (
+                        f"{sym}: position exists but no recent fill has a known "
+                        f"client_order_id prefix. Most recent coid="
+                        f"{(most_recent.get('client_order_id') or '<missing>')[:50]}. "
+                        f"Possible sources: manual Alpaca dashboard order, external "
+                        f"session, or deprecated automation prefix."
+                    ),
+                    "evidence": f"alpaca orders for {sym}, status=filled, 7d window",
+                    "symbol": sym,
+                })
+        except Exception:
+            continue
+
+    return findings[:5]  # cap to avoid spam if many unknowns
 
 
 def p06_bracket_sl_no_recreation(audit_events: list[dict], positions: list[dict]) -> list[dict]:
@@ -434,32 +488,53 @@ def p10_plan_position_drift(execution_log: Path, positions: list[dict]) -> list[
     return findings[:3]  # cap to avoid spam
 
 
-def p11_pdt_jump(runtime_state: dict, history_state: dict | None) -> list[dict]:
-    """daytrade_count jumped >1 in 30 min = multiple intraday closes."""
+def p11_pdt_jump(runtime_state: dict) -> list[dict]:
+    """v3.10.1 (2026-05-27): daytrade_count jumped >1 in last detector tick.
+    History persisted via runtime_state.json::incident_detector_history
+    (self-managed — detector writes its own baseline each run)."""
     if not runtime_state:
         return []
-    pdt_now = (runtime_state.get("pdt_status") or {}).get("daytrade_count")
+    pdt_status = runtime_state.get("pdt_status") or {}
+    pdt_now = pdt_status.get("daytrade_count")
     if pdt_now is None:
         return []
-    # Compare with state from 30 min ago — proxy via state in repo (git would
-    # work but expensive). Skip if no baseline.
-    if history_state is None:
-        return []
-    pdt_prev = (history_state.get("pdt_status") or {}).get("daytrade_count")
-    if pdt_prev is None:
-        return []
-    if (pdt_now - pdt_prev) > 1:
-        return [{
+
+    # Read previous baseline (set by detector itself last run)
+    hist = (runtime_state.get("incident_detector_history") or {})
+    pdt_prev = hist.get("pdt_count_prev")
+    pdt_prev_ts = hist.get("pdt_prev_ts")
+
+    findings = []
+    # Only fire if prev exists AND jumped >1 (skip first detector run)
+    if pdt_prev is not None and (pdt_now - pdt_prev) > 1:
+        findings.append({
             "pattern": "P11_pdt_jump",
             "severity": WARN,
             "detail": (
                 f"daytrade_count {pdt_prev} → {pdt_now} (jump +{pdt_now-pdt_prev}) "
-                f"in last 30min. Multiple intraday close/reopen = potential PDT "
-                f"lockout risk."
+                f"since last detector tick ({pdt_prev_ts}). Multiple intraday "
+                f"close/reopen = potential PDT lockout risk (lockout at 3 in 5d)."
             ),
             "evidence": "runtime_state.json::pdt_status.daytrade_count",
-        }]
-    return []
+            "delta": pdt_now - pdt_prev,
+        })
+
+    # Persist current pdt_count for next-tick comparison
+    # (file write is best-effort; failure doesn't block findings)
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        path = _REPO_ROOT / "learning-loop" / "runtime_state.json"
+        if path.exists():
+            data = _json.loads(path.read_text(encoding="utf-8"))
+            data.setdefault("incident_detector_history", {})
+            data["incident_detector_history"]["pdt_count_prev"] = pdt_now
+            data["incident_detector_history"]["pdt_prev_ts"] = _now_utc().isoformat()
+            path.write_text(_json.dumps(data, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+    return findings
 
 
 def p12_concentration_violation(positions: list[dict], account: dict | None) -> list[dict]:
@@ -518,7 +593,7 @@ def run_all_checks() -> list[dict]:
     findings.extend(p08_routine_budget_exhausted_pre_noon(runtime))
     findings.extend(p09_blackhole_hour(health))
     findings.extend(p10_plan_position_drift(execution_log, positions))
-    findings.extend(p11_pdt_jump(runtime, None))  # history baseline TBD
+    findings.extend(p11_pdt_jump(runtime))  # v3.10.1: self-managed history in runtime_state
     findings.extend(p12_concentration_violation(positions, account))
 
     return findings

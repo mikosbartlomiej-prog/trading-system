@@ -339,6 +339,32 @@ def emit_djt_signal(signal: dict, account_ctx: dict) -> dict:
     body = "\n".join(body_lines)
 
     if AUTO_EXECUTE_DJT and side in ("BUY", "SELL"):
+        # v3.10.1 — signal_confirmation gate (Phase C)
+        try:
+            from news_signal_gate import gate_news_signal, mark_signal_acted
+            strength = min(1.0, max(0.0, float(signal.get("curator_score", 0.6))))
+            v = gate_news_signal(
+                symbol=ticker, side=side,
+                signal_strength=strength,
+                headline=f"DJT Form 4 — {signal.get('curator_rationale', '')[:150]}",
+                source=f"politician/djt-{signal.get('filer', '?')}",
+                published_at=signal.get("filed_at"),
+                strategy="politician-djt",
+                cooldown_hours=24.0,  # DJT moves long-horizon
+                max_article_age_hours=48.0,
+            )
+            if v.verdict.value == "BLOCK":
+                print(f"  DJT signal {ticker} BLOCKED: {v.reason}")
+                return {"sent": False, "ticker": ticker, "reason": v.reason}
+            if v.verdict.value == "ALERT_ONLY":
+                print(f"  DJT signal {ticker} ALERT_ONLY: {v.reason}")
+                return {"sent": True, "ticker": ticker, "alert_only": True}
+            if v.verdict.value == "DOWNSIZE":
+                size_usd = round(size_usd * v.size_multiplier)
+                print(f"  DJT signal {ticker} DOWNSIZED × {v.size_multiplier:.2f} → ${size_usd}")
+            mark_signal_acted(ticker, "politician-djt")
+        except Exception as e:
+            print(f"  DJT signal-gate error ({type(e).__name__}: {e}) — proceeding")
         try:
             from alpaca_orders import execute_stock_signal
             sig = {
