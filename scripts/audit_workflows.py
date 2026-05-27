@@ -82,6 +82,11 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # Cron */5 24/7. Allowed write scope = incidents/ + journal/autonomy/
     # + config/capital_deployment.json (operator-reversible flip).
     "incident-pattern-detector.yml",
+    # v3.10 (2026-05-27) — one-shot op-correction for 2026-05-27 NOW SHORT
+    # incident. Cron '31 13 28 5 *' fires only on 2026-05-28 13:31 UTC.
+    # Commits audit JSONL of buy-to-cover decision. Can be deleted after
+    # successful run (kept for historical traceability).
+    "cover-now-short-20260528.yml",
 }
 
 # Workflows allowed to create PRs.

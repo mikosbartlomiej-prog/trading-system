@@ -1,0 +1,71 @@
+name: Cover NOW SHORT — one-shot 2026-05-28 13:31 UTC
+
+# Background: 2026-05-27 stale-plan incident left NOW position as naked
+# SHORT -169 shares (~$16k). Operator's manual buy-to-cover at 20:32 UTC
+# was canceled by Alpaca (market closed, no extended_hours). This workflow
+# fires ONCE at 13:31 UTC on 2026-05-28 (1 min after market open) to
+# cover the position via the v3.10 safe_close infrastructure.
+#
+# Idempotent: if NOW position no longer exists (or is not short) the
+# script exits 0 with no action. Safe to re-trigger or leave in place.
+#
+# After 2026-05-28: this workflow can be deleted (cron only matches that
+# specific day).
+
+on:
+  schedule:
+    # Specific date+time: May 28, 13:31 UTC. Only fires on that day.
+    - cron: '31 13 28 5 *'
+  workflow_dispatch:
+
+concurrency:
+  group: cover-now-short
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # for audit JSONL commit
+
+jobs:
+  cover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONIOENCODING: utf-8
+      LC_ALL: C
+      LANG:  C
+      ALPACA_API_KEY:     ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY:  ${{ secrets.ALPACA_SECRET_KEY }}
+      GMAIL_USER:         ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install requests
+      - name: Cover NOW SHORT
+        run: python3 scripts/cover_now_short_20260528.py
+      - name: Commit audit journal
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin main && git pull --rebase origin main || true
+            git add journal/autonomy/ 2>/dev/null || true
+            if git diff --cached --quiet; then
+              echo "No audit changes to commit"
+              exit 0
+            fi
+            git commit -m "op-correction: NOW SHORT cover $(date -u +%Y-%m-%d_%H%M) [automerge]" || true
+            if git push origin main; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed — retrying"
+            sleep $((attempt * 3))
+          done
