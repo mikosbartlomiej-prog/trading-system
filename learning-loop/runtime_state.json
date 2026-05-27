@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97370.4,
-    "current_intraday_pnl": -872.2799999999988,
-    "current_intraday_pnl_pct": -0.008878829445613646,
+    "current_equity": 97358.05,
+    "current_intraday_pnl": -884.6299999999901,
+    "current_intraday_pnl_pct": -0.009004538556969234,
     "date": "2026-05-27",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 872.2799999999988,
+    "giveback_usd": 884.6299999999901,
     "intraday_peak_equity": 98393.75,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-05-27T14:00:29.304917+00:00",
+    "last_update_at": "2026-05-27T14:03:24.108621+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-27T01:51:24.422607+00:00",
@@ -27,8 +27,8 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.01884,
-      "last_seen_at": "2026-05-27T14:00:29.305679+00:00",
+      "last_pct": 0.020099999999999996,
+      "last_seen_at": "2026-05-27T14:03:24.109391+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
@@ -39,14 +39,14 @@
     },
     "GLD": {
       "first_seen_at": "2026-05-15T14:50:46.732993+00:00",
-      "last_pct": -0.00225,
-      "last_seen_at": "2026-05-26T17:39:04.236373+00:00",
+      "last_pct": 0.00134,
+      "last_seen_at": "2026-05-27T14:03:24.110002+00:00",
       "peak_pct": 0.00942
     },
     "NOW": {
       "first_seen_at": "2026-05-21T14:27:38.387537+00:00",
-      "last_pct": -0.00192,
-      "last_seen_at": "2026-05-27T14:00:29.306264+00:00",
+      "last_pct": -0.00523,
+      "last_seen_at": "2026-05-27T14:03:24.110586+00:00",
       "peak_pct": 0.022950000000000005
     },
     "NVDA": {
@@ -69,20 +69,20 @@
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
-      "last_pct": -0.00032,
-      "last_seen_at": "2026-05-26T17:39:04.238050+00:00",
+      "last_pct": 0.0009299999999999999,
+      "last_seen_at": "2026-05-27T14:03:24.111158+00:00",
       "peak_pct": 0.01044
     },
     "SMH": {
       "first_seen_at": "2026-05-15T14:50:46.734446+00:00",
-      "last_pct": 0.00665,
-      "last_seen_at": "2026-05-18T18:15:05.824078+00:00",
+      "last_pct": -0.00022000000000000003,
+      "last_seen_at": "2026-05-27T14:03:24.111722+00:00",
       "peak_pct": 0.0124
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": 3e-05,
-      "last_seen_at": "2026-05-27T14:00:29.306800+00:00",
+      "last_pct": 0.00112,
+      "last_seen_at": "2026-05-27T14:03:24.112252+00:00",
       "peak_pct": 0.00756
     },
     "USO": {
