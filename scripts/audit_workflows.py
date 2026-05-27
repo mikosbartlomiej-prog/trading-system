@@ -75,6 +75,13 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # Allowed write scope = ONLY journal/autonomy/ (enforced by workflow's
     # explicit `git add journal/autonomy/`).
     "forensic-position-origin.yml",
+    # v3.9.10 Layer 1 (2026-05-27) — incident-pattern-detector commits
+    # learning-loop/incidents/<date>.md + audit JSONL + (rarely) flips
+    # config/capital_deployment.json::auto_execute_rebalance=false on
+    # CRITICAL finding (only when INCIDENT_AUTO_DISABLE=true env set).
+    # Cron */5 24/7. Allowed write scope = incidents/ + journal/autonomy/
+    # + config/capital_deployment.json (operator-reversible flip).
+    "incident-pattern-detector.yml",
 }
 
 # Workflows allowed to create PRs.

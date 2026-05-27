@@ -1,0 +1,75 @@
+name: Incident Pattern Detector — Layer 1 real-time anomaly watcher
+
+on:
+  schedule:
+    # Every 5 min, 24/7 — catches all incident classes (allocator @ 13:35,
+    # remediation @ */15, exit-monitor */5, governor every tick)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Skip email/audit/auto-disable'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: incident-detector
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      PYTHONIOENCODING: utf-8
+      LC_ALL: C
+      LANG:  C
+      ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+      GMAIL_USER:        ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      NOTIFY_EMAIL:      ${{ secrets.NOTIFY_EMAIL }}
+      # Conservative default: auto-disable is OFF. Operator flips to true
+      # when confident in detector's false-positive rate.
+      INCIDENT_AUTO_DISABLE: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install requests
+      - name: Run incident pattern detector
+        id: detect
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          python3 scripts/incident_pattern_detector.py $DRY
+        continue-on-error: true   # non-zero exit on CRITICAL — still want commit step
+      - name: Commit incident report + audit + config flips
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Only commit if there are actual changes (no findings = no-op)
+          for attempt in 1 2 3; do
+            git fetch origin main && git pull --rebase origin main || true
+            git add learning-loop/incidents/ journal/autonomy/ config/capital_deployment.json 2>/dev/null || true
+            if git diff --cached --quiet; then
+              echo "No incident artifacts to commit"
+              exit 0
+            fi
+            git commit -m "incident-detector: scan $(date -u +%Y-%m-%d_%H%M) [automerge]" || true
+            if git push origin main; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed — retrying"
+            sleep $((attempt * 3))
+          done
+          echo "Push failed after 3 attempts (non-fatal — next run will retry)"
