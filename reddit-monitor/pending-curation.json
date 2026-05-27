@@ -1,72 +1,60 @@
 {
-  "narrative": "Zerowa emisja — spike_ratio=99 u wszystkich 16 kandydatów to artefakt braku baseline (rolling_avg_7d=0 w całej liście, monitor nie ma historii i każdy pierwszy mention dostaje 99 by default). Realna historia dnia to MU +19% po upgrade UBS do $1625 na AI/HBM popycie — ale MU nie ma na whitelist i wszystkie inne tickery (AMD, MSFT, GOOGL, META, AVGO, AMZN) to przypadkowe wzmianki w wątkach o Micronie, nie samodzielne sygnały. PLTR SHORT jedyny z konkretną tezą (25% YTD dół, poniżej 200D MA, narracja surveillance martwa pre-midterms), ale ruch już zrealizowany i VIX=17 risk-on środowisko nie sprzyja shortom — FOMO entry, odrzut.",
+  "narrative": "Wszystkie 13 kandydatów to artefakty jednego viralowego posta MU +19% (UBS PT $1,625 — AI memory rerate); spike_ratio 99 = błąd pierwszego dnia (rolling_avg_7d=0), nie prawdziwy spike. Prawdziwy trade to MU, którego nie ma na whiteliście. PLTR short ma konkretną tezę (200D MA break, -25% YTD, $300B cap przy zerowej ekspozycji komercyjnej), ale risk-on VIX=17 i portfolio już shortuje NOW ze stratą -1.52% — nakładanie shortów bez świeżego katalizatora w tym środowisku to zły timing.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "AMD",
-      "reason": "Incydentalne wzmianki w wątkach o MU (+19%); brak świeżego AMD-specificznego katalizatora; AMD już w portfelu na 18% equity — concentration cap."
+      "reason": "Już 17.9% equity w AMD (+ SMH 17.8% = 35.7% semis łącznie) — concentration cap; wzmianki incydentalne w poście MU, zero katalizatora AMD-specific."
     },
     {
       "ticker": "AVGO",
-      "reason": "SHORT kontra-trendowy: semis/AI ekosystem rośnie w dniu MU +19%; brak bearish AVGO narracji — tylko wymienione jako jeden z 6 kandydatów 'co kupić po MU'."
-    },
-    {
-      "ticker": "META",
-      "reason": "4 incydentalne wzmianki; jeden post jawnie klasyfikuje META jako laggard do sprzedania; brak świeżego katalizatora META."
+      "reason": "Side SELL_SHORT błędnie wyekstrahowany — posty bullish AI/semis, AVGO wymieniony jako potencjalny long beneficjent AI; fałszywa strona sygnału."
     },
     {
       "ticker": "PLTR",
-      "reason": "Teza ma treść (200D MA break, -25% YTD, surveillance narracja nie do sprzedania pre-midterms, porównanie do C3.AI $1.5bn vs $300bn PLTR) ale 25% ruchu już zrealizowane = FOMO-short; VIX=17 risk-on nie sprzyja; KILL."
+      "reason": "Teza niedźwiedzia ma merit (200D MA break, -25% YTD, wycena $300B vs C3.ai $1.5B), ale VIX=17 risk-on + portfolio już shortuje NOW ze stratą; timing zły, nie wchodzić w dodatkowe shorty w tym środowisku."
     },
     {
-      "ticker": "ARM",
-      "reason": "1 wzmianka — historyczny name-drop ('dobrze mi poszło na ARM'); zero świeżego katalizatora."
-    },
-    {
-      "ticker": "SPY",
-      "reason": "Posty to 5-letnia retrospektywa Reddit ETF z 2021 — dane historyczne, nie sygnał tradingowy; SPY już w portfelu."
-    },
-    {
-      "ticker": "VTI",
-      "reason": "Ten sam retrospektywny post co SPY; treść historyczna, brak sygnału."
-    },
-    {
-      "ticker": "LLM",
-      "reason": "Fałszywa ekstrakcja tickera — 'LLM' w kontekście postów = Large Language Model (technologia AI), nie notowany instrument giełdowy."
+      "ticker": "META",
+      "reason": "4 incydentalne wzmianki w poście o MU; tezy długoterminowe (AMD warrant structure) — brak świeżego 1-72h katalizatora."
     },
     {
       "ticker": "MSFT",
-      "reason": "13 wzmianek ale wszystkie incydentalne w wątkach semi/AI; jeden post wprost: 'thinking of offloading my laggards (MSFT and META)' — sentyment mieszany, brak katalizatora."
-    },
-    {
-      "ticker": "AAPL",
-      "reason": "UNCLEAR side, skew=null, 2 incydentalne wzmianki; zero katalizatora."
-    },
-    {
-      "ticker": "AMZN",
-      "reason": "Wzmianki o historycznych zakupach ('bought at bargain bin from last year's April crash'); brak świeżego katalizatora."
-    },
-    {
-      "ticker": "NVDA",
-      "reason": "UNCLEAR side, incydentalne wzmianki w semiconductor FOMO wątkach; brak świeżego NVDA katalizatora."
-    },
-    {
-      "ticker": "TSLA",
-      "reason": "UNCLEAR side; wzmianka wyłącznie w retrospektywnej tabeli (+45% od 2021); nie jest sygnałem tradingowym."
-    },
-    {
-      "ticker": "MA",
-      "reason": "Fałszywa ekstrakcja tickera — 'MA' w poście PLTR oznacza '200D MA' (Moving Average), nie Mastercard."
-    },
-    {
-      "ticker": "CRM",
-      "reason": "1 incydentalna wzmianka w retrospektywnym poście; brak katalizatora."
+      "reason": "Incydentalne wzmianki w semiconductor FOMO discussion; brak katalizatora MSFT-specific."
     },
     {
       "ticker": "GOOGL",
-      "reason": "Top post to numerologiczna analiza szczęśliwych liczb feng shui w cenie zamknięcia (388.88 = 八八八八 Cantonese lucky numbers) — nie jest to katalizator handlowy; pozostałe wzmianki incydentalne."
+      "reason": "Najlepszy post to numerologia Cantonese (closing price 388.88 = 'auspicious wealth') — kompletny nonsens analityczny; pozostałe wzmianki incydentalne."
+    },
+    {
+      "ticker": "ARM",
+      "reason": "1 incydentalna wzmianka w poście o space stocks; brak katalizatora ARM-specific; mentions=1 to za mało."
+    },
+    {
+      "ticker": "LLM",
+      "reason": "Fałszywa ekstrakcja tickera — 'LLM' w tekście to skrót od 'Large Language Model' (concept), nie symbol akcji notowanej na giełdzie."
+    },
+    {
+      "ticker": "AMZN",
+      "reason": "3 incydentalne wzmianki w semiconductor FOMO; skew 0.5 słaby; zero katalizatora AMZN-specific."
+    },
+    {
+      "ticker": "MA",
+      "reason": "Fałszywa ekstrakcja — 'MA' w poście PLTR oznacza '200D Moving Average', nie Mastercard (ticker MA)."
+    },
+    {
+      "ticker": "AAPL",
+      "reason": "1 incydentalna wzmianka; side UNCLEAR; zero katalizatora."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "1 incydentalna wzmianka; side UNCLEAR; zero katalizatora NVDA-specific w tym batchu."
+    },
+    {
+      "ticker": "TSLA",
+      "reason": "1 incydentalna wzmianka; side UNCLEAR; zero katalizatora."
     }
   ],
-  "macro_context": "Risk-on (VIX=17, AI/semis rip z MU +19% jako katalizatorem) — środowisko sprzyja longom; SHORT side pod presją; żaden z 16 kandydatów nie oferuje krawędzi tradingowej — portfel AMD+SMH już gra ten temat, żadna nowa pozycja nie jest uzasadniona.",
+  "macro_context": "Risk-on, VIX=17, semis w silnym trendzie (MU +19% AI memory); portfolio już heavy long semis AMD+SMH=35.7% equity — brak sensu dokładać do przepełnionego bucketu.",
   "confidence_in_curation": "high"
 }
