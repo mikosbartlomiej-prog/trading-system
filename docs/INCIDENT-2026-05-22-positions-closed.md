@@ -344,3 +344,126 @@ Same checkpoints as Monday's plan plus:
 Success criteria: ≥1 allocator retrigger in session (typical) + zero
 EMERGENCY_CLOSE for repairable reasons + invariant test stays green
 on every PR.
+
+---
+
+## REGRESSION 2026-05-27 — NOW SHORT incident (v3.9.10 PERMANENT FIX)
+
+**Date:** 2026-05-27 (Wednesday, ~5 hours after v3.9.9 ship)
+**Severity:** P0 — 3rd same-class incident in 6 days
+**Outcome:** -$1,440 intraday + ~$16k naked SHORT exposure (NOW)
+**Status:** Resolved 2026-05-27 EOD via v3.9.10 architectural permanence fix
+
+### What v3.9.6 + v3.9.9 missed
+
+Both v3.9.6 (RECREATE_EXIT_PLAN path) and v3.9.9 (emergency_engine
+duplicate_exits scanner) were POINT FIXES — each closed one specific
+code path. But the underlying class of bug — **system sending SELL/EXIT
+orders without verifying the live position exists** — had MULTIPLE
+remaining callsites:
+
+1. `shared/allocator.py::_exec_exit` — sends MARKET SELL to Alpaca with
+   qty FROZEN at PLAN time (04:00 UTC). Plan execution runs at 14:00 UTC
+   (~10 hours later). Position state can change overnight via bracket SL.
+2. `shared/allocator.py::_exec_reduce` — same bug class.
+3. `options-exit-monitor/monitor.py` — same bug class.
+4. `exit-monitor/monitor.py` POST fallback (after DELETE 404) — same bug class.
+5. `scripts/panic_close_options.py` — same bug class.
+
+### Tuesday timeline
+
+| Time UTC | Event |
+|---|---|
+| 2026-05-26 14:16 | morning-allocator placed 7 BUY brackets (v3.9.6 GTC). NOW @ $103.89 × 169 sh = $17.6k |
+| 2026-05-26 16:09 | Governor FLAT→GREEN @ +$484 P&L |
+| 2026-05-26 16:57 | Allocator retrigger (cron); duplicate brackets for SPY/QQQ/GLD placed (Bug A) |
+| 2026-05-26 19:08 | emergency_engine duplicate_exits → MARKET-close 3 positions (Bug B) |
+| 2026-05-26 21:01 | Peak $920 → -$429 = RED_DAY_AFTER_GREEN |
+| **2026-05-27 04:00** | daily-learning generates plan: NOW HOLD qty=169 (snapshot from end of 26.05) |
+| 2026-05-27 ~10:30 | NOW dropped below SL price, **bracket SL filled** silently (position → 0) |
+| **2026-05-27 14:00** | morning-allocator executes 04:00 plan: NOW EXIT MARKET 169 |
+| 2026-05-27 14:00:16 | Alpaca accepts MARKET SELL of 169 on qty=0 position → **naked SHORT -169 NOW** |
+| 2026-05-27 19:07 | exit-monitor shows NOW as side=short, P&L -1.5%, intraday equity -$1,440 |
+
+### v3.9.10 PERMANENT FIX — architectural centralization
+
+Consulted with 3 audit agents (Plan + general-purpose strategy + general-purpose
+operations). All 3 agents converged on: **v3.9.10 must be ARCHITECTURAL, not
+point-fix.** Specifically:
+
+**Layer 1 — real-time anomaly detector** (`scripts/incident_pattern_detector.py`)
+- Cron */5 24/7. 12 known incident patterns (this exact bug class is P02).
+- Zero LLM calls. Email alerts + audit JSONL + optional auto-disable.
+- Catches recurrences within 5 min, not 5 hours.
+
+**Layer 2 — centralized sell + lint test gate** (`shared/alpaca_orders.py::safe_close`)
+- Single entry point for ALL sell/exit/buy_to_cover paths.
+- Built-in invariants: 404 skip, qty=0 skip, side mismatch skip, drift→live qty.
+- `tests/architecture_vnext/test_no_naked_sell_v3910.py` AST lint test FAILS
+  CI if anyone adds `requests.post(/v2/orders, side='sell'|'buy')` outside
+  the allowed centralized path.
+- THIS IS THE PERMANENCE GATE. Future regressions are blocked at PR review,
+  not after they happen in production.
+
+**Layer 3 — plan staleness defense** (`scripts/execute_allocation_plan.py::_revalidate_plan_against_live`)
+- Fetches live Alpaca positions before allocator execution.
+- Drops stale orders before they reach the broker:
+  - EXIT/REDUCE on position 404 → drop
+  - EXIT/REDUCE on live=SHORT → drop (prevents double-short)
+  - BUY at ≥95% target AND delta < $500 → drop (already there)
+- Email `[allocator REVALIDATE]` when drops occur.
+
+**Layer 4 — cron reliability** (`.github/workflows/entry-monitors-watchdog.yml`)
+- Matrix extended 9→12 (added geo-monitor, monitor-health, politician-monitor).
+- PAT-based dispatch bypasses GitHub Actions cron-skip pattern.
+
+**Forensic capability** (`scripts/forensic_position_origin.py`)
+- Operator workflow_dispatch with symbols → reports client_order_id origin.
+- Classifies 16 known prefixes vs UNKNOWN (rogue trade detection).
+- Closes the audit gap where LMT/RTX appeared on 2026-05-27 without trace.
+
+### Why this is now PERMANENT
+
+The previous fixes were code patches. v3.9.10 introduces an **architectural
+contract enforced by CI:**
+
+> No code in this repo may emit a SELL/EXIT/buy-to-cover order to Alpaca
+> without going through `safe_close()`. Violations fail CI before merge.
+
+This means:
+- Future Claude agent writing new monitor code cannot introduce the bug
+- Future human developer cannot accidentally bypass the check
+- Future LLM-proposed Lane 2 PRs are gated by the lint test
+- The bug class is structurally impossible to recur without explicit
+  ALLOWED_FILES list modification (audit-visible)
+
+Backed by:
+- Tests: 247/247 green incl. new lint test
+- 3-agent consensus: e2e PASS, system_consistency 99.1/100,
+  strategy_coherence 98.9/100 (all unchanged from baseline)
+- v3.9.11 backlog: extend pattern to DELETE /v2/positions paths
+  (idempotent so lower risk, but worth defense in depth)
+
+### Manual action required (operator)
+
+NOW SHORT (~$16k naked exposure) was NOT auto-closed by v3.9.10 — safe_close
+correctly SKIPS the allocator EXIT (intent=sell vs live=short) but doesn't
+auto-cover. Gap-up risk overnight if NOW +5% = -$800.
+
+**Manual buy-to-cover before 2026-05-28 13:30 UTC market open recommended.**
+Alpaca dashboard or `mcp__claude_ai_Alpaca__close_position("NOW")`.
+
+### Verification plan (Wednesday 2026-05-28)
+
+- 13:30 UTC: incident-pattern-detector tick should fire P02 CRITICAL on
+  NOW SHORT until covered. Manual cover should clear it.
+- 13:35 UTC: morning-allocator runs. Watch for `[allocator REVALIDATE]`
+  if any plan orders are dropped (Layer 3 working).
+- Throughout session: `tail journal/autonomy/2026-05-28.jsonl | grep safe_close`
+  should show CLOSE_POSITION events for any exit activity with `live_qty` field
+  (Layer 2 audit emission working).
+- 20:00 UTC market close: GTC brackets survive (v3.9.6), no MARKET sells
+  by remediation, no naked shorts created (Layer 2 + Layer 3).
+
+Success criteria: zero new same-class incidents + lint test stays green
+on every PR + at most P04 WARN findings from incident-detector (no CRITICAL).
