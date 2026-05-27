@@ -1,0 +1,56 @@
+{
+  "narrative": "Cały Reddit tej nocy to MU +19% po UBS upgrade $535→$1,625 — realny katalyzator AI memory, ale MU nie ma na whitelist. Wszystkie spike_ratio=99 to artefakt rolling_avg_7d=0 (brak historii), nie prawdziwy spike. AMD to najlepszy proxy (MU read-through + Meta warrant thesis), ale SMH 17.9% equity już pokrywa ekspozycję semikonduktorów. Konto -1.89% dziś z otwartym naked NOW short (-4.41%) do cover jutro 13:31 UTC — zero nowych pozycji, bankroll chronimy.",
+  "selected_signals": [],
+  "rejected_signals": [
+    {
+      "ticker": "AMD",
+      "reason": "Najlepszy proxy dla MU read-through + Meta warrant deal (160M udziałów AMD przy $0.01/sh), ale SMH 17.9% equity już pokrywa ekspozycję semis; spike_ratio=99 to artefakt pierwszego dnia bez historii."
+    },
+    {
+      "ticker": "MSFT",
+      "reason": "DD ma substancję (Copilot 20M seats, E7 tier $99/user), ale katalyzator sądowy (Musk dismiss May 18) stary 9 dni — za stale dla 1-72h trade."
+    },
+    {
+      "ticker": "PLTR",
+      "reason": "Bearish DD ma substancję (poniżej 200d MA, -25% YTD, overvalued vs C3AI), ale dodawanie short przy otwartym naked NOW short -4.41% i koncie -1.89% = podwójne ryzyko na jednym dniu."
+    },
+    {
+      "ticker": "META",
+      "reason": "Post to rage od FOMO bagholdera NVDA/MSFT który przegapił META ruch — skew=1.0 z jednej emocjonalnej wzmianki, zero bullish thesis ani fresh catalyst."
+    },
+    {
+      "ticker": "NVDA",
+      "reason": "3 wzmianki ale wszystkie incydentalne w MU-threads; skew=0.33 z rage posta NVDA bagholdera — brak fresh NVDA-specific catalyst dzisiaj."
+    },
+    {
+      "ticker": "AVGO",
+      "reason": "Skew=-1.0 to artefakt ekstrakcji z posta 'what's next after MU' — AVGO wymienione jako jedna z 7 spekulatywnych nazw w pytaniu otwartym, nie short thesis."
+    },
+    {
+      "ticker": "CRM",
+      "reason": "Ekstrakcja sentiment błędna — post mówi 'CRM call I decided to hold is down AH' = pozycja traci pieniądze, nie bullish signal."
+    },
+    {
+      "ticker": "MA",
+      "reason": "Ekstrakcja błędna — 'MA' w poście PLTR oznacza Moving Average ('200D MA'), nie Mastercard."
+    },
+    {
+      "ticker": "LLM",
+      "reason": "Poza whitelist — ticker wyekstrahowany z tekstu 'LLM architectures', nie z nazwy spółki giełdowej."
+    },
+    {
+      "ticker": "AAPL",
+      "reason": "Incydentalna wzmianka w poście MU jako porównanie wielkości market cap — brak directional signal, skew=null."
+    },
+    {
+      "ticker": "AMZN",
+      "reason": "Incydentalna wzmianka w poście MU jako jeden z 11 largest US companies by market value — zero AI-AMZN thesis."
+    },
+    {
+      "ticker": "TSLA",
+      "reason": "Incydentalna wzmianka, brak catalyst, skew=null."
+    }
+  ],
+  "macro_context": "Regime risk-on (VIX 17), MU +19% potwierdza AI memory demand bullseye — semis pozytywne, ale konto ma już SMH 17.9% i musi cover naked NOW short jutro przed dodaniem nowego ryzyka.",
+  "confidence_in_curation": "high"
+}
