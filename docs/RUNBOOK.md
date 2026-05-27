@@ -1,0 +1,259 @@
+# Operations Runbook — Trading System
+
+**Version:** v3.10 (2026-05-27)
+**Mode:** Paper-only Alpaca · Autonomous · Intraday-first · Free-tier
+**Audience:** Operator (single user). Day-to-day operations + incident handling.
+
+---
+
+## What this system is
+
+A fully autonomous, paper-only intraday trading system on Alpaca. Designed to:
+
+- Maximize expected edge / profit within controlled risk
+- Operate without manual approvals
+- Stay free to run (GitHub Actions, Alpaca Paper, free data sources only)
+- Survive transient failures (Anthropic LLM down, GitHub Actions cron-skip,
+  Alpaca API outages, market closures) without paralyzing trading
+
+What it is NOT:
+- A live-trading system (paper-only invariant enforced by `assert_paper_only`)
+- A passive defensive system that requires human approval for trades
+- A system that promises profit (use backtest realistic mode for hypothesis
+  selection, not as gain forecast)
+
+---
+
+## Risk taxonomy (BLOCK / DEFER / DOWNSIZE / ALLOW / ALERT_ONLY)
+
+v3.10 introduces a unified 5-class risk verdict (`shared/risk_classification.py`)
+that ALL risk gates return. The system is intraday-first: only the most critical
+failures BLOCK a trade. Most uncertainty downsizes or alerts.
+
+| Verdict | Meaning | Caller action |
+|---|---|---|
+| **BLOCK** | Critical risk control missing | Never place order. Examples: paper-only invariant violated, account_blocked=true, off-whitelist symbol, buying_power < size, daily drawdown HALT (-12%). |
+| **DEFER** | Transient unavailability; retry next cron | Don't place order now. Examples: Alpaca account fetch failed, market closed for intraday signal. |
+| **DOWNSIZE** | Partial uncertainty but edge alive | Multiply intended size by `size_multiplier` (0.1-2.0) and proceed. Examples: snapshot partial (positions fetch failed), strong news signal + partial market confirmation. |
+| **ALERT_ONLY** | Interesting but unconfirmed | Send email for operator visibility; do NOT place order. Examples: weak news signal + no confirmation, freshness past intraday window. |
+| **ALLOW** | All checks passed | Place order at normal size. |
+
+**Emergency exits BYPASS all checks.** Position management must always be able
+to dispose risk: SL hit, PROFIT_LOCK, RED_DAY_AFTER_GREEN, REGIME mismatch,
+NEAR_DTH option, governor force-close → all proceed immediately regardless of
+gate state.
+
+**Severity ordering:** when multiple gates produce verdicts, the worst wins
+(BLOCK > DEFER > DOWNSIZE > ALERT_ONLY > ALLOW). Multiple DOWNSIZE verdicts
+multiply their size factors (e.g. 0.5 × 0.5 = 0.25 final size).
+
+---
+
+## Daily operating cycle
+
+| Time UTC | Trigger | Component | What happens |
+|---|---|---|---|
+| 04:00 | cron daily-learning | analyzer.py + LLM Senior PM (P0_essential 4/day) | Generate allocation plan for today + adapt state.json based on yesterday's trades. Output: `learning-loop/allocations/<date>.json` |
+| 05:30 / 06:30 | watchdog daily-learning-watchdog | re-trigger daily-learning if 04:00 missed | |
+| 13:30 | market open | — | NYSE/NASDAQ open. session-only monitors begin |
+| 13:35 | cron morning-allocator | execute_allocation_plan.py | (1) v3.10 plan revalidation against live Alpaca positions; (2) execute_orders via shared/allocator.py → safe_close for SELL/EXIT/REDUCE, place_stock_bracket for BUYs with GTC OCO |
+| 13:30-20:00 | every 5 min | price/options/options-exit/exit/autonomous-remediation/incident-detector | Trading session monitors |
+| any time | every 5 min 24/7 | crypto/defense/twitter/incident-detector | News + sentiment + crypto + Layer 1 anomaly watcher |
+| 20:00 | market close | — | Stocks/options orders DAY-TIF cancelled by Alpaca. GTC bracket children survive (v3.9.6) |
+| 21:00+ | every 15 min | autonomous-remediation | Detects missing exits, duplicate exits, stale orders → applies CANCEL_STALE_ORDERS keep_one or RECREATE_EXIT_PLAN via place_oco_exit |
+
+---
+
+## Kill-switches
+
+| Switch | Trigger | Effect |
+|---|---|---|
+| `assert_paper_only(endpoint)` | non-paper Alpaca URL | Raises PaperOnlyViolation; system refuses to operate |
+| `daily_drawdown_guard` | daily P&L ≤ -12% equity | BLOCK all new entries until next session; exits remain autonomous |
+| `IntradayProfitGovernor RED_DAY_AFTER_GREEN` | Peak ≥$1k then giveback ≥146% | max_gross_target → 0.25; blocks new intraday entries; closes options first |
+| `IntradayProfitGovernor PROFIT_LOCK` | Peak ≥$1k then giveback ≥50% | Harvests winners ≥+8% via MARKET sell |
+| `INCIDENT_AUTO_DISABLE=true` env | Layer 1 detector P02/P03/P12 CRITICAL | Flips `config/capital_deployment.json::auto_execute_rebalance=false` (operator-reversible) |
+| `REMEDIATION_DISABLE_RECREATE=true` env | manual operator | Disables RECREATE_EXIT_PLAN action |
+| safe_close pre-flight 404 | position already closed | Skips MARKET sell (eliminates naked short class) |
+| Layer 2 lint test CI gate | new code adds `requests.post(/v2/orders, side='sell'|'buy')` outside ALLOWED_FILES | PR fails CI before merge |
+
+**To stop all new entries (emergency manual):**
+```bash
+# Set capital_deployment.auto_execute_rebalance = false
+# Existing positions managed by exit-monitor + governor; no new BUYs
+```
+
+---
+
+## Daily loss & giveback protection
+
+- **Daily loss circuit-breaker:** -12% equity → block new entries
+- **Weekly stop:** -25% equity → pause all monitors (operator review)
+- **Monthly stop:** -40% equity → full stop, parameter reset
+- **Intraday giveback (v3.5 governor):**
+  - Peak ≥$1k: tracking armed
+  - 30% giveback → WARN (email only)
+  - 50% giveback → PROFIT_LOCK (harvest winners)
+  - 146% giveback (peak →← red) → RED_DAY_AFTER_GREEN (defensive mode)
+
+All giveback thresholds tunable via `config/aggressive_profile.json::intraday_profit_protection`.
+
+---
+
+## Disaster recovery
+
+### Scenario 1: All positions auto-closed unexpectedly (2026-05-22 class)
+**Symptom:** equity drops, positions=0, no manual action.
+**Diagnose:** `tail journal/autonomy/<date>.jsonl | grep EMERGENCY_CLOSE`
+**Mitigation in code (already shipped):** v3.9.6 GTC brackets + v3.9.9
+emergency_engine invariant + v3.9.10 safe_close + Layer 2 lint test gate.
+**Manual recovery:** wait for next 04:00 UTC daily-learning + 13:35 UTC allocator
+(positions repopulate based on fresh plan).
+
+### Scenario 2: Naked short on long-only symbol (2026-05-27 class)
+**Symptom:** Alpaca shows position side=short on non-inverse ticker.
+**Detect:** Layer 1 incident-pattern-detector P02 fires → `[INCIDENT-CRITICAL]` email.
+**Mitigate (manual):** `mcp__claude_ai_Alpaca__close_position("<SYMBOL>")` or
+Alpaca dashboard buy-to-cover.
+**Prevention (shipped):** v3.10 safe_close skips sell when intent=sell + live=short;
+allocator plan revalidation drops stale EXIT actions.
+
+### Scenario 3: GitHub Actions cron-skip blackhole (≥3 monitors STALE)
+**Symptom:** No emails for >30 min; expected workflows missing from gh run list.
+**Detect:** Layer 1 P09 (`blackhole_hour`) fires when ≥3 monitors STALE.
+**Mitigation:** entry-monitors-watchdog (cron */15) auto-retriggers via PAT.
+**Manual recovery:** `gh workflow run <name>.yml` for affected workflows.
+
+### Scenario 4: Anthropic LLM unavailable (3-day timeout pattern)
+**Symptom:** daily-learning falls back to "deterministic only"; rationale.md
+notes `LLM unavailable (skipped)`.
+**Effect:** Deterministic adapter still runs (cooldown, size cut, hard_safety
+pause). PR #10 macro fallback applies options_side_bias from SPY RSI.
+**Tolerance:** Up to 7+ days of LLM unavailability does not paralyze trading.
+After 7 days consider operator manual override of LLM-derived state.
+
+### Scenario 5: Alpaca API outage
+**Symptom:** monitors log `account_fetch_failed`; safe_close logs `404` for everything.
+**Effect:** v3.10 risk_officer returns DEFER (not fail-open) → monitors retry
+next cron. Exits queued via emergency_close survive in DAY/GTC TIF.
+**Recovery:** automatic when Alpaca returns.
+
+---
+
+## Free-tier dependencies (no paid services)
+
+| Component | Source | Cost | Fallback |
+|---|---|---|---|
+| Trading API | Alpaca Paper | Free | — |
+| Market data | Alpaca IEX bars | Free | Yahoo public chart (VIX) |
+| News | NewsAPI free + Finnhub free (OPTIONAL) | Free | Multiple RSS feeds, House Clerk XML |
+| Social | Bluesky AT-Protocol | Free | — |
+| Reddit | Public .json endpoints via Cloudflare Worker | Free | — |
+| Insider | SEC EDGAR + House Clerk XML (free official) | Free | Capitol Trades (when up) |
+| LLM | Anthropic Routines | 15/day budget | Deterministic adapter (always available) |
+| CI/Runtime | GitHub Actions | Free public repo | Cloudflare Worker (planned for hot monitors) |
+| Email | Gmail SMTP | Free | — |
+| Audit | JSONL append-only in repo | Free | git history |
+
+**Finnhub** is OPTIONAL (not required for any critical path). Free tier returns
+0 for `^VIX` since 2024 → Yahoo fallback used in `shared/risk_guards.py`.
+price-monitor logs WARN if Finnhub key missing but proceeds.
+
+---
+
+## Health-check command set
+
+Run these to verify system state:
+
+```bash
+# Working tree + remote sync
+git fetch --prune && git status
+
+# Today's incident detector hits
+cat learning-loop/incidents/$(date -u +%Y-%m-%d).md 2>/dev/null || echo "no incidents today"
+
+# Today's audit JSONL summary
+wc -l journal/autonomy/$(date -u +%Y-%m-%d).jsonl 2>/dev/null
+
+# Recent workflow runs (need gh CLI)
+gh run list --limit 20
+
+# Pre-trade snapshot status (Python in repo root)
+.venv/bin/python3 -c "
+import sys; sys.path.insert(0, 'shared')
+from pretrade_snapshot import get_snapshot, classify_snapshot_for_intraday
+s = get_snapshot(force_refresh=True)
+print(s.to_summary())
+d = classify_snapshot_for_intraday(s)
+print(f'verdict={d.verdict.value} reason={d.reason}')
+"
+
+# Backtest sanity (realistic mode, walk-forward)
+.venv/bin/python3 -m backtest.run \
+    --strategy momentum-long --tickers AAPL --days 60 \
+    --mode both --walk-forward 3
+
+# All audit agents
+python3 scripts/system_consistency_agent.py --no-files --format markdown | grep -E "Overall|Score"
+python3 scripts/strategy_coherence_agent.py --no-files --format markdown | grep -E "Overall|Score"
+python3 scripts/e2e_system_test_agent.py --all --no-network --no-files --format markdown | grep "Overall"
+```
+
+---
+
+## Manual operator actions (rare)
+
+System is autonomous by design. Operator interventions:
+
+1. **Approve auto-PR from Lane 2 LLM proposals** (GitHub UI squash-merge)
+2. **Verify [INCIDENT-CRITICAL] emails** within 1h of receipt
+3. **Quarterly PAT rotation** (`WORKFLOW_PAT` classic, 90-day expiry)
+4. **Manual buy-to-cover** on rare naked SHORT (Layer 1 P02 flags it; system
+   skips via safe_close but doesn't auto-cover)
+5. **Cleanup `claude/*` branches** (~weekly): `git push origin --delete <branch>`
+
+**Never** required:
+- Approve individual trades
+- Set sizing per symbol
+- Decide regime
+- Confirm exit plan
+
+---
+
+## Python invocation
+
+```bash
+.venv/bin/python3 <script>          # preferred (uses pinned deps)
+python3 <script>                     # fallback (system Python; works for most)
+python3 -m unittest discover tests   # full test suite (some Python-3.10+ deps; CI uses 3.11)
+```
+
+---
+
+## Where to look first when something is wrong
+
+| Symptom | Look here |
+|---|---|
+| No emails for >1h | `gh run list --limit 30` (check workflow health) |
+| Unexpected position close | `journal/autonomy/<date>.jsonl` (decision history) |
+| Allocator placed nothing | `learning-loop/allocations/<date>.execution.json` |
+| Plan revalidation dropped orders | search `[allocator REVALIDATE]` email or stdout in workflow log |
+| Naked short / weird position | Layer 1 incident-detector `learning-loop/incidents/<date>.md` |
+| LLM unavailable for days | OK — deterministic adapter still runs; check P0 budget in `runtime_state.json::routine_budget` |
+| Many monitors STALE | GitHub Actions cron-skip; entry-monitors-watchdog handles; manual `gh workflow run` for urgent |
+
+---
+
+## Glossary
+
+- **Lane 1 (LLM)**: Daily-learning Senior PM proposals applied directly via state_overrides whitelist
+- **Lane 2 (LLM)**: LLM-proposed heuristic added to `adapter.py` → opens GitHub PR for operator review
+- **Lane 3 (LLM)**: LLM ideas added to `heuristic_proposals.md` backlog (manual implementation)
+- **Layer 1 (deterministic)**: `incident_pattern_detector.py` cron */5 24/7 — 12 pattern checks
+- **Layer 2 (architectural)**: `safe_close()` centralized SELL + AST lint test CI gate
+- **Layer 3 (deterministic)**: Plan revalidation in `execute_allocation_plan.py`
+- **Layer 4 (deterministic)**: `entry-monitors-watchdog.yml` matrix 12 monitors
+
+---
+
+*Last updated: 2026-05-27 (v3.10 intraday-first refactor — phases A-J)*

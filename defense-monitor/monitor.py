@@ -702,11 +702,67 @@ def run_scan():
     # Sortuj: wyższy score najpierw
     signals.sort(key=lambda s: s["score"], reverse=True)
 
+    # v3.10 (2026-05-27) — intraday signal confirmation gate (Phase C wiring).
+    # Same module is wired the SAME WAY in geo/twitter/reddit/politician
+    # monitors (see backlog [2026-05-27] signal_confirmation wiring).
+    # Per intraday-first directive: weak signal + no confirmation → ALERT_ONLY
+    # (email, no order). Strong + partial → DOWNSIZE. Duplicate/stale → BLOCK.
+    try:
+        from signal_confirmation import (
+            classify_news_signal_intraday, EventCache, CooldownTracker,
+        )
+        from risk_classification import RiskVerdict
+        _sig_cache = EventCache()
+        _sig_cool = CooldownTracker()
+        _sig_gate_available = True
+    except ImportError:
+        _sig_gate_available = False
+
     for signal in signals[:MAX_ALERTS_PER_RUN]:
         direction = signal["action"]
         if has_open_position(signal["symbol"]):
             print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} pominięty (otwarta pozycja)")
             continue
+
+        # v3.10 signal_confirmation gate
+        if _sig_gate_available:
+            try:
+                event_for_confirm = {
+                    "symbol": signal["symbol"],
+                    "published_at": signal.get("published_at") or signal.get("event_ts"),
+                    "headline": signal.get("headline", ""),
+                    "source": signal.get("source", "defense-monitor"),
+                    "strategy": "defense-news",
+                }
+                # signal["score"] is 0-100; normalize to 0.0-1.0
+                strength = min(1.0, max(0.0, float(signal.get("score", 50)) / 100.0))
+                # Market data optional — defense-monitor doesn't pre-fetch bars
+                # currently, so we pass minimal data; price/volume confirmation
+                # will degrade gracefully (will produce DOWNSIZE/ALERT_ONLY).
+                sig_verdict = classify_news_signal_intraday(
+                    event=event_for_confirm, side=direction, market_data=None,
+                    event_cache=_sig_cache, cooldown=_sig_cool,
+                    signal_strength=strength,
+                )
+                if sig_verdict.verdict == RiskVerdict.BLOCK:
+                    print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} BLOCKED — {sig_verdict.reason}")
+                    continue
+                if sig_verdict.verdict == RiskVerdict.ALERT_ONLY:
+                    print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} ALERT_ONLY — {sig_verdict.reason}")
+                    try:
+                        notify_signal(signal, alert_sent=True)
+                    except Exception:
+                        pass
+                    continue
+                if sig_verdict.verdict == RiskVerdict.DOWNSIZE:
+                    print(f"\n  >>> SYGNAŁ {direction} {signal['symbol']} DOWNSIZED × {sig_verdict.size_multiplier:.2f} — {sig_verdict.reason}")
+                    size_mult *= sig_verdict.size_multiplier
+                # ALLOW → proceed normally
+                # Mark cooldown for this symbol post-decision (any non-BLOCK)
+                _sig_cool.mark(signal["symbol"], "defense-news")
+            except Exception as e:
+                print(f"  signal-gate error for {signal['symbol']} ({type(e).__name__}: {e}) — proceeding (fail-soft)")
+
         new_size = round(signal["size_usd"] * size_mult)
         ok, combined = concentration_ok(signal["symbol"], new_size, equity=equity)
         if not ok:

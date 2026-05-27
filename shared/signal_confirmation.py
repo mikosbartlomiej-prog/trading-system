@@ -379,3 +379,143 @@ def confirm_event_signal(
         "reasons": reasons,
         "metrics": metrics,
     }
+
+
+# ─── v3.10 (2026-05-27) — intraday-friendly classification ─────────────────────
+
+def classify_news_signal_intraday(
+    event: dict[str, Any],
+    side: str,
+    market_data: dict[str, Any] | None,
+    event_cache: "EventCache | None",
+    cooldown: "CooldownTracker | None",
+    *,
+    signal_strength: float = 0.5,
+    cooldown_hours: float = 4.0,
+    max_article_age_hours: float = 6.0,
+    config: dict[str, Any] | None = None,
+):
+    """v3.10 intraday-first: map confirmation result to RiskVerdict.
+
+    Per architectural directive: brak pełnego potwierdzenia ≠ DROP. Policy:
+      duplicate / stale / future timestamp           → BLOCK
+      strong signal (≥0.7) + partial confirmation    → DOWNSIZE (0.5×)
+      weak signal (<0.4) + no confirmation           → ALERT_ONLY
+      full confirmation (price + volume + freshness) → ALLOW
+      everything else (moderate signal, partial)     → DOWNSIZE (0.7×)
+
+    Args:
+        event:           {symbol, published_at/timestamp, headline, source, ...}
+        side:            "BUY" / "SELL_SHORT"
+        market_data:     dict with last_price, ma_*, vol_avg_*, etc.
+        event_cache:     EventCache instance (or None for no dedupe)
+        cooldown:        CooldownTracker instance (or None)
+        signal_strength: 0.0-1.0 — caller's confidence in signal quality
+                         (e.g. Curator score, sentiment magnitude, source credibility)
+        cooldown_hours:  default 4h between same-ticker-strategy signals
+        max_article_age_hours: default 6h freshness window for intraday
+
+    Returns:
+        RiskDecision (verdict + reason + gate + metadata)
+    """
+    try:
+        from risk_classification import (
+            RiskVerdict, block, downsize, allow, alert_only,
+        )
+    except ImportError:
+        from shared.risk_classification import (  # type: ignore
+            RiskVerdict, block, downsize, allow, alert_only,
+        )
+
+    result = confirm_event_signal(
+        event=event, side=side, market_data=market_data,
+        event_cache=event_cache, cooldown=cooldown,
+        cooldown_hours=cooldown_hours,
+        max_article_age_hours=max_article_age_hours,
+        config=config,
+    )
+
+    blocked_by = set(result.get("blocked_by") or [])
+    metrics = result.get("metrics") or {}
+    sym = event.get("symbol") or event.get("ticker") or "?"
+
+    # HARD BLOCKS — same-class as 2026-05-22 incident path (must never trade)
+    if "dedupe" in blocked_by:
+        return block(
+            f"{sym}: duplicate event (fingerprint match)",
+            gate="signal_confirmation",
+            fingerprint=metrics.get("fingerprint"),
+        )
+
+    # Future timestamp check — encoded in article_fresh, surfaces as freshness fail
+    # with "future timestamp" or "age_hours < 0" patterns
+    age_h = metrics.get("age_hours")
+    if isinstance(age_h, (int, float)) and age_h < -0.05:  # 3 min tolerance for clock skew
+        return block(
+            f"{sym}: future timestamp (age_hours={age_h:.2f})",
+            gate="signal_confirmation",
+            age_hours=age_h,
+        )
+
+    # Stale (very old) — also BLOCK rather than DOWNSIZE
+    if isinstance(age_h, (int, float)) and age_h > max_article_age_hours * 4:
+        return block(
+            f"{sym}: stale event age={age_h:.1f}h > {max_article_age_hours*4}h",
+            gate="signal_confirmation", age_hours=age_h,
+        )
+
+    # Cooldown — defer-style, but in news context we treat as BLOCK for now
+    # (caller can decide to retry on next cron — most don't)
+    if "cooldown" in blocked_by:
+        return block(
+            f"{sym}: in cooldown — recent signal for same strategy",
+            gate="signal_confirmation",
+            cooldown=metrics.get("cooldown"),
+        )
+
+    # Full confirmation → ALLOW
+    if result.get("ok"):
+        return allow(
+            f"{sym}: full confirmation (price+volume+freshness OK)",
+            gate="signal_confirmation",
+            signal_strength=signal_strength,
+            **metrics,
+        )
+
+    # Partial confirmation — intraday policy based on signal_strength
+    # (only price_volume failed at this point)
+    if "price_volume" in blocked_by:
+        if signal_strength >= 0.7:
+            # Strong signal trumps weak market confirmation — downsize but proceed
+            return downsize(
+                f"{sym}: strong signal ({signal_strength:.2f}) + partial confirmation; size 0.5×",
+                size_multiplier=0.5, gate="signal_confirmation",
+                signal_strength=signal_strength, **metrics,
+            )
+        elif signal_strength >= 0.4:
+            # Moderate signal — bigger discount
+            return downsize(
+                f"{sym}: moderate signal ({signal_strength:.2f}) + partial confirmation; size 0.3×",
+                size_multiplier=0.3, gate="signal_confirmation",
+                signal_strength=signal_strength, **metrics,
+            )
+        else:
+            # Weak signal + no confirmation → ALERT_ONLY
+            return alert_only(
+                f"{sym}: weak signal ({signal_strength:.2f}) + no confirmation; alert only",
+                gate="signal_confirmation",
+                signal_strength=signal_strength, **metrics,
+            )
+
+    # Freshness fail (not future, not stale-too-old) — moderate age but past window
+    if "freshness" in blocked_by:
+        return alert_only(
+            f"{sym}: article age past {max_article_age_hours}h window",
+            gate="signal_confirmation", **metrics,
+        )
+
+    # Fall-through (shouldn't reach here normally)
+    return alert_only(
+        f"{sym}: unconfirmed signal ({', '.join(blocked_by) or 'unknown reasons'})",
+        gate="signal_confirmation", **metrics,
+    )

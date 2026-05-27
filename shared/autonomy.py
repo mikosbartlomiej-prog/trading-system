@@ -127,6 +127,16 @@ def assert_no_forbidden_strings(text: str, where: str = "") -> None:
 
 # ─── Decision record ──────────────────────────────────────────────────────────
 
+def _default_decision_id() -> str:
+    """v3.10 (2026-05-27): every Decision gets a sortable unique id for
+    audit correlation across systems (signal → confirmation → risk → order)."""
+    try:
+        from risk_classification import new_decision_id
+    except ImportError:
+        from shared.risk_classification import new_decision_id  # type: ignore
+    return new_decision_id()
+
+
 @dataclass
 class Decision:
     """Audit-quality record of a single autonomous decision."""
@@ -135,6 +145,10 @@ class Decision:
     reason: str
     actor: str
     timestamp: str
+    # v3.10: decision_id added — sortable + unique, used for correlation
+    # across multi-stage decision pipelines (signal_confirmation → risk_officer
+    # → safe_close). Default factory generates one if not supplied.
+    decision_id: str = field(default_factory=_default_decision_id)
     affected_symbols: list[str] = field(default_factory=list)
     strategy: str | None = None
     risk_metrics: dict[str, Any] = field(default_factory=dict)

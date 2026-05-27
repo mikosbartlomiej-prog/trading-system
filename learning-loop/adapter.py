@@ -132,15 +132,17 @@ def adapt_strategy(name: str, old: dict, stats: dict, equity: float) -> dict:
         )
         return new
 
-    # Consecutive losses pause
+    # Consecutive losses pause — v3.10: mark hard_safety so validator allows
+    # this intraday-safe adaptation even when 7d sample size is low.
     if new["consecutive_losses"] >= CONSECUTIVE_LOSS_LIMIT:
         from datetime import timedelta
         until = (datetime.now(timezone.utc).date() + timedelta(days=PAUSE_DAYS)).isoformat()
         new["enabled"] = False
         new["paused_until"] = until
+        new["hard_safety"] = True  # v3.10: bypass MIN_SAMPLE_DISABLE in validator
         new["rationale"] = (
             f"PAUSED until {until} — {new['consecutive_losses']} consecutive losses; "
-            f"auto-resume after {PAUSE_DAYS} days"
+            f"auto-resume after {PAUSE_DAYS} days (hard_safety=true, validator bypassed)"
         )
         return new
 

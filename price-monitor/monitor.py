@@ -549,9 +549,10 @@ if __name__ == "__main__":
     print(f"  Worker URL: {CLOUDFLARE_WORKER_URL}")
     print("=" * 60 + "\n")
 
+    # v3.10 (2026-05-27) — Finnhub is OPTIONAL (used only for news fetch
+    # in geo-monitor; price-monitor uses Alpaca IEX bars). Warn but proceed.
     if not FINNHUB_API_KEY:
-        print("BLAD: Brak FINNHUB_API_KEY!")
-        sys.exit(1)
+        print("WARN: FINNHUB_API_KEY not set (price-monitor doesn't require it; only used for fallback news fetch)")
 
     if once_mode:
         run_checks()

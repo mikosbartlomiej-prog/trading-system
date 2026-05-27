@@ -41,19 +41,30 @@ class TestEntryLifecycleApproved(unittest.TestCase):
         )
         self.assertEqual(v_port["decision"], "APPROVE")
 
-        # 2. risk officer (with paper-only assert via assert_paper_only inside)
-        v_off = risk_officer.evaluate_trade({
-            "symbol":      "AAPL",
-            "action":      "BUY",
-            "size_usd":    5000,
-            "entry_price": 175.0,
-            "stop_loss":   170.0,
-            "take_profit": 182.0,
-            "strategy":    "aggressive-momentum",
-        })
-        # USE_RISK_OFFICER=true. Either APPROVE (account fetch fail-open)
-        # or APPROVE with warnings.
+        # 2. risk officer — v3.10 policy: account fetch fail returns REJECT
+        # with verdict=DEFER (no fail-open). Mock account so test exercises
+        # the actual approve path.
+        from unittest import mock as _mock
+        ok_account = {
+            "equity": "100000", "buying_power": "200000",
+            "last_equity": "100000", "daytrade_count": "0",
+            "pattern_day_trader": False,
+        }
+        with _mock.patch("risk_officer.get_account_status", return_value=ok_account), \
+             _mock.patch("risk_officer.vix_guard", return_value=("OK", "vix ok")), \
+             _mock.patch("risk_officer.concentration_ok", return_value=(True, 5.0)), \
+             _mock.patch("risk_officer.daily_drawdown_guard", return_value=("OK", "ok")):
+            v_off = risk_officer.evaluate_trade({
+                "symbol":      "AAPL",
+                "action":      "BUY",
+                "size_usd":    5000,
+                "entry_price": 175.0,
+                "stop_loss":   170.0,
+                "take_profit": 182.0,
+                "strategy":    "aggressive-momentum",
+            })
         self.assertEqual(v_off["decision"], "APPROVE")
+        self.assertEqual(v_off["verdict"], "ALLOW")  # v3.10 unified taxonomy
 
         # 3. Audit the decision — never a forbidden state
         d = autonomy.make_decision(

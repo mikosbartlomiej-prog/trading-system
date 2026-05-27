@@ -239,10 +239,30 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
         warnings.append("no take_profit (trailing exit assumed)")
 
     # ── HARD: account-relative checks (need equity) ──────────────────────────
+    # v3.10 (2026-05-27) — intraday-first policy fix per architectural directive
+    # 3: "Wyjątek w risk officer / portfolio risk nie może bezrefleksyjnie
+    # przepuszczać orderu. Dla krytycznych danych: BLOCK lub DEFER."
+    # Account data is CRITICAL — without it we cannot enforce per-trade /
+    # per-ticker / drawdown / buying-power checks. Previous behavior was
+    # warn + fail-open which allowed orders to slip through during Alpaca
+    # outages. New behavior: DEFER (REJECT with intraday verdict=DEFER).
+    # Next cron will retry; emergency exits still proceed (they bypass
+    # risk_officer entirely via emergency_close path).
     account = get_account_status()
     if account is None:
-        warnings.append("account-data-unavailable (Alpaca outage) — fail-open")
-    else:
+        # Critical data missing — DEFER, not fail-open. Caller (alpaca_orders)
+        # treats this as transient and retries on next cron. The verdict
+        # field maps to RiskVerdict.DEFER for unified taxonomy.
+        return {
+            "decision":      "REJECT",
+            "verdict":       "DEFER",
+            "checks_passed": passed,
+            "checks_failed": ["account-data-unavailable (Alpaca outage) — DEFER, not fail-open"],
+            "warnings":      warnings,
+            "rationale":     "DEFER — Alpaca account fetch failed; retry next cron (v3.10 intraday-first policy)",
+            "retry_after_s": 60,
+        }
+    if True:  # preserve indent of existing block
         equity = float(account.get("equity") or 0)
         if equity > 0:
             # Per-trade cap
@@ -314,22 +334,31 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
         passed.append("vix_ok")
 
     # ── Decision ─────────────────────────────────────────────────────────────
+    # v3.10: added `verdict` field for unified RiskVerdict taxonomy. Legacy
+    # `decision` (APPROVE/REJECT) preserved for backward compat. New callers
+    # should prefer `verdict` which maps to risk_classification.RiskVerdict.
     if failed:
+        # Classify rejection: account_blocked / paper_only / off_whitelist
+        # are BLOCK (hard); buying_power < size is BLOCK (cannot proceed);
+        # drawdown HALT is BLOCK; everything else REJECT → BLOCK (no risk
+        # check failure permits trading).
         return {
             "decision":      "REJECT",
+            "verdict":       "BLOCK",
             "checks_passed": passed,
             "checks_failed": failed,
             "warnings":      warnings,
-            "rationale":     f"REJECT — {failed[0]}",
+            "rationale":     f"BLOCK — {failed[0]}",
         }
 
     return {
         "decision":      "APPROVE",
+        "verdict":       "ALLOW",
         "checks_passed": passed,
         "checks_failed": [],
         "warnings":      warnings,
         "rationale":     (
-            f"APPROVE ({len(passed)} checks; {len(warnings)} warnings)"
-            if warnings else f"APPROVE ({len(passed)} checks)"
+            f"ALLOW ({len(passed)} checks; {len(warnings)} warnings)"
+            if warnings else f"ALLOW ({len(passed)} checks)"
         ),
     }
