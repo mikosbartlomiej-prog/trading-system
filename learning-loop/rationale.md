@@ -554,3 +554,13 @@
 - 2026-05-27 · rsi-alert [oversold]: ETH/USD RSI=27.2 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-27 · peak_equity advanced $97,833 -> $98,446
 
+- 2026-05-27 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-27 · crypto-momentum: AUTO-PRUNED (SILENT 41d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-27 · geo-energy: AUTO-PRUNED (SILENT 41d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-27 · geo-gold: AUTO-PRUNED (SILENT 41d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-27 · geo-xom: AUTO-PRUNED (SILENT 41d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-27 · options-momentum: AUTO-PRUNED (SILENT 41d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-27 · fill-rate alert [unknown]: fill rate 27% below 50% (3 canceled / 22 placed) — limits too tight or quote stale
+- 2026-05-27 · edge-gate: DISABLED via EDGE_GATE_DISABLED env
+- 2026-05-27 · rsi-alert [oversold]: ETH/USD RSI=24.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
