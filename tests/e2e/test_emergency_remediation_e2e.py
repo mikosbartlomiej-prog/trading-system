@@ -40,11 +40,15 @@ class TestEmergencyEngineE2E(unittest.TestCase):
         self.assertEqual(len(targets), 1)
         self.assertIn("hard_loss", targets[0].reason)
 
-    def test_no_exit_plan_autoselects(self):
+    def test_no_exit_plan_does_NOT_autoselect_v399(self):
+        """v3.9.9 (2026-05-27): no_exit_plan REMOVED from emergency scanner.
+        Handled non-destructively by remediation.RECREATE_EXIT_PLAN.
+        See: tests/architecture_vnext/test_emergency_engine_v399_invariant.py"""
         targets = ee.scan_emergency_conditions(
             ACCOUNT, [pos("AAPL", plpc=-0.05)], []
         )
-        self.assertEqual(targets[0].reason, "no_exit_plan")
+        # v3.9.9: must NOT autoselect — repairable state goes to remediation
+        self.assertEqual(len(targets), 0)
 
     def test_dry_run_writes_audit_no_real_calls(self):
         target = ee.EmergencyTarget(symbol="AAPL", reason="test")
