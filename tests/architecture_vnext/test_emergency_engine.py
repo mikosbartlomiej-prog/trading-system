@@ -41,12 +41,15 @@ class TestScan(unittest.TestCase):
         self.assertEqual(targets[0].symbol, "AAPL")
         self.assertIn("hard_loss", targets[0].reason)
 
-    def test_no_exit_plan_selected(self):
+    def test_no_exit_plan_NOT_selected_v399(self):
+        """v3.9.9 (2026-05-27): no_exit_plan REMOVED from emergency scanner.
+        Handled non-destructively by remediation.RECREATE_EXIT_PLAN (OCO recreate).
+        See: tests/architecture_vnext/test_emergency_engine_v399_invariant.py"""
         targets = ee.scan_emergency_conditions(
             ACCOUNT, [pos("AAPL", plpc=-0.05)], []
         )
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(targets[0].reason, "no_exit_plan")
+        # v3.9.9: must NOT flag as emergency
+        self.assertEqual(len(targets), 0)
 
     def test_position_with_exit_plan_skipped(self):
         targets = ee.scan_emergency_conditions(
@@ -55,23 +58,28 @@ class TestScan(unittest.TestCase):
         )
         self.assertEqual(targets, [])
 
-    def test_duplicate_exit_orders_selected(self):
+    def test_duplicate_exit_orders_NOT_selected_v399(self):
+        """v3.9.9 (2026-05-27): duplicate_exits REMOVED from emergency scanner.
+        Handled non-destructively by remediation.CANCEL_STALE_ORDERS keep_one=True.
+        Root cause of 2026-05-26 incident (3 positions market-closed)."""
         targets = ee.scan_emergency_conditions(
             ACCOUNT, [pos("AAPL", plpc=-0.05)],
             [{"symbol": "AAPL", "side": "sell"},
              {"symbol": "AAPL", "side": "sell"}],
         )
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(targets[0].reason, "duplicate_exits")
+        # v3.9.9: must NOT flag as emergency
+        self.assertEqual(len(targets), 0)
 
-    def test_stale_exit_order_selected(self):
+    def test_stale_exit_order_NOT_selected_v399(self):
+        """v3.9.9 (2026-05-27): stale_exit_order REMOVED from emergency scanner.
+        Handled non-destructively by remediation.CANCEL_STALE_ORDERS."""
         old = (datetime.now(timezone.utc) - timedelta(hours=30)).isoformat()
         targets = ee.scan_emergency_conditions(
             ACCOUNT, [pos("AAPL", plpc=-0.05)],
             [{"symbol": "AAPL", "side": "sell", "submitted_at": old}],
         )
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(targets[0].reason, "stale_exit_order")
+        # v3.9.9: must NOT flag as emergency
+        self.assertEqual(len(targets), 0)
 
     def test_near_dte_deep_option_loss(self):
         # OCC: yymmdd starts after the alpha root. Use a near-DTE date.

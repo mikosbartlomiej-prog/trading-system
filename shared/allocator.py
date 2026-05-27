@@ -1006,10 +1006,40 @@ class AccountAwareAllocator:
         # on 2nd allocator run because LIMIT BUYs from 1st run sat
         # unfilled (stale price) and Alpaca rejects duplicate-side
         # open orders.
+        #
+        # v3.9.9 (2026-05-27): extended with POSITION pre-check. Bug
+        # 2026-05-26: bracket BUYs fill immediately on Alpaca paper, so
+        # status=open buy returns empty by 2nd allocator run, but the
+        # POSITION exists. Without this check, the system places a second
+        # bracket → duplicate OCO children → autonomous-remediation flags
+        # duplicate_exits → (pre v3.9.9: emergency_engine MARKET-closed
+        # entire position). Now: skip BUY if position already exists at
+        # ±10% of target qty (re-balance threshold).
         try:
             import requests as _rq
-            import urllib.parse as _up
-            from alpaca_orders import _headers as _hdr, ALPACA_BASE_URL as _base
+            from alpaca_orders import _headers as _hdr, ALPACA_BASE_URL as _base, _fetch_single_position
+            # POSITION check first (cheaper, catches immediate-fill case)
+            try:
+                existing_pos = _fetch_single_position(sym)
+            except Exception:
+                existing_pos = None
+            if existing_pos:
+                try:
+                    current_qty = abs(float(existing_pos.get("qty") or 0))
+                    target_qty = abs(float(qty))
+                    # Skip if already within 10% of target (no meaningful add-on)
+                    if target_qty > 0 and abs(current_qty - target_qty) / target_qty < 0.10:
+                        result["status"] = "skipped"
+                        result["reason"] = (
+                            f"BUY skipped: position {sym} already exists "
+                            f"qty={current_qty:.0f} target={target_qty:.0f} "
+                            f"(within 10% rebalance threshold)"
+                        )
+                        self.trace.warn(f"{sym} BUY: {result['reason']}", indent=2)
+                        return result
+                except (ValueError, TypeError):
+                    pass  # fall through to open-orders check
+            # ORDER check (v3.8.8 — for stale LIMITs that haven't filled)
             r = _rq.get(
                 f"{_base}/v2/orders",
                 headers=_hdr(),
@@ -1029,10 +1059,10 @@ class AccountAwareAllocator:
                     self.trace.warn(f"{sym} BUY: {result['reason']}", indent=2)
                     return result
         except Exception as e:
-            # Fail-open: if open-orders check fails, proceed to place
+            # Fail-open: if pre-checks fail, proceed to place
             # (preserves prior behavior; new check is best-effort guard).
             self.trace.warn(
-                f"{sym} BUY: open-orders pre-check unavailable "
+                f"{sym} BUY: pre-check unavailable "
                 f"({type(e).__name__}: {e}); proceeding",
                 indent=2,
             )

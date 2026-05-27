@@ -238,32 +238,22 @@ def scan_emergency_conditions(
                 ))
                 continue
 
-        # 3. No valid exit plan
-        if not _has_valid_exit_plan(sym, side, open_orders):
-            targets.append(EmergencyTarget(
-                symbol=sym, reason="no_exit_plan",
-                loss_pct=loss_pct, asset_class=asset_class, qty=qty,
-                suggested_action="CANCEL_AND_DELETE",
-            ))
-            continue
-
-        # 4. Duplicate exits
-        if _has_duplicate_exits(sym, open_orders):
-            targets.append(EmergencyTarget(
-                symbol=sym, reason="duplicate_exits",
-                loss_pct=loss_pct, asset_class=asset_class, qty=qty,
-                suggested_action="CANCEL_AND_DELETE",
-            ))
-            continue
-
-        # 5. Stale exit
-        if _has_stale_exit(sym, open_orders):
-            targets.append(EmergencyTarget(
-                symbol=sym, reason="stale_exit_order",
-                loss_pct=loss_pct, asset_class=asset_class, qty=qty,
-                suggested_action="CANCEL_AND_DELETE",
-            ))
-            continue
+        # ─── v3.9.9 (2026-05-27) INVARIANT ─────────────────────────────────
+        # Blocks 3/4/5 (no_exit_plan, duplicate_exits, stale_exit_order)
+        # REMOVED. These are repairable artifacts of prior actions, not
+        # emergency conditions. They are handled non-destructively by
+        # shared/remediation.py:
+        #   - no_exit_plan       → RECREATE_EXIT_PLAN (v3.9.6: OCO recreate)
+        #   - duplicate_exits    → CANCEL_STALE_ORDERS with keep_one=True
+        #   - stale_exit_order   → CANCEL_STALE_ORDERS
+        # Prior behaviour (CANCEL_AND_DELETE = MARKET sell entire position)
+        # caused 2026-05-22 + 2026-05-26 incidents where healthy positions
+        # were liquidated unnecessarily. v3.9.6 fixed RECREATE_EXIT_PLAN
+        # but left duplicate_exits/stale_exit_order paths in this scanner;
+        # both fired on 2026-05-26 → 3 positions (SPY/QQQ/GLD) market-closed.
+        # Invariant: EMERGENCY_CLOSE never used for repairable states.
+        # Test: tests/architecture_vnext/test_emergency_engine_invariant.py
+        # ───────────────────────────────────────────────────────────────────
 
         # 6. Defensive mode active → close everything not already exiting
         if defensive:

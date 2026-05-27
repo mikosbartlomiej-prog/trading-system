@@ -255,3 +255,92 @@ Fallback path: if Alpaca paper rejects GTC bracket → v3.9.6
 `_do_recreate_exit_plan` kicks in with proper OCO recreation (not
 market close) → positions still protected, just via different
 mechanism.
+
+---
+
+## REGRESSION 2026-05-26 — same incident class, different code path (v3.9.9)
+
+**Date:** 2026-05-26 (Tuesday, first market day post-Memorial Day)
+**Severity:** P0 — design bug, same class as 2026-05-22 but DIFFERENT path
+**Outcome:** SPY/QQQ/GLD MARKET-closed (-$118 net) despite v3.9.6 ship; +$560 net daily by luck
+**Status:** Resolved 2026-05-27 v3.9.9
+
+### Why this happened despite v3.9.6
+
+v3.9.6 fixed `_do_recreate_exit_plan` (the `no_exit_plan` handler). But
+`shared/emergency_engine.py::scan_emergency_conditions` ALSO flagged
+**three** repairable conditions as EmergencyTargets with
+`suggested_action="CANCEL_AND_DELETE"`:
+
+1. `no_exit_plan` (lines 241-248) — duplicate of remediation's RECREATE_EXIT_PLAN
+2. `duplicate_exits` (lines 250-257) — duplicate of remediation's CANCEL_STALE_ORDERS with keep_one=True
+3. `stale_exit_order` (lines 259-266) — duplicate of remediation's CANCEL_STALE_ORDERS
+
+`scripts/autonomous_remediation.py` calls BOTH `remediate()` AND
+`scan_emergency_conditions()` → `execute_emergency_close()`. They fire
+in parallel. Remediation does the right thing (cancel, keep-one). Emergency
+engine does CANCEL_AND_DELETE = `DELETE /v2/positions/{symbol}` = MARKET SELL.
+
+### Tuesday timeline
+
+| Time UTC | Event |
+|---|---|
+| 14:16 | morning-allocator placed 7 BUY brackets (v3.9.6 GTC). All filled within seconds. |
+| 16:09 | Governor FLAT→GREEN @ +$484 P&L |
+| **16:57** | morning-allocator triggered AGAIN (cron retry / watchdog). EXEC_TTL was 60 min, 161 min elapsed → re-executed plan. |
+| 16:57 | v3.8.8 "open orders" pre-check returned EMPTY (orders already filled immediately on placement). Position pre-check WAS MISSING. → 3 duplicate brackets for SPY/QQQ/GLD placed. |
+| 19:08:48 | remediation correctly CANCEL_STALE_ORDERS keep_one=True (cancels extras, keeps 1 OCO) |
+| **19:08:50** | emergency_engine flagged `duplicate_exits` → `execute_emergency_close` → `DELETE /v2/positions/SPY,QQQ,GLD` → MARKET SELL. 3 positions liquidated. |
+| 21:01 | Peak $920 → current -$429 = 146% giveback → governor RED_DAY_AFTER_GREEN, max_gross 1.50→0.25 |
+
+### Three bugs, three fixes (v3.9.9)
+
+**Bug B (P0)** — `shared/emergency_engine.py:241-266` removed. Lines now
+contain v3.9.9 comment explaining: repairable states (no_exit_plan,
+duplicate_exits, stale_exit_order) are handled non-destructively by
+`shared/remediation.py`. `scan_emergency_conditions` retains: hard_loss,
+option_near_dte, defensive_mode, daily_drawdown. **Invariant test**
+in `tests/architecture_vnext/test_emergency_engine_v399_invariant.py`
+(5 tests) prevents regression — asserts no EmergencyTarget ever has
+reason in {no_exit_plan, duplicate_exits, stale_exit_order}.
+
+**Bug A (P0)** — `shared/allocator.py::_exec_buy` extended with POSITION
+pre-check via `_fetch_single_position(sym)` BEFORE the v3.8.8 open-orders
+check. Skips BUY if `abs(current_qty - target_qty) / target_qty < 0.10`
+(within 10% rebalance threshold). Plus `scripts/execute_allocation_plan.py`:
+`EXEC_TTL_MIN` 60 → **360 min** (covers full trading session). 5 tests
+in `tests/aggressive/test_allocator_v399_position_precheck.py`.
+
+**Bug C (P1)** — `learning-loop/adapter.py:407-425` PR #10 macro fallback
+DECOUPLED from `_reset_options_bias_if_no_data` gate. Previous wire-in
+was dead code because the reset gate returned False when current_bias
+was already None (the most common case). Now: independent check on
+`current_bias is None AND options-momentum.trades_7d < 3`. 2 new tests
+in `learning-loop/test_adapter.py::TestOptionsBiasMacroFallbackWiredIntoAdapt`.
+
+### Shared root cause (Bug A + Bug B)
+
+**System lacked idempotency on Alpaca state.** Bug A: allocator checked
+its own pending orders but not the actual position state. Bug B:
+remediation treated "duplicate" as emergency rather than as repairable
+artifact. v3.9.6 was a POINT FIX (RECREATE_EXIT_PLAN); v3.9.9 introduces
+an INVARIANT: `EMERGENCY_CLOSE` is forbidden for reasons in
+{no_exit_plan, duplicate_exits, stale_exit_order}. Regression test
+enforces this.
+
+### Verification plan (Wednesday 2026-05-28)
+
+This time the v3.9.9 production test is Wednesday (Tuesday was Day 0).
+Same checkpoints as Monday's plan plus:
+- Watch for `duplicate_exits` flag from health-check — should trigger
+  CANCEL_STALE_ORDERS (keep_one), NOT EMERGENCY_CLOSE
+- If allocator triggers twice in session, second run should log
+  `BUY skipped: position SPY already exists qty=X target=Y (within 10%
+  rebalance threshold)` for each held symbol
+- Audit JSONL `journal/autonomy/2026-05-28.jsonl` MUST NOT contain any
+  `decision_type=EMERGENCY_CLOSE` events with reason in {duplicate_exits,
+  no_exit_plan, stale_exit_order}.
+
+Success criteria: ≥1 allocator retrigger in session (typical) + zero
+EMERGENCY_CLOSE for repairable reasons + invariant test stays green
+on every PR.

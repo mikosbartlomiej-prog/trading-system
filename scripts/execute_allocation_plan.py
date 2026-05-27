@@ -126,7 +126,12 @@ def main() -> int:
     # ago AND any orders were placed → skip silently with explanation.
     # --force overrides to allow operator re-run after cancellation.
     exec_path = os.path.join(_ALLOCATIONS_DIR, f"{plan_date}.execution.json")
-    EXEC_TTL_MIN = 60  # 60 min — covers typical multi-allocator-trigger windows
+    # v3.9.9 (2026-05-27): bump 60 → 360 min. Tuesday 2026-05-26 incident:
+    # morning-allocator triggered 14:16 + 16:57 UTC (gap 161 min > old 60 min
+    # TTL) → re-executed plan on already-filled positions → duplicate brackets
+    # → autonomous-remediation MARKET-closed 3 positions. 360 min covers full
+    # session 13:35-19:35 UTC plus any cron retries.
+    EXEC_TTL_MIN = 360
     if os.path.exists(exec_path) and not args.force:
         try:
             with open(exec_path) as f:

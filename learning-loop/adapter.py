@@ -404,10 +404,19 @@ def adapt(state: dict, today_stats: dict) -> tuple[dict, list[str]]:
             f"{today_iso} · options_side_bias reset to null "
             f"(zero supporting data in 7d window — proposal 2026-05-09)"
         )
-        # PR #10 (2026-05-26): macro fallback — when trade data is thin,
-        # derive options_side_bias from SPY RSI rather than leaving null.
-        # SPY ≥72 → short (PUT-favored), ≤35 → long (CALL-favored). Skips
-        # neutral zone (35-72) and missing data → no override.
+    # PR #10 (2026-05-26, fixed v3.9.9 2026-05-27): macro fallback.
+    # Decoupled from _reset_options_bias_if_no_data gate (v3.9.9 fix): the
+    # reset returns False when bias is already None, which made this dead
+    # code in the original wire-in. Now runs independently whenever
+    # current bias is None AND trade sample is thin (< 3 trades 7d).
+    # SPY RSI ≥72 → short (PUT-favored), ≤35 → long (CALL-favored).
+    _current_bias = new_state.get("global_overrides", {}).get("options_side_bias")
+    _om_trades_7d = (
+        today_stats.get("by_strategy", {})
+                   .get("options-momentum", {})
+                   .get("trades_7d", 0)
+    )
+    if _current_bias is None and _om_trades_7d < 3:
         macro_bias, macro_reason = heuristic_options_bias_from_spy_rsi(today_stats)
         if macro_bias is not None:
             new_state["global_overrides"]["options_side_bias"] = macro_bias

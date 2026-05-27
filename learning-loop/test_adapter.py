@@ -676,3 +676,35 @@ class TestOptionsBiasMacroFallbackWiredIntoAdapt(unittest.TestCase):
         new_state, _ = adapt(state, stats)
         # trade-based bias preserved (long), macro fallback not triggered
         self.assertEqual(new_state["global_overrides"]["options_side_bias"], "long")
+
+    # ── v3.9.9 (2026-05-27) bug fix: macro fallback decoupled from reset gate ──
+
+    def test_macro_fallback_fires_when_bias_already_none_thin_data(self):
+        """v3.9.9 fix: PR #10 wire-in was dead code because gated on
+        _reset_options_bias_if_no_data which returns False when bias=None.
+        Now fallback runs INDEPENDENTLY when bias=None AND trades thin."""
+        state = self._base_state(current_bias=None)  # bias ALREADY None
+        state["strategies"]["options-momentum"]["trades_7d"] = 1  # thin
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 1, "win_rate_7d": 0}},
+            "rsi_snapshot": {"SPY": {"today": 72.0}},
+        }
+        new_state, rationale = adapt(state, stats)
+        # macro fallback MUST fire even though reset was a no-op
+        self.assertEqual(new_state["global_overrides"]["options_side_bias"], "short",
+                         "v3.9.9 regression: macro fallback didn't fire when bias was already None")
+        self.assertTrue(any("macro fallback" in r for r in rationale))
+
+    def test_macro_fallback_skipped_when_trades_at_or_above_3(self):
+        """v3.9.9: macro fallback gated on trades_7d < 3 (not <= 3). Boundary check."""
+        state = self._base_state(current_bias=None)
+        state["strategies"]["options-momentum"]["trades_7d"] = 3  # exactly 3
+        stats = {
+            "as_of": "2026-05-27",
+            "by_strategy": {"options-momentum": {"trades_7d": 3, "win_rate_7d": 0.5}},
+            "rsi_snapshot": {"SPY": {"today": 73.5}},
+        }
+        new_state, _ = adapt(state, stats)
+        # 3 trades = enough data, macro NOT triggered
+        self.assertIsNone(new_state["global_overrides"]["options_side_bias"])
