@@ -756,7 +756,13 @@ def safe_close(
           "actual_qty": Optional[float],
         }
     """
-    assert_paper_only(ALPACA_BASE_URL)
+    # v3.10.2 (2026-05-27) — paper-only invariant via shared.autonomy.
+    # Was undefined NameError on CI Python 3.11 (skipped lokalnie 3.9).
+    try:
+        from autonomy import assert_paper_only as _assert_paper
+    except ImportError:
+        from shared.autonomy import assert_paper_only as _assert_paper  # type: ignore
+    _assert_paper(ALPACA_BASE_URL)
 
     result: dict = {
         "status": "failed",
