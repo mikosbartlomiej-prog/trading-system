@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97182.6,
-    "current_intraday_pnl": 258.29000000000815,
-    "current_intraday_pnl_pct": 0.002664862922418619,
+    "current_equity": 97114.87,
+    "current_intraday_pnl": 190.55999999999767,
+    "current_intraday_pnl_pct": 0.001966070225312903,
     "date": "2026-05-28",
-    "giveback_pct_of_peak": 0.3468123308802994,
-    "giveback_usd": 137.13999999999942,
+    "giveback_pct_of_peak": 0.518094226538214,
+    "giveback_usd": 204.8700000000099,
     "intraday_peak_equity": 98242.68,
     "intraday_peak_pnl": 395.43000000000757,
     "intraday_peak_pnl_pct": 0.004079781429447448,
     "last_action": "noop",
-    "last_update_at": "2026-05-28T19:42:45.874783+00:00",
+    "last_update_at": "2026-05-28T19:57:10.413732+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-28T16:59:05.452580+00:00",
@@ -27,8 +27,8 @@
   "position_mfe": {
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
-      "last_pct": 0.025940000000000005,
-      "last_seen_at": "2026-05-28T19:42:45.875423+00:00",
+      "last_pct": 0.02331,
+      "last_seen_at": "2026-05-28T19:57:10.414428+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
@@ -69,8 +69,8 @@
     },
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
-      "last_pct": 0.01158,
-      "last_seen_at": "2026-05-28T19:42:45.876419+00:00",
+      "last_pct": 0.011659999999999998,
+      "last_seen_at": "2026-05-28T19:57:10.415045+00:00",
       "peak_pct": 0.03448
     },
     "QQQ": {
@@ -99,8 +99,8 @@
     },
     "TSLA": {
       "first_seen_at": "2026-05-28T14:37:09.909139+00:00",
-      "last_pct": 0.005430000000000001,
-      "last_seen_at": "2026-05-28T19:42:45.877377+00:00",
+      "last_pct": 0.00425,
+      "last_seen_at": "2026-05-28T19:57:10.415564+00:00",
       "peak_pct": 0.00641
     },
     "USO": {
