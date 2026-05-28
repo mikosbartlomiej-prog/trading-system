@@ -49,3 +49,19 @@
 [01:33:05 INFO]   summary: 9 actionable + 2 hold; passed=9  failed=0
 [01:33:05 INFO] ── Step 8: plan complete ──
 [01:33:05 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[17:09:11 INFO] ============================================================
+[17:09:11 INFO] execute_orders() — auto-execute path
+[17:09:11 INFO] ============================================================
+[17:09:11 INFO]   market_status: open=True reason=open
+[17:09:12 ERR ]     LMT EXIT: safe_close: Alpaca 403: {"available":"0","code":40310000,"existing_qty":"15","held_for_orders":"15","message":"insufficient qty available for or
+[17:09:12 ERR ]     RTX EXIT: safe_close: Alpaca 403: {"available":"0","code":40310000,"existing_qty":"44","held_for_orders":"44","message":"insufficient qty available for or
+[17:09:12 INFO]     AMD BUY: derived qty=33 from target=$17,327 @ $524.49 (no prior position)
+[17:09:12 WARN]     AMD BUY: BUY skipped: position AMD already exists qty=34 target=33 (within 10% rebalance threshold)
+[17:09:12 INFO]     CRWD BUY: derived qty=25 from target=$17,327 @ $682.60 (no prior position)
+[17:09:12 WARN]     CRWD BUY: BUY skipped: 1 existing open BUY order(s) for CRWD (oldest id=2d0d5d1e). Cancel via cancel-stale-emergency-orders or wait for fill.
+[17:09:12 INFO]     PANW BUY: derived qty=66 from target=$17,327 @ $262.31 (no prior position)
+[17:09:12 WARN]     PANW BUY: BUY skipped: position PANW already exists qty=66 target=66 (within 10% rebalance threshold)
+[17:09:12 INFO]     TSLA BUY: derived qty=39 from target=$17,327 @ $442.00 (no prior position)
+[17:09:12 WARN]     TSLA BUY: BUY skipped: position TSLA already exists qty=39 target=39 (within 10% rebalance threshold)
+[17:09:12 INFO]   execution complete: 0 placed, 4 skipped, 2 failed

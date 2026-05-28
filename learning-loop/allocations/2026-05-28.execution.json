@@ -1,0 +1,59 @@
+{
+  "plan_date": "2026-05-28",
+  "executed_at": "2026-05-28T17:09:12Z",
+  "n_placed": 0,
+  "n_skipped": 4,
+  "n_failed": 2,
+  "results": [
+    {
+      "symbol": "LMT",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "safe_close: Alpaca 403: {\"available\":\"0\",\"code\":40310000,\"existing_qty\":\"15\",\"held_for_orders\":\"15\",\"message\":\"insufficient qty available for or",
+      "attempted_at": "2026-05-28T17:09:11Z",
+      "alpaca_order_id": null
+    },
+    {
+      "symbol": "RTX",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "failed",
+      "reason": "safe_close: Alpaca 403: {\"available\":\"0\",\"code\":40310000,\"existing_qty\":\"44\",\"held_for_orders\":\"44\",\"message\":\"insufficient qty available for or",
+      "attempted_at": "2026-05-28T17:09:12Z",
+      "alpaca_order_id": null
+    },
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "BUY skipped: position AMD already exists qty=34 target=33 (within 10% rebalance threshold)",
+      "attempted_at": "2026-05-28T17:09:12Z"
+    },
+    {
+      "symbol": "CRWD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "BUY skipped: 1 existing open BUY order(s) for CRWD (oldest id=2d0d5d1e). Cancel via cancel-stale-emergency-orders or wait for fill.",
+      "attempted_at": "2026-05-28T17:09:12Z"
+    },
+    {
+      "symbol": "PANW",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "BUY skipped: position PANW already exists qty=66 target=66 (within 10% rebalance threshold)",
+      "attempted_at": "2026-05-28T17:09:12Z"
+    },
+    {
+      "symbol": "TSLA",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "BUY skipped: position TSLA already exists qty=39 target=39 (within 10% rebalance threshold)",
+      "attempted_at": "2026-05-28T17:09:12Z"
+    }
+  ]
+}
