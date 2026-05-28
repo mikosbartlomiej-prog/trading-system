@@ -1,0 +1,49 @@
+{
+  "narrative": "Dzień 2026-05-28: equity $97,228 (+$303/+0.31% intraday), ale $1,218 poniżej szczytu $98,446 — gap nieprzypisany do zamkniętych trade'ów (mark-to-market lub efekt NOW SHORT cover z dziś). Zero zamkniętych pozycji w oknie 24h; cumulative_trades=0. Krytyczna awaria architektoniczna: v3.11 zombie-prune wyłączyła 6 strategii jednocześnie (crypto-momentum, geo-defense, geo-energy, geo-gold, geo-xom, options-momentum), zostawiając system bez żadnego mechanizmu wejścia właśnie gdy BTC/ETH RSI osiągnęło 20.5/19.5 — ekstremalny oversold historycznie poprzedzający silne odreagowania. SPY RSI 71.5 = overbought, co ogranicza atrakcyjność nowych stock long entries i utrudnia alokatorowi generowanie alfa w kontekście akcyjnym.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Brak aktywnych strategii z udokumentowanym edge — zombie-prune wyczyściła system w jednym dniu. Jedyna mierzalna okazja: crypto dip (BTC/ETH RSI 20.5/19.5), niedostępna bo crypto-momentum disabled z hard_safety. SPY overbought = nowe stock entries ryzykowne. fill_rate['unknown'] 37% = zlecenia limitowe nie trafiają w rynek (CVX/XOM/TSLA GTC open).",
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "OVERRIDE zombie-prune hard_safety: BTC RSI 20.5 + ETH RSI 19.5 — oba w ekstremalnej strefie oversold (najgłębiej od startu systemu). Zombie-prune wyłączyła po 41 dniach 0 trade'ów, ale przyczyna to pipeline failures (monitor routing, Anthropic quota) — nie brak edge. Per v3.9.8 heuristic: ETH ≤25 + BTC ≤45 → boost 1.5x. Nie re-enableowanie przy RSI~20 = płacenie okazji kosztem oportunistycznym. Operator powinien sprawdzić crypto-monitor last run status — jeśli monitor nie wykonuje, to ręczna weryfikacja crypto-monitor workflow."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Blokada boostów size_multiplier gdy SPY RSI > 70 (overbought)",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "SPY RSI 71.5 (2026-05-28) = overbought. Backtest pokazał że momentum-long ma najlepszy edge przy RSI 50-65; wejście przy RSI >70 kupuje na szczycie. Heurystyka blokuje auto-boost size_multiplier dla strategii momentum gdy SPY overbought — chroni przed buy-the-top i zapobiega wzmacnianiu pozycji na przegrzanym rynku.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_spy_overbought_entry_block(today_stats: dict) -> tuple[bool, str]:\n    \"\"\"Return True when SPY RSI is overbought (>70), signalling to skip size_multiplier boosts.\"\"\"\n    rsi_snapshot = today_stats.get(\"rsi_snapshot\", {})\n    spy_data = rsi_snapshot.get(\"SPY\", {})\n    spy_rsi = spy_data.get(\"today\", 50.0)\n    if spy_rsi > 70.0:\n        return True, f\"SPY RSI={spy_rsi:.1f} > 70 — overbought; skip size_multiplier boosts\"\n    return False, \"\"\n",
+      "test_addition": "class TestSpyOverboughtEntryBlock(unittest.TestCase):\n    def test_blocks_when_spy_rsi_above_70(self):\n        stats = {\"rsi_snapshot\": {\"SPY\": {\"today\": 71.5}}}\n        fired, reason = heuristic_spy_overbought_entry_block(stats)\n        self.assertTrue(fired)\n        self.assertIn(\"71.5\", reason)\n    def test_no_block_at_neutral_rsi(self):\n        stats = {\"rsi_snapshot\": {\"SPY\": {\"today\": 60.0}}}\n        fired, _ = heuristic_spy_overbought_entry_block(stats)\n        self.assertFalse(fired)\n    def test_boundary_exactly_70_not_blocked(self):\n        stats = {\"rsi_snapshot\": {\"SPY\": {\"today\": 70.0}}}\n        fired, _ = heuristic_spy_overbought_entry_block(stats)\n        self.assertFalse(fired)\n    def test_handles_missing_spy_data_gracefully(self):\n        fired, _ = heuristic_spy_overbought_entry_block({})\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": "In adapt_strategy(): after computing the win-rate warm-up boost (WR_WARM_THRESHOLD check, where size_multiplier *= 1.10), add: if heuristic_spy_overbought_entry_block(stats)[0]: skip that boost and append 'SPY overbought (RSI>70) — size_multiplier warm-up boost skipped' to rationale. Call once per strategy evaluation using the same today_stats dict already in scope."
+    },
+    {
+      "title": "Zombie-prune carve-out: nie prune gdy RSI ekstremalny dla powiązanego instrumentu",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Auto-prune (21 dni, 0 trade'ów) wyłączyła crypto-momentum gdy BTC/ETH RSI ~20 — najgorszy możliwy moment. Prune powinna być zawieszona gdy rsi_snapshot wskazuje ekstremalne odczyty dla instrumentów powiązanych ze strategią. Wymaga modyfikacji zombie_prune_stale_strategies() + safe_apply_overrides() — wieloplikowa zmiana, poza zakresem auto_pr.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-04",
+      "implementation_sketch": "W adapter.py::zombie_prune_stale_strategies(name, strategy_state, stats):\n  CRYPTO_STRATEGIES = {'crypto-momentum', 'crypto-breakdown'}\n  rsi = stats.get('rsi_snapshot', {})\n  btc_rsi = rsi.get('BTC/USD', {}).get('today', 50)\n  eth_rsi = rsi.get('ETH/USD', {}).get('today', 50)\n  if name in CRYPTO_STRATEGIES and (btc_rsi <= 25 or eth_rsi <= 25):\n    return None, f'PRUNE SKIPPED: extreme crypto RSI BTC={btc_rsi} ETH={eth_rsi}'\nW safe_apply_overrides(): gdy LLM override sets enabled=True + state has hard_safety=True:\n  → clear hard_safety + auto_pruned_at before applying\nFiles: learning-loop/adapter.py"
+    },
+    {
+      "title": "Fill-rate attribution: mapowanie 'unknown' orderów do strategii via symbol",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate['unknown'] skupia 19 zleceń bez attributii (37% fill rate; CVX/XOM/TSLA jako open GTC). Bez attributii nie widać który monitor ma problem. Symbol-based fallback (XOM→geo-xom, CVX→geo-energy, TSLA→price-momentum-long) ujawni rzeczywiste fill-rate per strategia i pozwoli targetować poprawki limitów.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-04",
+      "implementation_sketch": "W analyzer.py::compute_fill_rate():\n  SYMBOL_STRATEGY_MAP = {'XOM': 'geo-xom', 'CVX': 'geo-energy', 'GLD': 'geo-gold',\n    'TSLA': 'price-momentum-long', 'AAPL': 'price-momentum-long', ...}\n  Dla orderów gdzie client_order_id nie ma known prefiksu strategii:\n    → sprawdź symbol w mapie → bucket = SYMBOL_STRATEGY_MAP.get(symbol, 'unattributed')\n  Zmień klucz 'unknown' na 'unattributed' dla przejrzystości\n  Files: learning-loop/analyzer.py"
+    }
+  ],
+  "confidence": "medium"
+}
