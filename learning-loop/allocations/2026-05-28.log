@@ -1,0 +1,51 @@
+[01:32:59 INFO] ============================================================
+[01:32:59 INFO] AccountAwareAllocator — daily plan 2026-05-28
+[01:32:59 INFO] ============================================================
+[01:32:59 INFO] ── Step 1: fetching account state ──
+[01:32:59 INFO]   equity=$  96260.34  cash=$ 181963.57  buying_power=$ 230093.74
+[01:32:59 INFO] ── Step 2: fetching open positions ──
+[01:32:59 INFO]   7 positions, invested_ratio=0.8111 (target=1.00, min=0.98)
+[01:32:59 DBG ]     GLD        long  qty=19.0000 mv=$  7714.19  pct_eq=8.01%  pl=-0.08%
+[01:32:59 DBG ]     LMT        long  qty=15.0000 mv=$  7984.65  pct_eq=8.29%  pl=-0.12%
+[01:32:59 DBG ]     NOW        short qty=-169.0000 mv=$-17998.50  pct_eq=18.70%  pl=-5.11%
+[01:32:59 DBG ]     QQQ        long  qty=13.0000 mv=$  9489.35  pct_eq=9.86%  pl=+0.03%
+[01:32:59 DBG ]     RTX        long  qty=44.0000 mv=$  7881.72  pct_eq=8.19%  pl=+0.90%
+[01:32:59 DBG ]     SMH        long  qty=29.0000 mv=$ 17245.14  pct_eq=17.92%  pl=-0.58%
+[01:32:59 DBG ]     SPY        long  qty=13.0000 mv=$  9767.81  pct_eq=10.15%  pl=+0.14%
+[01:32:59 INFO]   PDT mode=OK  dt_remaining=3
+[01:32:59 INFO] ── Step 3: defensive mode check ──
+[01:32:59 INFO]   defensive_mode OFF → proceed with deployment
+[01:32:59 INFO] ── Step 4: regime detection ──
+[01:32:59 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[01:32:59 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[01:32:59 INFO] ── Step 5: scoring allowed universe ──
+[01:33:05 DBG ]     AMD      score=+0.643  bucket=ai_nasdaq_semis
+[01:33:05 DBG ]     CRWD     score=+0.526  bucket=software_quality
+[01:33:05 DBG ]     PANW     score=+0.481  bucket=software_quality
+[01:33:05 DBG ]     TSLA     score=+0.410  bucket=ai_nasdaq_semis
+[01:33:05 DBG ]     SMH      score=+0.408  bucket=ai_nasdaq_semis
+[01:33:05 INFO] ── Step 6: target weight construction ──
+[01:33:05 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
+[01:33:05 INFO]   target_invested_ratio_after_plan = 1.0000
+[01:33:05 DBG ]     AMD        target_weight=0.1800 ($17326.86)
+[01:33:05 DBG ]     CRWD       target_weight=0.1800 ($17326.86)
+[01:33:05 DBG ]     PANW       target_weight=0.1800 ($17326.86)
+[01:33:05 DBG ]     TSLA       target_weight=0.1800 ($17326.86)
+[01:33:05 DBG ]     SMH        target_weight=0.1800 ($17326.86)
+[01:33:05 DBG ]     SPY        target_weight=0.1000 ($9626.03)
+[01:33:05 DBG ]     QQQ        target_weight=0.0000 ($0.00)
+[01:33:05 INFO] ── Step 7: rebalance order generation ──
+[01:33:05 INFO]     NOW      EXIT    current=$-17998.50 target=$     0.00 delta=$+17998.50  -- symbol not in target allocation
+[01:33:05 INFO]     AMD      BUY     current=$     0.00 target=$ 17326.86 delta=$+17326.86  -- new position at target 18.0%
+[01:33:05 INFO]     CRWD     BUY     current=$     0.00 target=$ 17326.86 delta=$+17326.86  -- new position at target 18.0%
+[01:33:05 INFO]     PANW     BUY     current=$     0.00 target=$ 17326.86 delta=$+17326.86  -- new position at target 18.0%
+[01:33:05 INFO]     TSLA     BUY     current=$     0.00 target=$ 17326.86 delta=$+17326.86  -- new position at target 18.0%
+[01:33:05 INFO]     QQQ      REDUCE  current=$  9489.35 target=$     0.00 delta=$ -9489.35  -- reduce $9489 to target 0.0%
+[01:33:05 INFO]     LMT      EXIT    current=$  7984.65 target=$     0.00 delta=$ -7984.65  -- symbol not in target allocation
+[01:33:05 INFO]     RTX      EXIT    current=$  7881.72 target=$     0.00 delta=$ -7881.72  -- symbol not in target allocation
+[01:33:05 INFO]     GLD      EXIT    current=$  7714.19 target=$     0.00 delta=$ -7714.19  -- symbol not in target allocation
+[01:33:05 INFO]     SMH      HOLD    current=$ 17245.14 target=$ 17326.86 delta=$   +81.72  -- |delta +0.08%| < min_diff 2.00%
+[01:33:05 INFO]     SPY      HOLD    current=$  9767.81 target=$  9626.03 delta=$  -141.78  -- |delta -0.15%| < min_diff 2.00%
+[01:33:05 INFO]   summary: 9 actionable + 2 hold; passed=9  failed=0
+[01:33:05 INFO] ── Step 8: plan complete ──
+[01:33:05 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)

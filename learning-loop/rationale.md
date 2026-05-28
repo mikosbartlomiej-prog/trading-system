@@ -564,3 +564,9 @@
 - 2026-05-27 · edge-gate: DISABLED via EDGE_GATE_DISABLED env
 - 2026-05-27 · rsi-alert [oversold]: ETH/USD RSI=24.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-28 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-28 · fill-rate alert [unknown]: fill rate 27% below 50% (3 canceled / 22 placed) — limits too tight or quote stale
+- 2026-05-28 · edge-gate: DISABLED via EDGE_GATE_DISABLED env
+- 2026-05-28 · rsi-alert [oversold]: BTC/USD RSI=21.4 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-28 · rsi-alert [oversold]: ETH/USD RSI=19.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
