@@ -1,28 +1,29 @@
 {
-  "narrative": "Żaden z 5 kandydatów nie przechodzi walidacji — spike_ratio=99 u wszystkich to artefakt (rolling_avg_7d=0, brak baseline historycznego), więc żaden 'spike' nie jest potwierdzony. Niezależnie od tego: MSFT to pytanie dyskusyjne bez katalizatora, AVGO SHORT pochodzi z bullish AI-infra posta (błędna interpretacja sentymentu), ADBE to thesis value-investing na 3-5 lat, AMD jest już 18.2% equity w portfelu, a NVDA to gain porn o MU/MRVL bez żadnej tezy na NVDA konkretnie.",
+  "as_of": "2026-05-28T17:47:57Z",
+  "narrative": "Wszystkie 5 kandydatów odrzucone — spike_ratio=99 to artefakt braku 7d baseline (rolling_avg=0). Najciekawszy kandydat AMD (12 wzmianek, skew 0.56) blokuje concentration cap — AMD już 18.2% equity, Meta-warrant teza interesująca strukturalnie ale to roczny+ horyzont, nie 24h catalyst. AVGO SELL_SHORT błędna ekstrakcja kierunku — post bullish na AI infra. NVDA gain porn MU/MRVL bez forward tezy; MSFT pytanie dyskusyjne bez konkluzji; ADBE explicit 3-5 lat na /r/ValueInvesting.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "MSFT",
-      "reason": "Post to pytanie dyskusyjne 'What's holding MSFT back?' — treść wymienia zarówno bull jak i bear case bez konkluzji; skew=1.0 niezgodny z neutralnym/mieszanym contentem; brak fresh catalyst w ostatnich 24h."
+      "reason": "Post to pytanie dyskusyjne 'What's holding MSFT back?' — wymienia bull i bear bez konkluzji; skew=1.0 niezgodny z neutralnym contentem; brak fresh catalyst <24h; spike_ratio=99 artefakt."
     },
     {
       "ticker": "AVGO",
-      "reason": "Bazowy post jest BULLISH na AI-infra names — wymienia AVGO jako potencjalny 'next AI bottleneck play'; SELL_SHORT jest odwrotnością sentymentu posta; shorting AI-chip names przy VIX=17 i risk-on regime jest counter-trend."
+      "reason": "Strona SELL_SHORT błędna — post 'co po MU' jest bullish na AVGO jako AI infra play; 1 wzmianka; shorting AI-chip przy VIX=17 RISK_ON jest counter-trend."
     },
     {
       "ticker": "ADBE",
-      "reason": "Thesis value-investing na 3-5 lat ('14 P/E, generational buy?') z 41 upvotes na /r/ValueInvesting; brak momentum catalyst; horyzont 1-72h naszej strategii jest niezgodny z tym setupem."
+      "reason": "Explicit horyzont 3-5 lat na /r/ValueInvesting; brak momentum catalyst; AI disruption obawy = realne headwindy dla 1-72h momentum trade."
     },
     {
       "ticker": "AMD",
-      "reason": "AMD już 18.2% equity w portfelu — concentration risk bez sensownego powodu; post #1 to gain porn z covered calls, post #2 to spekulatywna thesis o AMD $1T market cap (horyzont roczny+); brak fresh catalyst w oknie 24h."
+      "reason": "AMD już 18.2% equity w portfelu — concentration cap blokuje dodanie; Meta-warrant teza (AMD $1T) spekulatywna, horyzont roczny+, nie 24h catalyst."
     },
     {
       "ticker": "NVDA",
-      "reason": "Post z 2480 upvotes to gain porn o MU/MRVL yolo (+1058%) — NVDA tylko 15% cudzego portfela bez żadnej forward tezy; skew=0.2 słaby; brak catalyst na NVDA konkretnie."
+      "reason": "Gain porn MU/MRVL +1058% yolo — NVDA wspomniane jedynie jako 15% cudzego portfela; skew=0.2 słaby; 1 wzmianka; zero forward tezy na NVDA."
     }
   ],
-  "macro_context": "VIX=17 i daily P&L +0.40% to risk-on regime, ale rolling_avg_7d=0 dla wszystkich 5 kandydatów sprawia że spike_ratio=99 jest artefaktem matematycznym — brak możliwości potwierdzenia prawdziwego spiku sentymentu.",
+  "macro_context": "VIX=17, dzień +0.27% — NEUTRAL-to-RISK_ON spokojny; 5 otwartych pozycji ~69.8% equity; brak sygnałów Reddit z prawdziwym 24h edge — spike_ratio=99 u wszystkich to artefakt matematyczny, nie potwierdzony spike sentymentu.",
   "confidence_in_curation": "high"
 }
