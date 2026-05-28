@@ -285,3 +285,26 @@ Wire do adapt_strategy() po pętli warm-up/cool-down.
 4. Target: geo-defense, geo-energy, geo-gold, geo-xom
 5. Tests: deadline_yesterday + 0 trades -> disabled; deadline_tomorrow -> unchanged; deadline_past + 1 trade -> unchanged
 6. Safety: only applies when trades_lifetime==0
+- [ ] [2026-05-28] **Blokada boostów size_multiplier gdy SPY RSI > 70 (overbought)** _(risk: low, effort: ?, revisit: no specific date)_
+  - **Rationale:** SPY RSI 71.5 (2026-05-28) = overbought. Backtest pokazał że momentum-long ma najlepszy edge przy RSI 50-65; wejście przy RSI >70 kupuje na szczycie. Heurystyka blokuje auto-boost size_multiplier dla strategii momentum gdy SPY overbought — chroni przed buy-the-top i zapobiega wzmacnianiu pozycji na przegrzanym rynku.
+- [ ] [2026-05-28] **Zombie-prune carve-out: nie prune gdy RSI ekstremalny dla powiązanego instrumentu** _(risk: medium, effort: 2-3h, revisit: 2026-06-04)_
+  - **Rationale:** Auto-prune (21 dni, 0 trade'ów) wyłączyła crypto-momentum gdy BTC/ETH RSI ~20 — najgorszy możliwy moment. Prune powinna być zawieszona gdy rsi_snapshot wskazuje ekstremalne odczyty dla instrumentów powiązanych ze strategią. Wymaga modyfikacji zombie_prune_stale_strategies() + safe_apply_overrides() — wieloplikowa zmiana, poza zakresem auto_pr.
+  - **Sketch:** W adapter.py::zombie_prune_stale_strategies(name, strategy_state, stats):
+  CRYPTO_STRATEGIES = {'crypto-momentum', 'crypto-breakdown'}
+  rsi = stats.get('rsi_snapshot', {})
+  btc_rsi = rsi.get('BTC/USD', {}).get('today', 50)
+  eth_rsi = rsi.get('ETH/USD', {}).get('today', 50)
+  if name in CRYPTO_STRATEGIES and (btc_rsi <= 25 or eth_rsi <= 25):
+    return None, f'PRUNE SKIPPED: extreme crypto RSI BTC={btc_rsi} ETH={eth_rsi}'
+W safe_apply_overrides(): gdy LLM override sets enabled=True + state has hard_safety=True:
+  → clear hard_safety + auto_pruned_at before applying
+Files: learning-loop/adapter.py
+- [ ] [2026-05-28] **Fill-rate attribution: mapowanie 'unknown' orderów do strategii via symbol** _(risk: low, effort: 1h, revisit: 2026-06-04)_
+  - **Rationale:** fill_rate['unknown'] skupia 19 zleceń bez attributii (37% fill rate; CVX/XOM/TSLA jako open GTC). Bez attributii nie widać który monitor ma problem. Symbol-based fallback (XOM→geo-xom, CVX→geo-energy, TSLA→price-momentum-long) ujawni rzeczywiste fill-rate per strategia i pozwoli targetować poprawki limitów.
+  - **Sketch:** W analyzer.py::compute_fill_rate():
+  SYMBOL_STRATEGY_MAP = {'XOM': 'geo-xom', 'CVX': 'geo-energy', 'GLD': 'geo-gold',
+    'TSLA': 'price-momentum-long', 'AAPL': 'price-momentum-long', ...}
+  Dla orderów gdzie client_order_id nie ma known prefiksu strategii:
+    → sprawdź symbol w mapie → bucket = SYMBOL_STRATEGY_MAP.get(symbol, 'unattributed')
+  Zmień klucz 'unknown' na 'unattributed' dla przejrzystości
+  Files: learning-loop/analyzer.py

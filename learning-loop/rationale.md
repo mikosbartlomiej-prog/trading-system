@@ -570,3 +570,17 @@
 - 2026-05-28 · rsi-alert [oversold]: BTC/USD RSI=21.4 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-28 · rsi-alert [oversold]: ETH/USD RSI=19.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-28 · LLM[medium] regime=choppy: Dzień 2026-05-28: equity $97,228 (+$303/+0.31% intraday), ale $1,218 poniżej szczytu $98,446 — gap nieprzypisany do zamkniętych trade'ów (mark-to-market lub efekt NOW SHORT cover z dziś). Zero zamkniętych pozycji w oknie 24h; cumulative_trades=0. Krytyczna awaria architektoniczna: v3.11 zombie-prune wyłączyła 6 strategii jednocześnie (crypto-momentum, geo-defense, geo-energy, geo-gold, geo-xom, options-momentum), zostawiając system bez żadnego mechanizmu wejścia właśnie gdy BTC/ETH RSI osiągnęło 20.5/19.5 — ekstremalny oversold historycznie poprzedzający silne odreagowania. SPY RSI 71.5 = overbought, co ogranicza atrakcyjność nowych stock long entries i utrudnia alokatorowi generowanie alfa w kontekście akcyjnym.
+-   · crypto-momentum.size_multiplier: 1.3 -> 1.5
+-   · crypto-momentum.side_bias: None -> long
+-   · crypto-momentum.enabled: False -> True
+-   · crypto-momentum.rationale: AUTO-PRUNED: SILENT 41 days >= 21, 0 trades lifetime. v3.11 zombie-prune policy. -> OVERRIDE zombie-prune hard_safety: BTC RSI 20.5 + ETH RSI 19.5 — oba w ekstremalnej strefie oversold (najgłębiej od startu systemu). Zombie-prune wyłączyła po 41 dniach 0 trade'ów, ale przyczyna to pipeline failures (monitor routing, Anthropic quota) — nie brak edge. Per v3.9.8 heuristic: ETH ≤25 + BTC ≤45 → boost 1.5x. Nie re-enableowanie przy RSI~20 = płacenie okazji kosztem oportunistycznym. Operator powinien sprawdzić crypto-monitor last run status — jeśli monitor nie wykonuje, to ręczna weryfikacja crypto-monitor workflow.
+-   · global_overrides.options_side_bias: None -> None
+- 2026-05-28 · LLM edge: Brak aktywnych strategii z udokumentowanym edge — zombie-prune wyczyściła system w jednym dniu. Jedyna mierzalna okazja: crypto dip (BTC/ETH RSI 20.5/19.5), niedostępna bo crypto-momentum disabled z hard_safety. SPY overbought = nowe stock entries ryzykowne. fill_rate['unknown'] 37% = zlecenia limitowe nie trafiają w rynek (CVX/XOM/TSLA GTC open).
+- 2026-05-28 · geo-defense: AUTO-PRUNED (SILENT 43d, 0 trades) — enabled=False. To revive: set hard_safety_override=true OR clear auto_pruned_at + manually flip enabled=True.
+- 2026-05-28 · fill-rate alert [unknown]: fill rate 37% below 50% (0 canceled / 19 placed) — limits too tight or quote stale
+- 2026-05-28 · edge-gate: DISABLED via EDGE_GATE_DISABLED env
+- 2026-05-28 · equity-gap [WARN]: Equity dropped $1,218 ($98,446 → $97,228) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+- 2026-05-28 · rsi-alert [oversold]: BTC/USD RSI=20.5 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-28 · rsi-alert [oversold]: ETH/USD RSI=19.5 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
