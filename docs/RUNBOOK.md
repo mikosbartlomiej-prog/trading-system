@@ -140,6 +140,27 @@ next cron. Exits queued via emergency_close survive in DAY/GTC TIF.
 
 ---
 
+## External cron driver (v3.11.2 — 2026-05-29)
+
+**Problem solved:** GitHub Actions schedule cron-skip cascade — production
+delivery rate observed at **2.8-12%** vs 99% expected. Effect: hot
+monitors (crypto, defense, twitter) effectively useless for real-time
+signal detection. Watchdog itself dropped → couldn't save anything.
+
+**Solution:** `cloudflare-workers/cron-trigger/` — Cloudflare Worker
+that fires Cloudflare cron triggers (99.99% SLA, free tier) and calls
+GitHub API `workflow_dispatch` endpoint for each monitor. GH schedule
+cron stays as fallback; concurrency `cancel-in-progress: true` prevents
+duplicates.
+
+**Setup:** ~10 min, one-time. See `cloudflare-workers/cron-trigger/README.md`.
+
+**Verification:** after deploy, check `gh run list --workflow=crypto-monitor.yml --limit 10`
+within 10 min. Should see ~4× more activity (1 schedule + 1 workflow_dispatch
+per 5 min).
+
+**Cost:** Free tier (~2,100 requests/day = 2.1% of 100k quota).
+
 ## Free-tier dependencies (no paid services)
 
 | Component | Source | Cost | Fallback |

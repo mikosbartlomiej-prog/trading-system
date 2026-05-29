@@ -1,0 +1,30 @@
+name = "cron-trigger"
+main = "worker.js"
+compatibility_date = "2026-05-01"
+
+# Cloudflare Workers Free tier allows up to 3 cron triggers per worker.
+# Reference: https://developers.cloudflare.com/workers/platform/limits/#worker-limits
+#
+# Schedule design (UTC):
+#   "*/5 * * * *"      — every 5 min: fire HOT 24/7 monitors
+#                        + session-only monitors when US market open
+#   "*/15 * * * *"     — every 15 min: fire medium-freq monitors
+#   "45 13 * * 1-5"    — Mon-Fri 13:45 UTC: backup morning-allocator trigger
+#                        (in case GH schedule misses)
+[triggers]
+crons = [
+  "*/5 * * * *",
+  "*/15 * * * *",
+  "45 13 * * 1-5",
+]
+
+# Environment variables (SET IN CLOUDFLARE DASHBOARD, not here):
+#   GITHUB_PAT          — PAT with workflow scope (use WORKFLOW_PAT from GitHub secrets)
+#   GITHUB_REPO         — "mikosbartlomiej-prog/trading-system"
+#   ALERT_WEBHOOK_URL   — (optional) webhook for failures
+#
+# DO NOT put secrets here. Use `wrangler secret put` or dashboard.
+
+# Logging — useful for debugging cron failures
+[observability.logs]
+enabled = true
