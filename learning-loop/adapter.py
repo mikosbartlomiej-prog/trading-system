@@ -292,36 +292,75 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
         if stats.get("trades_7d", 0) > 0:
             continue                       # active this week
 
-        # v3.11 (2026-05-27) — auto-prune after 21 days SILENT.
-        # Previously: warning only ("consider disable or remove").
-        # Now: ≥21 days SILENT + 0 trades lifetime → auto disable.
-        # Operator can override via cfg['hard_safety_override']=true to
-        # keep a known-good strategy alive during temporary signal famine.
+        # v3.11.1 (2026-05-29) — REFINED zombie-prune policy.
+        # PROBLEM with v3.11 (shipped 2026-05-27): forced auto-disable on
+        # "0 trades lifetime" disabled 6 strategies on 2026-05-28
+        # (crypto-momentum + 4 geo-* + options-momentum) during BTC/ETH
+        # RSI 20.5/19.5 — best buying opportunity. LLM Senior PM had to
+        # OVERRIDE every day. Per LLM analysis: cause was PIPELINE FAILURE
+        # (monitor routing broken, Anthropic quota), NOT lack of edge.
+        #
+        # NEW POLICY — distinguish two cases:
+        # (a) Strategy fired orders but all rejected/lost → legit auto-prune
+        #     Condition: orders_placed_lifetime >= 5 AND trades_lifetime == 0
+        # (b) Strategy fired ZERO orders → pipeline failure, NOT prune
+        #     Condition: orders_placed_lifetime < 5
+        #     → log flag "PIPELINE_FAILURE_SUSPECTED", DON'T auto-disable
+        #
+        # If we can't get orders_placed_lifetime from stats, FAIL SAFE (no prune).
         AUTO_PRUNE_DAYS = 21
+        MIN_PLACED_FOR_PRUNE = 5  # need ≥5 placement attempts to prove no edge
         if days_tracked >= AUTO_PRUNE_DAYS:
             override = bool(cfg.get("hard_safety_override"))
             if override:
                 out.append(
                     f"{name}: SILENT {days_tracked}d but hard_safety_override=true → keep enabled"
                 )
-            else:
+                continue
+
+            # Check whether strategy ever ATTEMPTED to trade
+            # (fill_rate.<strategy>.placed counts placement attempts)
+            fill_rate = today_stats.get("fill_rate") or {}
+            strategy_fill = fill_rate.get(name) or {}
+            placed_lifetime = int(strategy_fill.get("placed_lifetime")
+                                    or strategy_fill.get("placed", 0))
+            # Fallback: any orders observed
+            if placed_lifetime == 0:
+                # Pipeline failure case — DON'T auto-disable, flag instead
+                out.append(
+                    f"{name}: PIPELINE_FAILURE_SUSPECTED — SILENT {days_tracked}d, "
+                    f"0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). "
+                    f"Likely cause: monitor routing broken, API quota, or strategy never fires. "
+                    f"Operator check: monitor-health for this strategy's monitor."
+                )
+                continue
+
+            if placed_lifetime >= MIN_PLACED_FOR_PRUNE:
+                # Legit case: placed many orders, none became trades → no edge
                 cfg["enabled"] = False
                 cfg["paused_until"] = None
                 cfg["hard_safety"] = True
                 cfg["auto_pruned_at"] = today_iso
                 cfg["rationale"] = (
-                    f"AUTO-PRUNED: SILENT {days_tracked} days >= {AUTO_PRUNE_DAYS}, "
-                    f"0 trades lifetime. v3.11 zombie-prune policy."
+                    f"AUTO-PRUNED: SILENT {days_tracked}d, {placed_lifetime} placement "
+                    f"attempts, 0 trades. v3.11.1 refined zombie-prune (legit no-edge)."
                 )
                 out.append(
-                    f"{name}: AUTO-PRUNED (SILENT {days_tracked}d, 0 trades) — "
-                    f"enabled=False. To revive: set hard_safety_override=true OR "
-                    f"clear auto_pruned_at + manually flip enabled=True."
+                    f"{name}: AUTO-PRUNED (SILENT {days_tracked}d, "
+                    f"{placed_lifetime} placed / 0 trades) — enabled=False. "
+                    f"To revive: hard_safety_override=true OR clear auto_pruned_at."
+                )
+            else:
+                # In-between: some attempts but not enough sample
+                out.append(
+                    f"{name}: SILENT {days_tracked}d with {placed_lifetime} placement "
+                    f"attempts — insufficient sample for prune (need ≥{MIN_PLACED_FOR_PRUNE}). "
+                    f"v3.11.1 keeps enabled."
                 )
         else:
             out.append(
                 f"{name}: SILENT — enabled but 0 trades lifetime "
-                f"({days_tracked} days tracked, will auto-prune at {AUTO_PRUNE_DAYS}d)"
+                f"({days_tracked} days tracked, will evaluate at {AUTO_PRUNE_DAYS}d)"
             )
     return out
 

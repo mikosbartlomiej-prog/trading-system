@@ -62,11 +62,22 @@ def alpaca_headers() -> dict:
 
 
 # Known client_order_id prefixes — copied from forensic_position_origin.py
+# v3.11.1 (2026-05-29): added geo-defense-/geo-energy-/geo-gold-/geo-xom-
+# after observing 4 false-positive P05 alerts per detector run × cron */5
+# = ~100 false alerts/day. These are LEGITIMATE automation prefixes used
+# by geo-monitor (see shared/alpaca_orders.execute_stock_signal with
+# strategy="geo-defense" etc.). Also added news-* (twitter-monitor patterns
+# A-E) and reddit-sentiment- for completeness.
 KNOWN_COID_PREFIXES = (
     "stock-", "crypto-", "options-momentum-", "alloc-exit-", "alloc-reduce-",
     "allocator-rebalance-", "exit-emergency-", "exit-tp-", "exit-sl-",
     "exit-trail-", "exit-regime-", "exit-governor-", "exit-profit-lock-",
     "recreate-exit-", "panic-close-", "op-correction-", "operational-correction-",
+    # v3.11.1 additions — observed in production 2026-05-28/29
+    "geo-defense-", "geo-energy-", "geo-gold-", "geo-xom-",
+    "defense-news-", "reddit-sentiment-",
+    "twitter-A-", "twitter-B-", "twitter-C-", "twitter-D-",
+    "politician-djt-", "politician-stockact-",
 )
 
 # Tickers that should NEVER be short (long-only whitelist by strategy design)

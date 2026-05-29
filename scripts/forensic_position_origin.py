@@ -64,6 +64,19 @@ KNOWN_PREFIXES = {
     "panic-close-":       "scripts/panic_close_options.py",
     "op-correction-":     "operator manual correction",
     "operational-correction-": "operator manual correction (alt prefix)",
+    # v3.11.1 (2026-05-29) additions — observed in production
+    "geo-defense-":       "geo-monitor (defense ticker via _classify_news_to_signals)",
+    "geo-energy-":        "geo-monitor (energy ticker)",
+    "geo-gold-":          "geo-monitor (gold ticker)",
+    "geo-xom-":           "geo-monitor (XOM specific)",
+    "defense-news-":      "defense-monitor signal-driven entry",
+    "reddit-sentiment-":  "reddit-monitor signal-driven entry",
+    "twitter-A-":         "twitter-monitor Pattern A (TICKER_DIRECT)",
+    "twitter-B-":         "twitter-monitor Pattern B (GEO_ESCALATION)",
+    "twitter-C-":         "twitter-monitor Pattern C (DEESCALATION)",
+    "twitter-D-":         "twitter-monitor Pattern D (MACRO_DOVISH)",
+    "politician-djt-":    "politician-monitor DJT Form 4",
+    "politician-stockact-": "politician-monitor STOCK Act bipartisan",
 }
 
 

@@ -106,6 +106,15 @@ jobs:
               git pull --rebase origin "$BRANCH" || true
               sleep $((attempt * 2))
             done
-            echo "Push failed after 3 attempts; execution log is in workflow logs only."
-            exit 1
+            # v3.11.1 (2026-05-29): exit 0 (success) even on push failure.
+            # ORDERS ARE PLACED by execute_allocation_plan.py BEFORE this
+            # commit step. Workflow status reflects ORDER OUTCOME (success),
+            # not git audit-trail outcome. Push race condition (common when
+            # other crons concurrently push) is recoverable in next run —
+            # but it caused FALSE "FAILED" emails on 2026-05-28 14:21 when
+            # 4 orders WERE placed successfully. Same pattern as forensic
+            # fix 2026-05-27 (commit 18d3617).
+            echo "Push failed after 3 attempts; execution log is in workflow logs."
+            echo "(orders WERE placed; only the audit-journal commit failed; recoverable)"
+            exit 0
           fi
