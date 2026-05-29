@@ -4,20 +4,20 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97328.73,
-    "current_intraday_pnl": 404.41999999999825,
-    "current_intraday_pnl_pct": 0.0041725342176797365,
+    "current_equity": 97331.85,
+    "current_intraday_pnl": 407.54000000000815,
+    "current_intraday_pnl_pct": 0.004204724284341133,
     "date": "2026-05-29",
     "giveback_pct_of_peak": 0.0,
     "giveback_usd": 0.0,
-    "intraday_peak_equity": 97328.73,
-    "intraday_peak_pnl": 404.41999999999825,
-    "intraday_peak_pnl_pct": 0.0041725342176797365,
+    "intraday_peak_equity": 97331.85,
+    "intraday_peak_pnl": 407.54000000000815,
+    "intraday_peak_pnl_pct": 0.004204724284341133,
     "last_action": "noop",
-    "last_update_at": "2026-05-29T06:57:05.625239+00:00",
+    "last_update_at": "2026-05-29T07:01:12.636817+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
-    "peak_at": "2026-05-29T06:57:05.625239+00:00",
+    "peak_at": "2026-05-29T07:01:12.636817+00:00",
     "pnl_state": "GREEN",
     "profit_floor_usd": 0.0,
     "session_start_equity": 96924.31,
@@ -28,7 +28,7 @@
     "AMD": {
       "first_seen_at": "2026-05-15T14:50:46.732518+00:00",
       "last_pct": 0.03609,
-      "last_seen_at": "2026-05-29T06:57:05.626081+00:00",
+      "last_seen_at": "2026-05-29T07:01:12.637615+00:00",
       "peak_pct": 0.04907
     },
     "CRWD": {
@@ -40,7 +40,7 @@
     "CVX": {
       "first_seen_at": "2026-05-28T21:46:10.684724+00:00",
       "last_pct": -0.00672,
-      "last_seen_at": "2026-05-29T06:57:05.626777+00:00",
+      "last_seen_at": "2026-05-29T07:01:12.638292+00:00",
       "peak_pct": 0.00365
     },
     "GLD": {
@@ -76,7 +76,7 @@
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
       "last_pct": 0.01401,
-      "last_seen_at": "2026-05-29T06:57:05.627424+00:00",
+      "last_seen_at": "2026-05-29T07:01:12.639242+00:00",
       "peak_pct": 0.03448
     },
     "QQQ": {
@@ -105,8 +105,8 @@
     },
     "TSLA": {
       "first_seen_at": "2026-05-28T14:37:09.909139+00:00",
-      "last_pct": 0.0035200000000000006,
-      "last_seen_at": "2026-05-29T06:57:05.628103+00:00",
+      "last_pct": 0.0037,
+      "last_seen_at": "2026-05-29T07:01:12.639893+00:00",
       "peak_pct": 0.00641
     },
     "USO": {
@@ -118,7 +118,7 @@
     "XOM": {
       "first_seen_at": "2026-05-28T21:46:10.686700+00:00",
       "last_pct": -0.00764,
-      "last_seen_at": "2026-05-29T06:57:05.628762+00:00",
+      "last_seen_at": "2026-05-29T07:01:12.640494+00:00",
       "peak_pct": 0.0
     }
   },
