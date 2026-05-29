@@ -183,7 +183,17 @@ System ma **dwie pętle uczenia**:
 
 ### 3.5 Komunikacja
 
-- **Cloudflare Workers** (5×) — proxy między GitHub Actions a claude.ai Routines (dodaje auth headers + anthropic-version)
+- **Cloudflare Workers** — multiple roles:
+  - **Proxy workers** (5×) — między GitHub Actions a claude.ai Routines
+    (dodaje auth headers + anthropic-version)
+  - **`cron-trigger`** (v3.11.2 — 2026-05-29) — **external cron driver** bypasses
+    GitHub Actions schedule cron-skip cascade. Cloudflare cron (99.99% SLA)
+    co 5/15 min calls `POST /actions/workflows/{x}/dispatches` via
+    GitHub API. Fixes production issue: GH delivery 2.8% → 100% (45×
+    improvement verified 2026-05-29 06:55 UTC). Cost: ~2,100 API calls/day
+    = 2.1% of Cloudflare 100k free quota. See
+    `cloudflare-workers/cron-trigger/README.md` for setup.
+  - **Curator workers** — Reddit, Crypto, Politician — LLM-based signal filters
 - **Gmail SMTP SSL port 465** — wszystkie notyfikacje operatora
 - **HTTPS Alpaca REST** — `https://paper-api.alpaca.markets`
 

@@ -51,13 +51,13 @@ tail -20 journal/autonomy/$(date -u +%Y-%m-%d).jsonl 2>/dev/null
     --mode both --walk-forward 3
 ```
 
-## Architecture (v3.10 — 2026-05-27)
+## Architecture (v3.11.2 — 2026-05-29)
 
-Four defense layers against same-class incident recurrence (3 incidents in
-6 days resolved by v3.9.6 → v3.9.9 → v3.9.10 permanence fix):
+**Five defense layers + EDGE-FIRST gates + reliable cron driver:**
 
 1. **Layer 1 — incident pattern detector** (`scripts/incident_pattern_detector.py`)
-   Cron */5 24/7. 12 known anomaly patterns. Zero LLM. Auto-disable opt-in.
+   Cron */5 24/7 (via Cloudflare). 12 known anomaly patterns (geo-* prefixes
+   added v3.11.1). Zero LLM. Auto-disable opt-in.
 2. **Layer 2 — centralized SELL + lint test gate** (`shared/alpaca_orders.py::safe_close`)
    Single entry point for all sell/exit/buy-to-cover. AST lint test
    `test_no_naked_sell_v3910.py` FAILS CI if anyone adds direct `requests.post(
@@ -67,10 +67,24 @@ Four defense layers against same-class incident recurrence (3 incidents in
    Fetches live Alpaca positions before allocator exec; drops stale orders.
 4. **Layer 4 — cron reliability** (`entry-monitors-watchdog.yml` matrix 12)
    PAT-based retrigger when GitHub Actions cron-skip happens.
+5. **Layer 5 — EXTERNAL cron driver** (`cloudflare-workers/cron-trigger/`)
+   Cloudflare Worker (free tier, 99.99% SLA) fires `*/5`, `*/15`, weekday
+   `45 13 UTC` cron triggers calling GitHub `workflow_dispatch` API.
+   **Bypasses GH Actions schedule cron-skip** (observed 2.8-12% delivery rate
+   on 2026-05-29 → fixed to ~100% via Worker). Production verified at
+   45× pre-deploy monitor activity.
 
 Plus **v3.10 unified risk taxonomy** (`shared/risk_classification.py`):
 all risk gates return one of `BLOCK / DEFER / DOWNSIZE / ALLOW / ALERT_ONLY`
 with a `decision_id` for cross-component audit correlation.
+
+Plus **v3.11 EDGE-FIRST** gates (default OFF, opt-in after backtests):
+- `learning-loop/edge_validator.py` — strategy must pass realistic-mode
+  backtest (WR ≥ 50%, PF ≥ 1.3, MDD < 20%, n ≥ 10) to remain `enabled=true`
+- `shared/kelly_sizing.py` — quarter-Kelly position sizing
+- `shared/earnings_calendar.py` — ±1d earnings blackout
+- v3.11.1 zombie-prune: distinguish pipeline_failure (don't disable) from
+  no_edge (auto-disable after 21d SILENT with ≥5 placement attempts)
 
 ## Detailed docs
 

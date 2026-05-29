@@ -140,26 +140,74 @@ next cron. Exits queued via emergency_close survive in DAY/GTC TIF.
 
 ---
 
-## External cron driver (v3.11.2 — 2026-05-29)
+## External cron driver (v3.11.2 — 2026-05-29) ✅ DEPLOYED
+
+**Status:** 🟢 ACTIVE since 2026-05-29 ~06:45 UTC.
 
 **Problem solved:** GitHub Actions schedule cron-skip cascade — production
-delivery rate observed at **2.8-12%** vs 99% expected. Effect: hot
-monitors (crypto, defense, twitter) effectively useless for real-time
-signal detection. Watchdog itself dropped → couldn't save anything.
+delivery rate observed at **2.8-12%** vs 99% expected (crypto-monitor:
+8 schedule runs/24h vs 288 expected). Effect: 5 days ZERO trade events
+(audit JSONL 2026-05-23 → 2026-05-27 all empty; only 6 events on 28 May).
+Watchdog itself dropped at 8% → couldn't save anything.
 
 **Solution:** `cloudflare-workers/cron-trigger/` — Cloudflare Worker
-that fires Cloudflare cron triggers (99.99% SLA, free tier) and calls
+firing Cloudflare cron triggers (99.99% SLA, free tier) and calling
 GitHub API `workflow_dispatch` endpoint for each monitor. GH schedule
 cron stays as fallback; concurrency `cancel-in-progress: true` prevents
 duplicates.
 
-**Setup:** ~10 min, one-time. See `cloudflare-workers/cron-trigger/README.md`.
+**Production verification 2026-05-29 06:55 UTC:**
+- 45 `workflow_dispatch` runs in last 30 min (vs 1 GH schedule)
+- 6× per hot monitor (every 5 min × 5 ticks observed)
+- All 6 hot monitors (crypto, defense, twitter, exit, options-exit,
+  incident-detector) firing as designed
+- 4 medium-freq monitors (geo, reddit, monitor-health, watchdog)
+  firing 2× in 30 min (every 15 min)
+- **43× MORE monitor activity** vs pre-deploy baseline
 
-**Verification:** after deploy, check `gh run list --workflow=crypto-monitor.yml --limit 10`
-within 10 min. Should see ~4× more activity (1 schedule + 1 workflow_dispatch
-per 5 min).
+**Triggers configured (Cloudflare dashboard):**
+- `*/5 * * * *` — hot 24/7 monitors + session-only when market open
+- `*/15 * * * *` — medium-freq monitors
+- `45 13 * * 1-5` — morning-allocator backup (weekday 13:45 UTC)
 
-**Cost:** Free tier (~2,100 requests/day = 2.1% of 100k quota).
+**Setup time:** ~10 min one-time. Full guide: `cloudflare-workers/cron-trigger/README.md`.
+
+**Cost:** Free tier — ~2,100 GH API calls/day = 2.1% of 100k Cloudflare
+quota. Zero paid services. PAT rotation aligned with WORKFLOW_PAT cycle
+(90 days, next: 2026-08-11).
+
+**Health check:**
+```bash
+# 1. Verify recent Worker firing (last 30 min should have ~6 dispatch per monitor)
+gh run list --limit 50 --json createdAt,event,name 2>/dev/null | \
+  python3 -c "
+import json,sys
+from datetime import datetime, timezone, timedelta
+from collections import Counter
+rs = json.load(sys.stdin)
+cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+recent = [r for r in rs if datetime.fromisoformat(r['createdAt'].replace('Z','+00:00')) > cutoff]
+events = Counter(r['event'] for r in recent)
+print(f'Last 30min: {len(recent)} runs, {dict(events)}')
+"
+
+# 2. Worker health endpoint (returns config + market hours status)
+curl -s https://cron-trigger.<your-subdomain>.workers.dev/health
+```
+
+**Troubleshooting:**
+
+| Symptom | Likely cause | Recovery |
+|---|---|---|
+| Zero `workflow_dispatch` in 30 min | Worker stopped firing | Cloudflare dashboard → Workers → cron-trigger → check Logs |
+| Worker logs "401 Bad credentials" | PAT expired/revoked | Generate new Classic PAT (scopes: `repo`, `workflow`); update Cloudflare env var `GITHUB_PAT` |
+| Worker logs "404 workflow not found" | Workflow file renamed/deleted | Edit `worker.js` arrays HOT_24_7/MEDIUM_FREQ; redeploy |
+| Many duplicate runs | Cron triggers fired twice within concurrency window | Should auto-cancel via `cancel-in-progress: true`; if not, check workflow YAML concurrency block |
+
+**Fallback strategy:** If Cloudflare Worker fails entirely (99.99% SLA
+means ~88 min/year downtime), GH schedule cron remains as path. System
+degrades to pre-2026-05-29 rate (5-12%) but doesn't stop entirely.
+Manual recovery: `gh workflow run <name>.yml`.
 
 ## Free-tier dependencies (no paid services)
 
@@ -427,4 +475,4 @@ orders get `size_multiplier × cancel_factor`. Verified active in adapter.
 
 ---
 
-*Last updated: 2026-05-27 EOD (v3.11 EDGE-FIRST — 7/9 phases shipped, 23 new tests)*
+*Last updated: 2026-05-29 EOD (v3.11.2 — Cloudflare cron-trigger DEPLOYED, production verified at 45× pre-deploy monitor activity; v3.11.1 production audit fixes; v3.11 EDGE-FIRST 7/9 phases)*
