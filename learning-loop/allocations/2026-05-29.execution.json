@@ -1,89 +1,57 @@
 {
   "plan_date": "2026-05-29",
-  "executed_at": "2026-05-29T13:01:16Z",
+  "executed_at": "2026-05-29T16:59:17Z",
   "n_placed": 0,
-  "n_skipped": 10,
-  "n_failed": 0,
+  "n_skipped": 0,
+  "n_failed": 6,
   "results": [
-    {
-      "symbol": "TSLA",
-      "action": "EXIT",
-      "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
-    },
-    {
-      "symbol": "CVX",
-      "action": "EXIT",
-      "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
-    },
-    {
-      "symbol": "XOM",
-      "action": "EXIT",
-      "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
-    },
-    {
-      "symbol": "PANW",
-      "action": "REDUCE",
-      "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
-    },
     {
       "symbol": "CRWD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:15Z"
     },
     {
       "symbol": "NOW",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:15Z"
     },
     {
       "symbol": "ORCL",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:16Z"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:16Z"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:16Z"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-05-29T13:01:16Z"
+      "status": "failed",
+      "reason": "Alpaca rejected order (see stdout)",
+      "attempted_at": "2026-05-29T16:59:17Z"
     }
   ]
 }
