@@ -598,3 +598,11 @@
 - 2026-05-29 · rsi-alert [oversold]: BTC/USD RSI=24.1 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-05-29 · rsi-alert [oversold]: ETH/USD RSI=22.1 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-05-29 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-05-29 · crypto-momentum: PIPELINE_FAILURE_SUSPECTED — SILENT 45d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-05-29 · edge-gate: DISABLED via EDGE_GATE_DISABLED env
+- 2026-05-29 · equity-gap [WARN]: Equity dropped $1,106 ($98,446 → $97,340) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+- 2026-05-29 · rsi-alert [oversold]: BTC/USD RSI=24.1 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-29 · rsi-alert [oversold]: ETH/USD RSI=23.2 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-05-29 · peak-tracker: intraday: peak $+808 at 658+00:0 current $+208 giveback 74% state=RED_DAY_AFTER_GREEN max_gross=0.25 BLOCK_ENTRIES
+

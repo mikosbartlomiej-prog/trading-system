@@ -1,84 +1,42 @@
-[01:35:41 INFO] ============================================================
-[01:35:41 INFO] AccountAwareAllocator — daily plan 2026-05-29
-[01:35:41 INFO] ============================================================
-[01:35:41 INFO] ── Step 1: fetching account state ──
-[01:35:41 INFO]   equity=$  96997.23  cash=$ 173722.46  buying_power=$ 222221.07
-[01:35:41 INFO] ── Step 2: fetching open positions ──
-[01:35:41 INFO]   5 positions, invested_ratio=0.5821 (target=1.00, min=0.98)
-[01:35:41 DBG ]     AMD        long  qty=34.0000 mv=$ 17577.32  pct_eq=18.12%  pl=+2.12%
-[01:35:41 DBG ]     CVX        long  qty=13.0000 mv=$  2375.10  pct_eq=2.45%  pl=-0.29%
-[01:35:41 DBG ]     PANW       long  qty=66.0000 mv=$ 17028.00  pct_eq=17.56%  pl=+1.27%
-[01:35:41 DBG ]     TSLA       long  qty=39.0000 mv=$ 17137.77  pct_eq=17.67%  pl=-0.06%
-[01:35:41 DBG ]     XOM        long  qty=16.0000 mv=$  2347.36  pct_eq=2.42%  pl=-0.43%
-[01:35:41 INFO]   PDT mode=OK  dt_remaining=3
-[01:35:41 INFO] ── Step 3: defensive mode check ──
-[01:35:41 INFO]   defensive_mode OFF → proceed with deployment
-[01:35:41 INFO] ── Step 4: regime detection ──
-[01:35:41 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[01:35:41 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[01:35:41 INFO] ── Step 5: scoring allowed universe ──
-[01:35:43 DBG ]     AMD      score=+0.742  bucket=ai_nasdaq_semis
-[01:35:43 DBG ]     CRWD     score=+0.629  bucket=software_quality
-[01:35:43 DBG ]     PANW     score=+0.589  bucket=software_quality
-[01:35:43 DBG ]     NOW      score=+0.582  bucket=software_quality
-[01:35:43 DBG ]     ORCL     score=+0.536  bucket=software_quality
-[01:35:43 INFO] ── Step 6: target weight construction ──
-[01:35:43 INFO]   reason: regime=NEUTRAL | primary_picks=5(73%) | fallback=['SPY', 'QQQ', 'GLD']
-[01:35:43 INFO]   target_invested_ratio_after_plan = 1.0000
-[01:35:43 DBG ]     AMD        target_weight=0.1800 ($17459.50)
-[01:35:43 DBG ]     CRWD       target_weight=0.1375 ($13337.12)
-[01:35:43 DBG ]     PANW       target_weight=0.1375 ($13337.12)
-[01:35:43 DBG ]     NOW        target_weight=0.1375 ($13337.12)
-[01:35:43 DBG ]     ORCL       target_weight=0.1375 ($13337.12)
-[01:35:43 DBG ]     SPY        target_weight=0.1000 ($9699.72)
-[01:35:43 DBG ]     QQQ        target_weight=0.1000 ($9699.72)
-[01:35:43 DBG ]     GLD        target_weight=0.0700 ($6789.81)
-[01:35:43 INFO] ── Step 7: rebalance order generation ──
-[01:35:43 INFO]     TSLA     EXIT    current=$ 17137.77 target=$     0.00 delta=$-17137.77  -- symbol not in target allocation
-[01:35:43 INFO]     CRWD     BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
-[01:35:43 INFO]     NOW      BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
-[01:35:43 INFO]     ORCL     BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
-[01:35:43 INFO]     SPY      BUY     current=$     0.00 target=$  9699.72 delta=$ +9699.72  -- new position at target 10.0%
-[01:35:43 INFO]     QQQ      BUY     current=$     0.00 target=$  9699.72 delta=$ +9699.72  -- new position at target 10.0%
-[01:35:43 INFO]     GLD      BUY     current=$     0.00 target=$  6789.81 delta=$ +6789.81  -- new position at target 7.0%
-[01:35:43 INFO]     PANW     REDUCE  current=$ 17028.00 target=$ 13337.12 delta=$ -3690.88  -- reduce $3691 to target 13.8%
-[01:35:43 INFO]     CVX      EXIT    current=$  2375.10 target=$     0.00 delta=$ -2375.10  -- symbol not in target allocation
-[01:35:43 INFO]     XOM      EXIT    current=$  2347.36 target=$     0.00 delta=$ -2347.36  -- symbol not in target allocation
-[01:35:43 INFO]     AMD      HOLD    current=$ 17577.32 target=$ 17459.50 delta=$  -117.82  -- |delta -0.12%| < min_diff 2.00%
-[01:35:43 INFO]   summary: 10 actionable + 1 hold; passed=10  failed=0
-[01:35:43 INFO] ── Step 8: plan complete ──
-[01:35:43 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[13:01:16 INFO] ============================================================
-[13:01:16 INFO] execute_orders() — auto-execute path
-[13:01:16 INFO] ============================================================
-[13:01:16 INFO]   market_status: open=False reason=pre_market
-[13:01:16 WARN]     TSLA EXIT: skipped — market not open
-[13:01:16 WARN]     CVX EXIT: skipped — market not open
-[13:01:16 WARN]     XOM EXIT: skipped — market not open
-[13:01:16 WARN]     PANW REDUCE: skipped — market not open
-[13:01:16 WARN]     CRWD BUY: skipped — market not open
-[13:01:16 WARN]     NOW BUY: skipped — market not open
-[13:01:16 WARN]     ORCL BUY: skipped — market not open
-[13:01:16 WARN]     SPY BUY: skipped — market not open
-[13:01:16 WARN]     QQQ BUY: skipped — market not open
-[13:01:16 WARN]     GLD BUY: skipped — market not open
-[13:01:16 INFO]   execution complete: 0 placed, 10 skipped, 0 failed
-
-[16:59:15 INFO] ============================================================
-[16:59:15 INFO] execute_orders() — auto-execute path
-[16:59:15 INFO] ============================================================
-[16:59:15 INFO]   market_status: open=True reason=open
-[16:59:15 INFO]     CRWD BUY: derived qty=18 from target=$13,337 @ $717.98 (no prior position)
-[16:59:15 ERR ]     CRWD BUY failed
-[16:59:15 INFO]     NOW BUY: derived qty=107 from target=$13,337 @ $124.08 (no prior position)
-[16:59:16 ERR ]     NOW BUY failed
-[16:59:16 INFO]     ORCL BUY: derived qty=59 from target=$13,337 @ $222.84 (no prior position)
-[16:59:16 ERR ]     ORCL BUY failed
-[16:59:16 INFO]     SPY BUY: derived qty=12 from target=$9,700 @ $756.78 (no prior position)
-[16:59:16 ERR ]     SPY BUY failed
-[16:59:16 INFO]     QQQ BUY: derived qty=13 from target=$9,700 @ $738.27 (no prior position)
-[16:59:17 ERR ]     QQQ BUY failed
-[16:59:17 INFO]     GLD BUY: derived qty=16 from target=$6,790 @ $419.29 (no prior position)
-[16:59:17 ERR ]     GLD BUY failed
-[16:59:17 INFO]   execution complete: 0 placed, 0 skipped, 6 failed
+[22:33:37 INFO] ============================================================
+[22:33:37 INFO] AccountAwareAllocator — daily plan 2026-05-29
+[22:33:37 INFO] ============================================================
+[22:33:37 INFO] ── Step 1: fetching account state ──
+[22:33:37 INFO]   equity=$  97339.91  cash=$ 258144.60  buying_power=$ 306814.56
+[22:33:37 INFO] ── Step 2: fetching open positions ──
+[22:33:37 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[22:33:37 INFO]   PDT mode=OK  dt_remaining=3
+[22:33:37 INFO] ── Step 3: defensive mode check ──
+[22:33:37 INFO]   defensive_mode OFF → proceed with deployment
+[22:33:37 INFO] ── Step 4: regime detection ──
+[22:33:37 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:33:37 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[22:33:37 INFO] ── Step 5: scoring allowed universe ──
+[22:33:39 DBG ]     NOW      score=+0.940  bucket=software_quality
+[22:33:39 DBG ]     CRWD     score=+0.791  bucket=software_quality
+[22:33:39 DBG ]     ORCL     score=+0.777  bucket=software_quality
+[22:33:39 DBG ]     WDAY     score=+0.734  bucket=software_quality
+[22:33:39 DBG ]     PANW     score=+0.723  bucket=software_quality
+[22:33:39 INFO] ── Step 6: target weight construction ──
+[22:33:39 INFO]   reason: regime=NEUTRAL | primary_picks=5(55%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=15.00%
+[22:33:39 INFO]   target_invested_ratio_after_plan = 0.8500
+[22:33:39 DBG ]     NOW        target_weight=0.1100 ($10707.39)
+[22:33:39 DBG ]     CRWD       target_weight=0.1100 ($10707.39)
+[22:33:39 DBG ]     ORCL       target_weight=0.1100 ($10707.39)
+[22:33:39 DBG ]     WDAY       target_weight=0.1100 ($10707.39)
+[22:33:39 DBG ]     PANW       target_weight=0.1100 ($10707.39)
+[22:33:39 DBG ]     SPY        target_weight=0.1000 ($9733.99)
+[22:33:39 DBG ]     QQQ        target_weight=0.1000 ($9733.99)
+[22:33:39 DBG ]     GLD        target_weight=0.1000 ($9733.99)
+[22:33:39 INFO] ── Step 7: rebalance order generation ──
+[22:33:39 INFO]     NOW      BUY     current=$     0.00 target=$ 10707.39 delta=$+10707.39  -- new position at target 11.0%
+[22:33:39 INFO]     CRWD     BUY     current=$     0.00 target=$ 10707.39 delta=$+10707.39  -- new position at target 11.0%
+[22:33:39 INFO]     ORCL     BUY     current=$     0.00 target=$ 10707.39 delta=$+10707.39  -- new position at target 11.0%
+[22:33:39 INFO]     WDAY     BUY     current=$     0.00 target=$ 10707.39 delta=$+10707.39  -- new position at target 11.0%
+[22:33:39 INFO]     PANW     BUY     current=$     0.00 target=$ 10707.39 delta=$+10707.39  -- new position at target 11.0%
+[22:33:39 INFO]     SPY      BUY     current=$     0.00 target=$  9733.99 delta=$ +9733.99  -- new position at target 10.0%
+[22:33:39 INFO]     QQQ      BUY     current=$     0.00 target=$  9733.99 delta=$ +9733.99  -- new position at target 10.0%
+[22:33:39 INFO]     GLD      BUY     current=$     0.00 target=$  9733.99 delta=$ +9733.99  -- new position at target 10.0%
+[22:33:39 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
+[22:33:39 INFO] ── Step 8: plan complete ──
+[22:33:39 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
