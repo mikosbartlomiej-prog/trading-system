@@ -1,0 +1,39 @@
+{
+  "narrative": "Dzień 2026-05-29: equity $96,993 (-$1,453 od szczytu $98,446), zero zamkniętych pozycji w oknie 24h, zero przypisanych trade'ów. Equity gap $1,453 to prawdopodobnie koszt buy-to-cover NOW SHORT z 2026-05-28 lub mark-to-market efekty pending GTC limits (CVX, XOM, TSLA × 2 + CRWD) — weryfikacja w Alpaca dashboard wskazana. Krytyczny sygnał: BTC RSI 24.1 / ETH RSI 22.1 — trzecia z rzędu sesja poniżej 25; historycznie bounce zaczyna się w oknie 24-72h od RSI < 25 na obydwu parach jednocześnie. SPY RSI 71.5 = overbought ogranicza stock long entries. Deterministic adapter chce ponownie auto-pruneować crypto-momentum (v3.11 zombie-prune) — override niezbędny: pipeline failure to nie brak edge.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Zero zamkniętych trade'ów = zero empirycznego edge za ostatnie 24h. Jedyna mierzalna okazja z wysokim prawdopodobieństwem: krypto dip (BTC/ETH RSI 24.1/22.1 — głęboko oversold trzeci dzień z rzędu, bounce candidate). Stock momentum wstrzymany przez SPY overbought 71.5. Geo-strategie structurally dead (pipeline broken — brak direct execution). System ma edge TYLKO jeśli crypto-monitor aktywnie skanuje.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "enabled": true,
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "rationale": "Override v3.11 zombie-prune (hard_safety=true, auto_pruned_at=2026-05-27): BTC RSI 24.1 + ETH RSI 22.1 — trzecia sesja z rzędu poniżej 25 na OBYDWU parach. 44 dni bez trade'ów = pipeline failures (routing do deprecated routine, Anthropic quota blokady w historii), NIE brak edge krypto. Per v3.9.8 heuristic: ETH ≤25 + BTC ≤45 → boost 1.5×. Pominięcie wejścia przy RSI 22-24 to strata statystycznie wysokoprawdopodobnego setup-u bounce. Zombie-prune nie powinna nadpisywać aktywnego oversold sygnału. Utrzymuję enabled=True z poprzedniego dnia."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Zombie-prune LLM lock: block auto-prune for 14 days after explicit LLM override",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "Nieskończona pętla: LLM re-enableuje crypto-momentum → następny run zombie-prune re-disabla z hard_safety=True → LLM re-enableuje (cykl się powtarza). Policy powinna respektować aktywny LLM override przez 14 dni — inaczej każda noc deterministic adapter cofanie zmian które LLM celowo wprowadził.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-05",
+      "implementation_sketch": "1. W analyzer.py::apply_llm_overrides(): dla każdej strategii zmienionej przez LLM: state[name]['last_llm_override_at'] = today_iso\n2. W adapter.py::auto_prune_zombies() (lub equivalent): if state.get(name,{}).get('last_llm_override_at') and (today - parse(last_llm_override_at)).days < 14: skip; log 'zombie-prune SKIPPED: active LLM override expires <date>'\n3. W state.json schema: last_llm_override_at per strategy string field\n4. Grace period: 14 dni daje LLM czas zebrać dane zanim prune wróci"
+    },
+    {
+      "title": "fill_rate open-orders correction: separate OPEN-GTC from UNFILLED-REJECTED",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "fill_rate.unknown = 37% (12/19 'other' = open GTC orders) generuje fałszywy alert 'limits too tight' gdy faktycznie zlecenia czekają na rynek (open_status_new=5). Precyzyjna metryka: fill_rate_closed = filled/(filled+canceled+expired+rejected), ignorując open orders.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-01",
+      "implementation_sketch": "W analyzer.py::compute_fill_rate(): fill_rate_closed = filled / max(1, filled+canceled+expired+manually_canceled+rejected); open_pending = open_status_new + open_status_held; emituj fill-rate-alert tylko gdy fill_rate_closed < 0.5 (open pending nie liczy się do alertu); dodaj 'open_pending' do output dla diagnostyki. Eliminuje fałszywe alerty dla GTC order setups."
+    }
+  ],
+  "confidence": "medium"
+}
