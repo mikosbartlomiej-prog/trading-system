@@ -48,3 +48,19 @@
 [01:35:43 INFO]   summary: 10 actionable + 1 hold; passed=10  failed=0
 [01:35:43 INFO] ── Step 8: plan complete ──
 [01:35:43 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:01:16 INFO] ============================================================
+[13:01:16 INFO] execute_orders() — auto-execute path
+[13:01:16 INFO] ============================================================
+[13:01:16 INFO]   market_status: open=False reason=pre_market
+[13:01:16 WARN]     TSLA EXIT: skipped — market not open
+[13:01:16 WARN]     CVX EXIT: skipped — market not open
+[13:01:16 WARN]     XOM EXIT: skipped — market not open
+[13:01:16 WARN]     PANW REDUCE: skipped — market not open
+[13:01:16 WARN]     CRWD BUY: skipped — market not open
+[13:01:16 WARN]     NOW BUY: skipped — market not open
+[13:01:16 WARN]     ORCL BUY: skipped — market not open
+[13:01:16 WARN]     SPY BUY: skipped — market not open
+[13:01:16 WARN]     QQQ BUY: skipped — market not open
+[13:01:16 WARN]     GLD BUY: skipped — market not open
+[13:01:16 INFO]   execution complete: 0 placed, 10 skipped, 0 failed
