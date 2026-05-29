@@ -6,26 +6,26 @@
     "starting_equity": 96924.31
   },
   "daily_peak": {
-    "date": "2026-05-28",
-    "peak_pl_usd": 424.72000000000116,
-    "peak_pl_pct": 0.004381975997559345,
-    "peak_at": "2026-05-28T21:46:10.683178+00:00",
-    "peak_equity": 98242.68,
-    "current_pl_usd": 424.72000000000116,
-    "current_equity": 97349.03,
+    "date": "2026-05-29",
+    "peak_pl_usd": 0.0,
+    "peak_pl_pct": 0.0,
+    "peak_at": "2026-05-29T00:18:26.108697+00:00",
+    "peak_equity": 97153.35,
+    "current_pl_usd": 229.04000000000815,
+    "current_equity": 97153.35,
     "retrace_from_peak": 0.0,
-    "verdict": "GREEN",
-    "verdict_at": "2026-05-28T21:46:10.683178+00:00",
+    "verdict": "FLAT",
+    "verdict_at": "2026-05-29T00:18:26.108697+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 43,
+  "days_tracked": 44,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-05-28T22:24:35.767140+00:00",
+  "last_updated": "2026-05-29T01:31:49.430040+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
@@ -232,7 +232,7 @@
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "OVERRIDE zombie-prune hard_safety: BTC RSI 20.5 + ETH RSI 19.5 — oba w ekstremalnej strefie oversold (najgłębiej od startu systemu). Zombie-prune wyłączyła po 41 dniach 0 trade'ów, ale przyczyna to pipeline failures (monitor routing, Anthropic quota) — nie brak edge. Per v3.9.8 heuristic: ETH ≤25 + BTC ≤45 → boost 1.5x. Nie re-enableowanie przy RSI~20 = płacenie okazji kosztem oportunistycznym. Operator powinien sprawdzić crypto-monitor last run status — jeśli monitor nie wykonuje, to ręczna weryfikacja crypto-monitor workflow.",
+      "rationale": "Override v3.11 zombie-prune (hard_safety=true, auto_pruned_at=2026-05-27): BTC RSI 24.1 + ETH RSI 22.1 — trzecia sesja z rzędu poniżej 25 na OBYDWU parach. 44 dni bez trade'ów = pipeline failures (routing do deprecated routine, Anthropic quota blokady w historii), NIE brak edge krypto. Per v3.9.8 heuristic: ETH ≤25 + BTC ≤45 → boost 1.5×. Pominięcie wejścia przy RSI 22-24 to strata statystycznie wysokoprawdopodobnego setup-u bounce. Zombie-prune nie powinna nadpisywać aktywnego oversold sygnału. Utrzymuję enabled=True z poprzedniego dnia.",
       "side_bias": "long",
       "size_multiplier": 1.5,
       "trades_7d": 0,
@@ -240,7 +240,7 @@
       "win_rate_7d": 0.0,
       "win_rate_lifetime": 0.0,
       "hard_safety": true,
-      "auto_pruned_at": "2026-05-27"
+      "auto_pruned_at": "2026-05-29"
     },
     "geo-defense": {
       "trades_lifetime": 2,

@@ -308,3 +308,12 @@ Files: learning-loop/adapter.py
     → sprawdź symbol w mapie → bucket = SYMBOL_STRATEGY_MAP.get(symbol, 'unattributed')
   Zmień klucz 'unknown' na 'unattributed' dla przejrzystości
   Files: learning-loop/analyzer.py
+- [ ] [2026-05-29] **Zombie-prune LLM lock: block auto-prune for 14 days after explicit LLM override** _(risk: medium, effort: 2-3h, revisit: 2026-06-05)_
+  - **Rationale:** Nieskończona pętla: LLM re-enableuje crypto-momentum → następny run zombie-prune re-disabla z hard_safety=True → LLM re-enableuje (cykl się powtarza). Policy powinna respektować aktywny LLM override przez 14 dni — inaczej każda noc deterministic adapter cofanie zmian które LLM celowo wprowadził.
+  - **Sketch:** 1. W analyzer.py::apply_llm_overrides(): dla każdej strategii zmienionej przez LLM: state[name]['last_llm_override_at'] = today_iso
+2. W adapter.py::auto_prune_zombies() (lub equivalent): if state.get(name,{}).get('last_llm_override_at') and (today - parse(last_llm_override_at)).days < 14: skip; log 'zombie-prune SKIPPED: active LLM override expires <date>'
+3. W state.json schema: last_llm_override_at per strategy string field
+4. Grace period: 14 dni daje LLM czas zebrać dane zanim prune wróci
+- [ ] [2026-05-29] **fill_rate open-orders correction: separate OPEN-GTC from UNFILLED-REJECTED** _(risk: low, effort: 1h, revisit: 2026-06-01)_
+  - **Rationale:** fill_rate.unknown = 37% (12/19 'other' = open GTC orders) generuje fałszywy alert 'limits too tight' gdy faktycznie zlecenia czekają na rynek (open_status_new=5). Precyzyjna metryka: fill_rate_closed = filled/(filled+canceled+expired+rejected), ignorując open orders.
+  - **Sketch:** W analyzer.py::compute_fill_rate(): fill_rate_closed = filled / max(1, filled+canceled+expired+manually_canceled+rejected); open_pending = open_status_new + open_status_held; emituj fill-rate-alert tylko gdy fill_rate_closed < 0.5 (open pending nie liczy się do alertu); dodaj 'open_pending' do output dla diagnostyki. Eliminuje fałszywe alerty dla GTC order setups.

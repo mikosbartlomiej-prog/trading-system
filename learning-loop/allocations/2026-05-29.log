@@ -1,0 +1,50 @@
+[01:35:41 INFO] ============================================================
+[01:35:41 INFO] AccountAwareAllocator — daily plan 2026-05-29
+[01:35:41 INFO] ============================================================
+[01:35:41 INFO] ── Step 1: fetching account state ──
+[01:35:41 INFO]   equity=$  96997.23  cash=$ 173722.46  buying_power=$ 222221.07
+[01:35:41 INFO] ── Step 2: fetching open positions ──
+[01:35:41 INFO]   5 positions, invested_ratio=0.5821 (target=1.00, min=0.98)
+[01:35:41 DBG ]     AMD        long  qty=34.0000 mv=$ 17577.32  pct_eq=18.12%  pl=+2.12%
+[01:35:41 DBG ]     CVX        long  qty=13.0000 mv=$  2375.10  pct_eq=2.45%  pl=-0.29%
+[01:35:41 DBG ]     PANW       long  qty=66.0000 mv=$ 17028.00  pct_eq=17.56%  pl=+1.27%
+[01:35:41 DBG ]     TSLA       long  qty=39.0000 mv=$ 17137.77  pct_eq=17.67%  pl=-0.06%
+[01:35:41 DBG ]     XOM        long  qty=16.0000 mv=$  2347.36  pct_eq=2.42%  pl=-0.43%
+[01:35:41 INFO]   PDT mode=OK  dt_remaining=3
+[01:35:41 INFO] ── Step 3: defensive mode check ──
+[01:35:41 INFO]   defensive_mode OFF → proceed with deployment
+[01:35:41 INFO] ── Step 4: regime detection ──
+[01:35:41 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[01:35:41 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[01:35:41 INFO] ── Step 5: scoring allowed universe ──
+[01:35:43 DBG ]     AMD      score=+0.742  bucket=ai_nasdaq_semis
+[01:35:43 DBG ]     CRWD     score=+0.629  bucket=software_quality
+[01:35:43 DBG ]     PANW     score=+0.589  bucket=software_quality
+[01:35:43 DBG ]     NOW      score=+0.582  bucket=software_quality
+[01:35:43 DBG ]     ORCL     score=+0.536  bucket=software_quality
+[01:35:43 INFO] ── Step 6: target weight construction ──
+[01:35:43 INFO]   reason: regime=NEUTRAL | primary_picks=5(73%) | fallback=['SPY', 'QQQ', 'GLD']
+[01:35:43 INFO]   target_invested_ratio_after_plan = 1.0000
+[01:35:43 DBG ]     AMD        target_weight=0.1800 ($17459.50)
+[01:35:43 DBG ]     CRWD       target_weight=0.1375 ($13337.12)
+[01:35:43 DBG ]     PANW       target_weight=0.1375 ($13337.12)
+[01:35:43 DBG ]     NOW        target_weight=0.1375 ($13337.12)
+[01:35:43 DBG ]     ORCL       target_weight=0.1375 ($13337.12)
+[01:35:43 DBG ]     SPY        target_weight=0.1000 ($9699.72)
+[01:35:43 DBG ]     QQQ        target_weight=0.1000 ($9699.72)
+[01:35:43 DBG ]     GLD        target_weight=0.0700 ($6789.81)
+[01:35:43 INFO] ── Step 7: rebalance order generation ──
+[01:35:43 INFO]     TSLA     EXIT    current=$ 17137.77 target=$     0.00 delta=$-17137.77  -- symbol not in target allocation
+[01:35:43 INFO]     CRWD     BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
+[01:35:43 INFO]     NOW      BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
+[01:35:43 INFO]     ORCL     BUY     current=$     0.00 target=$ 13337.12 delta=$+13337.12  -- new position at target 13.8%
+[01:35:43 INFO]     SPY      BUY     current=$     0.00 target=$  9699.72 delta=$ +9699.72  -- new position at target 10.0%
+[01:35:43 INFO]     QQQ      BUY     current=$     0.00 target=$  9699.72 delta=$ +9699.72  -- new position at target 10.0%
+[01:35:43 INFO]     GLD      BUY     current=$     0.00 target=$  6789.81 delta=$ +6789.81  -- new position at target 7.0%
+[01:35:43 INFO]     PANW     REDUCE  current=$ 17028.00 target=$ 13337.12 delta=$ -3690.88  -- reduce $3691 to target 13.8%
+[01:35:43 INFO]     CVX      EXIT    current=$  2375.10 target=$     0.00 delta=$ -2375.10  -- symbol not in target allocation
+[01:35:43 INFO]     XOM      EXIT    current=$  2347.36 target=$     0.00 delta=$ -2347.36  -- symbol not in target allocation
+[01:35:43 INFO]     AMD      HOLD    current=$ 17577.32 target=$ 17459.50 delta=$  -117.82  -- |delta -0.12%| < min_diff 2.00%
+[01:35:43 INFO]   summary: 10 actionable + 1 hold; passed=10  failed=0
+[01:35:43 INFO] ── Step 8: plan complete ──
+[01:35:43 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
