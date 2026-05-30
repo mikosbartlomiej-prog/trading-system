@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× — ekstremalny oversold sygnał, ALE konto już trzyma UNIUSD long 4086.9 qty / 12.9% equity (+0.39%). Symbol-format mismatch 'UNI/USD' vs 'UNIUSD' ominął dup-guard i wygenerował duplikat wejścia na tej samej pozycji. Predator odrzuca — niezamierzony pyramiding bez named catalyst to nie trade, to błąd infrastruktury.",
+  "narrative": "UNI/USD RSI 26.6 z vol 14.92× — capitulation flush na istniejącej pozycji UNIUSD 4905 qty / 15.4% equity (+0.4%). Predator odrzuca: format mismatch 'UNI/USD' vs 'UNIUSD' omija dup-guard i proponuje pyramiding bez named DeFi catalyst; exit-monitor obsługuje istniejącą pozycję samodzielnie.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Konto trzyma UNIUSD long 4086.9 qty / 12.9% equity (+0.39%) — sygnał crypto-oversold-bounce przeszedł przez dup-guard przez format mismatch ('UNI/USD' != 'UNIUSD'); dodanie $2,500 podniesie koncentrację do ~15.5% w jednym Tier-2 alcie; vol 14.92× przy -5.58% 24h move to capitulation flush na istniejącej pozycji, exit-monitor obsługuje ten scenariusz."
+      "reason": "Konto trzyma UNIUSD 4905 qty / 15.4% equity — dodanie $2,500 podnosi koncentrację do ~18.1% Tier-2 alta bez named catalyst; vol 14.92× przy -5.58% 24h to flush z pozycji, nie momentum breakout; format mismatch UNI/USD vs UNIUSD bypasuje dup-guard (infrastructure bug, nie trade edge)."
     }
   ],
-  "macro_context": "BTC 1h -0.04% neutralny (nie wrogi); UNI -5.58% 24h z vol 14.92× wygląda jak capitulation washout bez named DeFi catalyst — setup realny technicznie, ale blokuje go istniejąca pozycja 12.9% equity.",
+  "macro_context": "BTC 1h -0.04% neutralny; brak altseason triggera — UNI flush izolowany, bez korelacji z DeFi TVL eventem; exit-monitor powinien ocenić istniejącą pozycję.",
   "confidence_in_curation": "high"
 }
