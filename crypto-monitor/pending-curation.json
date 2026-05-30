@@ -1,16 +1,18 @@
 {
-  "narrative": "Oba kandydaci odrzuceni — LINK RSI 21.3 i UNI RSI 24.4 to skrajne kapitulacyjne wyprzedanie, nie świeże breakdowny. LINK 11.92x vol potwierdza panic-sell, ale shortowanie przy RSI 21 = entry jako exit liquidity dla covrujących. UNI 540x vol to anomalia danych lub zakończony whale dump — wejście po fakcie.",
-  "selected_signals": [],
-  "rejected_signals": [
-    {
-      "ticker": "LINK/USD",
-      "reason": "RSI 21.3 = skrajne wyprzedanie; 11.92x volume sugeruje kapitulację (koniec ruchu), nie świeży breakdown — shortowanie tu ryzykuje 8% bounce prosto w stop-loss."
-    },
+  "narrative": "UNI/USD RSI 26.6 z 14.92x vol = kapitulacyjne wyprzedanie -5.58% w 24h przy neutralnym BTC (-0.04% 1h). To klasyczny oversold-bounce pattern: nie parabolic crash, nie late-stage pump — kontrolowane dno z potwierdzeniem wolumenowym. Konto czyste (0 pozycji), brak concentration risk, entry czyste.",
+  "selected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Volume ratio 540x to anomalia danych lub szczyt jednorazowego whale dump; RSI 24.4 + ekstremalny wolumen = wejście po fakcie jako exit liquidity."
+      "action": "BUY",
+      "tier": 2,
+      "conviction": "medium",
+      "size_multiplier": 1.0,
+      "rationale": "RSI 26.6 + volume 14.92× avg przy ruchu -5.58% 24h = kapitulacja potwierdzona wolumenem, nie kontynuacja trendu; BTC flat (-0.04% 1h) neutralny backdrop bez dodatkowego ryzyka korelacji; konto czyste (0 pozycji, 0 alt exposure) — idealne warunki na bounce entry przy SL -12% / TP +10%.",
+      "expected_horizon": "1d",
+      "key_risk": "BTC przełamie wsparcie i pociągnie alts dalej w dół — RSI 26.6 nie jest podłogą jeśli BTC zacznie trending sell-off."
     }
   ],
-  "macro_context": "BTC flat (-0.07% 1h) — neutralny backdrop; DeFi alts wyprzedawane selektywnie bez BTC katalizatora, co wskazuje na rotation out of DeFi, nie broad sell-off.",
-  "confidence_in_curation": "high"
+  "rejected_signals": [],
+  "macro_context": "BTC flat (-0.04% 1h) = neutralny backdrop bez altseason lub winter bias; 0 pozycji na koncie oznacza brak correlated exposure — optymalne warunki na selektywny oversold-bounce entry.",
+  "confidence_in_curation": "medium"
 }
