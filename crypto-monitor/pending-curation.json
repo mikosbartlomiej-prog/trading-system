@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD volume 14.92× przy RSI 26.6 — klasyczny kapitulacyjny flush z potwierdzonym wolumenem. JEDNAK portfel już trzyma UNIUSD 23.2% equity (+0.46% P&L, entry ~$3.086) — bounce jest już w portfelu. Dodatkowy entry to redundantna koncentracja bez nowego edge.",
+  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× to klasyczny selling-climax — setup techniczny WAŻNY. Ale portfel siedzi 25.7% equity w UNIUSD (~$25k, +0.49% P&L) — teza odbicia jest już w pełni schwytana. Dodanie kolejnych $2,500 to pyramiding bez nowego edge; poprzednia curação słusznie odrzuciła przy 23.2%, teraz koncentracja WYŻSZA — tym bardziej odrzucam.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Portfel utrzymuje aktywną pozycję UNIUSD 23.2% equity (~$22,600, +0.46% P&L) — sygnał oversold-bounce jest już schwytany. Dodanie $2,500 podniosłoby UNI do ~25.7% equity (pojedynczy alt, Tier 2) bez proporcjonalnego edge; volume 14.92× potwierdza kapitulację ale nie tworzy nowej okazji gdy identyczna teza już jest otwarta."
+      "reason": "Portfel utrzymuje aktywną pozycję UNIUSD 25.7% equity (~$25,044, +0.49% P&L) — oversold-bounce teza jest już w pełni zainwestowana. Wolumen 14.92× potwierdza kapitulację ale nie tworzy nowego edge gdy identyczna okazja jest już otwarta; dodanie $2,500 podniosłoby UNI do ~28.3% w jednym Tier-2 alcie, przekraczając soft-cap predatora 30% dla pojedynczego instrumentu przy braku BTC momentum."
     }
   ],
-  "macro_context": "BTC 1h -0.04% (płaski/neutralny), brak altseason impulsu; UNI dump -5.58%/24h wygląda na izolowane de-riskowanie protokołu DeFi, nie rotację sektorową — obecna pozycja wystarczająco ekspozuje na ewentualny odbój.",
+  "macro_context": "BTC 1h -0.04% (neutralny), brak altseason impulsu; UNI selling-climax -5.58%/24h z 14.92× vol wygląda na izolowane de-riskowanie DeFi — istniejąca pozycja 25.7% equity jest optymalną ekspozycją na potencjalny odbój bez dodatkowego ryzyka koncentracji.",
   "confidence_in_curation": "high"
 }
