@@ -1,18 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z 14.92x vol = kapitulacyjne wyprzedanie -5.58% w 24h przy neutralnym BTC (-0.04% 1h). To klasyczny oversold-bounce pattern: nie parabolic crash, nie late-stage pump — kontrolowane dno z potwierdzeniem wolumenowym. Konto czyste (0 pozycji), brak concentration risk, entry czyste.",
-  "selected_signals": [
+  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× średniej — sygnał oversold-bounce techniczne realny, ale portfel JUŻ trzyma open long na UNI (2.6% equity, +0.13% P&L, entry ~$3.096). Piramidowanie w tę samą alt przy break-even wejściu i bez nowego katalizatora = koncentracja bez dodatkowej wartości; istniejąca pozycja i tak przechwytuje odbicie.",
+  "selected_signals": [],
+  "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "action": "BUY",
-      "tier": 2,
-      "conviction": "medium",
-      "size_multiplier": 1.0,
-      "rationale": "RSI 26.6 + volume 14.92× avg przy ruchu -5.58% 24h = kapitulacja potwierdzona wolumenem, nie kontynuacja trendu; BTC flat (-0.04% 1h) neutralny backdrop bez dodatkowego ryzyka korelacji; konto czyste (0 pozycji, 0 alt exposure) — idealne warunki na bounce entry przy SL -12% / TP +10%.",
-      "expected_horizon": "1d",
-      "key_risk": "BTC przełamie wsparcie i pociągnie alts dalej w dół — RSI 26.6 nie jest podłogą jeśli BTC zacznie trending sell-off."
+      "reason": "Open UNI/USD long already exists (816.28 units, 2.6% equity, +0.13% P&L at ~$3.096 entry) — adding second $2,500 lot pyramids into same Tier-2 alt at identical price level; combined ~5.2% equity single-name concentration without fresh catalyst; existing position already captures the oversold bounce; no new information present at this entry vs original."
     }
   ],
-  "rejected_signals": [],
-  "macro_context": "BTC flat (-0.04% 1h) = neutralny backdrop bez altseason lub winter bias; 0 pozycji na koncie oznacza brak correlated exposure — optymalne warunki na selektywny oversold-bounce entry.",
-  "confidence_in_curation": "medium"
+  "macro_context": "BTC 1h essentially flat (-0.04%) — neutral, not hostile; UNI capitulation volume (14.92×) suggests potential bottom formation but this does not justify doubling a position already entered at the same level.",
+  "confidence_in_curation": "high"
 }
