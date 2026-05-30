@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mikosbartlomiej-prog/trading-system/agents/schemas/agent_report.schema.json",
+  "title": "Audit Board Agent Report",
+  "description": "Single-agent review report. Each of the 11 area agents emits one of these per audit cycle.",
+  "type": "object",
+  "required": [
+    "agent_name",
+    "reviewed_scope",
+    "review_date",
+    "summary",
+    "findings",
+    "blocking_findings",
+    "recommended_fixes",
+    "required_tests",
+    "confidence_score_assessment",
+    "free_operation_assessment",
+    "final_agent_decision"
+  ],
+  "properties": {
+    "agent_name": {
+      "type": "string",
+      "enum": [
+        "01_architecture_reviewer",
+        "02_trading_strategy_reviewer",
+        "03_risk_reviewer",
+        "04_data_quality_bias_reviewer",
+        "05_confidence_score_reviewer",
+        "06_runtime_safety_reviewer",
+        "07_testing_e2e_reviewer",
+        "08_documentation_runbook_reviewer",
+        "09_simplicity_refactoring_reviewer",
+        "10_security_secrets_reviewer",
+        "11_free_operations_reviewer"
+      ]
+    },
+    "reviewed_scope": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative paths or module names this agent inspected."
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date",
+      "description": "YYYY-MM-DD UTC."
+    },
+    "git_commit_sha_at_review": {
+      "type": ["string", "null"],
+      "description": "HEAD SHA when the review was produced — pins the snapshot reviewed."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 2000,
+      "description": "1-3 paragraph human summary."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "finding.schema.json" }
+    },
+    "blocking_findings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of finding IDs that block paper/live."
+    },
+    "recommended_fixes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "priority", "fix_summary", "estimated_effort"],
+        "properties": {
+          "finding_id":       { "type": "string" },
+          "priority":         { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+          "fix_summary":      { "type": "string", "minLength": 10 },
+          "estimated_effort": { "type": "string", "enum": ["trivial", "small", "medium", "large", "epic"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "required_tests": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Test paths/names that must pass before the agent re-reviews."
+    },
+    "confidence_score_assessment": {
+      "type": "object",
+      "required": ["status", "rationale"],
+      "properties": {
+        "status":  { "type": "string", "enum": ["trusted", "partial", "untrusted", "n/a"] },
+        "ceiling": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "rationale": { "type": "string", "minLength": 10 }
+      },
+      "additionalProperties": false
+    },
+    "free_operation_assessment": {
+      "type": "object",
+      "required": ["status", "rationale"],
+      "properties": {
+        "status":    { "type": "string", "enum": ["ok", "at_risk", "violated", "n/a"] },
+        "rationale": { "type": "string", "minLength": 10 }
+      },
+      "additionalProperties": false
+    },
+    "final_agent_decision": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "PASS_WITH_WARNINGS",
+        "NEEDS_FIXES",
+        "BLOCKS_PAPER_TRADING",
+        "BLOCKS_LOCAL_REPLAY"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

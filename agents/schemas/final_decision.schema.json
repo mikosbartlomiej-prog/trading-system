@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mikosbartlomiej-prog/trading-system/agents/schemas/final_decision.schema.json",
+  "title": "Audit Board Final Decision",
+  "description": "Binding decision produced by 12_final_arbiter after aggregating all 11 area agents' reports.",
+  "type": "object",
+  "required": [
+    "decision",
+    "secondary_verdicts",
+    "rationale",
+    "p0_findings",
+    "p1_findings",
+    "blockers",
+    "paper_trading_readiness",
+    "live_trading_readiness",
+    "confidence_score_readiness",
+    "runtime_safety_readiness",
+    "free_operation_status",
+    "required_next_steps",
+    "review_date",
+    "agents_consumed"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "APPROVE_LOCAL_REPLAY",
+        "APPROVE_PAPER_TRADING_WITH_WARNINGS",
+        "BLOCK_PAPER_TRADING",
+        "NEEDS_REFACTOR",
+        "NEEDS_MORE_TESTS",
+        "NOT_SAFE_FOR_LIVE_TRADING",
+        "BLOCK_ALL_TRADING_MODES"
+      ]
+    },
+    "secondary_verdicts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "APPROVE_LOCAL_REPLAY",
+          "APPROVE_PAPER_TRADING_WITH_WARNINGS",
+          "BLOCK_PAPER_TRADING",
+          "NEEDS_REFACTOR",
+          "NEEDS_MORE_TESTS",
+          "NOT_SAFE_FOR_LIVE_TRADING",
+          "BLOCK_ALL_TRADING_MODES"
+        ]
+      },
+      "description": "Almost always includes NOT_SAFE_FOR_LIVE_TRADING."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 5000,
+      "description": "1-3 paragraph explanation citing specific findings."
+    },
+    "p0_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "title"],
+        "properties": {
+          "id":    { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["open", "fix_in_progress", "fixed", "verified", "wontfix"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "p1_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "title"],
+        "properties": {
+          "id":    { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["open", "fix_in_progress", "fixed", "verified", "wontfix"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "BLOCKS_LOCAL_REPLAY",
+          "BLOCKS_PAPER_TRADING",
+          "BLOCKS_LIVE_TRADING",
+          "NEEDS_REFACTOR",
+          "NEEDS_TESTS"
+        ]
+      }
+    },
+    "paper_trading_readiness": {
+      "type": "string",
+      "enum": ["ready", "ready_with_warnings", "blocked", "unknown"]
+    },
+    "live_trading_readiness": {
+      "type": "string",
+      "enum": ["blocked"],
+      "description": "Hardcoded — live trading is permanently blocked by design."
+    },
+    "confidence_score_readiness": {
+      "type": "string",
+      "enum": ["trusted", "partial", "untrusted"]
+    },
+    "runtime_safety_readiness": {
+      "type": "string",
+      "enum": ["ready", "partial", "blocked"]
+    },
+    "free_operation_status": {
+      "type": "string",
+      "enum": ["ok", "at_risk", "violated"]
+    },
+    "required_next_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["order", "action", "owner", "priority"],
+        "properties": {
+          "order":    { "type": "integer", "minimum": 1 },
+          "action":   { "type": "string", "minLength": 10 },
+          "owner":    { "type": "string", "enum": ["operator", "developer", "agent_board"] },
+          "priority": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "agents_consumed": {
+      "type": "array",
+      "minItems": 11,
+      "items": {
+        "type": "string",
+        "enum": [
+          "01_architecture_reviewer",
+          "02_trading_strategy_reviewer",
+          "03_risk_reviewer",
+          "04_data_quality_bias_reviewer",
+          "05_confidence_score_reviewer",
+          "06_runtime_safety_reviewer",
+          "07_testing_e2e_reviewer",
+          "08_documentation_runbook_reviewer",
+          "09_simplicity_refactoring_reviewer",
+          "10_security_secrets_reviewer",
+          "11_free_operations_reviewer"
+        ]
+      },
+      "description": "All 11 area agents MUST have produced a report — Final Arbiter cannot decide on partial input."
+    }
+  },
+  "additionalProperties": false
+}

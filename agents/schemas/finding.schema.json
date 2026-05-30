@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mikosbartlomiej-prog/trading-system/agents/schemas/finding.schema.json",
+  "title": "Audit Board Finding",
+  "description": "Single audit finding emitted by an agent in the Multi-Agent Audit Board.",
+  "type": "object",
+  "required": [
+    "id",
+    "agent",
+    "title",
+    "severity",
+    "area",
+    "affected_files",
+    "evidence",
+    "risk",
+    "recommendation",
+    "required_tests",
+    "free_operation_impact",
+    "confidence_score_impact",
+    "safety_impact",
+    "blocking_status",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(ARCH|STRAT|RISK|DATA|CONF|RUNTIME|TEST|DOC|SIMPL|SEC|FREE|ARB)-[0-9]{3}$",
+      "description": "Unique finding ID: <prefix>-<3-digit number>. Prefix matches the agent."
+    },
+    "agent": {
+      "type": "string",
+      "enum": [
+        "01_architecture_reviewer",
+        "02_trading_strategy_reviewer",
+        "03_risk_reviewer",
+        "04_data_quality_bias_reviewer",
+        "05_confidence_score_reviewer",
+        "06_runtime_safety_reviewer",
+        "07_testing_e2e_reviewer",
+        "08_documentation_runbook_reviewer",
+        "09_simplicity_refactoring_reviewer",
+        "10_security_secrets_reviewer",
+        "11_free_operations_reviewer",
+        "12_final_arbiter"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 200,
+      "description": "One-line human summary of the finding."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2", "P3"]
+    },
+    "area": {
+      "type": "string",
+      "enum": [
+        "architecture",
+        "strategy",
+        "risk_engine",
+        "data_quality",
+        "bias_leakage",
+        "confidence_score",
+        "runtime_safety",
+        "monitoring",
+        "safe_mode",
+        "kill_switch",
+        "testing",
+        "e2e",
+        "documentation",
+        "runbook",
+        "security",
+        "free_operation",
+        "simplicity",
+        "refactoring",
+        "other"
+      ]
+    },
+    "affected_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative paths to files involved."
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Concrete observation: code snippet quote, log line, test output, missing file path, etc."
+    },
+    "risk": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Plain-language description of what could go wrong if not fixed."
+    },
+    "recommendation": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Concrete proposed fix. MUST NOT recommend paid services or live trading."
+    },
+    "required_tests": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tests that must be added or pass before the finding is considered resolved."
+    },
+    "free_operation_impact": {
+      "type": "string",
+      "enum": ["none", "improves", "degrades", "VIOLATES"],
+      "description": "VIOLATES = fix would require a paid dependency. Auto-rejected."
+    },
+    "confidence_score_impact": {
+      "type": "string",
+      "enum": ["neutral", "raises_ceiling", "lowers_floor", "invalidates"]
+    },
+    "safety_impact": {
+      "type": "string",
+      "enum": ["neutral", "improves", "degrades", "compromises"]
+    },
+    "blocking_status": {
+      "type": "string",
+      "enum": [
+        "BLOCKS_LOCAL_REPLAY",
+        "BLOCKS_PAPER_TRADING",
+        "BLOCKS_LIVE_TRADING",
+        "NEEDS_REFACTOR",
+        "NEEDS_TESTS",
+        "INFO_ONLY"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "fix_in_progress", "fixed", "verified", "wontfix"]
+    },
+    "fix_commit_sha": {
+      "type": ["string", "null"],
+      "description": "When status=fixed, the commit SHA that implements the fix."
+    },
+    "verifying_test": {
+      "type": ["string", "null"],
+      "description": "When status=verified, the test path::name that proves the fix."
+    },
+    "discovered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC."
+    }
+  },
+  "additionalProperties": false
+}
