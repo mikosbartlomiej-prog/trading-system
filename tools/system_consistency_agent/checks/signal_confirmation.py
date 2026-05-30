@@ -44,6 +44,11 @@ def run(root: Path) -> list[Finding]:
 
     # Backlog: defense/geo/twitter/reddit MAY not yet wire signal_confirmation
     # (acknowledged in ARCHITECTURE_VNEXT.md). Surface as WARN, not FAIL.
+    #
+    # v3.11.3 (2026-05-30) — fix audit rule: v3.10.1 refactored the 4 news
+    # monitors to use the DRY helper `shared/news_signal_gate.py::gate_news_signal`
+    # (replaces direct confirm_event_signal/confirm_price_volume calls).
+    # The audit rule needs to recognize EITHER pattern.
     monitors = ["defense-monitor", "geo-monitor", "twitter-monitor", "reddit-monitor"]
     wired = []
     unwired = []
@@ -51,7 +56,13 @@ def run(root: Path) -> list[Finding]:
         mp = root / m / "monitor.py"
         if not mp.exists():
             continue
-        if "confirm_event_signal" in read_text(mp) or "confirm_price_volume" in read_text(mp):
+        text = read_text(mp)
+        if (
+            "confirm_event_signal" in text
+            or "confirm_price_volume" in text
+            or "gate_news_signal" in text          # v3.10.1 DRY helper
+            or "from news_signal_gate" in text     # v3.10.1 import marker
+        ):
             wired.append(m)
         else:
             unwired.append(m)

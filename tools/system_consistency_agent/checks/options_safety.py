@@ -93,10 +93,21 @@ def run(root: Path) -> list[Finding]:
         ))
 
     # 4. options-exit-monitor has dedup of SELL orders
+    # v3.11.3 (2026-05-30) — fix audit rule: real code uses dict syntax
+    # `params={"status": "open", ...}` and `already_has_open_sell()` helper,
+    # not the old literal f-string `"status=open"`. Match either pattern.
     oem = root / "options-exit-monitor" / "monitor.py"
     if oem.exists():
         text = read_text(oem)
-        has_dedup = "status=open" in text and "side" in text
+        # Modern pattern (post-2026-05): dedup via params dict + helper fn
+        has_modern_dedup = (
+            ("already_has_open_sell" in text)
+            or ('"status": "open"' in text and 'side' in text)
+            or ("'status': 'open'" in text and "side" in text)
+        )
+        # Legacy pattern (pre-2026-05 if anyone still uses inline f-strings)
+        has_legacy_dedup = "status=open" in text and "side" in text
+        has_dedup = has_modern_dedup or has_legacy_dedup
         findings.append(Finding(
             id="OPTIONS_EXIT_DEDUP",
             category=CATEGORY,

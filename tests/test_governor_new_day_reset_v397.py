@@ -55,7 +55,7 @@ class TestNewDayPeakReset(unittest.TestCase):
 
         with patch.object(ig, "read_section", return_value=prev_raw), \
              patch.object(ig, "write_section") as mock_write, \
-             patch.object(ig, "emit_audit", lambda **kw: None), \
+             patch.object(ig, "emit_audit", lambda *a, **kw: None), \
              patch.object(ig, "_today", return_value="2026-05-23"):
             snap = ig.update(account=account)
 

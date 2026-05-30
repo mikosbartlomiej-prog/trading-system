@@ -4,6 +4,8 @@ Sprawdza otwarte pozycje co godzinę i wysyla do Claude Routine decyzję exit/ho
 Używa Alpaca REST API bezpośrednio (bez MCP — GitHub Actions nie ma dostępu do MCP).
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (`X | Y`) parseable on Py 3.9.
+
 import os
 import sys
 import json
@@ -416,6 +418,25 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
     elif hold_hours >= EXIT_THRESHOLDS["time_decay_hours"] and abs(unrealized_plpc) < EXIT_THRESHOLDS["flat_pnl_pct"]:
         recommendation = "CLOSE_FLAT"
         reasons.append(f"pozycja płaska ({unrealized_plpc:.1f}%) po {hold_hours:.1f}h")
+
+    # v3.11.3 (2026-05-30) — intraday-trend escalation (ITM / Spec §12).
+    # Only escalates benign HOLD/CLOSE_FLAT to CLOSE_FLAT when the
+    # intraday-trend module reports REVERSAL_CONFIRMED. NEVER downgrades
+    # an already-flagged emergency/profit-lock decision. Fail-soft: if
+    # the module is unavailable or returns stale=True, leave recommendation
+    # alone (so a data outage cannot trigger spurious closes).
+    if recommendation in ("HOLD", "CLOSE_FLAT") and asset_class == "us_equity":
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+            from intraday_trend import intraday_trend_state, REVERSAL_CONFIRMED  # type: ignore
+            ts = intraday_trend_state(symbol, side=side)
+            if ts.get("state") == REVERSAL_CONFIRMED and not ts.get("stale"):
+                if recommendation == "HOLD":
+                    recommendation = "CLOSE_FLAT"
+                reasons.append(f"intraday REVERSAL_CONFIRMED: {ts.get('reason','')}")
+        except Exception as _e:
+            # Module missing or bad input — silently keep prior recommendation.
+            pass
 
     return {
         "symbol":          symbol,
