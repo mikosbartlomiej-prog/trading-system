@@ -46,15 +46,191 @@ def _usd(amount: float) -> str:
         return f"${amount:.0f}"
 
 
+# ─── v3.13.1 (2026-05-30) — Notification policy / inbox-noise filter ─────────
+#
+# Problem: monitors send dozens of emails per session (per-signal BUY/EXIT,
+# cron summaries "[Monitor] N signals, M sent", individual PDT transitions,
+# allocator PLAN nightly, etc.). Inbox becomes unreadable; CRITICAL alerts
+# get buried.
+#
+# Solution: single chokepoint `send_email` consults `NotificationPolicy`
+# which classifies subjects into 3 buckets:
+#
+#   "send"     → real email delivered (CRITICAL or actionable)
+#   "digest"   → appended to learning-loop/notify_digest/<date>.jsonl
+#                (read by scripts/session_report.py and optional
+#                 scripts/send_daily_digest.py)
+#   "suppress" → only logged to stdout, never delivered
+#
+# Mode controlled by env `NOTIFY_MODE` (default `minimal`):
+#   off      — never send any email
+#   minimal  — send CRITICAL only, digest INFO, suppress NOISE  (DEFAULT)
+#   verbose  — send everything (legacy v3.12 behavior)
+#
+# Operator may override per-subject via NOTIFY_FORCE_SEND / NOTIFY_FORCE_SUPPRESS
+# (comma-separated subject substrings).
+
+import json
+import re
+from pathlib import Path
+
+NOTIFY_MODE = os.environ.get("NOTIFY_MODE", "minimal").lower().strip()
+if NOTIFY_MODE not in ("off", "minimal", "verbose"):
+    NOTIFY_MODE = "minimal"
+
+_FORCE_SEND     = [s.strip() for s in os.environ.get("NOTIFY_FORCE_SEND", "").split(",") if s.strip()]
+_FORCE_SUPPRESS = [s.strip() for s in os.environ.get("NOTIFY_FORCE_SUPPRESS", "").split(",") if s.strip()]
+
+# Subjects that ALWAYS get delivered immediately (operator must look NOW).
+_CRITICAL_MARKERS = (
+    "[INCIDENT-CRITICAL]",
+    "[SAFE_MODE_ENTERED]",
+    "[INTRADAY-DEFEND]",
+    "[INTRADAY-RED-AFTER-GREEN]",
+    "[PROFIT-LOCK]",
+    "[ROUTINE-BUDGET-LOW]",
+    "[op-correction]",
+    "[POL-FILING]",        # operator must read PDF
+    "[ERROR]",
+    "[allocator REVALIDATE]",  # orders were dropped — operator should know
+    "[CONFIDENCE-BLOCK]",  # confidence gate BLOCKed something unusual
+    "[PDT-LOCKED]",        # PDT lockout — significant
+    "[KILL-SWITCH",        # any kill-switch activation
+    "[FAIL",               # workflow failures
+)
+
+# Subjects routed to DIGEST (batched, not immediate). Operator can read
+# the digest in session_report or via scripts/send_daily_digest.py.
+_DIGEST_MARKERS = (
+    "[BUY]",                 # individual signal
+    "[SELL]",
+    "[SELL_SHORT]",
+    "[EXIT]",                # individual exit
+    "[EXECUTED]",            # individual options exec
+    "[OPTIONS REJECTED]",
+    "[QUEUED]",
+    "[DEFERRED]",
+    "[NOT-SENT]",
+    "[INTRADAY-WARN]",       # warn-level, not action
+    "[PEAK-WARN]",
+    "[INCIDENT-WARN]",       # warn-level patterns
+    "[PDT-OK]",
+    "[PDT-CAUTION]",
+    "[PDT-RESTRICTED]",
+    "[SAFE_MODE_EXITED]",    # cleanup, just info
+    "[allocator PLAN]",      # nightly plan, just info
+    "[learning-loop AUTO-PR]",  # operator reviews on GitHub
+    "[CONFIDENCE-ALERT]",    # ALERT_ONLY zone
+)
+
+# Cron-summary pattern: "[Defense Monitor] 0 signal(s), 0 sent"
+_CRON_SUMMARY_RE = re.compile(r"^\[[\w\s-]+(?:Monitor|monitor)\]\s+\d+\s+signal", re.IGNORECASE)
+
+
+def _classify_subject(subject: str) -> str:
+    """Return one of: "send" / "digest" / "suppress".
+
+    Pure function; deterministic; can be unit-tested without SMTP.
+    """
+    s = subject or ""
+
+    # Operator overrides win first
+    for marker in _FORCE_SUPPRESS:
+        if marker in s:
+            return "suppress"
+    for marker in _FORCE_SEND:
+        if marker in s:
+            return "send"
+
+    # Global mode shortcuts
+    if NOTIFY_MODE == "off":
+        return "suppress"
+    if NOTIFY_MODE == "verbose":
+        return "send"
+
+    # MINIMAL mode logic:
+
+    # 1) Critical = always send
+    for marker in _CRITICAL_MARKERS:
+        if marker in s:
+            return "send"
+
+    # 2) Allocator EXEC: only send if failures present
+    if "[allocator EXEC]" in s:
+        # subjects are like "[allocator EXEC] 0 placed, 0 skipped, 6 failed"
+        m = re.search(r"(\d+)\s+failed", s)
+        if m and int(m.group(1)) > 0:
+            return "send"
+        return "digest"
+
+    # 3) Cron summaries — suppress when zero signals, digest otherwise
+    cs = _CRON_SUMMARY_RE.match(s)
+    if cs:
+        # Has signals number — check if it's zero
+        m = re.search(r"\]\s+(\d+)\s+signal", s)
+        if m and int(m.group(1)) == 0:
+            return "suppress"
+        return "digest"
+
+    # 4) Known digest markers
+    for marker in _DIGEST_MARKERS:
+        if marker in s:
+            return "digest"
+
+    # 5) Unknown subjects — send (safer to surface than swallow)
+    return "send"
+
+
+def _append_to_digest(subject: str, body: str) -> None:
+    """Append non-critical email to local digest file.
+
+    Format: one JSONL row per suppressed/digested email. Read by
+    scripts/session_report.py and scripts/send_daily_digest.py.
+
+    Fail-soft: any I/O error → fall back to stdout only.
+    """
+    try:
+        today = datetime.now(timezone.utc).date().isoformat()
+        ts    = datetime.now(timezone.utc).isoformat()
+        # Allow override via env (used by tests for isolation)
+        digest_dir_env = os.environ.get("NOTIFY_DIGEST_DIR")
+        if digest_dir_env:
+            digest_dir = Path(digest_dir_env)
+        else:
+            digest_dir = Path(__file__).resolve().parent.parent / "learning-loop" / "notify_digest"
+        digest_dir.mkdir(parents=True, exist_ok=True)
+        path = digest_dir / f"{today}.jsonl"
+        entry = {"timestamp": ts, "subject": subject, "body_preview": (body or "")[:500]}
+        with path.open("a") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        # Never let digest failure block the workflow
+        print(f"  [notify-digest] append failed (non-fatal): {e}")
+
+
 def send_email(subject: str, body: str, html: bool = False) -> bool:
     """
-    Send email via Gmail SMTP.
-    Returns True on success.
+    Send email via Gmail SMTP, gated by NotificationPolicy.
+    Returns True on successful delivery OR successful digest append.
+    Returns False only on hard failure (SMTP error after classifier said "send").
     """
     if not GMAIL_USER or not GMAIL_APP_PASSWORD:
         print("  Email: missing GMAIL_USER or GMAIL_APP_PASSWORD - skipping")
         return False
 
+    # ── v3.13.1: consult policy BEFORE building SMTP message ──
+    verdict = _classify_subject(subject)
+
+    if verdict == "suppress":
+        print(f"  [notify-policy] SUPPRESS: {subject[:80]}")
+        return False  # not delivered (intentional)
+
+    if verdict == "digest":
+        print(f"  [notify-policy] DIGEST: {subject[:80]}")
+        _append_to_digest(subject, body)
+        return True   # successfully digested
+
+    # verdict == "send" → original SMTP path
     try:
         subject = _clean(subject)
         body    = _clean(body)

@@ -572,3 +572,90 @@ See `agents/README.md`.
 predator-bracket when `RSI ≤ 30 + 24h-move ≥ -10% + 1-bar reversal +
 ≥50% vol`. Tagged `crypto-oversold-bounce-*` in audit. Solves 45-day
 SILENT period from BTC/ETH deep oversold (RSI 20-27).
+
+---
+
+## Email notification policy (v3.13.1 — 2026-05-30)
+
+`shared/notify.py::send_email` consults `NotificationPolicy` BEFORE any
+SMTP call. Subjects are classified into 3 buckets:
+
+### Always SENT immediately (CRITICAL — requires operator attention)
+| Marker | Meaning |
+|---|---|
+| `[INCIDENT-CRITICAL]` | Layer 1 detector found P01-P13 critical pattern |
+| `[SAFE_MODE_ENTERED]` | runtime trigger — investigate cause |
+| `[INTRADAY-DEFEND]` | governor entered DEFEND_DAY (max_gross 0.50) |
+| `[INTRADAY-RED-AFTER-GREEN]` | governor entered RED state (max_gross 0.25) |
+| `[PROFIT-LOCK]` | governor armed PROFIT_LOCK, harvesting winners |
+| `[POL-FILING]` | politician PTR alert — operator reads PDF |
+| `[ROUTINE-BUDGET-LOW]` | Anthropic budget < 3 calls remaining |
+| `[op-correction]` | scheduled operational correction (e.g. NOW cover) |
+| `[allocator EXEC] N failed` | allocator orders failed (N > 0) |
+| `[allocator REVALIDATE]` | stale orders dropped before execution |
+| `[CONFIDENCE-BLOCK]` | confidence gate BLOCKed a trade |
+| `[PDT-LOCKED]` | PDT lockout (daytrade_count ≥ 3) |
+| `[KILL-SWITCH ...]` | any kill-switch activation |
+| `[ERROR]` / `[FAIL ...]` | workflow / monitor failures |
+
+### Sent to local DIGEST file (non-critical — batched)
+Per-signal: `[BUY]` / `[SELL]` / `[EXIT]` / `[EXECUTED]` / `[OPTIONS REJECTED]` /
+`[QUEUED]` / `[DEFERRED]`
+State info: `[INTRADAY-WARN]` / `[PEAK-WARN]` / `[INCIDENT-WARN]` / `[PDT-OK/CAUTION/RESTRICTED]` /
+`[SAFE_MODE_EXITED]` / `[CONFIDENCE-ALERT]`
+Planning: `[allocator PLAN]` / `[learning-loop AUTO-PR]` / `[allocator EXEC] 0 failed`
+Cron summaries with signals: `[<Monitor>] N signal(s), M sent` (N > 0)
+
+Digest file: `learning-loop/notify_digest/<date>.jsonl` (one JSONL line per email).
+
+### SUPPRESSED (never delivered)
+Cron summaries with zero signals: `[<Monitor>] 0 signal(s), 0 sent`
+
+### Modes (env `NOTIFY_MODE`)
+
+```bash
+# Default — CRITICAL sent, INFO digested, NOISE suppressed
+NOTIFY_MODE=minimal
+
+# Get every email (legacy v3.12 behavior — NOT recommended)
+NOTIFY_MODE=verbose
+
+# Suppress ALL emails (e.g. holiday silence)
+NOTIFY_MODE=off
+```
+
+### Per-subject overrides
+
+```bash
+# Force-send a subject even in minimal mode (comma-separated substrings)
+NOTIFY_FORCE_SEND="[allocator PLAN],[PDT-CAUTION]"
+
+# Force-suppress a subject even if it's CRITICAL (use with extreme care)
+NOTIFY_FORCE_SUPPRESS="[POL-FILING]"
+```
+
+### Daily digest email (optional)
+
+`scripts/send_daily_digest.py` reads the digest JSONL and sends ONE
+summary email with all batched items:
+
+```bash
+python3 scripts/send_daily_digest.py             # today UTC
+python3 scripts/send_daily_digest.py --no-send   # preview only
+python3 scripts/send_daily_digest.py --clear     # delete digest after send
+```
+
+To schedule daily at 21:00 UTC: add a workflow step (template not auto-shipped
+to avoid implicit dependency). For manual: run after market close.
+
+### Verify policy
+
+```bash
+# Smoke test — classifier output
+python3 -c "
+import sys; sys.path.insert(0,'shared'); import notify
+print(notify._classify_subject('[INCIDENT-CRITICAL] xxx'))   # send
+print(notify._classify_subject('[BUY] AAPL'))                # digest
+print(notify._classify_subject('[Defense Monitor] 0 signal(s), 0 sent'))  # suppress
+"
+```
