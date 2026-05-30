@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× to klasyczny selling-climax — setup techniczny WAŻNY. Ale portfel siedzi 25.7% equity w UNIUSD (~$25k, +0.49% P&L) — teza odbicia jest już w pełni schwytana. Dodanie kolejnych $2,500 to pyramiding bez nowego edge; poprzednia curação słusznie odrzuciła przy 23.2%, teraz koncentracja WYŻSZA — tym bardziej odrzucam.",
+  "narrative": "UNI/USD RSI 26.6 z vol 14.92× to screaming oversold — ale już trzymamy 9,004 coinów (28.3% equity, +0.52% P&L). Dodanie kolejnych $2,500 pcha single-asset koncentrację do ~31%, przekraczając konserwatywny próg 30%; istniejąca pozycja w pełni captures ten bounce bez dodatkowego knife-catch ryzyka.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Portfel utrzymuje aktywną pozycję UNIUSD 25.7% equity (~$25,044, +0.49% P&L) — oversold-bounce teza jest już w pełni zainwestowana. Wolumen 14.92× potwierdza kapitulację ale nie tworzy nowego edge gdy identyczna okazja jest już otwarta; dodanie $2,500 podniosłoby UNI do ~28.3% w jednym Tier-2 alcie, przekraczając soft-cap predatora 30% dla pojedynczego instrumentu przy braku BTC momentum."
+      "reason": "Już trzymamy 28.3% equity w UNI/USD (9,004 coins, +0.52% P&L) — dodanie $2,500 pushuje single-asset do ~31%, przekraczając curator conservative threshold 30%; istniejąca pozycja już przechwytuje potencjał oversold bounce, a uśrednianie w dół na -5.58% 24h move przy niepotwierdzonym odwróceniu = caught-knife ryzyko bez inkrementalnego edge."
     }
   ],
-  "macro_context": "BTC 1h -0.04% (neutralny), brak altseason impulsu; UNI selling-climax -5.58%/24h z 14.92× vol wygląda na izolowane de-riskowanie DeFi — istniejąca pozycja 25.7% equity jest optymalną ekspozycją na potencjalny odbój bez dodatkowego ryzyka koncentracji.",
+  "macro_context": "BTC 1h -0.04% (flat/neutral) — brak crash ryzyka ale brak pozytywnego tailwindu; rynek nocny 22:50 UTC z obniżoną płynnością altów, vol spike 14.92× niejednoznaczny (capitulation vs dump continuation).",
   "confidence_in_curation": "high"
 }
