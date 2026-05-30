@@ -317,3 +317,72 @@ Files: learning-loop/adapter.py
 - [x] [2026-05-29] **fill_rate open-orders correction: separate OPEN-GTC from UNFILLED-REJECTED** _(risk: low, effort: 1h, revisit: 2026-06-01)_ — **CLOSED 2026-05-30 v3.11.3 part 3 SHIPPED: compute_fill_rate emits fill_rate_closed = filled/(filled+canceled+expired+rejected); alert path uses _closed, skips when closed_total=0. 4 unit tests.**
   - **Rationale:** fill_rate.unknown = 37% (12/19 'other' = open GTC orders) generuje fałszywy alert 'limits too tight' gdy faktycznie zlecenia czekają na rynek (open_status_new=5). Precyzyjna metryka: fill_rate_closed = filled/(filled+canceled+expired+rejected), ignorując open orders.
   - **Sketch:** W analyzer.py::compute_fill_rate(): fill_rate_closed = filled / max(1, filled+canceled+expired+manually_canceled+rejected); open_pending = open_status_new + open_status_held; emituj fill-rate-alert tylko gdy fill_rate_closed < 0.5 (open pending nie liczy się do alertu); dodaj 'open_pending' do output dla diagnostyki. Eliminuje fałszywe alerty dla GTC order setups.
+
+---
+
+## v3.13.x — System-readiness gaps (added 2026-05-30 after v3.13.1)
+
+These four items are **known gaps in operational readiness** — system
+works without them but each blocks one dimension of full autonomy or
+trustworthy edge measurement. Tracked here so operator/future-Claude
+implements them at the right moment. Auto-surfaced in
+`scripts/session_report.py::derive_risk_flags` as `🟡` info badges so
+they appear daily until resolved.
+
+- [ ] [2026-05-30] **READINESS-1: Heartbeat module not wired into the 11 monitors** _(risk: low, effort: 1-2h, revisit: 2026-06-02 after first full v3.13.x session)_
+  - **Rationale:** `shared/heartbeat.py` shipped v3.12.0 as a library + tests, but no monitor calls `heartbeat.ping(name)` after a successful run yet. Result: `learning-loop/runtime_state.json::heartbeat` is empty → `confidence.score_system_health` cannot compute `components_alive` and falls back to neutral 0.5. One of 5 confidence components is "blind". System still safe (Cloudflare Worker firing + GH cron success/failure gives external pulse), but confidence-score readiness stays `partial`.
+  - **When to implement:** as soon as a single full session (Mon 2026-06-01) confirms cron + monitor pipeline is healthy end-to-end. Low-risk surgical edit.
+  - **Sketch:**
+    1. Each of 11 monitors (`crypto-monitor/`, `defense-monitor/`, `geo-monitor/`, `twitter-monitor/`, `reddit-monitor/`, `politician-monitor/`, `price-monitor/`, `options-monitor/`, `options-exit-monitor/`, `exit-monitor/`, `scripts/incident_pattern_detector.py`) needs ~3 LOC at the very end of `run_scan()` / equivalent:
+       ```python
+       try:
+           sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+           from heartbeat import ping
+           ping("<monitor-name>", status="ok", message=f"scanned {n} symbols")
+       except Exception:
+           pass  # fail-soft: don't crash monitor if heartbeat write fails
+       ```
+    2. Each workflow YAML needs `contents: write` permission + commit step for `learning-loop/runtime_state.json` (uses same retry-on-non-fast-forward pattern as existing exit-monitor).
+    3. After deploy, verify `cat learning-loop/runtime_state.json | jq '.heartbeat | keys'` returns ~11 components within 15 min.
+    4. Re-check `confidence.system_health` component — should now be > 0.9 in healthy session.
+  - **How operator notices:** `scripts/session_report.py` heartbeat section will show `Alive (0)` until wired; afterwards should show `Alive (10-11)`. Auto-flagged as 🟡 in risk_flags while gap persists.
+  - **Files:** all 11 monitor .py + their workflow YAML templates in `scripts/workflow-templates/` + `.github/workflows/*.yml` (via sync-workflows).
+  - **Tests:** new `tests/test_heartbeat_wired.py` — for each monitor, AST-scan that imports `heartbeat` and calls `ping(...)`.
+  - **Definition of done:** `confidence.score_system_health(components_alive=11, components_total=11, ...) > 0.9` reproducibly in production audit JSONL events.
+
+- [ ] [2026-05-30] **READINESS-2: EDGE_GATE_DISABLED env still defaults true → no backtest-gated strategy enablement** _(risk: medium, effort: passive monitoring + backtest cycle ~3h human, revisit: 2026-06-15 OR after 30+ live paper trades)_
+  - **Rationale:** `learning-loop/edge_validator.py::_is_disabled` reads `EDGE_GATE_DISABLED` env (default `"true"`). Until operator flips to `"false"` AND every enabled strategy has a passing backtest report (WR≥50%, PF≥1.3, MDD<20%, n≥10 closed trades), strategies can fire signals without statistical-edge proof. Current behavior is intentional (v3.11 "opt-in" design) but the system is silently running un-gated.
+  - **When to implement:**
+    - **Step A (now-ish):** run backtest for each enabled strategy. Example: `python -m backtest.run --strategy momentum-long --tickers AAPL MSFT NVDA AMD --days 180 --mode both --walk-forward 3`
+    - **Step B:** if a strategy fails the thresholds, EITHER (a) refine its parameters and re-test, OR (b) disable it in `state.json` with documented `rationale`.
+    - **Step C:** flip `EDGE_GATE_DISABLED=false` in `.github/workflows/daily-learning.yml::env`.
+    - **Step D:** observe rationale.md for one week — does any enabled strategy get auto-disabled by `enforce_edge_gate_on_state`? If yes, that's the validator working as designed.
+  - **How operator notices:** rationale.md prints `edge-gate: DISABLED via EDGE_GATE_DISABLED env` line until disabled — already suppressed from rationale daily in v3.11.3 part 3. Backlog item kept as the actionable reminder.
+  - **Risk if skipped:** confidence component `signal_strength` cannot be calibrated against historical edge; strategies promoted purely on LLM sentiment may have negative real edge.
+  - **Definition of done:** `EDGE_GATE_DISABLED=false` in `daily-learning.yml`, AND each enabled strategy in `state.json` has an associated `learning-loop/backtests/<strategy>_<date>.json` artifact, AND no strategy auto-disabled by edge gate over 7 days.
+
+- [ ] [2026-05-30] **READINESS-3: No empirical edge validation — system has <30 live paper trades since v3.11.3 fix unblocked crypto pipeline** _(risk: medium, effort: passive — just observe, revisit: 2026-06-30 OR after 30 closed paper trades whichever earlier)_
+  - **Rationale:** Crypto-monitor was SILENT for 45 days (2026-04-15 → 2026-05-29) due to predator-bracket filter blocking oversold-bounce setups. Fix shipped v3.11.3 part 3 (2026-05-30). Result: system has been live but barely traded. Confidence ceiling computed at ~0.93, but the ceiling is theoretical — without paper-trade history, win-rate/profit-factor/max-drawdown numbers are unknown. **Cannot claim edge exists.**
+  - **When to implement:** passive — just wait 4-6 weeks. After 30+ closed trades (mix of all enabled strategies), analyzer's per-strategy stats become statistically meaningful (small but non-zero sample). Daily-learning Senior PM can then offer evidence-based recommendations.
+  - **Metric to track:**
+    - `learning-loop/history/<date>.md::cumulative_trades` should rise past 30
+    - `learning-loop/state.json::strategies.*.trades_lifetime` aggregated
+    - Per-strategy: WR > 50% AND PF > 1.3 over ≥10 closed trades
+  - **What to do at milestone:** generate edge-validation report via:
+    ```
+    python -m backtest.run --strategy <each> --mode both --walk-forward 3
+    diff backtest results vs live paper results
+    ```
+    If live underperforms backtest by > 50%, investigate (regime mismatch, slippage, sample bias).
+  - **Definition of done:** at least 30 closed paper trades total, with at least 2 strategies showing WR ≥ 50% AND PF ≥ 1.3 over their individual histories, AND no `[INCIDENT-CRITICAL]` over preceding 14 days.
+  - **Until then:** operator must NOT scale capital, must NOT touch `kill_switch_armed`, must NOT recommend live trading.
+
+- [ ] [2026-05-30] **READINESS-4: Multi-Agent Audit Board has never been executed — board structurally ready but zero review-cycles done** _(risk: medium, effort: 2-4h human review per cycle, revisit: 2026-06-07 OR before any capital escalation decision)_
+  - **Rationale:** `agents/` ships v3.13.0 with 13 prompts + 3 schemas + runner + 28 green structural tests. But no actual review cycle has been run — no `agents/reports/01_architecture_reviewer_2026-XX-XX.md` exists. Without a Final Arbiter decision on file, operator has no formal "fit to paper trade" verdict from the full multi-agent perspective.
+  - **When to implement:**
+    1. **First baseline run:** within 7 days (target: 2026-06-07 weekend). Operator runs `python3 agents/run_agent_board.py init <date>`, then walks through each of 11 area-agent prompts (either with LLM session OR manually), produces 11 area reports, runs Final Arbiter prompt 12 to produce binding decision.
+    2. **Weekly cadence after baseline:** every Sunday before next week's trading.
+    3. **Before any capital escalation:** never escalate position size, kill-switch state, or live-readiness without a fresh Final Arbiter decision ≤7 days old.
+  - **How operator notices:** session_report's readiness section will show 🟡 "Audit Board last run: never" until at least one Final Arbiter decision exists in `agents/reports/`.
+  - **Cost:** $0 (uses local runner + operator's existing LLM tool of choice).
+  - **Definition of done:** at least one full board cycle complete (11 area reports + 1 Final Arbiter decision), Final Arbiter decision ≤ 7 days old, decision is one of {APPROVE_LOCAL_REPLAY, APPROVE_PAPER_TRADING_WITH_WARNINGS} (NOT one of the BLOCK_* / NEEDS_* set), AND the decision is recorded in `agents/reports/final_decision_<date>.md` conforming to `agents/schemas/final_decision.schema.json`.

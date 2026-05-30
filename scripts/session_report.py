@@ -260,6 +260,126 @@ def summarize_strategies(state: dict) -> dict:
     }
 
 
+# ─── v3.13.x — Readiness gaps detection ─────────────────────────────────────
+#
+# Auto-detected known system-readiness gaps from backlog
+# `learning-loop/heuristic_proposals.md::v3.13.x — System-readiness gaps`.
+# Each gap is checked from real state; if it persists, surfaced as 🟡 info
+# badge so operator sees it daily and remembers to implement.
+
+def check_readiness_gaps(rs: dict, state: dict) -> list:
+    """Surface the 4 known readiness gaps from v3.13.x backlog.
+
+    Returns a list of {key, status, badge, message} dicts. Each gap auto-
+    resolves when its definition-of-done is met (no manual close needed).
+    """
+    gaps = []
+    from pathlib import Path
+    from datetime import datetime, timezone, timedelta
+
+    # READINESS-1 — heartbeat wired in monitors?
+    hb = rs.get("heartbeat") or {}
+    expected_min = 5   # at least 5 of 11 monitors must ping for "wired"
+    gaps.append({
+        "key":     "READINESS-1",
+        "title":   "Heartbeat module wiring",
+        "status":  "OPEN" if len(hb) < expected_min else "RESOLVED",
+        "badge":   "🟡" if len(hb) < expected_min else "✅",
+        "message": (
+            f"Heartbeat empty ({len(hb)}/11 monitors registered). "
+            f"`confidence.system_health` falls back to neutral 0.5 — one "
+            f"of 5 confidence components is blind. See heuristic_proposals.md "
+            f"READINESS-1 for sketch (3 LOC per monitor)."
+            if len(hb) < expected_min
+            else f"Heartbeat wired ({len(hb)} monitors active)."
+        ),
+    })
+
+    # READINESS-2 — edge gate disabled?
+    import os
+    edge_disabled = os.environ.get("EDGE_GATE_DISABLED", "true").lower() == "true"
+    gaps.append({
+        "key":     "READINESS-2",
+        "title":   "EDGE_GATE_DISABLED flip required",
+        "status":  "OPEN" if edge_disabled else "RESOLVED",
+        "badge":   "🟡" if edge_disabled else "✅",
+        "message": (
+            "Edge gate disabled — strategies fire without statistical "
+            "(WR≥50%, PF≥1.3, MDD<20%, n≥10) gate. To enable: run "
+            "backtests for each enabled strategy, then flip "
+            "EDGE_GATE_DISABLED=false in daily-learning.yml."
+            if edge_disabled
+            else "Edge gate enabled — strategies validated by backtest."
+        ),
+    })
+
+    # READINESS-3 — 30+ paper trades milestone
+    cumulative = 0
+    try:
+        cumulative = int(state.get("cumulative", {}).get("total_trades", 0) or 0)
+    except (TypeError, ValueError):
+        pass
+    # Also tally strategy trades_lifetime for cross-check
+    strat_trades = 0
+    try:
+        for cfg in (state.get("strategies") or {}).values():
+            if isinstance(cfg, dict):
+                strat_trades += int(cfg.get("trades_lifetime", 0) or 0)
+    except (TypeError, ValueError):
+        pass
+    paper_count = max(cumulative, strat_trades)
+    gaps.append({
+        "key":     "READINESS-3",
+        "title":   "30+ paper trades for empirical edge validation",
+        "status":  "OPEN" if paper_count < 30 else "RESOLVED",
+        "badge":   "🟡" if paper_count < 30 else "✅",
+        "message": (
+            f"Only {paper_count} paper trades to date. System has been "
+            f"recovering from 45-day SILENT period (v3.11.3 fix unblocked "
+            f"crypto pipeline). Need ≥30 closed trades + WR≥50% + PF≥1.3 "
+            f"per strategy before any capital escalation discussion."
+            if paper_count < 30
+            else f"{paper_count} paper trades — edge validation possible."
+        ),
+    })
+
+    # READINESS-4 — Multi-Agent Audit Board ran?
+    audit_reports_dir = Path(__file__).resolve().parent.parent / "agents" / "reports"
+    fa_reports = []
+    if audit_reports_dir.exists():
+        fa_reports = sorted(audit_reports_dir.glob("final_decision_*.md"))
+    # Check if any final decision is ≤ 7 days old
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    has_recent = False
+    latest_date = "never"
+    for p in fa_reports:
+        try:
+            # Filename: final_decision_2026-06-07.md
+            ds = p.stem.split("_", 2)[-1]  # 2026-06-07
+            d  = datetime.fromisoformat(ds).replace(tzinfo=timezone.utc)
+            if d > cutoff:
+                has_recent = True
+            latest_date = ds
+        except Exception:
+            continue
+    gaps.append({
+        "key":     "READINESS-4",
+        "title":   "Multi-Agent Audit Board first run / weekly cadence",
+        "status":  "OPEN" if not has_recent else "RESOLVED",
+        "badge":   "🟡" if not has_recent else "✅",
+        "message": (
+            f"Audit Board last run: {latest_date}. Need fresh "
+            f"final_decision ≤ 7 days old before any capital escalation. "
+            f"To run: `python3 agents/run_agent_board.py init <date>` then "
+            f"work through 11 area prompts + Final Arbiter."
+            if not has_recent
+            else f"Audit Board last final_decision: {latest_date} (≤7d old, OK)."
+        ),
+    })
+
+    return gaps
+
+
 # ─── Risk flags ──────────────────────────────────────────────────────────────
 
 def derive_risk_flags(governor: dict, safe_mode: dict, hb: dict,
@@ -301,7 +421,8 @@ def render_markdown(date_iso: str, generated_at: str,
                      hb: dict, audit_summary: dict, routine_budget: dict,
                      strategies: dict, incidents_text: str,
                      allocation_plan: dict | None, allocation_exec: dict | None,
-                     risk_flags: list) -> str:
+                     risk_flags: list,
+                     readiness_gaps: list | None = None) -> str:
     """Render the full markdown session report."""
 
     def fmt_pct(v):
@@ -328,6 +449,19 @@ def render_markdown(date_iso: str, generated_at: str,
         lines.append("")
     else:
         lines.append("## ✅ No risk flags surfaced")
+        lines.append("")
+
+    # ── Readiness gaps (v3.13.x — known but not blocking)
+    if readiness_gaps:
+        open_gaps = [g for g in readiness_gaps if g["status"] == "OPEN"]
+        resolved_gaps = [g for g in readiness_gaps if g["status"] == "RESOLVED"]
+        lines.append(f"## Readiness gaps ({len(open_gaps)} open / {len(resolved_gaps)} resolved)")
+        lines.append("")
+        lines.append("_Backlog source: `learning-loop/heuristic_proposals.md` "
+                      "(v3.13.x — System-readiness gaps section)._")
+        lines.append("")
+        for g in readiness_gaps:
+            lines.append(f"- {g['badge']} **{g['key']}** — {g['title']}: {g['message']}")
         lines.append("")
 
     # ── Account snapshot
@@ -480,11 +614,14 @@ def main():
     routine_budget = summarize_routine_budget(rs)
     strategies     = summarize_strategies(state)
     risk_flags     = derive_risk_flags(governor, safe_mode, hb, audit_summary, ex)
+    # v3.13.x: surface 4 known readiness gaps so they appear daily until resolved
+    readiness_gaps = check_readiness_gaps(rs, state)
 
     # Render
     md = render_markdown(date_iso, generated_at, governor, positions, safe_mode,
                           hb, audit_summary, routine_budget, strategies,
-                          incidents, plan, ex, risk_flags)
+                          incidents, plan, ex, risk_flags,
+                          readiness_gaps=readiness_gaps)
 
     if args.no_write:
         print(md)
