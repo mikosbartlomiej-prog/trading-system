@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× — sygnał wygląda jak capitulation, ale konto już trzyma UNI/USD long na 7.7% equity z wynikiem +0.35% (flat); dodanie $2,500 to averaging down na instrumencie bez potwierdzonego odbicia. Odrzucam — predator nie uśrednia w dół na timerze który jeszcze nie pracuje.",
+  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× at 22:20 UTC — mocny techniczny oversold-bounce setup, ALE konto już trzyma UNI/USD long 8.4% equity ($8,176, qty 2680, P&L +0.36%). Averaging down na tym samym instrumencie bez named catalyst to koncentracja ~16.8% w jednym Tier-2 alcie — predator odrzuca; czekam na zamknięcie pierwotnej pozycji lub BTC impulse.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Konto posiada otwartą pozycję UNI/USD (7.7% equity, +0.35% flat) — nowy sygnał to averaging down, nie fresh entry; wolumen 14.92× przy ciągłym -5.58% 24h sugeruje dystrybucję/panic-sell, nie czysty V-bottom capitulation; brak named catalyst uzasadniającego koncentrację ~10.2% equity w jednym Tier-2 alcie."
+      "reason": "Duplikat otwartej pozycji (8.4% equity, +0.36%) — dodanie $2,500 podnosi koncentrację do ~11% w jednym Tier-2 alcie bez nowego katalizatora; move_24h -5.58% z vol 14.92× to panic-sell dystrybucja, nie czysty V-bottom; BTC 1h -0.04% neutralny ale brak momentum do uzasadnienia double-dip wejścia."
     }
   ],
-  "macro_context": "BTC 1h -0.04% (neutralny, bez impetu); brak altseason impulsu; UNI spada bez specyficznego katalizatora na tle spokojnego BTC — weakness własna coina, nie beta BTC.",
+  "macro_context": "BTC 1h -0.04% (praktycznie flat) — neutralny bez altseason impulsu; UNI słabość własna coina bez named DeFi catalyst; volume spike 14.92× przy ujemnym 24h move wskazuje na redystrybucję nie akumulację.",
   "confidence_in_curation": "high"
 }
