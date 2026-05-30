@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× średniej — sygnał oversold-bounce techniczne realny, ale portfel JUŻ trzyma open long na UNI (1634 jednostek, 5.1% equity, +0.29% P&L). Piramidowanie w tę samą alt przy identycznym poziomie cenowym bez nowego katalizatora = koncentracja bez dodatkowej wartości.",
+  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× — sygnał wygląda jak capitulation, ale konto już trzyma UNI/USD long na 7.7% equity z wynikiem +0.35% (flat); dodanie $2,500 to averaging down na instrumencie bez potwierdzonego odbicia. Odrzucam — predator nie uśrednia w dół na timerze który jeszcze nie pracuje.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Open UNI/USD long already exists (1634.58 units, 5.1% equity, +0.29% P&L at ~$3.096 entry) — adding second $2,500 lot pyramids into same Tier-2 alt at identical price level; combined ~7.7% equity single-name concentration without fresh catalyst; existing position already captures the oversold bounce."
+      "reason": "Konto posiada otwartą pozycję UNI/USD (7.7% equity, +0.35% flat) — nowy sygnał to averaging down, nie fresh entry; wolumen 14.92× przy ciągłym -5.58% 24h sugeruje dystrybucję/panic-sell, nie czysty V-bottom capitulation; brak named catalyst uzasadniającego koncentrację ~10.2% equity w jednym Tier-2 alcie."
     }
   ],
-  "macro_context": "BTC 1h flat (-0.04%) — neutral regime; UNI 24h -5.58% with capitulation volume (14.92×) confirms oversold bottom formation, but the original entry position is already positioned for the recovery.",
+  "macro_context": "BTC 1h -0.04% (neutralny, bez impetu); brak altseason impulsu; UNI spada bez specyficznego katalizatora na tle spokojnego BTC — weakness własna coina, nie beta BTC.",
   "confidence_in_curation": "high"
 }
