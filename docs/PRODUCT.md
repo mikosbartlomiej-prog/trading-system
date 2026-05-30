@@ -1,11 +1,57 @@
 # Trading System — Product Documentation
 
-**Wersja dokumentu:** 1.4 (2026-05-22)
-**Stan systemu:** v3.9.5.1 (crypto oversold boost wired + LLM poll headroom + first live GIVEBACK_WARN verification)
-**Recent increments:** 3.9.5.1 (LLM POLL_MAX_S 480→600 + SILENT-grace [x]), 3.9.5 (PR #8 crypto oversold boost merged + wired), 3.9.4 → 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor email + sync fix), 3.9.3 (EDGAR XML discovery + 3-tier STOCK Act fallback), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware), 3.7 (PDT + Routine budget), 3.6 (full autonomy + Strategy Coherence Agent), 3.5 (IntradayProfitGovernor)
-**Tryb:** Alpaca Paper Trading (NIE live)
+**Wersja dokumentu:** 1.5 (2026-05-30)
+**Stan systemu:** v3.13.0 (Multi-Agent Audit Board + v3.12.0 confidence/safe_mode/heartbeat/session_report + v3.11.3 bracket-interlock fix + crypto-oversold-bounce + symbol attribution + zombie-LLM-lock + fill_rate-closed separation)
+**Recent increments (newest → oldest):**
+- **3.13.0** (2026-05-30) — Multi-Agent Audit Board (11 area reviewers + Final Arbiter): `agents/` directory with prompts/schemas/runner. REVIEW-ONLY layer separate from runtime.
+- **3.12.0** (2026-05-30) — Autonomy-completion sweep: `shared/confidence.py` (5-component deterministic score), `shared/safe_mode.py` (5 runtime triggers), `shared/heartbeat.py` (component liveness), `scripts/session_report.py` (local end-of-session reporter). Wired into `risk_officer.evaluate_trade`.
+- **3.11.3 part 3** (2026-05-30) — Learning-loop sweep: `crypto-oversold-bounce` path, symbol-based attribution fallback in analyzer, zombie-prune LLM lock 14 days, fill_rate_closed separation (OPEN-GTC excluded).
+- **3.11.3 part 2** (2026-05-30) — Backlog sweep: 100/100 system_consistency + 100/100 strategy_coherence, 5 ACCIDENT strategies revived, new `shared/intraday_trend.py` (ITM 5-state evaluator), 2 stale audit rules fixed.
+- **3.11.3 part 1** (2026-05-30) — Bracket-interlock fix: `safe_close` cancels OCO bracket children BEFORE close (fixes 2026-05-29 production incident). New Layer 1 pattern P13.
+- **3.11.2** (2026-05-29) — Cloudflare cron-trigger Worker (Layer 5): bypasses GH Actions cron-skip. 45× pre-deploy monitor activity verified.
+- **3.11.1** (2026-05-29) — v3.11 production audit fixes: morning-allocator status, zombie-prune policy distinction, P05 false positives.
+- **3.11** (2026-05-27) — EDGE-FIRST 7/9 phases.
+- **3.10.x** — see git log for finer-grained history.
+
+**Tryb:** Alpaca Paper Trading (NIE live — `assert_paper_only` invariant)
 **Repo:** `git@github.com:mikosbartlomiej-prog/trading-system.git`
 **Branch produkcyjny:** `main`
+**Test suite:** 380+ green in primary isolated groups (290 architecture_vnext + 65 e2e + 32 confidence/safe_mode/heartbeat + 28 audit_board)
+
+---
+
+## v3.12.0 + v3.13.0 architecture additions (concise reference)
+
+### shared/confidence.py (v3.12.0)
+Deterministic 5-component score per decision:
+- `data_quality` (waga 0.20): bar age + spread + bars count
+- `signal_strength` (waga 0.30): primary momentum score + confirmation count
+- `regime_alignment` (waga 0.20): strategy↔regime matrix
+- `system_health` (waga 0.15): components alive + recent errors + audit gap
+- `risk_state` (waga 0.15): intraday P&L + giveback + consecutive losses + drawdown
+
+Thresholds: ALLOW≥0.65 / ALERT_ONLY≥0.50 / BLOCK<0.50. Tunable via
+`config/aggressive_profile.json::confidence`.
+
+### shared/safe_mode.py (v3.12.0)
+Runtime-operational state (vs `defensive_mode` which is risk-driven).
+5 triggers: ACCOUNT_OUTAGE, AUDIT_GAP, STALE_DATA, CONFIDENCE_BROKEN,
+OPERATOR. Effects: block NEW entries, halve size, raise confidence
+threshold +0.10. Emergency closes always bypass.
+
+### shared/heartbeat.py (v3.12.0)
+Per-component liveness in `runtime_state.json::heartbeat`. Powers
+`confidence.score_system_health()`. 11 EXPECTED_COMPONENTS.
+
+### scripts/session_report.py (v3.12.0)
+Local end-of-session reporter. Writes `reports/sessions/<date>_<ts>.md`
++ `latest.md` symlink.
+
+### agents/ — Multi-Agent Audit Board (v3.13.0)
+12 prompts (00_shared_context + 11 area reviewers + 12_final_arbiter)
++ 3 JSON schemas + local runner. Used for design/code/risk/etc.
+review. **REVIEW-ONLY — forbidden from runtime trading path.**
+See `agents/README.md`.
 
 ---
 

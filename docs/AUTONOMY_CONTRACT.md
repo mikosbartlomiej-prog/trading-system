@@ -1,5 +1,10 @@
 # Autonomy Contract — trading lifecycle
 
+> **Last updated:** 2026-05-30 (v3.13.0). Adds: v3.12.0 confidence gate
+> + safe_mode + heartbeat as runtime layers. Adds: Multi-Agent Audit
+> Board (`agents/`) as REVIEW-ONLY layer explicitly outside the
+> runtime decision path.
+
 This is the formal contract that the trading system makes with the
 operator. **There is no human approval step anywhere in the trading
 lifecycle.** Every signal, every position, every error ends in a
@@ -41,12 +46,14 @@ deterministic decision, audited and (where possible) reversible.
    | `EMERGENCY_CLOSE` | Hard loss / DTE / no exit / defensive mode |
    | `PANIC_CLOSE_OPTIONS` | Aggregate options risk BLOCKED |
    | `PATCH_APPROVE` / `PATCH_REJECT` / `PATCH_AUTO_MERGE` / `PATCH_ROLLBACK` | Code autonomy events |
+   | `SAFE_MODE_ENTERED` / `SAFE_MODE_EXITED` | v3.12.0 — runtime safe_mode transitions |
+   | `CONFIDENCE_BLOCK` / `CONFIDENCE_ALERT` | v3.12.0 — confidence gate decisions |
 
 4. **Every decision is audited.** `shared/audit.py::write_audit_event`
    writes one JSONL row per decision under `journal/autonomy/`
    (trading) or `learning-loop/code-autonomy/history/` (code).
 
-## Trading lifecycle (no approval anywhere)
+## Trading lifecycle (no approval anywhere) — v3.12.0+
 
 ```
 Signal source (monitor)
@@ -58,14 +65,29 @@ Signal source (monitor)
 [Gate 2] portfolio_risk → reject (REJECT_ENTRY) or pass
     │
     ▼
-[Gate 3] risk_officer → reject (REJECT_ENTRY) or APPROVE
+[Gate 3] safe_mode.gate_new_entry → reject if active (v3.12.0)
     │
     ▼
-[Order] Alpaca paper REST
+[Gate 4] confidence.compute_confidence → BLOCK if total < 0.50 (v3.12.0)
+    │     (5 components: data_quality / signal_strength /
+    │      regime_alignment / system_health / risk_state)
+    ▼
+[Gate 5] risk_officer.evaluate_trade → reject or APPROVE
+    │     (enforces ALL prior gate decisions + own checks)
+    ▼
+[Gate 6] pdt_guard.evaluate_order → defer / block / allow
     │
+    ▼
+[Order] Alpaca paper REST via safe_close (for SELL) or place_*_bracket (for BUY)
+    │     v3.11.3: safe_close cancels OCO brackets BEFORE close (else 403)
     ▼
 [Audit] make_decision + write_audit_event(kind="trading")
 ```
+
+**Hard invariants:**
+- High confidence CANNOT override risk_officer REJECT (verified by test)
+- safe_mode active BLOCKS new entries (emergency closes always bypass)
+- Every gate writes to `journal/autonomy/<date>.jsonl` audit JSONL
 
 Position management runs in `exit-monitor` + `options-exit-monitor` +
 `autonomous-remediation.yml`:
@@ -153,3 +175,28 @@ without an operator-supplied `CONFIRM_PANIC_CLOSE_OPTIONS`.
 The contract guarantees that the operator's input is **not needed** for
 the system to keep operating safely. There is no inbox in which a
 "please approve" mail can pile up.
+
+---
+
+## Multi-Agent Audit Board separation (v3.13.0)
+
+The `agents/` directory contains 11 prompt-based area reviewers + Final
+Arbiter. They are **REVIEW-ONLY** and explicitly OUTSIDE this autonomy
+contract's decision path:
+
+```
+[ THIS AUTONOMY CONTRACT — runtime, deterministic, NO LLMs ]
+  signal → safe_mode → confidence → risk → decision → audit → execution
+
+[ AUDIT BOARD — offline, prompt-based, may use LLM ]
+  reads:  code, configs, audit JSONL, reports, tests
+  emits:  findings, blockers, final decision
+  cannot: trade, modify risk, modify safe_mode, modify kill_switch
+```
+
+The Audit Board is invoked manually by the operator (or in CI as a
+weekly gate). Its decisions are recommendations, not commands. The
+runtime decision path is unaffected by Audit Board verdicts during
+a session.
+
+See `docs/AGENTS_DOCUMENTATION.md` and `agents/README.md` for details.

@@ -528,4 +528,47 @@ orders get `size_multiplier × cancel_factor`. Verified active in adapter.
 
 ---
 
-*Last updated: 2026-05-29 EOD (v3.11.2 — Cloudflare cron-trigger DEPLOYED, production verified at 45× pre-deploy monitor activity; v3.11.1 production audit fixes; v3.11 EDGE-FIRST 7/9 phases)*
+*Last updated: 2026-05-30 EOD (v3.13.0 — Multi-Agent Audit Board added; v3.12.0 confidence + safe_mode + heartbeat + session reporter; v3.11.3 bracket-interlock fix + crypto-oversold-bounce + symbol attribution + zombie-LLM-lock + fill_rate-closed separation; previous v3.11.2 Cloudflare cron-trigger verified)*
+
+---
+
+## v3.12.0 / v3.13.0 quick reference (2026-05-30)
+
+**Confidence gate** — `shared/confidence.py`: 5-component deterministic
+score. ALLOW≥0.65 / ALERT_ONLY≥0.50 / BLOCK<0.50. Wired into
+`risk_officer.evaluate_trade` (legacy callers warn-only). Cannot override
+risk_officer REJECT. See "Confidence gate" section above and
+`shared/confidence.py::compute_confidence`.
+
+**Safe mode** — `shared/safe_mode.py`: runtime-operational state distinct
+from `defensive_mode`. 5 triggers: ACCOUNT_OUTAGE / AUDIT_GAP /
+STALE_DATA / CONFIDENCE_BROKEN / OPERATOR. Effects: blocks NEW entries,
+halves size, raises confidence threshold +0.10. Emergency closes
+(CLOSE_EMERGENCY/PROFIT_LOCK/GOVERNOR) ALWAYS bypass. See Scenario 6.
+
+**Heartbeat** — `shared/heartbeat.py`: per-component liveness in
+`runtime_state.json::heartbeat`. Feeds `confidence.system_health`.
+Check with `cat learning-loop/runtime_state.json | jq .heartbeat`.
+
+**Session report** — `python3 scripts/session_report.py [--no-write] [--date YYYY-MM-DD]`.
+Writes `reports/sessions/<date>_<ts>.md` + `latest.md` symlink. Surfaces
+risk flags 🔴/🟠/🟡 + account snapshot + governor state + safe_mode +
+strategies + allocator + decisions breakdown + heartbeat + routine_budget +
+incidents.
+
+**Multi-Agent Audit Board** — `agents/`: 11 area-specialist prompt-based
+reviewers + Final Arbiter for design/code/risk/etc. review. **REVIEW-ONLY
+— never runtime brain.** Usage:
+```bash
+python3 agents/run_agent_board.py list
+python3 agents/run_agent_board.py validate-structure
+python3 agents/run_agent_board.py check-forbidden
+python3 agents/run_agent_board.py init <YYYY-MM-DD>
+python3 agents/run_agent_board.py validate-reports <YYYY-MM-DD>
+```
+See `agents/README.md`.
+
+**Crypto oversold-bounce** — new strategy in `crypto-monitor`. Bypasses
+predator-bracket when `RSI ≤ 30 + 24h-move ≥ -10% + 1-bar reversal +
+≥50% vol`. Tagged `crypto-oversold-bounce-*` in audit. Solves 45-day
+SILENT period from BTC/ETH deep oversold (RSI 20-27).

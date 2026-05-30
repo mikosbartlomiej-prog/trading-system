@@ -1,23 +1,136 @@
 # Agents Documentation
 
+> **Last updated:** 2026-05-30 (v3.13.0). Now covers **THREE classes of agents**:
+> (1) deterministic CI gates in `tools/`, (2) Multi-Agent Audit Board in
+> `agents/` (review-only), (3) per-domain LLM Curators in `*-monitor/`
+> (signal-filter only, fail-soft).
+
 Comprehensive guide to the autonomous agents that run inside the
-trading-system repo. Two agents live here, each with a distinct job:
+trading-system repo. Three distinct classes of agents live here:
+
+| Class | Where | Job | When it runs | Output |
+|---|---|---|---|---|
+| **Deterministic CI tools** | `tools/` | Static + dynamic auditors enforcing invariants | every push/PR + daily | `reports/{system-consistency,strategy-coherence,e2e}/latest.{json,md}` |
+| **Multi-Agent Audit Board** | `agents/` | Prompt-based offline review (design/code/risk/etc.) | manual: before paper-start + weekly | `agents/reports/*_<DATE>.md` |
+| **Per-domain LLM Curators** | `crypto-monitor/`, `reddit-monitor/`, `politician-monitor/` | Signal-quality filter (NOT decision) | per cron tick (when budget permits) | Curator picks merged into monitor signal flow with fail-soft path |
+
+---
+
+## Class 1 — Deterministic CI tools
+
+Three agents in `tools/<name>_agent/`:
 
 | Agent | Job | When it runs | Output |
 |---|---|---|---|
-| **System Consistency Agent** | Static auditor — enforces the 8 system invariants | every push/PR + daily 06:15 UTC | `reports/system-consistency/latest.{json,md}` |
-| **E2E System Test Agent** | Dynamic harness — runs the trading system end-to-end with fake clients | every push/PR + daily 06:45 UTC | `reports/e2e/latest.{json,md}` |
+| **System Consistency Agent** | Static auditor — enforces 8 system invariants (76 checks) | every push/PR + daily 06:15 UTC | `reports/system-consistency/latest.{json,md}` |
+| **Strategy Coherence Agent** | Strategy-contract invariants (75 checks) | every push/PR + daily | `reports/strategy-coherence/latest.{json,md}` |
+| **E2E System Test Agent** | Dynamic harness — runs end-to-end with fake clients (40 capabilities) | every push/PR + daily 06:45 UTC | `reports/e2e/latest.{json,md}` |
 
 They are **complementary** — the consistency agent catches structural
 regressions (a live URL added, a risk gate removed, a missing module).
-The E2E agent catches behavioural regressions (a guard that silently
-returns OK when it should REJECT, a fake Alpaca that fills when it
-shouldn't).
+The strategy-coherence agent catches strategy-contract drift (sizing
+mismatch between docs and code, missing regime gate, etc.). The E2E
+agent catches behavioural regressions (a guard that silently returns
+OK when it should REJECT, a fake Alpaca that fills when it shouldn't).
 
-There are also LLM personas used by the daily learning loop (Senior PM,
-Challenger, Reddit Curator, Crypto Curator, Options Handler) and the
-deterministic `risk_officer`. Those are **not separate agents** — they
-are workflow steps. They're documented for completeness at the bottom.
+### CLI
+
+```bash
+python3 scripts/system_consistency_agent.py
+python3 scripts/strategy_coherence_agent.py
+python3 scripts/e2e_system_test_agent.py --all --no-network --report-only
+```
+
+Current scores (v3.13.0): **100/100 + 100/100 + PASS**.
+
+---
+
+## Class 2 — Multi-Agent Audit Board (v3.13.0, NEW)
+
+Located in `agents/`. 11 area-specialist prompt-based reviewers + Final
+Arbiter. Used for design / code / risk / data / confidence / runtime
+safety / testing / docs / simplicity / security / free-ops review.
+
+**CRITICAL DISTINCTION:** Audit Board is **REVIEW-ONLY**. It cannot:
+- trade
+- modify risk parameters
+- modify safe_mode / kill_switch
+- run inside the deterministic decision loop
+- recommend live trading
+
+```
+[ RUNTIME — deterministic, NO LLMs ]
+  signal → confidence → risk → decision → audit → execution
+
+[ AUDIT BOARD — prompt-based, may use LLM offline ]
+  reads:  code, configs, audit JSONL, reports, tests
+  emits:  findings, blockers, final decision
+  CANNOT: trade, modify risk, modify safe_mode
+```
+
+### 12 prompts
+
+| # | Agent | Prefix |
+|---|---|---|
+| 00 | Shared context (read first) | — |
+| 01 | Architecture | `ARCH-XXX` |
+| 02 | Trading strategy | `STRAT-XXX` |
+| 03 | Risk | `RISK-XXX` |
+| 04 | Data quality & bias | `DATA-XXX` |
+| 05 | Confidence score | `CONF-XXX` |
+| 06 | Runtime safety | `RUNTIME-XXX` |
+| 07 | Testing & E2E | `TEST-XXX` |
+| 08 | Documentation & runbook | `DOC-XXX` |
+| 09 | Simplicity & refactoring | `SIMPL-XXX` |
+| 10 | Security & secrets | `SEC-XXX` |
+| 11 | Free operations | `FREE-XXX` |
+| 12 | Final Arbiter | `ARB-XXX` |
+
+### 3 JSON schemas
+
+- `agents/schemas/finding.schema.json` — finding shape
+- `agents/schemas/agent_report.schema.json` — per-agent report
+- `agents/schemas/final_decision.schema.json` — Final Arbiter
+  (`live_trading_readiness` HARDCODED `"blocked"`; `agents_consumed`
+  `minItems=11`)
+
+### CLI
+
+```bash
+python3 agents/run_agent_board.py list
+python3 agents/run_agent_board.py validate-structure
+python3 agents/run_agent_board.py check-forbidden
+python3 agents/run_agent_board.py init <YYYY-MM-DD>
+python3 agents/run_agent_board.py validate-reports <YYYY-MM-DD>
+```
+
+Zero LLM calls, zero network. See `agents/README.md` for usage details.
+
+### Tests
+
+`tests/test_audit_board_v3130.py` — **28 tests** verifying prompt
+structure, schema validity, runner behavior, forbidden-phrase scan.
+
+---
+
+## Class 3 — Per-domain LLM Curators (signal-filter only)
+
+Located in `*-monitor/llm_curator.py` files. Each is a **signal-quality
+filter** wired via `routine_budget` (15/day Anthropic cap). **FAIL-SOFT** —
+when LLM unavailable, monitor proceeds with heuristic fallback.
+
+| Curator | Domain | File |
+|---|---|---|
+| **Crypto Signal Curator** | Validates crypto-monitor picks | `crypto-monitor/llm_curator.py` |
+| **Reddit Signal Curator** | Validates reddit-monitor picks | `reddit-monitor/llm_curator.py` |
+| **Capitol Trader Curator** | Validates politician-monitor PTRs | `politician-monitor/llm_curator.py` |
+| **Senior PM** + **Challenger** | Learning-loop 3-round dialog (daily) | `learning-loop/llm_client.py` |
+
+**Constraint:** Curators only FILTER what monitors emit — they do NOT
+add their own signals. They cannot override risk_officer, cannot ignore
+confidence threshold, cannot recommend live trading.
+
+---
 
 ---
 

@@ -1,8 +1,17 @@
 # Trading System — Risk & Strategy Document
 
-**Version:** 3.9.8 — PR #9 deep oversold amplifier (2026-05-23)
-**Recent increments:** 3.9.8 (PR #9 ETH≤25 → 1.5× crypto-momentum), 3.9.7 (governor NEW_DAY peak reset fix), 3.9.6 (OCO exit recreate + GTC brackets + audit journal commit), 3.9.5.1 (POLL_MAX_S 480→600), 3.9.5 (PR #8 crypto oversold boost), 3.9.4.4 (daily-learning cherry-pick retry), 3.9.3.1 (politician-monitor production verified), 3.9.2 (politician-monitor MVP), 3.9.1 (NOW + software_quality), 3.9.0 (SILENT grace), 3.8.9 (aggressive entry + equity-gap + RSI alerts), 3.8 (PDT intent-aware redesign), 3.5 (IntradayProfitGovernor), 3.0 (Aggressive Momentum + Event Switch)
-**Effective from:** 2026-05-23 (v3.9.8)
+**Version:** 3.13.0 — Multi-Agent Audit Board + v3.12.0 confidence/safe_mode/heartbeat + v3.11.3 crypto-oversold-bounce
+**Recent increments (newest → oldest):**
+- **3.13.0** (2026-05-30) — Multi-Agent Audit Board (`agents/`): 11 area reviewers + Final Arbiter. REVIEW-ONLY; not in runtime decision path.
+- **3.12.0** (2026-05-30) — Confidence + safe_mode + heartbeat + session reporter. Confidence wired into `risk_officer`.
+- **3.11.3 part 3** (2026-05-30) — `crypto-oversold-bounce` path bypasses predator-bracket when RSI≤30 + 24h-move≥-10% + 1-bar reversal + ≥50% vol. Tag `crypto-oversold-bounce-*`.
+- **3.11.3 part 2** (2026-05-30) — 5 ACCIDENT strategies revived (geo-defense/-energy/-gold/-xom + options-momentum), ITM module, 2 stale audit rules fixed.
+- **3.11.3 part 1** (2026-05-30) — `safe_close` cancels OCO brackets first (fixes 2026-05-29 incident).
+- **3.11.2** (2026-05-29) — Cloudflare cron-trigger Worker.
+- **3.11** (2026-05-27) — EDGE-FIRST gates (default OFF, opt-in).
+- **3.10.x** (2026-05-27) — Intraday-first risk taxonomy refactor.
+- **3.9.x** — see git log.
+**Effective from:** 2026-05-30 (v3.13.0)
 **Account:** Alpaca Paper, ID PA3KNZV29BP5, Level 3 options enabled
 **Author:** mikosbartlomiej-prog + Claude (Cowork)
 
