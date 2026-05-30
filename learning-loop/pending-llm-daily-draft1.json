@@ -1,0 +1,57 @@
+{
+  "narrative": "47 dni operacyjnej ciszy mimo Cloudflare Worker aktywnego od 2026-05-29 — to diagnoza pipeline, nie strategii. BTC RSI 29.7 i ETH RSI 29.3 to czwarty dzień z rzędu głębokiej wyprzedaży; statystycznie jeden z najlepszych setup-ów bounce w ciągu ostatnich miesięcy i system NIE generuje żadnych entry. Equity gap -$1,106 z jednoczesnym 0 otwartych pozycji i 0 przypisanych trade'ów jest analitycznie niemożliwy — albo /v2/positions zwraca pusty payload przez API bug, albo istnieje ukryte exposure (orders filled bez wpisania do state), albo stale data z wcześniejszej sesji. Jedyne mierzalne ryzyko to koszt alternatywny: każdy dzień bez crypto entry przy RSI <30 to stracona wysokoprawdopodobna szansa.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Zero mierzalnego edge z danych empirycznych: by_strategy puste, fill_rate puste, 0 zamkniętych trade'ów przez 47 dni. Jedyna statystyczna szansa to crypto bounce przy RSI 29-30 na BTC i ETH — ale edge jest nierealizowalny dopóki pipeline execution jest broken. SPY RSI 69 = stock momentum blisko neutralnego sufitu bez wyraźnego katalizatora.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "DEFENDED: BTC RSI 29.7 + ETH RSI 29.3 — czwarty dzień z rzędu głębokiej wyprzedaży. RSI <30 historycznie = high-probability bounce setup. Utrzymuję boost 1.5× z wczoraj (hard_safety=true zachowane). Problem nie jest w parametrach strategii — jest w pipeline execution. Wyłączenie strategii w tym momencie oznaczałoby pominięcie najlepszego setup-u od tygodni."
+      },
+      "crypto-oversold-bounce": {
+        "size_multiplier": 1.0,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "KEEP: nowa strategia v3.11.3 zaprojektowana dla dokładnie tych warunków (RSI ≤30 + 24h-move ≥-10% + 1-bar reversal). placed_lifetime=0 to PIPELINE_FAILURE (enabled_at: 2026-05-30 = dzisiaj). BTC RSI 29.7 vs wczoraj 24.1 = momentum odwraca — to dokładnie okno wejścia tej strategii."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "side_bias": "short",
+        "enabled": true,
+        "rationale": "HOLD na obecnych parametrach: 1 trade lifetime, 0% WR — za mała próba żeby cokolwiek zmieniać. SPY RSI 69 daje kontekst dla short-bias (momentum blisko szczytu) ale nie ma dostatecznych danych. 0.5× size z poprzedniej sesji jest ostrożny i właściwy."
+      },
+      "geo-defense": {
+        "size_multiplier": 1.0,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "HOLD: 2 trades lifetime (-$18.48), consecutive_losses=2. Próba za mała żeby wyciągać wnioski. Strategia ma direct execution od v3.8.7 — pipeline może działać. Poniżej progu 5 consecutive losses żeby triggerować pause."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Crypto pipeline diagnostic — auto-flag gdy RSI <30 przez ≥3 dni ale 0 placements",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "BTC/ETH RSI <30 przez 4+ dni z rzędu, ale crypto-momentum i crypto-oversold-bounce mają placed_lifetime=0. System nie potrafi sam wskazać gdzie pipeline się urywa: generowanie sygnału, quote fetch, order placement, czy odpowiedź Alpaca. Diagnostic alert eliminowałby ten blind spot.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-01",
+      "implementation_sketch": "W crypto-monitor/monitor.py: jeśli RSI ≤30 przez ≥3 ticki (state.json::crypto_state.oversold_streak), a żaden BUY nie został złożony w ostatnich 24h → emit notify_diagnostic() z: (a) ostatnim fetch URL + HTTP response code z get_daily_bars(), (b) wynikiem place_simple_buy z dry_run=True (pokazuje czy parametry są poprawne), (c) account buying_power vs size_usd. Trigger: cron-tick gdzie oversold_streak >= 3 AND last_placed_at older than 24h. Files: crypto-monitor/monitor.py (oversold_streak counter w state), shared/notify.py (notify_diagnostic nowa funkcja). Effort: ~2h."
+    },
+    {
+      "title": "Equity gap reconciliation — gdy delta >$500 AND no_positions AND no_trades",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Dziś equity_gap WARN: -$1,106 z jednoczesnym 0 otwartych pozycji i 0 trade'ów. Ta kombinacja jest analitycznie niemożliwa bez ukrytego exposure lub API bug. Systemowy reconciliation eliminowałby ślepy punkt i dałby LLM konkretne dane zamiast spekulacji.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-01",
+      "implementation_sketch": "W learning-loop/analyzer.py::compute_equity_gap_alert: jeśli severity in [WARN, ERROR] AND open_positions==[] AND cumulative_trades==0 → dodaj pole 'reconciliation_needed': True + pobierz /v2/orders?status=all&after=<24h_ago>&limit=50 → znajdź fills z side='sell'/'buy_to_close' które nie mają pary w state attribution → surfacuj jako 'unattributed_fills' list. Files: learning-loop/analyzer.py, shared/alpaca_orders.py (get_recent_orders helper). Effort: ~1h."
+    }
+  ],
+  "confidence": "low"
+}
