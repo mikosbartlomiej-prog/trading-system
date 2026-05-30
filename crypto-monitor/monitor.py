@@ -1,3 +1,5 @@
+from __future__ import annotations  # v3.11.3 part 2: PEP 604 on Py 3.9.
+
 """
 Crypto Monitor — 24/7 predator-grade crypto scanner
 
@@ -103,6 +105,21 @@ CRYPTO_SYMBOLS = list(COIN_TIERS.keys())
 MOMENTUM_24H_MIN_PCT = 3.0    # coin must have moved >3% in 24h (active trend)
 MOMENTUM_24H_MAX_PCT = 15.0   # but <15% (don't chase late-stage pump)
 BTC_DOMINANCE_GUARD_PCT = -3.0  # if BTC drops >=3% in 1h → block alt longs
+
+# v3.11.3 (2026-05-30) — OVERSOLD-BOUNCE path (alternative to predator filter).
+# Why: predator-bracket [3%, 15%] blocked all entries for 45+ days while LLM
+# Senior PM screamed "BTC RSI 22 oversold!" daily. Symptom: zero placements
+# from 2026-04-15 → 2026-05-29. Root cause: deep-oversold setups have flat
+# or negative 24h-move (after crash already happened), NOT predator's
+# preferred 3-15% momentum bracket.
+# Fix: when RSI ≤ OVERSOLD_BOUNCE_RSI_MAX AND 24h-move not catastrophic,
+# BYPASS the predator bracket AND relax breakout to 1-bar reversal.
+# Tag separately as "crypto-oversold-bounce" so analyzer attributes correctly.
+OVERSOLD_BOUNCE_RSI_MAX        = 30.0   # only fire when RSI ≤ 30 (deep oversold)
+OVERSOLD_BOUNCE_MIN_MOVE_PCT   = -10.0  # but don't catch knife: 24h-move must be ≥ -10%
+OVERSOLD_BOUNCE_VOL_MULT_FLOOR = 0.5    # relax volume req to 0.5× tier's vol_mult
+# Reversal confirmation: current bar's close must be above the prior bar's
+# close (1-bar uptick) — protects against entering during free-fall.
 MAX_ALT_POSITIONS = 3         # cap simultaneous Tier 2 open positions
 
 # Global circuit breakers
@@ -290,6 +307,42 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
         "btc_1h_change":  round(btc_1h_change, 2) if btc_1h_change is not None else None,
         "volume_ratio":   round(current_volume / avg_vol, 2) if avg_vol > 0 else None,
     }
+
+    # ── OVERSOLD-BOUNCE entry (v3.11.3 — pre-predator, must check FIRST) ──
+    # Fires when RSI is deep-oversold AND 24h-move is not catastrophic AND
+    # current bar prints higher close than prior bar (1-bar reversal).
+    # Bypasses predator bracket + 20-bar breakout (those filters miss
+    # post-crash bounce setups by design).
+    if (
+        rsi is not None
+        and rsi <= OVERSOLD_BOUNCE_RSI_MAX
+        and move_24h is not None
+        and move_24h >= OVERSOLD_BOUNCE_MIN_MOVE_PCT
+        and len(closes) >= 2
+        and closes[-1] > closes[-2]              # 1-bar reversal confirmation
+        and current_volume > avg_vol * (vol_mult * OVERSOLD_BOUNCE_VOL_MULT_FLOOR)
+    ):
+        # Tier 2 alt-long: same BTC dominance guard as predator-long.
+        if tier == 2 and btc_1h_change is not None \
+                and btc_1h_change <= BTC_DOMINANCE_GUARD_PCT:
+            print(f"  {symbol}: BTC 1h={btc_1h_change:+.2f}% — oversold-bounce alt long BLOCKED")
+            # Fall through to brak sygnału (don't enter)
+        else:
+            # Wider stop on oversold-bounce (further from entry) — bounce
+            # setups need room to breathe. SL 1.5× tier's normal sl_pct.
+            stop_loss   = round(current_price * (1 - sl_pct * 1.5), 4)
+            take_profit = round(current_price * (1 + tp_pct), 4)
+            print(f"  OVERSOLD-BOUNCE {symbol} [T{tier}]: ${current_price:.2f} "
+                  f"RSI={rsi:.1f} ≤ {OVERSOLD_BOUNCE_RSI_MAX} "
+                  f"24h={move_24h:+.2f}% reversal (prior={closes[-2]:.2f} → {current_price:.2f}) "
+                  f"vol={common['volume_ratio']}x")
+            return {**common,
+                "action":      "BUY",
+                "strategy":    "crypto-oversold-bounce",
+                "stop_loss":   stop_loss,
+                "take_profit": take_profit,
+                "size_usd":    cfg["size_long"],
+            }
 
     # ── PREDATOR FILTERS (apply BEFORE breakout check to short-circuit) ──
     if move_24h is not None and not (

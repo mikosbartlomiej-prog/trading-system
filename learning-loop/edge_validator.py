@@ -236,7 +236,13 @@ def enforce_edge_gate_on_state(state: dict) -> tuple[dict, list[str]]:
     Existing `enabled=false` stays false. Only `enabled=true` is gated.
     """
     if _is_disabled():
-        return state, ["edge-gate: DISABLED via EDGE_GATE_DISABLED env"]
+        # v3.11.3 part 2 (2026-05-30): return empty log instead of an
+        # "always-on" rationale line. The disabled state was being
+        # surfaced as a parameter change every single day, polluting
+        # rationale.md and triggering test_no_changes_when_thresholds_quiet
+        # to expect 2 lines instead of 1. The DISABLED state is the
+        # default per docs/RUNBOOK.md until operator runs backtests.
+        return state, []
 
     log = []
     strats = state.get("strategies", {})

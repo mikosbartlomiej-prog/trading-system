@@ -336,6 +336,16 @@
       "trades_lifetime": 0,
       "win_rate_7d": 0,
       "win_rate_lifetime": 0
+    },
+    "crypto-oversold-bounce": {
+      "enabled": true,
+      "size_multiplier": 1.0,
+      "side_bias": "long",
+      "paused_until": null,
+      "enabled_at": "2026-05-30",
+      "trades_lifetime": 0,
+      "placed_lifetime": 0,
+      "rationale": "v3.11.3 part 2 (2026-05-30): NEW strategy. Fires when RSI \u2264 30 + 24h-move \u2265 -10% + 1-bar reversal. Bypasses predator-bracket which blocked all entries during BTC/ETH RSI 20-27 from 2026-04-15 to 2026-05-29."
     }
   },
   "tickers": {

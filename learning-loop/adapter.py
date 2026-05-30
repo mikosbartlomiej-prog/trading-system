@@ -1,3 +1,5 @@
+from __future__ import annotations  # v3.11.3 part 2: PEP 604 on Py 3.9.
+
 """
 Adapter — pure function (old_state, today_stats) -> new_state.
 
@@ -310,6 +312,7 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
         # If we can't get orders_placed_lifetime from stats, FAIL SAFE (no prune).
         AUTO_PRUNE_DAYS = 21
         MIN_PLACED_FOR_PRUNE = 5  # need ≥5 placement attempts to prove no edge
+        LLM_OVERRIDE_LOCK_DAYS = 14  # v3.11.3 part 2 (2026-05-30) — see below
         if days_tracked >= AUTO_PRUNE_DAYS:
             override = bool(cfg.get("hard_safety_override"))
             if override:
@@ -317,6 +320,31 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
                     f"{name}: SILENT {days_tracked}d but hard_safety_override=true → keep enabled"
                 )
                 continue
+
+            # v3.11.3 part 2 (2026-05-30) — LLM-OVERRIDE LOCK.
+            # From LLM proposal 2026-05-29: an explicit LLM override
+            # (Senior PM re-enables a strategy) was being CANCELED by the
+            # very next deterministic adapter run, which re-prunes the
+            # same strategy → LLM has to re-enable next night → cycle
+            # repeats 5+ days (observed for crypto-momentum). Honor the
+            # LLM's judgment for LLM_OVERRIDE_LOCK_DAYS days so it has
+            # time to gather evidence. Stamp set by
+            # `analyzer.apply_llm_overrides` via `safe_apply_overrides`.
+            last_llm_at = cfg.get("last_llm_override_at")
+            if last_llm_at:
+                try:
+                    from datetime import date as _date
+                    _today = _date.fromisoformat(today_iso)
+                    days_since_llm = (_today - _date.fromisoformat(last_llm_at)).days
+                    if days_since_llm < LLM_OVERRIDE_LOCK_DAYS:
+                        out.append(
+                            f"{name}: SILENT {days_tracked}d but LLM override "
+                            f"{last_llm_at} active ({days_since_llm}d ago "
+                            f"< {LLM_OVERRIDE_LOCK_DAYS}d lock) → keep enabled"
+                        )
+                        continue
+                except (ValueError, TypeError):
+                    pass  # malformed date → fall through
 
             # Check whether strategy ever ATTEMPTED to trade
             # (fill_rate.<strategy>.placed counts placement attempts)
@@ -716,19 +744,34 @@ def heuristic_fill_rate_alert(fill_rate_data: dict,
         if not isinstance(data, dict):
             continue
         placed = data.get("placed", 0)
-        rate = data.get("fill_rate", 1.0)
+        # v3.11.3 part 2 (2026-05-30) — prefer fill_rate_closed (excludes
+        # open-GTC orders) so "limits too tight" alert isn't a false
+        # positive for GTC setups that simply sit waiting for the market.
+        # Fall back to legacy fill_rate for old data. From LLM proposal
+        # 2026-05-29.
+        rate = data.get("fill_rate_closed")
+        if rate is None:
+            rate = data.get("fill_rate", 1.0)
         canceled = data.get("canceled", 0)
-        if placed >= min_placed and rate < threshold:
+        # If all orders are still open (closed_total = 0), do NOT alert —
+        # we have no closed-rate signal yet.
+        closed_total = (
+            data.get("filled", 0) + canceled
+            + data.get("expired", 0) + data.get("rejected", 0)
+        )
+        if placed >= min_placed and closed_total >= 1 and rate < threshold:
+            open_pending = data.get("open_pending", data.get("other", 0))
             alerts.append({
                 "strategy":  strategy,
                 "fill_rate": rate,
                 "placed":    placed,
                 "filled":    data.get("filled", 0),
                 "canceled":  canceled,
+                "open_pending": open_pending,
                 "alert": (
-                    f"fill rate {rate:.0%} below {threshold:.0%} "
-                    f"({canceled} canceled / {placed} placed) — "
-                    f"limits too tight or quote stale"
+                    f"fill rate {rate:.0%} below {threshold:.0%} on closed orders "
+                    f"({canceled} canceled / {placed - open_pending} closed, "
+                    f"{open_pending} open-GTC ignored) — limits too tight or quote stale"
                 ),
             })
     return sorted(alerts, key=lambda x: x["fill_rate"])  # worst first

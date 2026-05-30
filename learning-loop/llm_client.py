@@ -1,3 +1,5 @@
+from __future__ import annotations  # v3.11.3 part 2: PEP 604 (X | None) on Py 3.9.
+
 """
 LLM client for learning loop.
 
@@ -452,6 +454,18 @@ def safe_apply_overrides(state: dict, overrides: dict | None) -> tuple[dict, lis
             old = new_state["strategies"][strat_name].get(key)
             new_state["strategies"][strat_name][key] = val
             applied.append(f"  · {strat_name}.{key}: {old} -> {val}")
+        # v3.11.3 part 2 (2026-05-30) — stamp last_llm_override_at so the
+        # deterministic adapter's zombie-prune honors the LLM's judgment
+        # for LLM_OVERRIDE_LOCK_DAYS (14) days. From LLM proposal 2026-05-29:
+        # without this, an LLM override is canceled by the next nightly
+        # adapter run → endless re-enable/re-prune cycle (5+ days observed
+        # for crypto-momentum). Stamp happens after at least one field is
+        # written so only meaningful overrides reset the clock.
+        if fields:
+            from datetime import datetime, timezone
+            new_state["strategies"][strat_name]["last_llm_override_at"] = (
+                datetime.now(timezone.utc).date().isoformat()
+            )
 
     # Global overrides — only specific keys allowed
     global_allowed = {"options_side_bias", "max_open_options"}

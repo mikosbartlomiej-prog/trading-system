@@ -83,6 +83,8 @@ KNOWN_COID_PREFIXES = (
     "defense-news-", "reddit-sentiment-",
     "twitter-A-", "twitter-B-", "twitter-C-", "twitter-D-",
     "politician-djt-", "politician-stockact-",
+    # v3.11.3 part 2 (2026-05-30) — new oversold-bounce path in crypto-monitor
+    "crypto-momentum-", "crypto-breakdown-", "crypto-oversold-bounce-",
 )
 
 # Tickers that should NEVER be short (long-only whitelist by strategy design)

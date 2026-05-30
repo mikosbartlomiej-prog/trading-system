@@ -287,7 +287,7 @@ Wire do adapt_strategy() po pętli warm-up/cool-down.
 6. Safety: only applies when trades_lifetime==0
 - [ ] [2026-05-28] **Blokada boostów size_multiplier gdy SPY RSI > 70 (overbought)** _(risk: low, effort: ?, revisit: no specific date)_
   - **Rationale:** SPY RSI 71.5 (2026-05-28) = overbought. Backtest pokazał że momentum-long ma najlepszy edge przy RSI 50-65; wejście przy RSI >70 kupuje na szczycie. Heurystyka blokuje auto-boost size_multiplier dla strategii momentum gdy SPY overbought — chroni przed buy-the-top i zapobiega wzmacnianiu pozycji na przegrzanym rynku.
-- [ ] [2026-05-28] **Zombie-prune carve-out: nie prune gdy RSI ekstremalny dla powiązanego instrumentu** _(risk: medium, effort: 2-3h, revisit: 2026-06-04)_
+- [x] [2026-05-28] **Zombie-prune carve-out: nie prune gdy RSI ekstremalny dla powiązanego instrumentu** _(risk: medium, effort: 2-3h, revisit: 2026-06-04)_ — **CLOSED 2026-05-30 v3.11.3 part 3: superseded by LLM-lock (14 dni). Crypto-oversold-bounce path też shipped.**
   - **Rationale:** Auto-prune (21 dni, 0 trade'ów) wyłączyła crypto-momentum gdy BTC/ETH RSI ~20 — najgorszy możliwy moment. Prune powinna być zawieszona gdy rsi_snapshot wskazuje ekstremalne odczyty dla instrumentów powiązanych ze strategią. Wymaga modyfikacji zombie_prune_stale_strategies() + safe_apply_overrides() — wieloplikowa zmiana, poza zakresem auto_pr.
   - **Sketch:** W adapter.py::zombie_prune_stale_strategies(name, strategy_state, stats):
   CRYPTO_STRATEGIES = {'crypto-momentum', 'crypto-breakdown'}
@@ -299,7 +299,7 @@ Wire do adapt_strategy() po pętli warm-up/cool-down.
 W safe_apply_overrides(): gdy LLM override sets enabled=True + state has hard_safety=True:
   → clear hard_safety + auto_pruned_at before applying
 Files: learning-loop/adapter.py
-- [ ] [2026-05-28] **Fill-rate attribution: mapowanie 'unknown' orderów do strategii via symbol** _(risk: low, effort: 1h, revisit: 2026-06-04)_
+- [x] [2026-05-28] **Fill-rate attribution: mapowanie 'unknown' orderów do strategii via symbol** _(risk: low, effort: 1h, revisit: 2026-06-04)_ — **CLOSED 2026-05-30 v3.11.3 part 3 SHIPPED: SYMBOL_STRATEGY_MAP w analyzer._strategy_from_client_id. XOM→geo-xom, CVX→geo-energy, RTX/LMT→geo-defense, GLD→geo-gold.**
   - **Rationale:** fill_rate['unknown'] skupia 19 zleceń bez attributii (37% fill rate; CVX/XOM/TSLA jako open GTC). Bez attributii nie widać który monitor ma problem. Symbol-based fallback (XOM→geo-xom, CVX→geo-energy, TSLA→price-momentum-long) ujawni rzeczywiste fill-rate per strategia i pozwoli targetować poprawki limitów.
   - **Sketch:** W analyzer.py::compute_fill_rate():
   SYMBOL_STRATEGY_MAP = {'XOM': 'geo-xom', 'CVX': 'geo-energy', 'GLD': 'geo-gold',
@@ -308,12 +308,12 @@ Files: learning-loop/adapter.py
     → sprawdź symbol w mapie → bucket = SYMBOL_STRATEGY_MAP.get(symbol, 'unattributed')
   Zmień klucz 'unknown' na 'unattributed' dla przejrzystości
   Files: learning-loop/analyzer.py
-- [ ] [2026-05-29] **Zombie-prune LLM lock: block auto-prune for 14 days after explicit LLM override** _(risk: medium, effort: 2-3h, revisit: 2026-06-05)_
+- [x] [2026-05-29] **Zombie-prune LLM lock: block auto-prune for 14 days after explicit LLM override** _(risk: medium, effort: 2-3h, revisit: 2026-06-05)_ — **CLOSED 2026-05-30 v3.11.3 part 3 SHIPPED: cfg['last_llm_override_at'] stamped in safe_apply_overrides; _flag_silent_strategies honors 14-day lock. 5 unit tests.**
   - **Rationale:** Nieskończona pętla: LLM re-enableuje crypto-momentum → następny run zombie-prune re-disabla z hard_safety=True → LLM re-enableuje (cykl się powtarza). Policy powinna respektować aktywny LLM override przez 14 dni — inaczej każda noc deterministic adapter cofanie zmian które LLM celowo wprowadził.
   - **Sketch:** 1. W analyzer.py::apply_llm_overrides(): dla każdej strategii zmienionej przez LLM: state[name]['last_llm_override_at'] = today_iso
 2. W adapter.py::auto_prune_zombies() (lub equivalent): if state.get(name,{}).get('last_llm_override_at') and (today - parse(last_llm_override_at)).days < 14: skip; log 'zombie-prune SKIPPED: active LLM override expires <date>'
 3. W state.json schema: last_llm_override_at per strategy string field
 4. Grace period: 14 dni daje LLM czas zebrać dane zanim prune wróci
-- [ ] [2026-05-29] **fill_rate open-orders correction: separate OPEN-GTC from UNFILLED-REJECTED** _(risk: low, effort: 1h, revisit: 2026-06-01)_
+- [x] [2026-05-29] **fill_rate open-orders correction: separate OPEN-GTC from UNFILLED-REJECTED** _(risk: low, effort: 1h, revisit: 2026-06-01)_ — **CLOSED 2026-05-30 v3.11.3 part 3 SHIPPED: compute_fill_rate emits fill_rate_closed = filled/(filled+canceled+expired+rejected); alert path uses _closed, skips when closed_total=0. 4 unit tests.**
   - **Rationale:** fill_rate.unknown = 37% (12/19 'other' = open GTC orders) generuje fałszywy alert 'limits too tight' gdy faktycznie zlecenia czekają na rynek (open_status_new=5). Precyzyjna metryka: fill_rate_closed = filled/(filled+canceled+expired+rejected), ignorując open orders.
   - **Sketch:** W analyzer.py::compute_fill_rate(): fill_rate_closed = filled / max(1, filled+canceled+expired+manually_canceled+rejected); open_pending = open_status_new + open_status_held; emituj fill-rate-alert tylko gdy fill_rate_closed < 0.5 (open pending nie liczy się do alertu); dodaj 'open_pending' do output dla diagnostyki. Eliminuje fałszywe alerty dla GTC order setups.

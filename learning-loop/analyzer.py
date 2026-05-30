@@ -1,3 +1,5 @@
+from __future__ import annotations  # v3.11.3 part 2: PEP 604 on Py 3.9.
+
 """
 Daily Learning Loop — Analyzer
 
@@ -109,6 +111,42 @@ _UUID_RE = _re_strategy_parse.compile(
 )
 
 
+# v3.11.3 part 2 (2026-05-30) — symbol-based fallback attribution.
+# Activated when client_order_id parse returns 'unknown' (legacy GTC
+# LIMITs from pre-tagging era, untagged manual orders, Alpaca bracket
+# UUIDs). Maps the symbol to its most likely originating strategy so
+# fill_rate / per-strategy stats stop being polluted by 'unknown'.
+#
+# Conservative: only map symbols where there's exactly ONE plausible
+# strategy. Multi-strategy symbols (SPY, QQQ, AMD shared between
+# allocator and momentum-long) stay 'unknown' to avoid mis-attribution.
+SYMBOL_STRATEGY_MAP = {
+    # Geo single-name plays (geo-monitor _classify_news_to_signals)
+    "XOM":  "geo-xom",
+    "CVX":  "geo-energy",
+    "RTX":  "geo-defense",
+    "LMT":  "geo-defense",
+    "GLD":  "geo-gold",
+    # Crypto only one source (crypto-monitor) — covers oversold-bounce +
+    # momentum + breakdown, but they're rare enough that bucketing
+    # together under crypto-monitor parent is OK if exact tag missing.
+    # Crypto symbols already typed via "/" — handled differently.
+}
+
+
+def _attribute_via_symbol(symbol: str) -> str:
+    """Symbol-based fallback when client_order_id parse fails.
+
+    Returns mapped strategy or 'unattributed' (renamed from 'unknown'
+    for clarity — distinguishes pre-tagging-era orders from genuine
+    parse errors).
+    """
+    if not symbol:
+        return "unknown"
+    sym_upper = symbol.upper().replace("/", "")
+    return SYMBOL_STRATEGY_MAP.get(sym_upper, "unknown")
+
+
 def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     """
     client_order_id formats:
@@ -131,15 +169,22 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
     strategy pollution. Previously, Alpaca-auto-generated bracket-child
     UUIDs were parsed as 3-hyphen-segment "strategies" and polluted
     state.json (cumulative 11+ fake entries across 3 days).
+
+    v3.11.3 part 2 (2026-05-30) — SYMBOL-BASED FALLBACK ATTRIBUTION:
+    when parser returns 'unknown' AND symbol is known, look up symbol in
+    SYMBOL_STRATEGY_MAP. Maps long-lived GTC LIMITs from pre-attribution
+    era to their likely strategy (XOM→geo-xom, CVX→geo-energy, etc.).
+    Drives fill_rate.unknown 37% → real per-strategy fill rates. From
+    LLM proposal 2026-05-28.
     """
     if not client_order_id:
-        return "unknown"
+        return _attribute_via_symbol(symbol)
 
     cid = client_order_id
 
     # FIRST: detect Alpaca auto-generated UUIDs (bracket children).
     if _UUID_RE.match(cid):
-        return "unknown"   # never a real strategy — UUID = auto-assigned
+        return _attribute_via_symbol(symbol)   # UUID = auto-assigned; try symbol fallback
 
     # Detect EXIT format: strip the "exit-<reason>-" prefix so the
     # remaining structure matches ENTRY format.
@@ -151,7 +196,7 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
         body = cid[5:]  # after 'exit-'
         dash = body.find("-")
         if dash < 0:
-            return "unknown"
+            return _attribute_via_symbol(symbol)
         # body[dash+1:] is now <maybe-strategy>-<sym>-<ts>
         rest = body[dash + 1:]
     else:
@@ -170,22 +215,24 @@ def _strategy_from_client_id(client_order_id: str, symbol: str = "") -> str:
         if idx > 0:
             candidate = rest[:idx]
             if _uuidish(candidate):
-                return "unknown"   # stitched UUID + symbol, not a strategy
+                return _attribute_via_symbol(symbol)  # stitched UUID + symbol
             return candidate
         # New exit format may include strategy; older exit format jumps
         # straight to symbol — detect by checking if rest STARTS with the
         # symbol (then no strategy embedded).
         if rest.startswith(sym_clean + "-"):
-            return "unknown"   # legacy exit pre-2026-05-12
+            return _attribute_via_symbol(symbol)  # legacy exit pre-2026-05-12
 
     # Fallback: strip last 2 segments (timestamp + symbol)
     parts = rest.split("-")
     if len(parts) >= 3:
         candidate = "-".join(parts[:-2])
         if _uuidish(candidate):
-            return "unknown"
+            # Try symbol-based fallback before giving up
+            return _attribute_via_symbol(symbol)
         return candidate
-    return "unknown"
+    # All parse paths exhausted → symbol-based fallback last chance
+    return _attribute_via_symbol(symbol)
 
 
 def reconstruct_trades(orders: list[dict]) -> list[dict]:
@@ -485,15 +532,33 @@ def compute_fill_rate(orders: list[dict]) -> dict:
     for strat, counts in by_strat.items():
         placed = counts["placed"]
         durations = cancel_durations.get(strat) or []
+        # v3.11.3 part 2 (2026-05-30) — LLM proposal 2026-05-29:
+        # "fill_rate.unknown 37% generates false 'limits too tight' alert
+        # when in fact orders are open-GTC waiting for market." Compute
+        # fill_rate_closed = filled / (filled + canceled + expired + rejected),
+        # ignoring OPEN orders. This eliminates false alerts for GTC setups.
+        # Keep legacy `fill_rate` for backward compat (callers consuming
+        # the old key still work).
+        filled_ct   = counts.get("filled", 0)
+        canceled_ct = counts.get("canceled", 0)
+        expired_ct  = counts.get("expired", 0)
+        rejected_ct = counts.get("rejected", 0)
+        open_pending = counts.get("other", 0)
+        closed_total = filled_ct + canceled_ct + expired_ct + rejected_ct
+        fill_rate_closed = round(filled_ct / closed_total, 3) if closed_total else None
         entry = {
             "placed":     placed,
-            "filled":     counts.get("filled", 0),
-            "canceled":   counts.get("canceled", 0),
-            "expired":    counts.get("expired", 0),
+            "filled":     filled_ct,
+            "canceled":   canceled_ct,
+            "expired":    expired_ct,
             "manually_canceled": counts.get("manually_canceled", 0),
-            "rejected":   counts.get("rejected", 0),
-            "other":      counts.get("other", 0),
-            "fill_rate":  round(counts.get("filled", 0) / placed, 3) if placed else 0.0,
+            "rejected":   rejected_ct,
+            "other":      open_pending,
+            # Legacy: filled / placed (overcounts as denominator includes OPEN)
+            "fill_rate":  round(filled_ct / placed, 3) if placed else 0.0,
+            # v3.11.3: fill_rate ignoring open-GTC (true fill quality)
+            "fill_rate_closed": fill_rate_closed,
+            "open_pending":     open_pending,
             "avg_minutes_to_cancel": round(sum(durations) / len(durations), 1) if durations else None,
             "max_minutes_to_cancel": round(max(durations), 1) if durations else None,
         }
