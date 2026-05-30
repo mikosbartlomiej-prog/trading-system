@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× at 22:20 UTC — mocny techniczny oversold-bounce setup, ALE konto już trzyma UNI/USD long 8.4% equity ($8,176, qty 2680, P&L +0.36%). Averaging down na tym samym instrumencie bez named catalyst to koncentracja ~16.8% w jednym Tier-2 alcie — predator odrzuca; czekam na zamknięcie pierwotnej pozycji lub BTC impulse.",
+  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× — ekstremalny oversold sygnał, ALE konto już trzyma UNIUSD long 4086.9 qty / 12.9% equity (+0.39%). Symbol-format mismatch 'UNI/USD' vs 'UNIUSD' ominął dup-guard i wygenerował duplikat wejścia na tej samej pozycji. Predator odrzuca — niezamierzony pyramiding bez named catalyst to nie trade, to błąd infrastruktury.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Duplikat otwartej pozycji (8.4% equity, +0.36%) — dodanie $2,500 podnosi koncentrację do ~11% w jednym Tier-2 alcie bez nowego katalizatora; move_24h -5.58% z vol 14.92× to panic-sell dystrybucja, nie czysty V-bottom; BTC 1h -0.04% neutralny ale brak momentum do uzasadnienia double-dip wejścia."
+      "reason": "Konto trzyma UNIUSD long 4086.9 qty / 12.9% equity (+0.39%) — sygnał crypto-oversold-bounce przeszedł przez dup-guard przez format mismatch ('UNI/USD' != 'UNIUSD'); dodanie $2,500 podniesie koncentrację do ~15.5% w jednym Tier-2 alcie; vol 14.92× przy -5.58% 24h move to capitulation flush na istniejącej pozycji, exit-monitor obsługuje ten scenariusz."
     }
   ],
-  "macro_context": "BTC 1h -0.04% (praktycznie flat) — neutralny bez altseason impulsu; UNI słabość własna coina bez named DeFi catalyst; volume spike 14.92× przy ujemnym 24h move wskazuje na redystrybucję nie akumulację.",
+  "macro_context": "BTC 1h -0.04% neutralny (nie wrogi); UNI -5.58% 24h z vol 14.92× wygląda jak capitulation washout bez named DeFi catalyst — setup realny technicznie, ale blokuje go istniejąca pozycja 12.9% equity.",
   "confidence_in_curation": "high"
 }
