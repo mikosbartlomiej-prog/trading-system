@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× średniej to sygnał kapitulacji klasy A — ale portfel już siedzi w 18% equity w tej samej pozycji. Istniejący long na ~$17.5k w UNI już przechwytuje ewentualny bounce; dokładanie $2,500 to koncentracja, nie edge.",
+  "narrative": "UNI/USD RSI 26.6 + 14.92× wolumen = kapitulacja wygląda realnie, ale portfel ma już 20.6% equity w UNIUSD (~$20k). Dodanie kolejnych $2.5k to koncentracja jednego Tier-2 alta do ~23.1% — ekspozycja na bounce już jest otwarta, predator nie doubla zduplikowanych pozycji bez dodatkowego edge.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Portfel już posiada UNI/USD long na 18% equity (5724 units, +0.41% P&L ≈ $17,527) — setup techniczny wyjątkowy (RSI 26.6 + vol 14.92×), ale piramidowanie do otwartej 18%-pozycji łamie zasadę koncentracji; istniejąca pozycja już w pełni przechwytuje bounce."
+      "reason": "Portfel już trzyma UNIUSD @ 20.6% equity (+0.42% P&L); dodanie $2.5k więcej to koncentracja jednego Tier-2 alta do ~23.1% — pozycja oversold-bounce już otwarta, incremental edge zerowy przy rosnącym ryzyku koncentracji na słabym alcie bez named catalyst."
     }
   ],
-  "macro_context": "BTC 1h -0.04% = neutralne; alt dominacja spokojna; brak makro drivera; rynek w trybie konsolidacji post-spike.",
+  "macro_context": "BTC 1h -0.04% neutralny; altseason nie potwierdzony; UNI 14.92× vol na -5.58% sugeruje kapitulację sprzedających, ale brak nowego katalizatora DeFi/UNI-specyficznego uzasadniającego drugą pozycję w tym samym instrumencie.",
   "confidence_in_curation": "high"
 }
