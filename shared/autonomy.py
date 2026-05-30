@@ -54,6 +54,13 @@ DECISION_TYPES: frozenset[str] = frozenset({
     "PATCH_REJECT",
     "PATCH_AUTO_MERGE",
     "PATCH_ROLLBACK",
+    # v3.12.0 (2026-05-30) — runtime safe-mode transitions
+    "SAFE_MODE_ENTERED",
+    "SAFE_MODE_EXITED",
+    # Confidence-gate decisions (logged by risk_officer when it BLOCKs
+    # or ALERT_ONLYs based on confidence score)
+    "CONFIDENCE_BLOCK",
+    "CONFIDENCE_ALERT",
 })
 
 

@@ -333,6 +333,52 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
     else:
         passed.append("vix_ok")
 
+    # ── v3.12.0 (2026-05-30) — SAFE_MODE gate ────────────────────────────────
+    # safe_mode is RUNTIME-OPERATIONAL (different from defensive_mode which
+    # is RISK-DRIVEN). Triggers: account fetch outage, audit JSONL gap,
+    # stale data, confidence module broken, operator-forced. BLOCKS new
+    # entries; emergency closes bypass via separate path.
+    try:
+        from safe_mode import gate_new_entry as _sm_gate  # type: ignore
+        sm_allowed, sm_reason = _sm_gate()
+        if not sm_allowed:
+            failed.append(f"safe_mode: {sm_reason}")
+        else:
+            passed.append("safe_mode_ok")
+    except Exception as e:
+        # Fail-soft: missing module → assume safe_mode inactive
+        warnings.append(f"safe_mode_check_skipped ({type(e).__name__})")
+
+    # ── v3.12.0 (2026-05-30) — CONFIDENCE gate (optional) ────────────────────
+    # If caller passes `confidence_inputs` in the proposal dict, compute the
+    # 5-component score and block at threshold. Backward-compatible: if no
+    # inputs provided, skip with a warning (no change in behavior for
+    # existing callers that don't pass confidence inputs yet).
+    conf_inputs = proposal.get("confidence_inputs")
+    if isinstance(conf_inputs, dict) and conf_inputs:
+        try:
+            from confidence import compute_confidence  # type: ignore
+            report = compute_confidence(**conf_inputs)
+            if report.decision == "BLOCK":
+                failed.append(
+                    f"confidence={report.total:.3f} < threshold "
+                    f"(weakest={min(report.components, key=report.components.get)})"
+                )
+            elif report.decision == "ALERT_ONLY":
+                warnings.append(
+                    f"confidence={report.total:.3f} ALERT_ONLY "
+                    f"(allow≥{report.threshold:.2f}) — log only, do not auto-execute"
+                )
+            else:
+                passed.append(f"confidence_ok={report.total:.3f}")
+            # Surface report for downstream audit (set on a dict the
+            # caller passes — proposal mutated for traceability).
+            proposal["_confidence_report"] = report.to_dict()
+        except Exception as e:
+            warnings.append(f"confidence_check_skipped ({type(e).__name__}: {e})")
+    else:
+        warnings.append("confidence_inputs not provided — gate skipped (legacy caller)")
+
     # ── Decision ─────────────────────────────────────────────────────────────
     # v3.10: added `verdict` field for unified RiskVerdict taxonomy. Legacy
     # `decision` (APPROVE/REJECT) preserved for backward compat. New callers

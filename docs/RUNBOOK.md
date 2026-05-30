@@ -132,6 +132,40 @@ pause). PR #10 macro fallback applies options_side_bias from SPY RSI.
 **Tolerance:** Up to 7+ days of LLM unavailability does not paralyze trading.
 After 7 days consider operator manual override of LLM-derived state.
 
+### Scenario 6: Safe-mode triggered (v3.12.0 — 2026-05-30 class)
+**Symptom:** No new BUY entries firing during market hours despite signals
+in monitor logs. Email subject `[SAFE_MODE_ENTERED]`. risk_officer
+returning REJECT with `safe_mode: SAFE_MODE ACTIVE (TRIGGER): reason`.
+**Detect:**
+- `cat learning-loop/runtime_state.json | jq .safe_mode` — `active: true`
+- Trigger types: ACCOUNT_OUTAGE / AUDIT_GAP / STALE_DATA / CONFIDENCE_BROKEN / OPERATOR
+**Behavior in safe_mode:**
+- New entries BLOCKED by risk_officer
+- size_multiplier 1.0 → 0.5 for any orders that do fire (exits etc.)
+- confidence threshold raised by +0.10 (harder to qualify)
+- Emergency closes (CLOSE_EMERGENCY / PROFIT_LOCK / GOVERNOR) BYPASS safe_mode
+**Recovery:**
+- ACCOUNT_OUTAGE: Alpaca status page; wait for /v2/account to recover; safe_mode auto-exits on next successful call
+- AUDIT_GAP: check monitor crons firing; run `python3 scripts/incident_pattern_detector.py --dry-run` to verify pipeline writes audit events
+- STALE_DATA: check `cat learning-loop/runtime_state.json | jq .heartbeat` for stale components; manually trigger affected monitor via `gh workflow run <name>.yml`
+- OPERATOR-forced: clear `safe_mode.forced: false` in runtime_state.json
+**Manual override:** edit `learning-loop/runtime_state.json::safe_mode.active = false` (NOT recommended without diagnosis)
+**Prevention shipped (v3.12.0):** confidence module / safe_mode module / heartbeat module pin component health quantitatively; session report surfaces fresh state.
+
+### Confidence gate (v3.12.0 — 2026-05-30)
+**What it is:** every trade decision passing through `risk_officer.evaluate_trade`
+can carry a `confidence_inputs` dict. If present, the 5-component score
+(data_quality / signal_strength / regime_alignment / system_health /
+risk_state) is computed; `total ≥ 0.65` → ALLOW, `≥ 0.50` → ALERT_ONLY,
+`< 0.50` → BLOCK.
+**Where to look:** `proposal["_confidence_report"]` after evaluate_trade
+returns; or `journal/autonomy/<date>.jsonl` for `CONFIDENCE_BLOCK` /
+`CONFIDENCE_ALERT` events.
+**Tuning:** `config/aggressive_profile.json::confidence.weights` and
+`.thresholds` override defaults. Weights are auto-normalized to sum 1.0.
+**Doesn't replace risk engine:** risk_officer can still BLOCK a
+high-confidence trade (e.g. PDT lock, buying-power insufficient).
+
 ### Scenario 5a: Bracket interlock blocks protective close (2026-05-29 class)
 **Symptom:** Governor enters DEFEND_DAY or RED_DAY_AFTER_GREEN, but `safe_close`
 returns Alpaca 403 `insufficient qty available; held_for_orders=N`. Positions

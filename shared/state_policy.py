@@ -49,6 +49,11 @@ RUNTIME_STATE_ACTORS: frozenset[str] = frozenset({
     "intraday-monitor",   # exit-monitor.yml sets STATE_WRITE_ACTOR=intraday-monitor
     "exit-monitor",       # legacy alias accepted for back-compat
     "options-exit-monitor",  # may merge its trailing-peak snapshot here
+    # v3.12.0 (2026-05-30) — new runtime-state writers
+    "safe_mode",          # shared/safe_mode.py writes safe_mode section
+    "heartbeat",          # shared/heartbeat.py writes heartbeat section
+    "confidence",         # shared/confidence.py writes confidence_history
+    "session-reporter",   # scripts/session_report.py may emit snapshots
     "test",
     "local-dev",
 })

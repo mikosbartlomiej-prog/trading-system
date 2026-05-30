@@ -105,4 +105,8 @@ INTRADAY_SECTIONS = frozenset({
     "options_exit_trail",  # options-exit-monitor trailing peaks (migrated from state.json)
     "pdt_status",          # last classified PDT mode (read by all monitors)
     "routine_budget",      # daily Anthropic routine call tally (15/day cap)
+    # v3.12.0 (2026-05-30) — new sections from confidence/safe_mode/heartbeat
+    "safe_mode",           # runtime-operational safe mode (shared/safe_mode.py)
+    "heartbeat",           # component liveness tracking (shared/heartbeat.py)
+    "confidence_history",  # last N confidence reports (per-symbol)
 })
