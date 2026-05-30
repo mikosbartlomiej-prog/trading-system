@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 + 14.92× wolumen = kapitulacja wygląda realnie, ale portfel ma już 20.6% equity w UNIUSD (~$20k). Dodanie kolejnych $2.5k to koncentracja jednego Tier-2 alta do ~23.1% — ekspozycja na bounce już jest otwarta, predator nie doubla zduplikowanych pozycji bez dodatkowego edge.",
+  "narrative": "UNI/USD volume 14.92× przy RSI 26.6 — klasyczny kapitulacyjny flush z potwierdzonym wolumenem. JEDNAK portfel już trzyma UNIUSD 23.2% equity (+0.46% P&L, entry ~$3.086) — bounce jest już w portfelu. Dodatkowy entry to redundantna koncentracja bez nowego edge.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Portfel już trzyma UNIUSD @ 20.6% equity (+0.42% P&L); dodanie $2.5k więcej to koncentracja jednego Tier-2 alta do ~23.1% — pozycja oversold-bounce już otwarta, incremental edge zerowy przy rosnącym ryzyku koncentracji na słabym alcie bez named catalyst."
+      "reason": "Portfel utrzymuje aktywną pozycję UNIUSD 23.2% equity (~$22,600, +0.46% P&L) — sygnał oversold-bounce jest już schwytany. Dodanie $2,500 podniosłoby UNI do ~25.7% equity (pojedynczy alt, Tier 2) bez proporcjonalnego edge; volume 14.92× potwierdza kapitulację ale nie tworzy nowej okazji gdy identyczna teza już jest otwarta."
     }
   ],
-  "macro_context": "BTC 1h -0.04% neutralny; altseason nie potwierdzony; UNI 14.92× vol na -5.58% sugeruje kapitulację sprzedających, ale brak nowego katalizatora DeFi/UNI-specyficznego uzasadniającego drugą pozycję w tym samym instrumencie.",
+  "macro_context": "BTC 1h -0.04% (płaski/neutralny), brak altseason impulsu; UNI dump -5.58%/24h wygląda na izolowane de-riskowanie protokołu DeFi, nie rotację sektorową — obecna pozycja wystarczająco ekspozuje na ewentualny odbój.",
   "confidence_in_curation": "high"
 }
