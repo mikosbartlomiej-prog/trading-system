@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× średniej — sygnał oversold-bounce techniczne realny, ale portfel JUŻ trzyma open long na UNI (2.6% equity, +0.13% P&L, entry ~$3.096). Piramidowanie w tę samą alt przy break-even wejściu i bez nowego katalizatora = koncentracja bez dodatkowej wartości; istniejąca pozycja i tak przechwytuje odbicie.",
+  "narrative": "UNI/USD RSI 26.6 + wolumen 14.92× średniej — sygnał oversold-bounce techniczne realny, ale portfel JUŻ trzyma open long na UNI (1634 jednostek, 5.1% equity, +0.29% P&L). Piramidowanie w tę samą alt przy identycznym poziomie cenowym bez nowego katalizatora = koncentracja bez dodatkowej wartości.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Open UNI/USD long already exists (816.28 units, 2.6% equity, +0.13% P&L at ~$3.096 entry) — adding second $2,500 lot pyramids into same Tier-2 alt at identical price level; combined ~5.2% equity single-name concentration without fresh catalyst; existing position already captures the oversold bounce; no new information present at this entry vs original."
+      "reason": "Open UNI/USD long already exists (1634.58 units, 5.1% equity, +0.29% P&L at ~$3.096 entry) — adding second $2,500 lot pyramids into same Tier-2 alt at identical price level; combined ~7.7% equity single-name concentration without fresh catalyst; existing position already captures the oversold bounce."
     }
   ],
-  "macro_context": "BTC 1h essentially flat (-0.04%) — neutral, not hostile; UNI capitulation volume (14.92×) suggests potential bottom formation but this does not justify doubling a position already entered at the same level.",
+  "macro_context": "BTC 1h flat (-0.04%) — neutral regime; UNI 24h -5.58% with capitulation volume (14.92×) confirms oversold bottom formation, but the original entry position is already positioned for the recovery.",
   "confidence_in_curation": "high"
 }
