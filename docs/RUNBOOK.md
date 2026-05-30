@@ -132,6 +132,25 @@ pause). PR #10 macro fallback applies options_side_bias from SPY RSI.
 **Tolerance:** Up to 7+ days of LLM unavailability does not paralyze trading.
 After 7 days consider operator manual override of LLM-derived state.
 
+### Scenario 5a: Bracket interlock blocks protective close (2026-05-29 class)
+**Symptom:** Governor enters DEFEND_DAY or RED_DAY_AFTER_GREEN, but `safe_close`
+returns Alpaca 403 `insufficient qty available; held_for_orders=N`. Positions
+held behind their own bracket OCO children — protection armed but cannot fire.
+**Detect:** Layer 1 P13 `bracket_interlock_blocked_close` fires when ≥3 such
+events in 30 min → `[INCIDENT-CRITICAL]` email.
+**Mitigation in code (shipped v3.11.3 — 2026-05-30):** `safe_close` now calls
+`_cancel_open_orders_for_symbol(symbol)` BEFORE placing the protective close.
+GET /v2/orders?symbols=X&status=open&nested=true → DELETE each matching bracket
+parent (cascades to OCO legs). Default ON for all callers; opt-out via
+`cancel_brackets_first=False` (only the entry path needs that — it has no
+brackets yet). Fail-soft: cancel failure does NOT block close attempt; Alpaca
+403 surfaces in audit reason.
+**Manual recovery if P13 fires post-v3.11.3:** check Alpaca status page; the
+cancel DELETE call may itself be failing (broker outage, network, or
+DELETE-permission revoked). As emergency fallback for stuck positions use
+`mcp__claude_ai_Alpaca__close_position("<SYMBOL>")` (DELETE /v2/positions
+endpoint atomically cancels child orders + market-closes).
+
 ### Scenario 5: Alpaca API outage
 **Symptom:** monitors log `account_fetch_failed`; safe_close logs `404` for everything.
 **Effect:** v3.10 risk_officer returns DEFER (not fail-open) → monitors retry

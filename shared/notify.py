@@ -3,6 +3,8 @@ Shared email notification module — used by all monitors.
 Sends email via Gmail SMTP when a signal is detected or order executed.
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import os
 import smtplib
 import traceback

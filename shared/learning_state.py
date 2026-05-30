@@ -10,6 +10,8 @@ Fail-safe: missing or corrupted state.json -> returns empty dict ->
 monitors fall back to defaults baked in their own constants.
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import json
 import os
 

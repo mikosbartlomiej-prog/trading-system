@@ -27,6 +27,8 @@ This module is imported by:
   - Optionally: any monitor that wants to pre-flight before sending alert
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import json
 import os
 from datetime import datetime, date, timezone

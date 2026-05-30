@@ -14,6 +14,8 @@ Falls back to empty dicts on missing files / parse errors so monitors
 can safely run with hardcoded defaults if config is corrupted.
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import json
 import os
 

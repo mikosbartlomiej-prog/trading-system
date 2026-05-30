@@ -17,6 +17,8 @@ when True. Existing exit monitors keep working (closes are always
 permitted).
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import json
 import os
 from datetime import datetime, timezone

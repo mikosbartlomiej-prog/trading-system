@@ -9,6 +9,8 @@ The returned dict keeps the same shape the old Finnhub-based helper used,
 so downstream RSI/ATR/volume code does not need to change.
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 import os
 import requests
 from datetime import datetime, timedelta, timezone

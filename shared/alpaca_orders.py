@@ -28,6 +28,8 @@ All helpers fail-open: API failure returns None, caller falls through
 to email-only / log path. Same fail-open philosophy as risk_guards.
 """
 
+from __future__ import annotations  # v3.11.3: lazy-string annotations so PEP 604 (`X | None`) is parseable on Py 3.9 (CI runs 3.11, but local dev/test runs 3.9).
+
 import os
 import re
 import urllib.parse
@@ -691,6 +693,114 @@ def _fetch_single_position(symbol: str) -> dict | None:
         return None
 
 
+def _cancel_open_orders_for_symbol(symbol: str) -> dict:
+    """
+    Cancel any open orders for `symbol` so a subsequent close can fill.
+
+    v3.11.3 (2026-05-30): added to fix the bracket-interlock bug observed
+    in production 2026-05-29 14:11-14:21 UTC. When a position has an
+    active bracket OCO (LIMIT TP + STOP SL children), all of its qty is
+    `held_for_orders` — Alpaca returns 403 "insufficient qty available"
+    for any new SELL. The fix is to cancel the bracket children FIRST,
+    then place the protective close.
+
+    Approach:
+      1. GET /v2/orders?symbols=X&status=open&nested=true&limit=100 —
+         returns parent bracket orders with .legs[] children.
+      2. For each parent + each leg whose `symbol` matches → DELETE
+         /v2/orders/{order.id} (DELETE on the parent cancels children
+         atomically; we also iterate legs explicitly as a safety belt
+         in case parent DELETE is silently no-op for non-OCO orders).
+
+    Returns dict:
+      {
+        "checked":  int   – orders inspected
+        "canceled": list  – order_ids successfully canceled
+        "failed":   list  – {order_id, status, reason} for non-2xx
+        "error":    str | None – fatal error (network/auth)
+      }
+
+    Fail-soft: caller decides whether cancel-failure should block close.
+    For protective closes the right behavior is "still try the close" —
+    Alpaca's 403 will surface as a clean reason and the audit captures it.
+    """
+    from urllib.parse import quote
+    result: dict = {"checked": 0, "canceled": [], "failed": [], "error": None}
+    if not symbol:
+        result["error"] = "empty symbol"
+        return result
+    if not _headers().get("APCA-API-KEY-ID"):
+        result["error"] = "no_credentials"
+        return result
+
+    try:
+        r = requests.get(
+            f"{ALPACA_BASE_URL}/v2/orders",
+            headers=_headers(),
+            params={
+                "status": "open",
+                "symbols": symbol,
+                "nested": "true",
+                "limit": 100,
+                "direction": "desc",
+            },
+            timeout=10,
+        )
+        if r.status_code != 200:
+            result["error"] = f"list orders HTTP {r.status_code}: {r.text[:120]}"
+            return result
+        orders = r.json() if r.text else []
+    except Exception as e:
+        result["error"] = f"list orders exception: {type(e).__name__}: {e}"
+        return result
+
+    # Collect every order id whose own symbol or whose leg symbols match.
+    # Parent cancellation cascades to legs on Alpaca's side, but we keep
+    # an explicit dedup set to avoid double DELETE noise.
+    sym_upper = (symbol or "").upper()
+    to_cancel: list[str] = []
+    seen: set = set()
+    for o in orders:
+        if not isinstance(o, dict):
+            continue
+        oid = o.get("id")
+        osym = (o.get("symbol") or "").upper()
+        legs = o.get("legs") or []
+        leg_syms = [(l.get("symbol") or "").upper() for l in legs if isinstance(l, dict)]
+        matches = (osym == sym_upper) or (sym_upper in leg_syms)
+        if oid and matches and oid not in seen:
+            to_cancel.append(oid)
+            seen.add(oid)
+
+    result["checked"] = len(to_cancel)
+
+    for oid in to_cancel:
+        try:
+            d = requests.delete(
+                f"{ALPACA_BASE_URL}/v2/orders/{quote(oid, safe='')}",
+                headers=_headers(),
+                timeout=10,
+            )
+            if d.status_code in (200, 204, 207):
+                result["canceled"].append(oid)
+            elif d.status_code == 404:
+                # Already gone (race with broker fill / earlier cancel) — count as cancel
+                result["canceled"].append(oid)
+            else:
+                result["failed"].append({
+                    "order_id": oid,
+                    "status": d.status_code,
+                    "reason": d.text[:120],
+                })
+        except Exception as e:
+            result["failed"].append({
+                "order_id": oid,
+                "status": 0,
+                "reason": f"{type(e).__name__}: {e}",
+            })
+    return result
+
+
 # ─── v3.9.10 (2026-05-27): safe_close() — single entry point for ALL SELL paths ─
 
 def safe_close(
@@ -705,6 +815,7 @@ def safe_close(
     is_crypto: bool = False,
     allow_market: bool = True,
     drift_threshold_pct: float = 0.05,
+    cancel_brackets_first: bool = True,
 ) -> dict:
     """
     SINGLE entry point for all SELL/EXIT/buy_to_cover orders.
@@ -746,6 +857,17 @@ def safe_close(
         allow_market:       MARKET orders permitted (default True for now)
         drift_threshold_pct: 0.05 = 5% — if |plan_qty - live_qty|/plan_qty > this,
                             use live_qty
+        cancel_brackets_first: v3.11.3 (2026-05-30) default True.
+                            Before placing the close, GET open orders for `symbol`
+                            and DELETE any that match (bracket parent +
+                            OCO children). Fixes the 2026-05-29 incident
+                            where 6 governor-driven safe_close calls all
+                            returned Alpaca 403 because bracket children
+                            held the entire qty (`held_for_orders=N`).
+                            Crypto skips (no Alpaca crypto OCO support).
+                            Fail-soft: cancel error does NOT block close —
+                            the subsequent Alpaca 403 will surface as a
+                            clean reason in the audit JSONL.
     Returns:
         {
           "status": "placed" | "skipped" | "failed" | "blocked",
@@ -754,6 +876,9 @@ def safe_close(
           "live_qty": Optional[float],
           "intent_qty": float,
           "actual_qty": Optional[float],
+          "brackets_canceled": list[str],   # v3.11.3 — order ids canceled
+          "brackets_failed":   list[dict],  # v3.11.3 — {order_id,status,reason}
+          "brackets_checked":  int,         # v3.11.3 — orders inspected
         }
     """
     # v3.10.2 (2026-05-27) — paper-only invariant via shared.autonomy.
@@ -843,6 +968,34 @@ def safe_close(
 
     result["actual_qty"] = actual_qty
 
+    # --- v3.11.3 (2026-05-30): cancel bracket OCO children FIRST ---
+    # Production incident 2026-05-29 14:11-14:21 UTC: 6 governor-driven
+    # safe_close calls all failed with Alpaca 403 "insufficient qty
+    # available; held_for_orders=N" because positions had active bracket
+    # children holding the entire qty. Protective mechanism armed but
+    # could not fire. Default True so every protective/exit close
+    # attempts cancellation first. Crypto skip — Alpaca crypto orders
+    # are not OCO-bracketed.
+    if cancel_brackets_first and not is_crypto:
+        try:
+            co = _cancel_open_orders_for_symbol(symbol)
+            result["brackets_canceled"] = co["canceled"]
+            result["brackets_failed"]   = co["failed"]
+            result["brackets_checked"]  = co["checked"]
+            if co["error"]:
+                # Best-effort: print and proceed (Alpaca 403 below will
+                # produce a clean reason if cancel failed and brackets
+                # still hold qty).
+                print(f"  safe_close({symbol}): cancel-brackets {co['error']} — proceeding")
+        except Exception as e:
+            result["brackets_canceled"] = []
+            result["brackets_failed"]   = [{"order_id": None, "status": 0, "reason": str(e)[:80]}]
+            print(f"  safe_close({symbol}): cancel-brackets exception {type(e).__name__}: {e}")
+    else:
+        result["brackets_canceled"] = []
+        result["brackets_failed"]   = []
+        result["brackets_checked"]  = 0
+
     # --- Build payload ---
     payload: dict = {
         "symbol": symbol,
@@ -909,6 +1062,9 @@ def safe_close(
                 "intent_side": intent_side_norm,
                 "order_type": order_type,
                 "reason_tag": reason_tag,
+                # v3.11.3: surface bracket cancellation for forensic visibility
+                "brackets_canceled": result.get("brackets_canceled", []),
+                "brackets_failed":   result.get("brackets_failed",   []),
             },
             action_taken=f"{intent_side_norm} {actual_qty} {order_type}",
             result=result["status"],

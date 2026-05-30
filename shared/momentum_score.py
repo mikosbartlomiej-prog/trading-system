@@ -23,6 +23,8 @@ Score components individually clipped to [-1, 1] before weighted sum.
 Final score clipped to [-1, 1].
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 from typing import Dict, List
 
 

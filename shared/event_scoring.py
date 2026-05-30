@@ -45,6 +45,8 @@ Probability-shift hints (caller supplies, this is just guidance):
   rumor_unconfirmed     -> 10
 """
 
+from __future__ import annotations  # v3.11.3: PEP 604 (X | None) parseable on Py 3.9 (local) + 3.11 (CI).
+
 # ─── Score thresholds ─────────────────────────────────────────────────────────
 
 # A "weak" signal scores below this on credibility OR probability shift

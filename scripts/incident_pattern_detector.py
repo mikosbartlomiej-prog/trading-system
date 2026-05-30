@@ -29,6 +29,11 @@ PATTERNS DETECTED (severity in parens):
  P10 (WARN)     plan_position_drift  (any symbol qty drift >20% plan vs live)
  P11 (WARN)     pdt_jump  (daytrade_count jumped >1 in 30 min)
  P12 (CRITICAL) concentration_violation  (single ticker >50% equity)
+ P13 (CRITICAL) bracket_interlock_blocked_close  v3.11.3 (2026-05-30)
+                  3+ CLOSE_POSITION FAILED events in 30 min with Alpaca 403
+                  "insufficient qty" / "held_for_orders" → governor or
+                  allocator trying to close but bracket OCO holds the qty.
+                  (Should be impossible with v3.11.3 cancel_brackets_first.)
 
 Exit code:
   0 — no CRITICAL findings (workflow stays green)
@@ -548,6 +553,63 @@ def p11_pdt_jump(runtime_state: dict) -> list[dict]:
     return findings
 
 
+def p13_bracket_interlock_blocked_close(audit_events: list[dict]) -> list[dict]:
+    """v3.11.3 (2026-05-30): detect bracket interlock cascade.
+
+    Background: 2026-05-29 14:11-14:21 UTC, intraday-governor tried to
+    force-close 5 positions during DEFEND_DAY / RED_DAY_AFTER_GREEN.
+    All 5 failed with Alpaca 403 "insufficient qty available" because
+    bracket OCO children were holding the entire qty (`held_for_orders=N`).
+    Governor's protective mechanism was armed but could not fire.
+
+    v3.11.3 fix: safe_close now cancels open orders for the symbol BEFORE
+    placing the protective close. If THIS detector fires post-v3.11.3 →
+    the cancel step itself is failing → systemic Alpaca issue or new
+    bug. Treat as CRITICAL.
+
+    Trigger: ≥3 CLOSE_POSITION / EMERGENCY_CLOSE events with
+    decision="FAILED" in last 30 min whose reason contains "403" AND
+    one of: "insufficient", "held_for_orders".
+    """
+    cutoff = _now_utc() - timedelta(minutes=30)
+    matches: list[dict] = []
+    for ev in audit_events:
+        try:
+            ts = datetime.fromisoformat(ev["timestamp"].replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        if ts < cutoff:
+            continue
+        dt = (ev.get("decision_type") or "").upper()
+        dec = (ev.get("decision") or "").upper()
+        if dt not in ("CLOSE_POSITION", "EMERGENCY_CLOSE"):
+            continue
+        if dec != "FAILED":
+            continue
+        reason = (ev.get("reason") or "").lower()
+        if "403" not in reason:
+            continue
+        if not any(k in reason for k in ("insufficient", "held_for_orders")):
+            continue
+        matches.append(ev)
+    if len(matches) < 3:
+        return []
+    symbols = list({s for ev in matches for s in (ev.get("affected_symbols") or [])})[:5]
+    return [{
+        "pattern": "P13_bracket_interlock_blocked_close",
+        "severity": CRITICAL,
+        "detail": (
+            f"{len(matches)} CLOSE_POSITION events FAILED in last 30min with "
+            f"Alpaca 403 (insufficient qty / held_for_orders). symbols={symbols}. "
+            f"v3.11.3 cancel_brackets_first should prevent this — if firing post "
+            f"v3.11.3 deploy, the cancel step itself is failing (broker outage, "
+            f"DELETE permission revoked, or new bug). Operator action: check "
+            f"Alpaca status + recent commits to shared/alpaca_orders.py."
+        ),
+        "evidence": "journal/autonomy/<today>.jsonl",
+    }]
+
+
 def p12_concentration_violation(positions: list[dict], account: dict | None) -> list[dict]:
     if not account:
         return []
@@ -606,6 +668,7 @@ def run_all_checks() -> list[dict]:
     findings.extend(p10_plan_position_drift(execution_log, positions))
     findings.extend(p11_pdt_jump(runtime))  # v3.10.1: self-managed history in runtime_state
     findings.extend(p12_concentration_violation(positions, account))
+    findings.extend(p13_bracket_interlock_blocked_close(audit_events))
 
     return findings
 
