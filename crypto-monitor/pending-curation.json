@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z vol 14.92× — capitulation flush na istniejącej pozycji UNIUSD 4905 qty / 15.4% equity (+0.4%). Predator odrzuca: format mismatch 'UNI/USD' vs 'UNIUSD' omija dup-guard i proponuje pyramiding bez named DeFi catalyst; exit-monitor obsługuje istniejącą pozycję samodzielnie.",
+  "narrative": "UNI/USD RSI 26.6 z wolumenem 14.92× średniej to sygnał kapitulacji klasy A — ale portfel już siedzi w 18% equity w tej samej pozycji. Istniejący long na ~$17.5k w UNI już przechwytuje ewentualny bounce; dokładanie $2,500 to koncentracja, nie edge.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "Konto trzyma UNIUSD 4905 qty / 15.4% equity — dodanie $2,500 podnosi koncentrację do ~18.1% Tier-2 alta bez named catalyst; vol 14.92× przy -5.58% 24h to flush z pozycji, nie momentum breakout; format mismatch UNI/USD vs UNIUSD bypasuje dup-guard (infrastructure bug, nie trade edge)."
+      "reason": "Portfel już posiada UNI/USD long na 18% equity (5724 units, +0.41% P&L ≈ $17,527) — setup techniczny wyjątkowy (RSI 26.6 + vol 14.92×), ale piramidowanie do otwartej 18%-pozycji łamie zasadę koncentracji; istniejąca pozycja już w pełni przechwytuje bounce."
     }
   ],
-  "macro_context": "BTC 1h -0.04% neutralny; brak altseason triggera — UNI flush izolowany, bez korelacji z DeFi TVL eventem; exit-monitor powinien ocenić istniejącą pozycję.",
+  "macro_context": "BTC 1h -0.04% = neutralne; alt dominacja spokojna; brak makro drivera; rynek w trybie konsolidacji post-spike.",
   "confidence_in_curation": "high"
 }
