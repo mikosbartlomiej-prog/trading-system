@@ -1,0 +1,433 @@
+{
+  "date": "2026-05-30",
+  "generated_at": "2026-05-30T01:38:46Z",
+  "version": "1.0",
+  "config": {
+    "target_invested_ratio": 1.0,
+    "min_invested_ratio": 0.98,
+    "auto_execute": true
+  },
+  "account_equity": 97339.91,
+  "portfolio_value": 97339.91,
+  "cash": 258144.60499999998,
+  "buying_power": 306814.56,
+  "account_blocked": false,
+  "trading_blocked": false,
+  "current_positions": [],
+  "invested_ratio_before": 0.0,
+  "pdt_mode": "OK",
+  "pdt_dt_remaining": 3,
+  "pdt_dt_count": 0,
+  "pdt_intent_for_buys": "swing",
+  "defensive_mode_active": false,
+  "kill_switch_armed": false,
+  "market_regime": "NEUTRAL",
+  "regime_source": "auto",
+  "allowed_buckets": [
+    "ai_nasdaq_semis",
+    "software_quality",
+    "inflation_energy",
+    "crypto"
+  ],
+  "regime_size_mult": 0.7,
+  "scored_universe": [
+    {
+      "ticker": "NOW",
+      "score": 0.94,
+      "components": {
+        "momentum_5d": 1.0,
+        "momentum_10d": 1.0,
+        "momentum_20d": 0.819,
+        "relative_strength": 1.0,
+        "volume_expansion": 0.668,
+        "breakout_flag": 1.0,
+        "trend_filter": 0.0,
+        "volatility_penalty": -1.0
+      },
+      "atr_pct": 0.0686,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+41.0%, RS=+35.7%, vol 2.3×, breakout, noise (ATR 6.9%)",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "CRWD",
+      "score": 0.791,
+      "components": {
+        "momentum_5d": 0.64,
+        "momentum_10d": 0.783,
+        "momentum_20d": 1.0,
+        "relative_strength": 1.0,
+        "volume_expansion": 0.061,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0521,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+64.0%, RS=+58.7%, breakout, uptrend",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "ORCL",
+      "score": 0.777,
+      "components": {
+        "momentum_5d": 0.952,
+        "momentum_10d": 0.463,
+        "momentum_20d": 0.799,
+        "relative_strength": 1.0,
+        "volume_expansion": 0.237,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0493,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+40.0%, RS=+34.7%, breakout, uptrend",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "WDAY",
+      "score": 0.734,
+      "components": {
+        "momentum_5d": 0.994,
+        "momentum_10d": 0.692,
+        "momentum_20d": 0.388,
+        "relative_strength": 0.707,
+        "volume_expansion": 0.468,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0608,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+19.4%, RS=+14.1%, vol 1.9×, breakout, uptrend",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "PANW",
+      "score": 0.723,
+      "components": {
+        "momentum_5d": 0.575,
+        "momentum_10d": 0.551,
+        "momentum_20d": 1.0,
+        "relative_strength": 1.0,
+        "volume_expansion": -0.026,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0559,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+57.2%, RS=+51.9%, breakout, uptrend",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "AMD",
+      "score": 0.609,
+      "components": {
+        "momentum_5d": 0.743,
+        "momentum_10d": 0.444,
+        "momentum_20d": 0.913,
+        "relative_strength": 1.0,
+        "volume_expansion": -0.158,
+        "breakout_flag": 0.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0617,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+45.7%, RS=+40.4%, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "CRM",
+      "score": 0.406,
+      "components": {
+        "momentum_5d": 0.423,
+        "momentum_10d": 0.421,
+        "momentum_20d": 0.165,
+        "relative_strength": 0.15,
+        "volume_expansion": 0.378,
+        "breakout_flag": 1.0,
+        "trend_filter": 0.0,
+        "volatility_penalty": -0.885
+      },
+      "atr_pct": 0.0443,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+8.3%, vol 1.8×, breakout, noise (ATR 4.4%)",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "MSFT",
+      "score": 0.396,
+      "components": {
+        "momentum_5d": 0.363,
+        "momentum_10d": 0.293,
+        "momentum_20d": 0.204,
+        "relative_strength": 0.247,
+        "volume_expansion": 0.351,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0277,
+      "tradeable": true,
+      "reason": "long_setup: mom20=+10.2%, RS=+4.9%, vol 1.7×, breakout, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "ADBE",
+      "score": 0.331,
+      "components": {
+        "momentum_5d": 0.31,
+        "momentum_10d": 0.28,
+        "momentum_20d": 0.106,
+        "relative_strength": 0.0,
+        "volume_expansion": 0.469,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0382,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+5.3%, vol 1.9×, breakout, uptrend",
+      "bucket": "software_quality"
+    },
+    {
+      "ticker": "AVGO",
+      "score": 0.31,
+      "components": {
+        "momentum_5d": 0.399,
+        "momentum_10d": 0.055,
+        "momentum_20d": 0.143,
+        "relative_strength": 0.094,
+        "volume_expansion": 0.294,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0374,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+7.2%, vol 1.6×, breakout, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "SMH",
+      "score": 0.293,
+      "components": {
+        "momentum_5d": 0.279,
+        "momentum_10d": 0.108,
+        "momentum_20d": 0.365,
+        "relative_strength": 0.648,
+        "volume_expansion": -0.183,
+        "breakout_flag": 0.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0368,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+18.2%, RS=+13.0%, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "QQQ",
+      "score": 0.285,
+      "components": {
+        "momentum_5d": 0.167,
+        "momentum_10d": 0.077,
+        "momentum_20d": 0.212,
+        "relative_strength": 0.265,
+        "volume_expansion": 0.012,
+        "breakout_flag": 1.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0148,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+10.6%, RS=+5.3%, breakout, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "AAPL",
+      "score": 0.251,
+      "components": {
+        "momentum_5d": 0.114,
+        "momentum_10d": 0.138,
+        "momentum_20d": 0.301,
+        "relative_strength": 0.49,
+        "volume_expansion": 0.071,
+        "breakout_flag": 0.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0165,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+15.1%, RS=+9.8%, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "TSLA",
+      "score": 0.203,
+      "components": {
+        "momentum_5d": 0.213,
+        "momentum_10d": -0.052,
+        "momentum_20d": 0.283,
+        "relative_strength": 0.443,
+        "volume_expansion": -0.102,
+        "breakout_flag": 0.0,
+        "trend_filter": 1.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0389,
+      "tradeable": false,
+      "reason": "long_setup: mom20=+14.1%, RS=+8.9%, uptrend",
+      "bucket": "ai_nasdaq_semis"
+    },
+    {
+      "ticker": "META",
+      "score": 0.046,
+      "components": {
+        "momentum_5d": 0.207,
+        "momentum_10d": 0.068,
+        "momentum_20d": 0.067,
+        "relative_strength": -0.098,
+        "volume_expansion": 0.001,
+        "breakout_flag": 0.0,
+        "trend_filter": 0.0,
+        "volatility_penalty": -0.0
+      },
+      "atr_pct": 0.0216,
+      "tradeable": false,
+      "reason": "long_setup: no clear signal",
+      "bucket": "ai_nasdaq_semis"
+    }
+  ],
+  "target_weights": {
+    "NOW": 0.11,
+    "CRWD": 0.11,
+    "ORCL": 0.11,
+    "WDAY": 0.11,
+    "PANW": 0.11,
+    "SPY": 0.1,
+    "QQQ": 0.1,
+    "GLD": 0.1
+  },
+  "allocation_reason": "regime=NEUTRAL | primary_picks=5(55%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=15.00%",
+  "invested_ratio_after_target": 0.85,
+  "current_weights": {},
+  "rebalance_orders": [
+    {
+      "symbol": "NOW",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 10707.39,
+      "delta": 10707.39,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 11.0%"
+    },
+    {
+      "symbol": "CRWD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 10707.39,
+      "delta": 10707.39,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 11.0%"
+    },
+    {
+      "symbol": "ORCL",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 10707.39,
+      "delta": 10707.39,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 11.0%"
+    },
+    {
+      "symbol": "WDAY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 10707.39,
+      "delta": 10707.39,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 11.0%"
+    },
+    {
+      "symbol": "PANW",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 10707.39,
+      "delta": 10707.39,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 11.0%"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 9733.99,
+      "delta": 9733.99,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 10.0%"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 9733.99,
+      "delta": 9733.99,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 10.0%"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "current_value": 0.0,
+      "target_value": 9733.99,
+      "delta": 9733.99,
+      "current_qty": 0.0,
+      "qty_delta": null,
+      "current_price": null,
+      "reason": "new position at target 10.0%"
+    }
+  ],
+  "risk_checks": {
+    "passed": [
+      "NOW:BUY",
+      "CRWD:BUY",
+      "ORCL:BUY",
+      "WDAY:BUY",
+      "PANW:BUY",
+      "SPY:BUY",
+      "QQQ:BUY",
+      "GLD:BUY"
+    ],
+    "failed": [],
+    "n_orders": 8,
+    "n_hold": 0
+  },
+  "learning_loop_ref": "2026-05-30",
+  "trace_log_lines": 41
+}
