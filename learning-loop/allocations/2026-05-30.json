@@ -1,16 +1,16 @@
 {
   "date": "2026-05-30",
-  "generated_at": "2026-05-30T01:38:46Z",
+  "generated_at": "2026-05-30T21:50:25Z",
   "version": "1.0",
   "config": {
     "target_invested_ratio": 1.0,
     "min_invested_ratio": 0.98,
     "auto_execute": true
   },
-  "account_equity": 97339.91,
-  "portfolio_value": 97339.91,
-  "cash": 258144.60499999998,
-  "buying_power": 306814.56,
+  "account_equity": 97339.88,
+  "portfolio_value": 97339.88,
+  "cash": 340689.58,
+  "buying_power": 389359.52,
   "account_blocked": false,
   "trading_blocked": false,
   "current_positions": [],

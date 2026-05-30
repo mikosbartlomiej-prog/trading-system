@@ -3,31 +3,31 @@
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
-    "starting_equity": 97132.18
+    "starting_equity": 97339.88
   },
   "daily_peak": {
     "date": "2026-05-30",
     "peak_pl_usd": 207.73000000001048,
-    "peak_pl_pct": 0.0021386321196539652,
+    "peak_pl_pct": 0.002134068790715691,
     "peak_at": "2026-05-30T00:06:09.489912+00:00",
     "peak_equity": 97339.91,
-    "current_pl_usd": 207.73000000001048,
-    "current_equity": 97339.91,
-    "retrace_from_peak": 0.0,
+    "current_pl_usd": 0.0,
+    "current_equity": 97339.88,
+    "retrace_from_peak": 1.0,
     "verdict": "GREEN",
-    "verdict_at": "2026-05-30T01:25:52.703606+00:00",
+    "verdict_at": "2026-05-30T21:45:56.906935+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 46,
+  "days_tracked": 47,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
-    "options_side_bias": null
+    "options_side_bias": "short"
   },
-  "last_updated": "2026-05-30T01:28:03.863634+00:00",
+  "last_updated": "2026-05-30T21:47:31.779122+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
-  "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket \u2014 Senior PM diversification recommendation 2026-05-21)",
+  "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
   "next_actions": [],
   "peak_equity": 98446.36,
@@ -53,7 +53,7 @@
       "reason": "CLOSE_EMERGENCY: strata -23.24% > prog awaryjny -12%; daily P&L -3.19% (v3.0 defensive mode)",
       "status": "PENDING_EXECUTION"
     },
-    "resolution": "QQQ260518P00714000 closed via emergency-close workflow run 25884045856 (commit b19c83c) at 2026-05-14T14:44:21Z. Alpaca order d6499c2c filled @ $3.71 \u00d7 2 contracts. Realized P&L: entry $7.83 -> exit $3.71 = -$824 (-52.6%) on 2 contracts. Cleared 2026-05-14T20:48 UTC by v3.7 session.",
+    "resolution": "QQQ260518P00714000 closed via emergency-close workflow run 25884045856 (commit b19c83c) at 2026-05-14T14:44:21Z. Alpaca order d6499c2c filled @ $3.71 × 2 contracts. Realized P&L: entry $7.83 -> exit $3.71 = -$824 (-52.6%) on 2 contracts. Cleared 2026-05-14T20:48 UTC by v3.7 session.",
     "resolved_at": "2026-05-14T20:48:01.822046+00:00",
     "resolved_by": "manual-maintenance",
     "status": "RESOLVED"
@@ -232,7 +232,7 @@
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "Override v3.11 zombie-prune (hard_safety=true, auto_pruned_at=2026-05-27): BTC RSI 24.1 + ETH RSI 22.1 \u2014 trzecia sesja z rz\u0119du poni\u017cej 25 na OBYDWU parach. 44 dni bez trade'\u00f3w = pipeline failures (routing do deprecated routine, Anthropic quota blokady w historii), NIE brak edge krypto. Per v3.9.8 heuristic: ETH \u226425 + BTC \u226445 \u2192 boost 1.5\u00d7. Pomini\u0119cie wej\u015bcia przy RSI 22-24 to strata statystycznie wysokoprawdopodobnego setup-u bounce. Zombie-prune nie powinna nadpisywa\u0107 aktywnego oversold sygna\u0142u. Utrzymuj\u0119 enabled=True z poprzedniego dnia.",
+      "rationale": "DEFENDED: BTC RSI 29.7 + ETH RSI 29.3 — czwarty dzień z rzędu głębokiej wyprzedaży. RSI <30 historycznie = high-probability bounce setup. Utrzymuję boost 1.5× z wczoraj (hard_safety=true zachowane). Problem nie jest w parametrach strategii — jest w pipeline execution. Wyłączenie strategii w tym momencie oznaczałoby pominięcie najlepszego setup-u od tygodni.",
       "side_bias": "long",
       "size_multiplier": 1.5,
       "trades_7d": 0,
@@ -240,7 +240,8 @@
       "win_rate_7d": 0.0,
       "win_rate_lifetime": 0.0,
       "hard_safety": true,
-      "auto_pruned_at": "2026-05-29"
+      "auto_pruned_at": "2026-05-29",
+      "last_llm_override_at": "2026-05-30"
     },
     "geo-defense": {
       "trades_lifetime": 2,
@@ -253,12 +254,13 @@
       "enabled": true,
       "side_bias": null,
       "consecutive_losses": 2,
-      "rationale": "AUTO-PRUNED: SILENT 43 days >= 21, 0 trades lifetime. v3.11 zombie-prune policy.",
+      "rationale": "HOLD: 2 trades lifetime (-$18.48), consecutive_losses=2. Próba za mała żeby wyciągać wnioski. Strategia ma direct execution od v3.8.7 — pipeline może działać. Poniżej progu 5 consecutive losses żeby triggerować pause.",
       "paused_until": null,
       "enabled_at": "2026-05-30",
       "hard_safety": true,
       "auto_pruned_at": "2026-05-28",
-      "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge"
+      "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge",
+      "last_llm_override_at": "2026-05-30"
     },
     "geo-energy": {
       "enabled": true,
@@ -296,7 +298,7 @@
       "rationale": "AUTO-PRUNED: SILENT 41 days >= 21, 0 trades lifetime. v3.11 zombie-prune policy.",
       "paused_until": null,
       "enabled_at": "2026-05-30",
-      "evidence": "geo-monitor/monitor.py line 252-277 \u2014 send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
+      "evidence": "geo-monitor/monitor.py line 252-277 — send_alert tylko POSTuje do CLOUDFLARE_GEO_WORKER_URL, brak place_stock_bracket call",
       "review_after": "2026-05-20 (or post geo-monitor direct exec)",
       "hard_safety": true,
       "auto_pruned_at": "2026-05-27",
@@ -310,7 +312,7 @@
       "paused_until": null,
       "pnl_usd_7d": -0.6,
       "pnl_usd_lifetime": -0.6,
-      "rationale": "AUTO-PRUNED: SILENT 41 days >= 21, 0 trades lifetime. v3.11 zombie-prune policy.",
+      "rationale": "HOLD na obecnych parametrach: 1 trade lifetime, 0% WR — za mała próba żeby cokolwiek zmieniać. SPY RSI 69 daje kontekst dla short-bias (momentum blisko szczytu) ale nie ma dostatecznych danych. 0.5× size z poprzedniej sesji jest ostrożny i właściwy.",
       "review_after": "2026-05-14 (post daily-learning)",
       "side_bias": "short",
       "size_multiplier": 0.5,
@@ -320,16 +322,17 @@
       "win_rate_lifetime": 0.0,
       "hard_safety": true,
       "auto_pruned_at": "2026-05-27",
-      "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge"
+      "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge",
+      "last_llm_override_at": "2026-05-30"
     },
     "overbought-short": {
       "consecutive_losses": 0,
       "enabled": false,
-      "llm_note": "manual override (Claude + user) based on backtest evidence \u2014 pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering",
+      "llm_note": "manual override (Claude + user) based on backtest evidence — pre-empts the adapter's auto-pause-after-5-losses, which would have cost ~$1k of additional drawdown before triggering",
       "paused_until": null,
       "pnl_usd_7d": 0,
       "pnl_usd_lifetime": 0,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 11% win rate, -$2,065 over 9 trades on 9 mega-cap basket. Strategy shorted into 8/9 trend continuations in a bull market. Re-enable only after refactor adds market-regime filter (see CLAUDE.md backlog 'overbought-short refactor'). Do NOT auto-resume.",
       "side_bias": null,
       "size_multiplier": 1.0,
       "trades_7d": 0,
@@ -345,29 +348,30 @@
       "enabled_at": "2026-05-30",
       "trades_lifetime": 0,
       "placed_lifetime": 0,
-      "rationale": "v3.11.3 part 2 (2026-05-30): NEW strategy. Fires when RSI \u2264 30 + 24h-move \u2265 -10% + 1-bar reversal. Bypasses predator-bracket which blocked all entries during BTC/ETH RSI 20-27 from 2026-04-15 to 2026-05-29."
+      "rationale": "KEEP: nowa strategia v3.11.3 zaprojektowana dla dokładnie tych warunków (RSI ≤30 + 24h-move ≥-10% + 1-bar reversal). placed_lifetime=0 to PIPELINE_FAILURE (enabled_at: 2026-05-30 = dzisiaj). BTC RSI 29.7 vs wczoraj 24.1 = momentum odwraca — to dokładnie okno wejścia tej strategii.",
+      "last_llm_override_at": "2026-05-30"
     }
   },
   "tickers": {
     "NOW": {
       "enabled": true,
       "enabled_at": "2026-05-21",
-      "rationale": "ADDED 2026-05-21 v3.9.1 \u2014 Senior PM agent diversification recommendation. ServiceNow: cloud workflow leader, 25%+ revenue growth, $11B+ ARR, enterprise stickiness, lower beta than NVDA/AMD/SMH (correlated_bucket ai_nasdaq_semis already at 80% > 65% cap). New software_quality bucket opens RISK_ON/NEUTRAL allocation alongside semis without further concentrating AI semis exposure. Target size $15k (~15.6% equity at ~$925/share = 16 shares), SL -7%, TP +14%.",
+      "rationale": "ADDED 2026-05-21 v3.9.1 — Senior PM agent diversification recommendation. ServiceNow: cloud workflow leader, 25%+ revenue growth, $11B+ ARR, enterprise stickiness, lower beta than NVDA/AMD/SMH (correlated_bucket ai_nasdaq_semis already at 80% > 65% cap). New software_quality bucket opens RISK_ON/NEUTRAL allocation alongside semis without further concentrating AI semis exposure. Target size $15k (~15.6% equity at ~$925/share = 16 shares), SL -7%, TP +14%.",
       "paused_until": null,
       "review_after": "2026-06-21 (30-day review or after 3 trades)"
     },
     "MSTR": {
       "enabled": false,
-      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,364 ($-11.82% avg). MSTR is BTC-with-leverage; momentum-long breakouts get gap-down-killed during BTC volatility. Re-enable only after (a) momentum confirmation filter is added (3 consec up days before breakout) AND backtest re-run shows positive P&L, OR (b) BTC enters confirmed sideways/uptrend regime.",
       "review_after": "2026-06-01 OR earlier if BTC volatility drops + new backtest"
     },
     "SMCI": {
       "enabled": false,
-      "evidence": "backtest/results/momentum-long-20260508-1201.json \u2014 high-beta basket run",
+      "evidence": "backtest/results/momentum-long-20260508-1201.json — high-beta basket run",
       "paused_until": null,
-      "rationale": "DISABLED 2026-05-08 manually \u2014 backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics \u2014 breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
+      "rationale": "DISABLED 2026-05-08 manually — backtest 6mo: 2 trades / 0% WR / -$2,109 ($-10.54% avg). SMCI is high-beta AI single-name with 'stockmania' dynamics — breakouts on hype, gap-down on guidance/earnings. Strategy systematically wrong-way on this ticker. Re-enable only with momentum confirmation filter + earnings-aware skip.",
       "review_after": "2026-06-01 OR after momentum-confirmation filter implemented"
     }
   },
