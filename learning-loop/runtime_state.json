@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97251.41,
-    "current_intraday_pnl": -88.47000000000116,
-    "current_intraday_pnl_pct": -0.0009088772248332458,
+    "current_equity": 97248.05,
+    "current_intraday_pnl": -91.83000000000175,
+    "current_intraday_pnl_pct": -0.0009433954510731032,
     "date": "2026-05-31",
-    "giveback_pct_of_peak": 1.763264601846343,
-    "giveback_usd": 204.3799999999901,
+    "giveback_pct_of_peak": 1.7922526097835434,
+    "giveback_usd": 207.7399999999907,
     "intraday_peak_equity": 97455.79,
     "intraday_peak_pnl": 115.90999999998894,
     "intraday_peak_pnl_pct": 0.0011907760724585745,
     "last_action": "noop",
-    "last_update_at": "2026-05-31T02:00:58.845145+00:00",
+    "last_update_at": "2026-05-31T02:05:57.833408+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-31T00:05:55.410450+00:00",
@@ -48,6 +48,12 @@
       "last_pct": 0.006709999999999999,
       "last_seen_at": "2026-05-28T14:37:09.904850+00:00",
       "peak_pct": 0.00942
+    },
+    "LINKUSD": {
+      "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
+      "last_pct": 0.00062,
+      "last_seen_at": "2026-05-31T02:05:57.834241+00:00",
+      "peak_pct": 0.00062
     },
     "LMT": {
       "first_seen_at": "2026-05-27T19:07:40.559657+00:00",
@@ -97,6 +103,12 @@
       "last_seen_at": "2026-05-28T14:37:09.907869+00:00",
       "peak_pct": 0.0124
     },
+    "SOLUSD": {
+      "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
+      "last_pct": 0.00151,
+      "last_seen_at": "2026-05-31T02:05:57.834952+00:00",
+      "peak_pct": 0.00151
+    },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
       "last_pct": 0.00231,
@@ -112,7 +124,7 @@
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
       "last_pct": -0.00069,
-      "last_seen_at": "2026-05-31T02:00:58.845973+00:00",
+      "last_seen_at": "2026-05-31T02:05:57.835615+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
