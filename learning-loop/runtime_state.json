@@ -14,7 +14,7 @@
     "intraday_peak_pnl": 115.90999999998894,
     "intraday_peak_pnl_pct": 0.0011907760724585745,
     "last_action": "noop",
-    "last_update_at": "2026-05-31T01:50:55.900866+00:00",
+    "last_update_at": "2026-05-31T01:52:46.148962+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-31T00:05:55.410450+00:00",
@@ -112,7 +112,7 @@
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
       "last_pct": 0.00393,
-      "last_seen_at": "2026-05-31T01:50:55.901724+00:00",
+      "last_seen_at": "2026-05-31T01:52:46.149881+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
