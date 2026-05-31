@@ -1,12 +1,27 @@
 {
-  "narrative": "UNI/USD RSI 26.6 z vol 14.92× to screaming oversold — ale już trzymamy 9,004 coinów (28.3% equity, +0.52% P&L). Dodanie kolejnych $2,500 pcha single-asset koncentrację do ~31%, przekraczając konserwatywny próg 30%; istniejąca pozycja w pełni captures ten bounce bez dodatkowego knife-catch ryzyka.",
-  "selected_signals": [],
-  "rejected_signals": [
+  "narrative": "LINK/USD: RSI 21.6 + vol 4.16× avg + 24h drawdown -5.35% = klasyczny panic flush z potwierdzonym bounce volume. BTC 1h +0.20% stabilny — alt long warunki OK. UNI odrzucony KRYTYCZNIE: portfel trzyma już 33.3% equity w UNI/USD (10,645 qty) — nie dokładamy do tej samej pozycji. SOL odrzucony: 1.91× vol to falling knife bez confirmation, nie bounce.",
+  "selected_signals": [
     {
-      "ticker": "UNI/USD",
-      "reason": "Już trzymamy 28.3% equity w UNI/USD (9,004 coins, +0.52% P&L) — dodanie $2,500 pushuje single-asset do ~31%, przekraczając curator conservative threshold 30%; istniejąca pozycja już przechwytuje potencjał oversold bounce, a uśrednianie w dół na -5.58% 24h move przy niepotwierdzonym odwróceniu = caught-knife ryzyko bez inkrementalnego edge."
+      "ticker": "LINK/USD",
+      "action": "BUY",
+      "tier": 2,
+      "conviction": "high",
+      "size_multiplier": 1.3,
+      "rationale": "RSI 21.6 (ekstremalny oversold) + volume 4.16× avg + 24h move -5.35% = selling exhaustion z wchodzącym kapitałem; BTC 1h +0.20% wspiera alt longa; LINK CCIP institutional adoption narrative aktywna Q2 2026, brak major supply unlock w tym tygodniu — cleanest setup z trzech kandydatów.",
+      "expected_horizon": "1d",
+      "key_risk": "BTC breaks $94k support lub LINK/USD failuje utrzymać $8.65 reclaim po pierwszej świeczce — thin liquidity azjatyckiej sesji (02:00 UTC) podnosi ryzyko fałszywego przebudzenia."
     }
   ],
-  "macro_context": "BTC 1h -0.04% (flat/neutral) — brak crash ryzyka ale brak pozytywnego tailwindu; rynek nocny 22:50 UTC z obniżoną płynnością altów, vol spike 14.92× niejednoznaczny (capitulation vs dump continuation).",
+  "rejected_signals": [
+    {
+      "ticker": "SOL/USD",
+      "reason": "Volume ratio 1.91× poniżej progu bounce confirmation (wymaga minimum 3×) — brak dowodu że selling pressure wygasł; RSI 24.4 oversold ale -3.17% 24h na niskim wolumenie = kontynuacja downtrend, nie reversal."
+    },
+    {
+      "ticker": "UNI/USD",
+      "reason": "Portfolio already holds UNI/USD 33.3% equity (10,645 qty, P&L -0.07%) — dodatkowa pozycja $2,500 tworzyłaby ~36% single-alt concentration PRZED ewentualnym dalszym drawdownem; redundant bet na instrument już mocno przeważony."
+    }
+  ],
+  "macro_context": "BTC dominance stabilna, 1h zmiana +0.20% — alt rynek bez sygnałów rotacji; 02:00 UTC azjatycka sesja nocna = thin liquidity, oversold bounces mają podwyższone ryzyko fałszywego wybicia przed US session open.",
   "confidence_in_curation": "high"
 }
