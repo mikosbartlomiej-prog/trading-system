@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 97256.81,
-    "current_intraday_pnl": -83.07000000000698,
-    "current_intraday_pnl_pct": -0.000853401504090687,
+    "current_equity": 97373.59,
+    "current_intraday_pnl": 33.70999999999185,
+    "current_intraday_pnl_pct": 0.00034631232337652205,
     "date": "2026-05-31",
-    "giveback_pct_of_peak": 1.716676731947329,
-    "giveback_usd": 198.97999999999593,
+    "giveback_pct_of_peak": 0.7091709084635056,
+    "giveback_usd": 82.19999999999709,
     "intraday_peak_equity": 97455.79,
     "intraday_peak_pnl": 115.90999999998894,
     "intraday_peak_pnl_pct": 0.0011907760724585745,
     "last_action": "noop",
-    "last_update_at": "2026-05-31T02:20:57.789756+00:00",
+    "last_update_at": "2026-05-31T02:25:54.260087+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-05-31T00:05:55.410450+00:00",
@@ -51,9 +51,9 @@
     },
     "LINKUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
-      "last_pct": 0.00062,
-      "last_seen_at": "2026-05-31T02:20:57.790628+00:00",
-      "peak_pct": 0.00062
+      "last_pct": 0.00459,
+      "last_seen_at": "2026-05-31T02:25:54.260980+00:00",
+      "peak_pct": 0.00459
     },
     "LMT": {
       "first_seen_at": "2026-05-27T19:07:40.559657+00:00",
@@ -105,8 +105,8 @@
     },
     "SOLUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
-      "last_pct": 0.00502,
-      "last_seen_at": "2026-05-31T02:20:57.791325+00:00",
+      "last_pct": 6e-05,
+      "last_seen_at": "2026-05-31T02:25:54.261705+00:00",
       "peak_pct": 0.00502
     },
     "SPY": {
@@ -123,8 +123,8 @@
     },
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
-      "last_pct": -0.00069,
-      "last_seen_at": "2026-05-31T02:20:57.792023+00:00",
+      "last_pct": 0.00298,
+      "last_seen_at": "2026-05-31T02:25:54.262420+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
