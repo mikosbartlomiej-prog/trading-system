@@ -6,26 +6,26 @@
     "starting_equity": 97339.88
   },
   "daily_peak": {
-    "date": "2026-05-30",
-    "peak_pl_usd": 207.73000000001048,
-    "peak_pl_pct": 0.002134068790715691,
-    "peak_at": "2026-05-30T00:06:09.489912+00:00",
-    "peak_equity": 97339.91,
-    "current_pl_usd": 0.0,
-    "current_equity": 97339.88,
-    "retrace_from_peak": 1.0,
+    "date": "2026-05-31",
+    "peak_pl_usd": 115.90999999998894,
+    "peak_pl_pct": 0.0011907760724585745,
+    "peak_at": "2026-05-31T00:05:55.410450+00:00",
+    "peak_equity": 97455.79,
+    "current_pl_usd": 61.50999999999476,
+    "current_equity": 97401.39,
+    "retrace_from_peak": 0.46932965231644697,
     "verdict": "GREEN",
-    "verdict_at": "2026-05-30T21:45:56.906935+00:00",
+    "verdict_at": "2026-05-31T01:30:53.802263+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 47,
+  "days_tracked": 48,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
-    "options_side_bias": "short"
+    "options_side_bias": null
   },
-  "last_updated": "2026-05-30T21:47:31.779122+00:00",
+  "last_updated": "2026-05-31T01:34:31.185606+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
@@ -341,14 +341,20 @@
       "win_rate_lifetime": 0
     },
     "crypto-oversold-bounce": {
-      "enabled": true,
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
       "size_multiplier": 1.0,
+      "enabled": true,
       "side_bias": "long",
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
       "paused_until": null,
       "enabled_at": "2026-05-30",
-      "trades_lifetime": 0,
       "placed_lifetime": 0,
-      "rationale": "KEEP: nowa strategia v3.11.3 zaprojektowana dla dokładnie tych warunków (RSI ≤30 + 24h-move ≥-10% + 1-bar reversal). placed_lifetime=0 to PIPELINE_FAILURE (enabled_at: 2026-05-30 = dzisiaj). BTC RSI 29.7 vs wczoraj 24.1 = momentum odwraca — to dokładnie okno wejścia tej strategii.",
       "last_llm_override_at": "2026-05-30"
     }
   },

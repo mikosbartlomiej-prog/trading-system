@@ -1,0 +1,45 @@
+[01:45:14 INFO] ============================================================
+[01:45:14 INFO] AccountAwareAllocator — daily plan 2026-05-31
+[01:45:14 INFO] ============================================================
+[01:45:14 INFO] ── Step 1: fetching account state ──
+[01:45:15 INFO]   equity=$  97401.39  cash=$ 210656.95  buying_power=$ 259357.64
+[01:45:15 INFO] ── Step 2: fetching open positions ──
+[01:45:16 INFO]   1 positions, invested_ratio=0.3343 (target=1.00, min=0.98)
+[01:45:16 DBG ]     UNIUSD     long  qty=10645.0328 mv=$ 32561.98  pct_eq=33.43%  pl=+0.39%
+[01:45:16 INFO]   PDT mode=OK  dt_remaining=3
+[01:45:16 INFO] ── Step 3: defensive mode check ──
+[01:45:16 INFO]   defensive_mode OFF → proceed with deployment
+[01:45:16 INFO] ── Step 4: regime detection ──
+[01:45:16 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[01:45:16 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[01:45:16 INFO] ── Step 5: scoring allowed universe ──
+[01:45:24 DBG ]     NOW      score=+0.940  bucket=software_quality
+[01:45:24 DBG ]     CRWD     score=+0.791  bucket=software_quality
+[01:45:24 DBG ]     ORCL     score=+0.777  bucket=software_quality
+[01:45:24 DBG ]     WDAY     score=+0.734  bucket=software_quality
+[01:45:24 DBG ]     PANW     score=+0.723  bucket=software_quality
+[01:45:24 INFO] ── Step 6: target weight construction ──
+[01:45:24 INFO]   reason: regime=NEUTRAL | primary_picks=5(55%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=15.00%
+[01:45:24 INFO]   target_invested_ratio_after_plan = 0.8500
+[01:45:24 DBG ]     NOW        target_weight=0.1100 ($10714.15)
+[01:45:24 DBG ]     CRWD       target_weight=0.1100 ($10714.15)
+[01:45:24 DBG ]     ORCL       target_weight=0.1100 ($10714.15)
+[01:45:24 DBG ]     WDAY       target_weight=0.1100 ($10714.15)
+[01:45:24 DBG ]     PANW       target_weight=0.1100 ($10714.15)
+[01:45:24 DBG ]     SPY        target_weight=0.1000 ($9740.14)
+[01:45:24 DBG ]     QQQ        target_weight=0.1000 ($9740.14)
+[01:45:24 DBG ]     GLD        target_weight=0.1000 ($9740.14)
+[01:45:24 INFO] ── Step 7: rebalance order generation ──
+[01:45:24 INFO]     NOW      BUY     current=$     0.00 target=$ 10714.15 delta=$+10714.15  -- new position at target 11.0%
+[01:45:24 INFO]     CRWD     BUY     current=$     0.00 target=$ 10714.15 delta=$+10714.15  -- new position at target 11.0%
+[01:45:24 INFO]     ORCL     BUY     current=$     0.00 target=$ 10714.15 delta=$+10714.15  -- new position at target 11.0%
+[01:45:24 INFO]     WDAY     BUY     current=$     0.00 target=$ 10714.15 delta=$+10714.15  -- new position at target 11.0%
+[01:45:24 INFO]     PANW     BUY     current=$     0.00 target=$ 10714.15 delta=$+10714.15  -- new position at target 11.0%
+[01:45:24 INFO]     SPY      BUY     current=$     0.00 target=$  9740.14 delta=$ +9740.14  -- new position at target 10.0%
+[01:45:24 INFO]     QQQ      BUY     current=$     0.00 target=$  9740.14 delta=$ +9740.14  -- new position at target 10.0%
+[01:45:24 INFO]     GLD      BUY     current=$     0.00 target=$  9740.14 delta=$ +9740.14  -- new position at target 10.0%
+[01:45:24 INFO]     UNIUSD   HOLD    current=$ 32561.98 target=$     0.00 delta=$-32561.98  -- BLOCKED (UNIUSD not on risk_officer whitelist)
+[01:45:24 INFO]   summary: 8 actionable + 1 hold; passed=8  failed=1
+[01:45:24 WARN]     order check failed: UNIUSD:EXIT — UNIUSD not on risk_officer whitelist
+[01:45:24 INFO] ── Step 8: plan complete ──
+[01:45:24 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
