@@ -43,3 +43,17 @@
 [01:45:24 WARN]     order check failed: UNIUSD:EXIT — UNIUSD not on risk_officer whitelist
 [01:45:24 INFO] ── Step 8: plan complete ──
 [01:45:24 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:45:44 INFO] ============================================================
+[13:45:44 INFO] execute_orders() — auto-execute path
+[13:45:44 INFO] ============================================================
+[13:45:44 INFO]   market_status: open=False reason=weekend
+[13:45:44 WARN]     NOW BUY: skipped — market not open
+[13:45:44 WARN]     CRWD BUY: skipped — market not open
+[13:45:44 WARN]     ORCL BUY: skipped — market not open
+[13:45:44 WARN]     WDAY BUY: skipped — market not open
+[13:45:44 WARN]     PANW BUY: skipped — market not open
+[13:45:44 WARN]     SPY BUY: skipped — market not open
+[13:45:44 WARN]     QQQ BUY: skipped — market not open
+[13:45:44 WARN]     GLD BUY: skipped — market not open
+[13:45:44 INFO]   execution complete: 0 placed, 8 skipped, 0 failed
