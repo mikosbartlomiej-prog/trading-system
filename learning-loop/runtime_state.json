@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 95781.09,
-    "current_intraday_pnl": -1558.7900000000081,
-    "current_intraday_pnl_pct": -0.016013888654886448,
+    "current_equity": 95786.22,
+    "current_intraday_pnl": -1553.6600000000035,
+    "current_intraday_pnl_pct": -0.01596118672018091,
     "date": "2026-06-01",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 1558.7900000000081,
+    "giveback_usd": 1553.6600000000035,
     "intraday_peak_equity": 97339.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-01T13:36:04.077266+00:00",
+    "last_update_at": "2026-06-01T13:41:07.748418+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-01T00:00:47.927074+00:00",
@@ -52,13 +52,13 @@
     "LINKUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
       "last_pct": -0.03377,
-      "last_seen_at": "2026-06-01T13:36:04.078119+00:00",
+      "last_seen_at": "2026-06-01T13:41:07.749263+00:00",
       "peak_pct": 0.00459
     },
     "LMT": {
       "first_seen_at": "2026-05-27T19:07:40.559657+00:00",
-      "last_pct": 0.00893,
-      "last_seen_at": "2026-05-28T19:42:45.875945+00:00",
+      "last_pct": 0.00089,
+      "last_seen_at": "2026-06-01T13:41:07.749978+00:00",
       "peak_pct": 0.01566
     },
     "NOW": {
@@ -105,8 +105,8 @@
     },
     "SOLUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
-      "last_pct": -0.03331,
-      "last_seen_at": "2026-06-01T13:36:04.078862+00:00",
+      "last_pct": -0.03039,
+      "last_seen_at": "2026-06-01T13:41:07.986881+00:00",
       "peak_pct": 0.00502
     },
     "SPY": {
@@ -124,7 +124,7 @@
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
       "last_pct": -0.03759,
-      "last_seen_at": "2026-06-01T13:36:04.079503+00:00",
+      "last_seen_at": "2026-06-01T13:41:07.987616+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
