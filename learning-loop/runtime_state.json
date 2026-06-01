@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 96310.1,
-    "current_intraday_pnl": -1029.7799999999988,
-    "current_intraday_pnl_pct": -0.010579219945617344,
+    "current_equity": 96305.41,
+    "current_intraday_pnl": -1034.4700000000012,
+    "current_intraday_pnl_pct": -0.010627401636410494,
     "date": "2026-06-01",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 1029.7799999999988,
+    "giveback_usd": 1034.4700000000012,
     "intraday_peak_equity": 97339.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-01T09:36:00.537144+00:00",
+    "last_update_at": "2026-06-01T09:41:03.110281+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-01T00:00:47.927074+00:00",
@@ -52,7 +52,7 @@
     "LINKUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
       "last_pct": -0.025619999999999997,
-      "last_seen_at": "2026-06-01T09:36:00.538013+00:00",
+      "last_seen_at": "2026-06-01T09:41:03.111142+00:00",
       "peak_pct": 0.00459
     },
     "LMT": {
@@ -105,8 +105,8 @@
     },
     "SOLUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
-      "last_pct": -0.01965,
-      "last_seen_at": "2026-06-01T09:36:00.538748+00:00",
+      "last_pct": -0.02153,
+      "last_seen_at": "2026-06-01T09:41:03.111838+00:00",
       "peak_pct": 0.00502
     },
     "SPY": {
@@ -124,7 +124,7 @@
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
       "last_pct": -0.024,
-      "last_seen_at": "2026-06-01T09:36:00.539416+00:00",
+      "last_seen_at": "2026-06-01T09:41:03.112522+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
