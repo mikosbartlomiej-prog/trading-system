@@ -4,17 +4,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 95646.51,
-    "current_intraday_pnl": -1693.37000000001,
-    "current_intraday_pnl_pct": -0.017396466895171946,
+    "current_equity": 95671.65,
+    "current_intraday_pnl": -1668.2300000000105,
+    "current_intraday_pnl_pct": -0.017138196595270206,
     "date": "2026-06-01",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 1693.37000000001,
+    "giveback_usd": 1668.2300000000105,
     "intraday_peak_equity": 97339.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-01T23:45:58.543949+00:00",
+    "last_update_at": "2026-06-01T23:51:00.922516+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-01T00:00:47.927074+00:00",
@@ -33,8 +33,8 @@
     },
     "CRWD": {
       "first_seen_at": "2026-05-21T14:27:38.386809+00:00",
-      "last_pct": 0.01991,
-      "last_seen_at": "2026-06-01T23:45:58.544798+00:00",
+      "last_pct": 0.02083,
+      "last_seen_at": "2026-06-01T23:51:00.923347+00:00",
       "peak_pct": 0.0342
     },
     "CVX": {
@@ -52,19 +52,19 @@
     "LINKUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
       "last_pct": -0.01979,
-      "last_seen_at": "2026-06-01T23:45:58.577618+00:00",
+      "last_seen_at": "2026-06-01T23:51:01.063717+00:00",
       "peak_pct": 0.00459
     },
     "LMT": {
       "first_seen_at": "2026-05-27T19:07:40.559657+00:00",
       "last_pct": -0.00338,
-      "last_seen_at": "2026-06-01T23:45:58.578353+00:00",
+      "last_seen_at": "2026-06-01T23:51:01.064556+00:00",
       "peak_pct": 0.01566
     },
     "NOW": {
       "first_seen_at": "2026-05-21T14:27:38.387537+00:00",
-      "last_pct": -0.01672,
-      "last_seen_at": "2026-06-01T23:45:58.615282+00:00",
+      "last_pct": -0.01597,
+      "last_seen_at": "2026-06-01T23:51:01.247184+00:00",
       "peak_pct": 0.02781
     },
     "NVDA": {
@@ -81,8 +81,8 @@
     },
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
-      "last_pct": 0.04307,
-      "last_seen_at": "2026-06-01T23:45:58.650053+00:00",
+      "last_pct": 0.04401,
+      "last_seen_at": "2026-06-01T23:51:01.526548+00:00",
       "peak_pct": 0.0704
     },
     "QQQ": {
@@ -94,7 +94,7 @@
     "RTX": {
       "first_seen_at": "2026-05-27T19:07:40.561547+00:00",
       "last_pct": -0.00314,
-      "last_seen_at": "2026-06-01T23:45:58.677307+00:00",
+      "last_seen_at": "2026-06-01T23:51:01.641537+00:00",
       "peak_pct": 0.02007
     },
     "SMH": {
@@ -106,13 +106,13 @@
     "SOLUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
       "last_pct": -0.02101,
-      "last_seen_at": "2026-06-01T23:45:58.701215+00:00",
+      "last_seen_at": "2026-06-01T23:51:01.777614+00:00",
       "peak_pct": 0.00502
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": 0.00011000000000000002,
-      "last_seen_at": "2026-06-01T23:45:58.701955+00:00",
+      "last_pct": -6e-05,
+      "last_seen_at": "2026-06-01T23:51:01.778363+00:00",
       "peak_pct": 0.00756
     },
     "TSLA": {
