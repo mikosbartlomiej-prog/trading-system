@@ -14,7 +14,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-01T05:01:04.992121+00:00",
+    "last_update_at": "2026-06-01T05:06:00.180999+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-01T00:00:47.927074+00:00",
@@ -52,7 +52,7 @@
     "LINKUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834241+00:00",
       "last_pct": -0.01316,
-      "last_seen_at": "2026-06-01T05:01:04.992774+00:00",
+      "last_seen_at": "2026-06-01T05:06:00.181858+00:00",
       "peak_pct": 0.00459
     },
     "LMT": {
@@ -106,7 +106,7 @@
     "SOLUSD": {
       "first_seen_at": "2026-05-31T02:05:57.834952+00:00",
       "last_pct": -0.0163,
-      "last_seen_at": "2026-06-01T05:01:04.993306+00:00",
+      "last_seen_at": "2026-06-01T05:06:00.182618+00:00",
       "peak_pct": 0.00502
     },
     "SPY": {
@@ -124,7 +124,7 @@
     "UNIUSD": {
       "first_seen_at": "2026-05-30T22:05:54.004460+00:00",
       "last_pct": -0.00595,
-      "last_seen_at": "2026-06-01T05:01:04.993785+00:00",
+      "last_seen_at": "2026-06-01T05:06:00.183328+00:00",
       "peak_pct": 0.00561
     },
     "USO": {
