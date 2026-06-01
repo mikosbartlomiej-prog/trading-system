@@ -646,3 +646,7 @@
 - 2026-05-31 · crypto-momentum: SILENT 49d but LLM override 2026-05-30 active (1d ago < 14d lock) → keep enabled
 - 2026-05-31 · equity-gap [WARN]: Equity dropped $1,867 ($98,446 → $96,579) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 
+- 2026-06-01 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-01 · crypto-momentum: SILENT 50d but LLM override 2026-05-30 active (2d ago < 14d lock) → keep enabled
+- 2026-06-01 · equity-gap [WARN]: Equity dropped $1,356 ($98,446 → $97,091) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+
