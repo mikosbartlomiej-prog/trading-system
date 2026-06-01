@@ -1,0 +1,19 @@
+
+=== Close FLAT 2026-06-01 | 2026-06-01 20:42:42 UTC ===
+Targets: ['LMT']
+
+Account OK — equity $96,268.20  daily P&L $-1,071.68
+
+--- LMT ---
+  Reason: CLOSE_FLAT — intraday REVERSAL_CONFIRMED: last=521.12 below vwap=522.31 AND or_low=521.30; 15min slope down (rs=-2.50). Hold 1.8h, P&L +0.08% (essentially flat). Capital freed for better opportunities. Strategy: geo-defense.
+  [LMT] cancel order c2fc6982-991e-4e2a-b77f-752dcb012bd3 side=sell limit=$573.17
+  [LMT]   cancel → status 204
+  [LMT] DELETE /v2/positions/LMT
+  [LMT]   → CLOSE OK: order_id=21eccda6-5c4f-4d1e-bb8d-6a763f69685c status=accepted
+
+=== Summary ===
+  ✅ LMT
+
+All 1 position(s) closed successfully.
+
+MACHINE_READABLE_RESULT:{"timestamp": "2026-06-01T20:42:44.290288+00:00", "total": 1, "ok": 1, "failed": 0, "results": [{"ok": true, "symbol": "LMT", "order": {"id": "21eccda6-5c4f-4d1e-bb8d-6a763f69685c", "client_order_id": "60bb75f0-5a37-44ca-bb73-dc423987aca4", "created_at": "2026-06-01T20:42:43.749420096Z", "updated_at": "2026-06-01T20:42:43.750287416Z", "submitted_at": "2026-06-01T20:42:43.749420096Z", "filled_at": null, "expired_at": null, "canceled_at": null, "failed_at": null, "replaced_at": null, "replaced_by": null, "replaces": null, "asset_id": "6ae1929e-adcd-4de1-9647-25763c8a4548", "symbol": "LMT", "asset_class": "us_equity", "notional": null, "qty": "4", "filled_qty": "0", "filled_avg_price": null, "order_class": "", "order_type": "market", "type": "market", "side": "sell", "position_intent": "sell_to_close", "time_in_force": "day", "limit_price": null, "stop_price": null, "status": "accepted", "extended_hours": false, "legs": null, "trail_percent": null, "trail_price": null, "hwm": null, "subtag": null, "source": null, "expires_at": "2026-06-02T20:00:00Z"}}]}
