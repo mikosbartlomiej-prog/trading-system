@@ -650,3 +650,9 @@
 - 2026-06-01 · crypto-momentum: SILENT 50d but LLM override 2026-05-30 active (2d ago < 14d lock) → keep enabled
 - 2026-06-01 · equity-gap [WARN]: Equity dropped $1,356 ($98,446 → $97,091) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 
+- 2026-06-01 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-01 · crypto-momentum: SILENT 51d but LLM override 2026-05-30 active (2d ago < 14d lock) → keep enabled
+- 2026-06-01 · geo-defense: size_multiplier 1.00 -> 0.80 · 7d win-rate 20% < 35% -> -20%
+- 2026-06-01 · fill-rate alert [geo-gold]: fill rate 33% below 50% on closed orders (2 canceled / 3 closed, 0 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-01 · rsi-alert [oversold]: BTC/USD RSI=25.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+

@@ -1,8 +1,14 @@
 {
-  "asset_classes": {},
+  "asset_classes": {
+    "stocks": {
+      "trades_7d": 22,
+      "win_rate_7d": 0.182,
+      "pnl_usd_7d": -124.17
+    }
+  },
   "cumulative": {
-    "total_trades": 0,
-    "total_pnl_usd": 0,
+    "total_trades": 22,
+    "total_pnl_usd": -124.17,
     "starting_equity": 97339.88
   },
   "daily_peak": {
@@ -11,25 +17,27 @@
     "peak_pl_pct": 0.0,
     "peak_at": "2026-06-01T00:00:47.927074+00:00",
     "peak_equity": 97339.88,
-    "current_pl_usd": -249.20000000001164,
-    "current_equity": 97090.68,
+    "current_pl_usd": -1714.2200000000012,
+    "current_equity": 95625.66,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-06-01T01:38:20.706213+00:00",
+    "verdict_at": "2026-06-01T22:50:59.948575+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 50,
+  "days_tracked": 51,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-06-01T01:39:14.670766+00:00",
+  "last_updated": "2026-06-01T22:54:33.019508+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
-  "next_actions": [],
+  "next_actions": [
+    "geo-defense: size_multiplier 1.00 -> 0.80"
+  ],
   "peak_equity": 98446.36,
   "pending_emergency_close": {
     "prior_pending": {
@@ -198,17 +206,17 @@
       "win_rate_lifetime": 0.0
     },
     "allocator-rebalance": {
-      "trades_lifetime": 0,
-      "trades_7d": 0,
+      "trades_lifetime": 2,
+      "trades_7d": 2,
       "win_rate_lifetime": 0.0,
       "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": 0,
-      "pnl_usd_7d": 0,
+      "pnl_usd_lifetime": -79.41,
+      "pnl_usd_7d": -79.41,
       "size_multiplier": 1.0,
       "enabled": true,
       "side_bias": null,
-      "consecutive_losses": 0,
-      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "consecutive_losses": 2,
+      "rationale": "hold (lifetime trades 2 < 10; need more sample before adapting)",
       "paused_until": null
     },
     "crypto-breakdown": {
@@ -244,17 +252,17 @@
       "last_llm_override_at": "2026-05-30"
     },
     "geo-defense": {
-      "trades_lifetime": 2,
-      "trades_7d": 2,
-      "win_rate_lifetime": 0.0,
-      "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": -18.48,
-      "pnl_usd_7d": -18.48,
-      "size_multiplier": 1.0,
+      "trades_lifetime": 20,
+      "trades_7d": 20,
+      "win_rate_lifetime": 0.2,
+      "win_rate_7d": 0.2,
+      "pnl_usd_lifetime": -44.76,
+      "pnl_usd_7d": -44.76,
+      "size_multiplier": 0.8,
       "enabled": true,
       "side_bias": null,
       "consecutive_losses": 2,
-      "rationale": "HOLD: 2 trades lifetime (-$18.48), consecutive_losses=2. Próba za mała żeby wyciągać wnioski. Strategia ma direct execution od v3.8.7 — pipeline może działać. Poniżej progu 5 consecutive losses żeby triggerować pause.",
+      "rationale": "7d win-rate 20% < 35% -> -20%",
       "paused_until": null,
       "enabled_at": "2026-05-30",
       "hard_safety": true,
@@ -274,12 +282,19 @@
       "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge"
     },
     "geo-gold": {
-      "enabled": true,
-      "enabled_at": "2026-05-30",
-      "paused_until": null,
-      "rationale": "AUTO-PRUNED: SILENT 41 days >= 21, 0 trades lifetime. v3.11 zombie-prune policy.",
-      "side_bias": null,
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
       "size_multiplier": 1.0,
+      "enabled": true,
+      "side_bias": null,
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
+      "paused_until": null,
+      "enabled_at": "2026-05-30",
       "hard_safety": true,
       "auto_pruned_at": "2026-05-27",
       "last_revive_reason": "v3.11.3 audit (2026-05-30): pre-v3.11.1 zombie-prune was over-aggressive; placed_lifetime=0 = PIPELINE_FAILURE not no_edge"
