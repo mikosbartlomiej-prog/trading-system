@@ -617,6 +617,34 @@ def execute_proposal(proposal: dict) -> tuple[str, dict | None]:
     except Exception as e:  # pragma: no cover — fail-open
         print(f"  portfolio-risk unavailable ({type(e).__name__}: {e}); proceeding")
 
+    # v3.14.0 (2026-06-02) — confidence gate (closes CONF-002).
+    # Options doesn't use shared.place_simple_buy; gate inline before broker.
+    try:
+        from confidence_builder import build_confidence_inputs as _build_ci
+        from confidence import compute_confidence as _compute_conf
+        # Normalize RSI to primary_score:
+        # CALL setup: RSI 45-65 (sweet spot ~55) → 0.5 baseline
+        # PUT setup:  RSI > 72 (extreme) → strong primary_score
+        rsi = float(proposal.get("rsi") or 50.0)
+        if opt_type == "PUT":
+            primary = max(0.0, min(1.0, (rsi - 65.0) / 20.0))  # RSI 65→0, 85→1
+        else:
+            primary = max(0.0, min(1.0, 1.0 - abs(rsi - 55.0) / 20.0))  # peak at 55
+        ci = _build_ci(
+            strategy      = "options-momentum",
+            primary_score = primary,
+            regime        = "NEUTRAL",
+            bars_count    = 60,
+        )
+        _report = _compute_conf(**ci)
+        if _report.decision == "BLOCK":
+            print(f"  {sym}: confidence BLOCK total={_report.total:.3f} — skip")
+            return "rejected", None
+        if _report.decision == "ALERT_ONLY":
+            print(f"  {sym}: confidence ALERT_ONLY {_report.total:.3f} — proceeding")
+    except Exception as _ci_e:
+        print(f"  confidence gate skipped (non-fatal): {type(_ci_e).__name__}")
+
     order = place_options_buy(
         contract_symbol = contract_symbol,
         qty             = qty,
@@ -791,3 +819,11 @@ def run_scan():
 
 if __name__ == "__main__":
     run_scan()
+    # v3.14.0 (2026-06-02) — heartbeat ping (closes ARCH-001/RUNTIME-002/CONF-003).
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("options-monitor", status="ok")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")

@@ -1158,4 +1158,14 @@ def run_scan() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(0 if run_scan() >= 0 else 1)
+    _rc = run_scan()
+    # v3.14.0 (2026-06-02) — heartbeat ping (closes ARCH-001/RUNTIME-002/CONF-003).
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("reddit-monitor", status="ok",
+                 message=f"sent={_rc}")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
+    sys.exit(0 if _rc >= 0 else 1)

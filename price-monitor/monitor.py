@@ -411,6 +411,28 @@ def run_checks():
     signals_found = 0
     alerts_sent   = 0
 
+    # v3.14.0 (2026-06-02) — confidence_inputs helper (closes CONF-002).
+    try:
+        from confidence_builder import build_confidence_inputs as _build_ci
+    except ImportError:
+        try:
+            from shared.confidence_builder import build_confidence_inputs as _build_ci  # type: ignore
+        except ImportError:
+            def _build_ci(**_kw):  # type: ignore
+                return None
+
+    def _attach_ci(signal_dict, *, side, score=None, regime=None):
+        try:
+            signal_dict["confidence_inputs"] = _build_ci(
+                strategy      = signal_dict.get("strategy", "momentum-long"),
+                primary_score = score,
+                regime        = regime or regime_info["regime"],
+                bars_count    = 60,                # 60-day backtest window
+                account_status= account,
+            )
+        except Exception as _ci_e:
+            print(f"    confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
+
     # v3.0 score-based pre-ranking — rank LONG candidates by composite score,
     # keep only top_n (focus on leaders). Score reads from config/aggressive_profile.json.
     top_n = int(profile_value("scoring.top_n_picks", 7))
@@ -472,6 +494,7 @@ def run_checks():
             signal["regime"] = regime_info["regime"]
             signal["momentum_score"] = s["score"]
             signal["score_reason"] = s["reason"]
+            _attach_ci(signal, side="buy", score=s["score"])
             print(f"    >>> SYGNAL LONG: {ticker}! score={s['score']:+.3f} regime={regime_info['regime']} size=${new_size}")
             signals_found += 1
             sent = send_alert(signal)
@@ -500,6 +523,7 @@ def run_checks():
                 print(f"  >>> SYGNAL SHORT {ticker} pominiety (concentration {combined:.1f}% > 40%)")
                 continue
             signal["size_usd"] = new_size
+            _attach_ci(signal, side="sell_short")
             print(f"  >>> SYGNAL SHORT: {ticker}! (concentration={combined:.1f}%)")
             signals_found += 1
             sent = send_alert(signal)
@@ -523,6 +547,7 @@ def run_checks():
                 print(f"  >>> SYGNAL LEVERAGED {ticker} pominiety (concentration {combined:.1f}% > 40%)")
                 continue
             signal["size_usd"] = new_size
+            _attach_ci(signal, side="buy")
             print(f"  >>> SYGNAL LEVERAGED: {ticker}! (concentration={combined:.1f}%)")
             signals_found += 1
             sent = send_alert(signal)
@@ -554,11 +579,24 @@ if __name__ == "__main__":
     if not FINNHUB_API_KEY:
         print("WARN: FINNHUB_API_KEY not set (price-monitor doesn't require it; only used for fallback news fetch)")
 
+    def _heartbeat_ping():
+        # v3.14.0 (2026-06-02) — heartbeat ping (closes ARCH-001/RUNTIME-002/CONF-003).
+        try:
+            import sys as _sys, os as _os
+            _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+            from heartbeat import ping as _hb_ping
+            _hb_ping("price-monitor", status="ok")
+        except Exception as _hb_e:
+            print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
+
     if once_mode:
         run_checks()
+        _heartbeat_ping()
     else:
         run_checks()
+        _heartbeat_ping()
         schedule.every(5).minutes.do(run_checks)
+        schedule.every(5).minutes.do(_heartbeat_ping)
         while True:
             schedule.run_pending()
             time.sleep(30)

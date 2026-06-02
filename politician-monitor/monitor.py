@@ -735,3 +735,12 @@ if __name__ == "__main__":
             )
         except Exception as e:
             print(f"  summary email exception: {e}")
+    # v3.14.0 (2026-06-02) — heartbeat ping (closes ARCH-001/RUNTIME-002/CONF-003).
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("politician-monitor", status="ok",
+                 message=f"emitted={summary.get('emitted', 0)}")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")

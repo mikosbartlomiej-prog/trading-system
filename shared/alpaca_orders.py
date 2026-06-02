@@ -200,6 +200,34 @@ def _pdt_gate(symbol: str, side: str, size_usd: float,
         return True, f"pdt-guard unavailable ({type(e).__name__}: {e})"
 
 
+def _confidence_gate(confidence_inputs: dict | None,
+                     symbol: str = "?") -> tuple[bool, str]:
+    """v3.14.0 (2026-06-02) — inline confidence gate (closes CONF-002).
+
+    Used by entry paths that do NOT call risk_officer (e.g. options
+    place_simple_buy). For paths that DO call risk_officer, the gate is
+    handled there via proposal["confidence_inputs"] — no double-evaluation.
+
+    Returns (allowed, reason). Fail-soft: if confidence module unavailable
+    OR confidence_inputs is None, returns (True, "skip"). BLOCK only when
+    explicit BLOCK decision returned (low score). ALERT_ONLY warns but
+    proceeds.
+    """
+    if not confidence_inputs:
+        return True, "confidence_inputs not provided (legacy caller)"
+    try:
+        from confidence import compute_confidence  # type: ignore
+        report = compute_confidence(**confidence_inputs)
+        if report.decision == "BLOCK":
+            return False, (f"confidence={report.total:.3f} < threshold "
+                           f"(weakest={min(report.components, key=report.components.get)})")
+        if report.decision == "ALERT_ONLY":
+            print(f"  confidence ALERT_ONLY {symbol}: total={report.total:.3f} — proceeding")
+        return True, f"confidence_ok={report.total:.3f}"
+    except Exception as e:
+        return True, f"confidence-gate unavailable ({type(e).__name__}: {e})"
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -303,7 +331,8 @@ def get_latest_crypto_quote(symbol: str) -> dict | None:
 def place_stock_bracket(symbol: str, side: str, qty: int,
                         entry_price: float, stop_loss: float,
                         take_profit: float,
-                        strategy: str = "auto") -> dict | None:
+                        strategy: str = "auto",
+                        confidence_inputs: dict | None = None) -> dict | None:
     """
     Place a bracket order for stocks/ETFs.
 
@@ -375,7 +404,7 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     # if the officer module is unavailable for any reason — proceed to place.
     try:
         from risk_officer import evaluate_trade  # noqa: E402
-        verdict = evaluate_trade({
+        _proposal = {
             "symbol":      symbol,
             "action":      "BUY" if side == "buy" else "SELL_SHORT",
             "size_usd":    qty * entry_price,
@@ -383,7 +412,11 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
             "stop_loss":   stop_loss,
             "take_profit": take_profit,
             "strategy":    strategy,
-        })
+        }
+        # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
+        if confidence_inputs:
+            _proposal["confidence_inputs"] = confidence_inputs
+        verdict = evaluate_trade(_proposal)
         if verdict.get("decision") == "REJECT":
             print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
             for f in verdict.get("checks_failed", []):
@@ -430,7 +463,8 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
 
 def place_crypto_order(symbol: str, side: str, qty: float,
                        limit_price: float,
-                       strategy: str = "auto") -> dict | None:
+                       strategy: str = "auto",
+                       confidence_inputs: dict | None = None) -> dict | None:
     """
     Place a simple limit order for crypto (Alpaca crypto does NOT support
     bracket / OCO).
@@ -495,7 +529,7 @@ def place_crypto_order(symbol: str, side: str, qty: float,
         # For crypto, look up SL/TP from strategy defaults if available.
         # If caller didn't compute them, the officer treats no-TP as a
         # soft-warning trailing-exit assumption (won't reject).
-        verdict = evaluate_trade({
+        _proposal = {
             "symbol":      symbol,
             "action":      "BUY" if side == "buy" else "SELL_SHORT",
             "size_usd":    qty * limit_price,
@@ -503,7 +537,11 @@ def place_crypto_order(symbol: str, side: str, qty: float,
             "stop_loss":   limit_price * 0.93 if side == "buy" else limit_price * 1.07,
             "take_profit": limit_price * 1.20 if side == "buy" else limit_price * 0.80,
             "strategy":    strategy,
-        })
+        }
+        # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
+        if confidence_inputs:
+            _proposal["confidence_inputs"] = confidence_inputs
+        verdict = evaluate_trade(_proposal)
         if verdict.get("decision") == "REJECT":
             print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
             for f in verdict.get("checks_failed", []):
@@ -539,7 +577,8 @@ def place_crypto_order(symbol: str, side: str, qty: float,
 
 def place_simple_buy(symbol: str, qty: int, limit_price: float,
                      strategy: str = "auto",
-                     score: float | None = None) -> dict | None:
+                     score: float | None = None,
+                     confidence_inputs: dict | None = None) -> dict | None:
     """
     Simple limit BUY for instruments that don't support brackets.
     Used by options-monitor (Alpaca paper rejects bracket on options).
@@ -585,6 +624,15 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
     if not pdt_ok:
         print(f"  PDT-GUARD BLOCK {symbol} (options): {pdt_reason}")
         return None
+
+    # v3.14.0 (2026-06-02) — confidence gate (closes CONF-002).
+    # Options path doesn't call risk_officer; gate inline.
+    conf_ok, conf_reason = _confidence_gate(confidence_inputs, symbol=symbol)
+    if not conf_ok:
+        print(f"  CONFIDENCE BLOCK {symbol} (options): {conf_reason}")
+        return None
+    if confidence_inputs:
+        print(f"  confidence-gate {symbol}: {conf_reason}")
 
     payload = {
         "symbol":         symbol,
@@ -1177,6 +1225,8 @@ def execute_stock_signal(signal: dict) -> dict | None:
         stop_loss   = round(sl_abs, 2),
         take_profit = round(tp_abs, 2),
         strategy    = strategy,
+        # v3.14.0 (2026-06-02) — forward confidence_inputs through (closes CONF-002).
+        confidence_inputs = signal.get("confidence_inputs"),
     )
 
 
@@ -1231,4 +1281,6 @@ def execute_crypto_signal(signal: dict) -> dict | None:
         qty         = qty,
         limit_price = entry,
         strategy    = strategy,
+        # v3.14.0 (2026-06-02) — forward confidence_inputs through (closes CONF-002).
+        confidence_inputs = signal.get("confidence_inputs"),
     )

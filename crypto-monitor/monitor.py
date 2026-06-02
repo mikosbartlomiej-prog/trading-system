@@ -571,6 +571,27 @@ def run_scan():
         return
 
     # ── Phase 3: emit (max 3 per run — predator philosophy: quality over volume) ──
+    # v3.14.0 (2026-06-02) — wire confidence_inputs (closes CONF-002).
+    try:
+        from confidence_builder import build_confidence_inputs as _build_ci
+    except ImportError:
+        try:
+            from shared.confidence_builder import build_confidence_inputs as _build_ci  # type: ignore
+        except ImportError:
+            def _build_ci(**_kw):  # type: ignore
+                return None
+
+    def _primary_score_for(strategy_name: str, rsi_val: float | None) -> float | None:
+        if rsi_val is None:
+            return None
+        if strategy_name == "crypto-momentum":
+            return max(0.0, min(1.0, (rsi_val - 50.0) / 30.0))      # RSI 50→0, 80→1
+        if strategy_name == "crypto-oversold-bounce":
+            return max(0.0, min(1.0, (35.0 - rsi_val) / 35.0))      # RSI 0→1, 35→0
+        if strategy_name == "crypto-breakdown":
+            return max(0.0, min(1.0, (50.0 - rsi_val) / 30.0))      # RSI 20→1, 50→0
+        return 0.5
+
     alerts_sent = 0
     for signal in candidates[:3]:
         new_size = round(signal["size_usd"] * size_mult)
@@ -580,6 +601,18 @@ def run_scan():
                   f"(concentration {combined:.1f}% > 40%)")
             continue
         signal["size_usd"] = new_size
+        # v3.14.0 — populate confidence_inputs for risk_officer gate
+        try:
+            signal["confidence_inputs"] = _build_ci(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                primary_score=_primary_score_for(signal.get("strategy", ""),
+                                                  signal.get("rsi")),
+                bars_count=24,                # 1h x 24 bars analyzed
+                regime="NEUTRAL",             # crypto is regime-agnostic (24/7)
+                account_status=account,
+            )
+        except Exception as _ci_e:
+            print(f"  confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
         print(f"  >>> SYGNAŁ: {signal['action']} {signal['symbol']}! "
               f"size=${new_size} concentration={combined:.1f}%")
         sent = send_alert(signal)
