@@ -1,23 +1,23 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "intraday-monitor",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-02T23:00:36.777985+00:00",
+      "last_seen_iso": "2026-06-02T22:50:37.238313+00:00",
       "last_status": "ok",
-      "pings_today": 181
+      "pings_today": 179
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-02T23:00:44.839548+00:00",
+      "last_seen_iso": "2026-06-02T22:50:36.224278+00:00",
       "last_status": "ok",
-      "pings_today": 180
+      "pings_today": 178
     },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-02T23:00:38.709162+00:00",
+      "last_seen_iso": "2026-06-02T22:50:35.770593+00:00",
       "last_status": "ok",
-      "pings_today": 174
+      "pings_today": 172
     },
     "politician-monitor": {
       "last_message": "emitted=0",
@@ -36,17 +36,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 95282.49,
-    "current_intraday_pnl": -823.5554059331625,
-    "current_intraday_pnl_pct": -0.00856923622707214,
+    "current_equity": 95290.77,
+    "current_intraday_pnl": -815.2754059331637,
+    "current_intraday_pnl_pct": -0.008483081397112945,
     "date": "2026-06-02",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 823.5554059331625,
+    "giveback_usd": 815.2754059331637,
     "intraday_peak_equity": 97339.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-02T23:00:44.091484+00:00",
+    "last_update_at": "2026-06-02T22:50:35.968303+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-02T00:01:01.882529+00:00",
@@ -119,8 +119,8 @@
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
-      "last_pct": 0.00658,
-      "last_seen_at": "2026-06-02T23:00:44.092417+00:00",
+      "last_pct": 0.00716,
+      "last_seen_at": "2026-06-02T22:50:35.969130+00:00",
       "peak_pct": 0.01044
     },
     "RTX": {
@@ -143,8 +143,8 @@
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": 0.00385,
-      "last_seen_at": "2026-06-02T23:00:44.552946+00:00",
+      "last_pct": 0.0042,
+      "last_seen_at": "2026-06-02T22:50:36.117256+00:00",
       "peak_pct": 0.00756
     },
     "TSLA": {
@@ -180,13 +180,13 @@
   },
   "routine_budget": {
     "by_routine": {
-      "daily-learning-pm": 1
+      "daily-learning-pm": 2
     },
     "by_tier": {
-      "P0_essential": 1
+      "P0_essential": 2
     },
     "date": "2026-06-02",
-    "last_updated": "2026-06-02T01:58:27.726253+00:00",
-    "total": 1
+    "last_updated": "2026-06-02T22:53:40.119541+00:00",
+    "total": 2
   }
 }

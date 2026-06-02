@@ -1,15 +1,15 @@
 {
   "asset_classes": {
     "stocks": {
-      "trades_7d": 22,
-      "win_rate_7d": 0.182,
-      "pnl_usd_7d": -124.17
+      "trades_7d": 1,
+      "win_rate_7d": 0.0,
+      "pnl_usd_7d": -33.62
     }
   },
   "cumulative": {
-    "total_trades": 22,
-    "total_pnl_usd": -124.17,
-    "starting_equity": 97339.88
+    "total_trades": 1,
+    "total_pnl_usd": -33.62,
+    "starting_equity": 96106.04540593317
   },
   "daily_peak": {
     "date": "2026-06-02",
@@ -17,27 +17,25 @@
     "peak_pl_pct": 0.0,
     "peak_at": "2026-06-02T00:01:01.882529+00:00",
     "peak_equity": 97339.88,
-    "current_pl_usd": -1798.3899999999994,
-    "current_equity": 95541.49,
+    "current_pl_usd": -815.2754059331637,
+    "current_equity": 95290.77,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-06-02T01:55:58.058975+00:00",
+    "verdict_at": "2026-06-02T22:50:35.968303+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 52,
+  "days_tracked": 53,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-06-02T01:58:27.715542+00:00",
+  "last_updated": "2026-06-02T22:53:40.110837+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
-  "next_actions": [
-    "geo-defense: size_multiplier 0.80 -> 0.64"
-  ],
+  "next_actions": [],
   "peak_equity": 98446.36,
   "pending_emergency_close": {
     "prior_pending": {
@@ -206,17 +204,17 @@
       "win_rate_lifetime": 0.0
     },
     "allocator-rebalance": {
-      "trades_lifetime": 2,
-      "trades_7d": 2,
+      "trades_lifetime": 1,
+      "trades_7d": 1,
       "win_rate_lifetime": 0.0,
       "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": -79.41,
-      "pnl_usd_7d": -79.41,
+      "pnl_usd_lifetime": -33.62,
+      "pnl_usd_7d": -33.62,
       "size_multiplier": 1.0,
       "enabled": true,
       "side_bias": null,
-      "consecutive_losses": 2,
-      "rationale": "hold (lifetime trades 2 < 10; need more sample before adapting)",
+      "consecutive_losses": 1,
+      "rationale": "hold (lifetime trades 1 < 10; need more sample before adapting)",
       "paused_until": null
     },
     "crypto-breakdown": {
@@ -252,17 +250,17 @@
       "last_llm_override_at": "2026-05-30"
     },
     "geo-defense": {
-      "trades_lifetime": 20,
-      "trades_7d": 20,
-      "win_rate_lifetime": 0.2,
-      "win_rate_7d": 0.2,
-      "pnl_usd_lifetime": -44.76,
-      "pnl_usd_7d": -44.76,
+      "trades_lifetime": 0,
+      "trades_7d": 0,
+      "win_rate_lifetime": 0.0,
+      "win_rate_7d": 0.0,
+      "pnl_usd_lifetime": 0,
+      "pnl_usd_7d": 0,
       "size_multiplier": 0.6400000000000001,
       "enabled": true,
       "side_bias": null,
-      "consecutive_losses": 2,
-      "rationale": "7d win-rate 20% < 35% -> -20%",
+      "consecutive_losses": 0,
+      "rationale": "hold (lifetime trades 0 < 10; need more sample before adapting)",
       "paused_until": null,
       "enabled_at": "2026-05-30",
       "hard_safety": true,
