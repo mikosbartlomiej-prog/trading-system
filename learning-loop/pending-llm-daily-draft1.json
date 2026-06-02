@@ -1,0 +1,60 @@
+{
+  "narrative": "Equity $95,540 vs peak $98,446 = -$2,906 łącznie, ale analyzer przypisuje tylko -$124 zamkniętym trade'om — luka $2,782 to największa czerwona flaga: 12 otwartych orderów w kategorii 'unknown' (NOW/SPY/PANW, statusy 'new'/'held') sugeruje otwarte pozycje z niezrealizowanymi stratami, które nie trafiają do open_positions[]. Jednocześnie BTC/USD RSI=24.9 to statystycznie rzadki setup (historycznie >70% bounce-probability w oknie 48h), lecz crypto-momentum jest SILENT 52 dni przy enabled=true i size=1.5× — pipeline failure w najgorszym możliwym momencie. geo-defense 20% WR na 20 trade'ach (p-value <0.001 vs losowe 50%) to potwierdzona directional failure — adapter obcina do 0.64, schodzę do 0.50 z tej samej logiki: iteracyjne cięcie o 20% co sesję jest za wolne wobec tak silnego sygnału.",
+  "regime_assessment": "risk_on",
+  "edge_assessment": "Zero pozytywnego edge z empirii: geo-defense 20% WR na 20 trade'ach = 3.2-sigma poniżej losowego (50%) — strategia systematycznie pick'uje złą stronę, nie szum. Jedyny potencjalny edge to BTC/USD oversold-bounce przy RSI=24.9, ale pipeline nie wykonuje żadnych trade'ów od 52 dni — missed opportunity jest większym ryzykiem niż straty geo-defense (-$44.76 total).",
+  "state_overrides": {
+    "strategies": {
+      "geo-defense": {
+        "size_multiplier": 0.5,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "Adapter zaproponował 0.64 (od 0.80). Schodzę agresywniej do 0.50: 20 trade'ów przy 20% WR = 3.2-sigma deviation od losowego — to udokumentowana directional failure, nie zły tydzień. Iteracyjne cięcia o 20% co sesję są za wolne przy takiej istotności statystycznej. Fill rate 57.5% i avg cancel 36 min = pipeline działa technicznie; problem to KIERUNEK, nie egzekucja. 0.50 = minimalna ekspozycja dla zachowania danych. Dalsze cięcie lub disable jeśli WR nie wzrośnie powyżej 35% w następnych 10 trade'ach."
+      },
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "enabled": true,
+        "side_bias": "long",
+        "rationale": "UTRZYMUJĘ 1.5× i LLM lock (override 2026-05-30, 3 dni temu < 14d). BTC RSI=24.9 to setup, na który ta strategia była projektowana. 52 dni SILENT = PIPELINE_FAILURE, NIE brak edge. CRITICAL OPERATOR ACTION REQUIRED: (1) sprawdź ostatnie logi crypto-monitor.yml w GitHub Actions — czy skan BTC/ETH jest widoczny? (2) czy Cloudflare Worker crypto-monitor-proxy odpowiada HTTP 200? (3) czy crypto-oversold-bounce path (RSI<=30 + reversal bar) w crypto-monitor/monitor.py się wyzwala? Bez resolucji tego w ciągu 24h tracimy jeden z najlepszych setups od uruchomienia systemu."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "enabled": true,
+        "side_bias": "short",
+        "rationale": "HOLD bez zmian. SPY RSI=69.3 wspiera short-bias (rynek blisko krótkookresowego sufitu). Próba 1 trade/0% WR — za mała na jakiekolwiek korekty parametrów. Trzymam ostrożne 0.5× short z poprzedniej sesji."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Pipeline failure alert: enabled strategy SILENT >14d podczas high-probability setup (rsi_alert match)",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "crypto-momentum enabled 1.5× + BTC RSI=24.9 + 52 dni SILENT = system traci najlepszy setup od miesięcy bez żadnego alertu dla operatora. Potrzebujemy mechanizmu wykrywającego 'strategia skonfigurowana do tradowania ale nie traduje podczas warunków, w których powinna' — i emitującego email [PIPELINE-FAILURE] z checklistą diagnostyczną.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-05",
+      "implementation_sketch": "1. learning-loop/analyzer.py: nowa compute_pipeline_failure_alerts(today_stats, state)\n2. Iteruje strategies: enabled=True AND size_mult>=1.0 AND trades_7d=0 AND days_since_enabled>7\n3. Cross-reference z today_stats.rsi_alerts — jeśli kind='pre-signal' i asset_class pasuje (BTC->crypto-momentum, ETH->crypto-momentum, geo->geo-defense etc.)\n4. Emit via notify_signal (lub nowe notify_pipeline_failure) subject '[PIPELINE-FAILURE] {strategy} SILENT {N}d during {asset} RSI={rsi}'\n5. Body zawiera checklist: Cloudflare Worker URL, ostatni run w Actions, env vars obecne?\n6. Wired po deterministic adapter, przed state.json write\n7. Touched: learning-loop/analyzer.py, shared/notify.py"
+    },
+    {
+      "title": "Open positions attribution gap: investigate empty open_positions[] vs equity gap $2,782",
+      "lane": "backlog",
+      "risk": "high",
+      "rationale": "equity_gap: peak $98,446 - current $95,540 = -$2,906. Attributed closed trades: -$124. Luka $2,782 to ~2.85% equity — zbyt duże żeby zignorować. open_positions=[] ale 12 open 'unknown' orderów (NOW/SPY/PANW, status 'new'/'held') sugeruje że pozycje są otwarte ale analyzer nie widzi ich przez Alpaca /v2/positions fetch. Bez fixa: system podejmuje decyzje alokacyjne bez znajomości własnego stanu portfela.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-04",
+      "implementation_sketch": "KROK 1 (operator, DZIŚ): sprawdź Alpaca dashboard — czy NOW/SPY/PANW są jako open positions?\nKROK 2 (dev): w analyzer.py sprawdź fetch /v2/positions — czy exception jest łapany jako [] bez logu?\nKROK 3: dodaj equity-gap cross-check: jeśli |equity_delta| > $500 AND open_positions=[] AND open_orders_count > 0 -> emit WARNING 'open_positions may be stale — fetcher error suspected'\nKROK 4: dodaj fetch /v2/orders?status=open do analyzer snapshot i porównaj symbole z open_positions — rozbieżność = flag\nKROK 5 (fix): robust retry + explicit log na /v2/positions 404 vs 500 vs empty-200"
+    },
+    {
+      "title": "Geo fill-rate: switch to aggressive_entry (ask-price BUY) gdy fill_rate_closed < 40%",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "geo-gold fill_rate_closed=33% z avg_cancel=17 min — limits za ciasne, quote odpływa. geo-defense 57.5% przy avg_cancel=36 min — akceptowalny ale polepszalny. shared/alpaca_orders.py::_aggressive_entry() już istnieje (v3.8.9) i używa ask-price dla BUY — geo-monitor powinien tego używać zamiast mid-price w execute_geo_signal().",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-07",
+      "implementation_sketch": "geo-monitor/monitor.py::execute_geo_signal():\n  # BEFORE (likely):\n  limit_price = (bid + ask) / 2\n  # AFTER:\n  from shared.alpaca_orders import _aggressive_entry\n  limit_price = _aggressive_entry(quote, side)  # ask for BUY, bid for SELL_SHORT\n\nAlternatywnie bezpośrednio:\n  limit_price = quote['ask'] if side == 'buy' else quote['bid']\n\nSprawdź też execute_geo_signal() w defense/geo path — oba powinny być spójne.\nOczekiwany efekt: geo-gold fill_rate_closed 33% -> >80%; geo-defense fill_rate 57.5% -> >75%."
+    }
+  ],
+  "confidence": "medium"
+}
