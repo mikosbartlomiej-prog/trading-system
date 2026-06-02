@@ -117,9 +117,19 @@ BTC_DOMINANCE_GUARD_PCT = -3.0  # if BTC drops >=3% in 1h → block alt longs
 # Tag separately as "crypto-oversold-bounce" so analyzer attributes correctly.
 OVERSOLD_BOUNCE_RSI_MAX        = 30.0   # only fire when RSI ≤ 30 (deep oversold)
 OVERSOLD_BOUNCE_MIN_MOVE_PCT   = -10.0  # but don't catch knife: 24h-move must be ≥ -10%
-OVERSOLD_BOUNCE_VOL_MULT_FLOOR = 0.5    # relax volume req to 0.5× tier's vol_mult
-# Reversal confirmation: current bar's close must be above the prior bar's
-# close (1-bar uptick) — protects against entering during free-fall.
+# v3.13.3 (2026-06-02) — relaxed for QUIET oversold markets.
+# LIVE ROOT CAUSE (06-01 → 06-02): BTC RSI 24.9 for 3+ days but
+# oversold-bounce never fired because:
+#   * 24h-move ~-0.17% (flat consolidation post-crash)
+#   * volume below average (no panic, just exhaustion)
+#   * hourly closes oscillating ±0.05% → strict closes[-1]>closes[-2] reversal fails
+# Each individual bar may not "reverse" but the 3-bar trend can stabilize.
+# Lowering the bar to: not-falling over last 3 bars + volume ≥ 0.25×.
+OVERSOLD_BOUNCE_VOL_MULT_FLOOR = 0.25   # was 0.5 — quiet oversold often has below-average volume
+OVERSOLD_BOUNCE_REVERSAL_BARS  = 3      # was 2 (strict 1-bar) — accept stability over last 3 bars
+# Stability rule: avg(closes[-3:]) >= closes[-4] (last 3-bar avg above
+# the bar from 3 hours ago = not falling). Catches stabilization without
+# requiring hourly bullish candle.
 MAX_ALT_POSITIONS = 3         # cap simultaneous Tier 2 open positions
 
 # Global circuit breakers
@@ -313,13 +323,22 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
     # current bar prints higher close than prior bar (1-bar reversal).
     # Bypasses predator bracket + 20-bar breakout (those filters miss
     # post-crash bounce setups by design).
+    # v3.13.3 (2026-06-02) — stabilization rule: average of last 3 hourly
+    # closes >= the close from 3 hours ago. Catches "not falling" without
+    # requiring a strict per-bar bullish reversal.
+    stable_or_rising = False
+    if len(closes) >= 4:
+        recent_avg = sum(closes[-3:]) / 3.0
+        baseline   = closes[-4]
+        stable_or_rising = recent_avg >= baseline
+
     if (
         rsi is not None
         and rsi <= OVERSOLD_BOUNCE_RSI_MAX
         and move_24h is not None
         and move_24h >= OVERSOLD_BOUNCE_MIN_MOVE_PCT
-        and len(closes) >= 2
-        and closes[-1] > closes[-2]              # 1-bar reversal confirmation
+        and len(closes) >= OVERSOLD_BOUNCE_REVERSAL_BARS + 1
+        and stable_or_rising                       # 3-bar stabilization (relaxed from strict 1-bar)
         and current_volume > avg_vol * (vol_mult * OVERSOLD_BOUNCE_VOL_MULT_FLOOR)
     ):
         # Tier 2 alt-long: same BTC dominance guard as predator-long.
@@ -636,4 +655,14 @@ def _maybe_curate(candidates: list[dict], account: dict | None,
 # ─── Start ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    run_scan()
+    _summary = run_scan()
+    # v3.13.3 (2026-06-02) — heartbeat ping (READINESS-1 from backlog).
+    # Fail-soft: ANY error here must NOT crash the monitor.
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("crypto-monitor", status="ok",
+                 message=f"scanned {(_summary or {}).get('scanned', 11)} coins")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")

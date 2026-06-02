@@ -73,21 +73,25 @@ class TestCryptoOversoldBounce(unittest.TestCase):
         self.monitor = monitor
 
     def _scenario_oversold(self):
-        """25 monotonically falling bars + 1 tiny reversal — RSI < 30.
+        """25 falling bars + 3 stabilization bars — RSI < 30.
 
-        Construction: start at 100, fall by 0.5% each bar for 25 bars,
-        then final bar +0.1% reversal. This gives:
-          * RSI strongly < 30 (only losses in the 14-period window)
-          * 24h-move (last vs ~-24 bars) ≈ -10% — JUST inside the
-            OVERSOLD_BOUNCE_MIN_MOVE_PCT floor
-          * 1-bar reversal at the end
+        v3.13.3 update: contract is now `avg(closes[-3:]) >= closes[-4]`
+        (3-bar stabilization) instead of strict 1-bar reversal. Build the
+        scenario accordingly: 25 falling bars then 3 bars that stabilize
+        slightly above the baseline bar.
+
+        After v3.13.3 relaxation, this fires at the same RSI but with
+        the more realistic stabilization-not-strict-reversal pattern.
         """
         closes = [100.0]
         for _ in range(25):
             closes.append(closes[-1] * 0.997)  # -0.3% per bar
-        # 24h-move ≈ -7% (24 bars × -0.3%), inside -10% floor
-        # Final bar = tiny reversal (close > prior close)
-        closes.append(closes[-1] * 1.002)
+        # closes[-4] = baseline (after 25-bar drop)
+        baseline = closes[-1]
+        # 3 stabilization bars where avg >= baseline:
+        closes.append(baseline * 1.002)   # +0.2% — gives some headroom
+        closes.append(baseline * 1.001)   # +0.1%
+        closes.append(baseline * 1.003)   # +0.3% — avg ≈ +0.2% > baseline
         return closes
 
     def test_oversold_bounce_fires_when_RSI_below_30(self):

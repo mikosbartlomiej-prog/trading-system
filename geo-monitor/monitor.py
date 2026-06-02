@@ -354,6 +354,31 @@ def execute_geo_signal(signal: dict) -> bool:
         if has_open_position(sym):
             print(f"  >>> {signal['action']} {sym} pominięty (otwarta pozycja)")
             return False
+
+        # v3.13.3 (2026-06-02) — Recent-loss cooldown guard.
+        # LIVE INCIDENT 2026-06-01: geo-defense fired 20 trades / 20% WR /
+        # -$44 cumulative loss. Adapter cooldown (mult 1.00 → 0.80 → 0.64)
+        # works but is REACTIVE (next-day). Same-day need: if last 5 trades
+        # of THIS strategy all lost, skip with rationale.
+        try:
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+            from learning_state import load_strategy_state
+            strat = (signal.get("strategy") or "").lower()
+            if strat and strat.startswith("geo-"):
+                ss = load_strategy_state().get(strat) or {}
+                # Adapter writes recent_pnl rolling list; if available, check
+                # last-5 loss streak. Fail-soft if field absent.
+                recent_pnl = ss.get("recent_pnl") or []
+                if isinstance(recent_pnl, list) and len(recent_pnl) >= 5:
+                    last_5 = recent_pnl[-5:]
+                    losses = sum(1 for x in last_5 if isinstance(x, (int, float)) and x < 0)
+                    if losses >= 5:
+                        print(f"  >>> {signal['action']} {sym} skipped — recent-loss cooldown "
+                              f"({strat}: last 5 trades all losses)")
+                        return False
+        except Exception as _e:
+            # Fail-open: if state read fails, proceed (don't lock out trading)
+            pass
         # v3.10.1 — signal_confirmation gate
         try:
             from news_signal_gate import gate_news_signal, mark_signal_acted

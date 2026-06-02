@@ -34,6 +34,12 @@ PATTERNS DETECTED (severity in parens):
                   "insufficient qty" / "held_for_orders" → governor or
                   allocator trying to close but bracket OCO holds the qty.
                   (Should be impossible with v3.11.3 cancel_brackets_first.)
+ P14 (WARN)     pdt_block_cascade  v3.13.3 (2026-06-02)
+                  6+ PDT_BLOCK events in last 60 min for SAME symbol+rec.
+                  Means exit-monitor (or other) is retrying every cron tick
+                  without backoff. Should be impossible with v3.13.3
+                  PDT_BLOCK_COOLDOWN_S = 3600. Indicates cooldown not honored
+                  or operator forced override.
 
 Exit code:
   0 — no CRITICAL findings (workflow stays green)
@@ -612,6 +618,58 @@ def p13_bracket_interlock_blocked_close(audit_events: list[dict]) -> list[dict]:
     }]
 
 
+def p14_pdt_block_cascade(audit_events: list[dict]) -> list[dict]:
+    """v3.13.3 (2026-06-02): detect PDT_BLOCK retry cascade.
+
+    Background: 2026-06-01 exit-monitor wanted CLOSE_FLAT on LMT/RTX
+    every 5 min during PDT lockout. Result: 36 PDT_BLOCK events in single
+    day (LMT×21, RTX×12). Pure noise — pdt_guard correctly blocked, but
+    audit JSONL was spammed.
+
+    v3.13.3 fix: PDT_BLOCK_COOLDOWN_S=3600 silences (symbol, rec)
+    repeats for 60 min. If THIS detector fires post-v3.13.3 → cooldown
+    not honored OR operator manually disabled it. Severity WARN
+    (no money lost, just operational noise).
+
+    Trigger: ≥6 PDT_BLOCK events in last 60 min for SAME (symbol, rec).
+    """
+    cutoff = _now_utc() - timedelta(minutes=60)
+    by_key: dict = {}
+    for ev in audit_events:
+        try:
+            ts_str = ev.get("ts") or ev.get("timestamp", "")
+            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        except (KeyError, ValueError, AttributeError):
+            continue
+        if ts < cutoff:
+            continue
+        dec = (ev.get("decision") or "").upper()
+        if dec != "PDT_BLOCK":
+            continue
+        symbol = ev.get("symbol") or "?"
+        rec = (ev.get("context") or {}).get("recommendation", "?")
+        key = (symbol, rec)
+        by_key.setdefault(key, []).append(ev)
+    findings = []
+    for (sym, rec), evs in by_key.items():
+        if len(evs) < 6:
+            continue
+        findings.append({
+            "pattern": "P14_pdt_block_cascade",
+            "severity": WARN,
+            "detail": (
+                f"{len(evs)} PDT_BLOCK events in last 60min for {sym} "
+                f"recommendation={rec}. exit-monitor retrying without backoff. "
+                f"v3.13.3 PDT_BLOCK_COOLDOWN_S=3600 should silence repeats. "
+                f"If firing post-v3.13.3 deploy, cooldown not honored — "
+                f"check exit-monitor _PDT_BLOCK_COOLDOWN dict resetting "
+                f"between cron ticks (no persistent storage by design)."
+            ),
+            "evidence": "journal/autonomy/<today>.jsonl",
+        })
+    return findings[:3]   # cap output
+
+
 def p12_concentration_violation(positions: list[dict], account: dict | None) -> list[dict]:
     if not account:
         return []
@@ -671,6 +729,7 @@ def run_all_checks() -> list[dict]:
     findings.extend(p11_pdt_jump(runtime))  # v3.10.1: self-managed history in runtime_state
     findings.extend(p12_concentration_violation(positions, account))
     findings.extend(p13_bracket_interlock_blocked_close(audit_events))
+    findings.extend(p14_pdt_block_cascade(audit_events))
 
     return findings
 
@@ -812,6 +871,15 @@ def main() -> int:
     action = maybe_auto_disable(findings)
     if action:
         print(f"AUTO-ACTION: {action}")
+
+    # v3.13.3 — heartbeat ping (READINESS-1). Fail-soft.
+    try:
+        sys.path.insert(0, str(_REPO_ROOT / "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("incident-pattern-detector", status="ok",
+                 message=f"findings={len(findings)}")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
 
     has_critical = any(f["severity"] == CRITICAL for f in findings)
     return 2 if has_critical else 0

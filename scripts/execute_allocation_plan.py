@@ -338,9 +338,19 @@ def main() -> int:
     except Exception as e:
         print(f"[executor] email skipped ({type(e).__name__}: {e})")
 
-    print(f"[executor] done. placed={sum(1 for r in results if r.get('status') == 'placed')} "
-          f"skipped={sum(1 for r in results if r.get('status') == 'skipped')} "
-          f"failed={sum(1 for r in results if r.get('status') == 'failed')}")
+    n_placed = sum(1 for r in results if r.get('status') == 'placed')
+    n_skipped = sum(1 for r in results if r.get('status') == 'skipped')
+    n_failed = sum(1 for r in results if r.get('status') == 'failed')
+    print(f"[executor] done. placed={n_placed} skipped={n_skipped} failed={n_failed}")
+
+    # v3.13.3 — heartbeat ping (READINESS-1). Fail-soft.
+    try:
+        sys.path.insert(0, str(_REPO_ROOT / "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("morning-allocator", status="ok",
+                 message=f"placed={n_placed} failed={n_failed}")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
     return 0
 
 

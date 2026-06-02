@@ -81,6 +81,16 @@ def _emergency_close_window_ok(ep: dict) -> bool:
         return True
 
 
+# v3.13.3 (2026-06-02) — PDT-aware cooldown for repeated CLOSE attempts.
+# When PDT guard BLOCKs a CLOSE_FLAT recommendation, exit-monitor was
+# retrying every 5 min (cron) → 36 audit events in single day for one
+# position. Cooldown: silence audit + log noise for (symbol, rec) for
+# 60 min after a PDT block. Emergency closes BYPASS this — different
+# code path uses is_emergency=True which short-circuits.
+_PDT_BLOCK_COOLDOWN: dict = {}    # key: "SYM|REC|DECISION" → last block ts
+PDT_BLOCK_COOLDOWN_S = 3600       # 60 min
+
+
 def place_emergency_close(ep: dict) -> dict | None:
     """
     Close an exit-flagged position via Alpaca direct REST.
@@ -175,13 +185,30 @@ def place_emergency_close(ep: dict) -> dict | None:
                 intent=close_intent, is_emergency=is_emergency_close,
             )
             if pv["decision"] != "ALLOW":
-                _pdt_audit(pv, action="CLOSE", symbol=symbol,
-                           extra={"recommendation": rec, "asset_class": asset_class,
-                                   "intent": close_intent})
-                if pv["decision"] == "DEFER":
-                    print(f"  pdt-guard DEFER {symbol} ({rec}): {pv['reason']}")
-                else:  # BLOCK
-                    print(f"  pdt-guard BLOCK {symbol} ({rec}): {pv['reason']}")
+                # v3.13.3 (2026-06-02) — PDT-aware cooldown to prevent
+                # spam. Live incident 2026-06-01: exit-monitor tried
+                # CLOSE_FLAT on RTX×12, LMT×21, GLD×2, QQQ×1 every 5min
+                # for hours, all PDT_BLOCKed (dt=17). 36 audit events.
+                # Record audit once per (symbol, recommendation) per hour;
+                # subsequent skip is silent log only.
+                _now = datetime.now(timezone.utc)
+                _cooldown_key = f"{symbol}|{rec}|{pv.get('decision')}"
+                _last = _PDT_BLOCK_COOLDOWN.get(_cooldown_key)
+                _within_cooldown = (_last is not None
+                                     and (_now - _last).total_seconds() < PDT_BLOCK_COOLDOWN_S)
+                if not _within_cooldown:
+                    _pdt_audit(pv, action="CLOSE", symbol=symbol,
+                               extra={"recommendation": rec, "asset_class": asset_class,
+                                       "intent": close_intent})
+                    _PDT_BLOCK_COOLDOWN[_cooldown_key] = _now
+                    if pv["decision"] == "DEFER":
+                        print(f"  pdt-guard DEFER {symbol} ({rec}): {pv['reason']}")
+                    else:  # BLOCK
+                        print(f"  pdt-guard BLOCK {symbol} ({rec}): {pv['reason']}")
+                else:
+                    # Already blocked recently — silent skip (no audit spam)
+                    print(f"  pdt-guard {pv['decision']} {symbol} ({rec}): "
+                          f"silent (cooldown {PDT_BLOCK_COOLDOWN_S}s active)")
                 return None
         except Exception as e:
             print(f"  pdt-guard unavailable for {symbol} ({type(e).__name__}: {e}) — proceeding")
@@ -676,3 +703,11 @@ def run_exit_check():
 
 if __name__ == "__main__":
     run_exit_check()
+    # v3.13.3 — heartbeat ping (READINESS-1). Fail-soft.
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "shared"))
+        from heartbeat import ping as _hb_ping
+        _hb_ping("exit-monitor", status="ok")
+    except Exception as _hb_e:
+        print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
