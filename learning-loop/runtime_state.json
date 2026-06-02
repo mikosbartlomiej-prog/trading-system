@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-02T17:21:07.795339+00:00",
+      "last_seen_iso": "2026-06-02T17:26:04.311074+00:00",
       "last_status": "ok",
-      "pings_today": 114
+      "pings_today": 115
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -30,17 +30,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 94228.35,
-    "current_intraday_pnl": -1877.695405933162,
-    "current_intraday_pnl_pct": -0.019537744977458422,
+    "current_equity": 94222.11,
+    "current_intraday_pnl": -1883.9354059331672,
+    "current_intraday_pnl_pct": -0.019602673255108897,
     "date": "2026-06-02",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 1877.695405933162,
+    "giveback_usd": 1883.9354059331672,
     "intraday_peak_equity": 97339.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-02T17:21:07.115339+00:00",
+    "last_update_at": "2026-06-02T17:26:03.512705+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-02T00:01:01.882529+00:00",
@@ -107,14 +107,14 @@
     },
     "PANW": {
       "first_seen_at": "2026-05-21T14:13:50.530535+00:00",
-      "last_pct": 0.02343,
-      "last_seen_at": "2026-06-02T17:21:07.116349+00:00",
+      "last_pct": 0.0238,
+      "last_seen_at": "2026-06-02T17:26:03.513634+00:00",
       "peak_pct": 0.0704
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
-      "last_pct": 0.00505,
-      "last_seen_at": "2026-06-02T17:21:07.384511+00:00",
+      "last_pct": 0.00438,
+      "last_seen_at": "2026-06-02T17:26:03.618723+00:00",
       "peak_pct": 0.01044
     },
     "RTX": {
@@ -137,8 +137,8 @@
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": 0.00392,
-      "last_seen_at": "2026-06-02T17:21:07.588600+00:00",
+      "last_pct": 0.0034699999999999996,
+      "last_seen_at": "2026-06-02T17:26:04.103267+00:00",
       "peak_pct": 0.00756
     },
     "TSLA": {
