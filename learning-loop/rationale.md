@@ -656,3 +656,9 @@
 - 2026-06-01 · fill-rate alert [geo-gold]: fill rate 33% below 50% on closed orders (2 canceled / 3 closed, 0 open-GTC ignored) — limits too tight or quote stale
 - 2026-06-01 · rsi-alert [oversold]: BTC/USD RSI=25.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-06-02 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-02 · crypto-momentum: SILENT 52d but LLM override 2026-05-30 active (3d ago < 14d lock) → keep enabled
+- 2026-06-02 · geo-defense: size_multiplier 0.80 -> 0.64 · 7d win-rate 20% < 35% -> -20%
+- 2026-06-02 · fill-rate alert [geo-gold]: fill rate 33% below 50% on closed orders (2 canceled / 3 closed, 0 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-02 · rsi-alert [oversold]: BTC/USD RSI=24.9 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
