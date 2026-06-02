@@ -1,57 +1,52 @@
 {
   "plan_date": "2026-06-02",
-  "executed_at": "2026-06-02T13:01:23Z",
-  "n_placed": 0,
-  "n_skipped": 6,
-  "n_failed": 0,
+  "executed_at": "2026-06-02T13:46:06Z",
+  "n_placed": 2,
+  "n_skipped": 2,
+  "n_failed": 1,
   "results": [
     {
       "symbol": "RTX",
       "action": "EXIT",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
-    },
-    {
-      "symbol": "LMT",
-      "action": "EXIT",
-      "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
+      "status": "failed",
+      "reason": "safe_close: Alpaca 403: {\"available\":\"0\",\"code\":40310000,\"existing_qty\":\"13\",\"held_for_orders\":\"13\",\"message\":\"insufficient qty available for or",
+      "attempted_at": "2026-06-02T13:46:03Z",
+      "alpaca_order_id": null
     },
     {
       "symbol": "ORCL",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
+      "reason": "BUY skipped: 1 existing open BUY order(s) for ORCL (oldest id=fa0f0461). Cancel via cancel-stale-emergency-orders or wait for fill.",
+      "attempted_at": "2026-06-02T13:46:04Z"
     },
     {
       "symbol": "WDAY",
       "action": "BUY",
       "asset_class": "us_equity",
       "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
+      "reason": "BUY skipped: position WDAY already exists qty=69 target=69 (within 10% rebalance threshold)",
+      "attempted_at": "2026-06-02T13:46:04Z"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
+      "status": "placed",
+      "reason": "BUY 12.0000 @ $741.50",
+      "attempted_at": "2026-06-02T13:46:04Z",
+      "alpaca_order_id": "394ce426-12d4-43cb-a846-762c659eb36e"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-02T13:01:23Z"
+      "status": "placed",
+      "reason": "BUY 23.0000 @ $414.00",
+      "attempted_at": "2026-06-02T13:46:05Z",
+      "alpaca_order_id": "1a0b74db-d362-4a2f-ba22-f18eef1db5b7"
     }
   ]
 }
