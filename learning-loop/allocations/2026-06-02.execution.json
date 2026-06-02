@@ -1,0 +1,57 @@
+{
+  "plan_date": "2026-06-02",
+  "executed_at": "2026-06-02T13:01:23Z",
+  "n_placed": 0,
+  "n_skipped": 6,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "RTX",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    },
+    {
+      "symbol": "LMT",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    },
+    {
+      "symbol": "ORCL",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    },
+    {
+      "symbol": "WDAY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-02T13:01:23Z"
+    }
+  ]
+}

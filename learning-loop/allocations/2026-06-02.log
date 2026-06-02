@@ -54,3 +54,15 @@
 [02:09:12 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
 [02:09:12 INFO] ── Step 8: plan complete ──
 [02:09:12 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:01:23 INFO] ============================================================
+[13:01:23 INFO] execute_orders() — auto-execute path
+[13:01:23 INFO] ============================================================
+[13:01:23 INFO]   market_status: open=False reason=pre_market
+[13:01:23 WARN]     RTX EXIT: skipped — market not open
+[13:01:23 WARN]     LMT EXIT: skipped — market not open
+[13:01:23 WARN]     ORCL BUY: skipped — market not open
+[13:01:23 WARN]     WDAY BUY: skipped — market not open
+[13:01:23 WARN]     QQQ BUY: skipped — market not open
+[13:01:23 WARN]     GLD BUY: skipped — market not open
+[13:01:23 INFO]   execution complete: 0 placed, 6 skipped, 0 failed
