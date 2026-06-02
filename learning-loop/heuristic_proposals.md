@@ -329,7 +329,44 @@ implements them at the right moment. Auto-surfaced in
 `scripts/session_report.py::derive_risk_flags` as `🟡` info badges so
 they appear daily until resolved.
 
-- [ ] [2026-05-30] **READINESS-1: Heartbeat module not wired into the 11 monitors** _(risk: low, effort: 1-2h, revisit: 2026-06-02 after first full v3.13.x session)_
+## v3.15 scope (queued post audit-board 2026-06-02 + v3.14.0 ship)
+
+These items remained P1/P2 after v3.14.0 closed Themes A (confidence gate
+activation + heartbeat completion) and the DOC-003 strategy doc. They will
+be addressed in the next iteration.
+
+- [ ] [2026-06-02] **STRAT-001: geo-defense empirical loss — 20 trades / 20% WR / -$44 over 7 days** _(risk: medium, effort: 30 min review + decision, revisit: after 30+ closed geo-defense trades or 2026-06-15 whichever earlier)_
+  - **Rationale:** Audit-board 02 (trading_strategy_reviewer 2026-06-02) flagged geo-defense as the only strategy with empirically poor edge in production data. v3.13.3 P1-2 mitigates (recent-loss cooldown skips BUY after 5-loss streak) but does not address underlying setup quality.
+  - **Action:** if WR stays < 35% after 30 closed trades, disable strategy in `state.json` with documented rationale OR refine signal (require stronger event scoring threshold).
+  - **Watch:** `learning-loop/history/<date>.md::strategies.geo-defense.win_rate` aggregated 14-day rolling.
+
+- [ ] [2026-06-02] **STRAT-002: 14-day observation window for crypto-oversold-bounce** _(risk: low, effort: passive, revisit: 2026-06-16)_
+  - **Rationale:** v3.13.3 relaxed entry condition (strict 1-bar reversal → 3-bar stabilization + 25% vol floor). v3.14.0 wired confidence_inputs. Strategy still has 0 lifetime trades as of 2026-06-02. Observation window: if still 0 fires by 2026-06-16 despite BTC/ETH RSI dipping below 30, classify as PIPELINE_FAILURE not no_edge → either further relax OR disable.
+  - **Watch:** `state.json::strategies.crypto-oversold-bounce.placed_lifetime` and per-session log "OVERSOLD-BOUNCE" lines from crypto-monitor.
+  - **Note:** strategy now has documentation in `strategies/crypto-oversold-bounce.md` (DOC-003 closed).
+
+- [ ] [2026-06-02] **STRAT-003: EDGE_GATE_DISABLED still default — strategies enable without backtest gate** _(risk: medium, effort: 3-4h backtest matrix + decision, revisit: 2026-06-15)_
+  - **Rationale:** Per audit-board finding STRAT-003. `learning-loop/edge_validator.py` ships v3.11 with WR≥50%/PF≥1.3/MDD<20%/n≥10 gate but operator opt-in deferred. Cross-ref READINESS-2.
+  - **Action:** run `python -m backtest.run --strategy <each> --mode both --walk-forward 3` for all 9 enabled strategies. For passing strategies, flip `EDGE_GATE_DISABLED=false` in `daily-learning.yml`. For failing, document `paused_until` in state.json with rationale.
+
+- [ ] [2026-06-02] **RISK-002: SL -5% might be too tight — 4 SL bracket hits same day on 2026-06-01** _(risk: medium, effort: 2h backtest comparison, revisit: 2026-06-15)_
+  - **Rationale:** Audit-board 03 (risk_reviewer) flagged. ORCL/WDAY/QQQ/GLD hit SL on 2026-06-01 day-of-entry → -$1,600 realized. May indicate -5% SL is inside normal intraday volatility range. Could be regime-specific (NEUTRAL regime needs wider SL than RISK_ON).
+  - **Action:** backtest `--mode both` with SL=-5% baseline vs SL=-7% variant across last 6 months on all enabled stocks. If -7% shows materially fewer SL hits + comparable WR + better P&L → migrate via `config/aggressive_profile.json::exits.stocks_etf.sl_pct`. Regime-conditional SL also worth exploring.
+
+- [ ] [2026-06-02] **SIMP-001: MonitorBase extraction — 11 monitors duplicate ~50 LOC boilerplate** _(risk: low, effort: 4-6h refactor + test migration, revisit: opportunistic — bundle with future feature touching all monitors)_
+  - **Rationale:** Audit-board 09 (simplicity_refactoring) flagged. Each monitor repeats VIX guard + drawdown_guard + concentration_ok + has_open_position + notify_signal + heartbeat ping plumbing. When pattern evolves (e.g. add confidence_inputs), 11 edit sites. Real cause of CONF-002 dormancy v3.13 → v3.14.0.
+  - **Sketch:** extract `shared/monitor_base.py::MonitorBase` with `pre_signal_gates(symbol, side, size_usd) → (ok, reason)` and `emit_signal(signal_dict)`. Add `confidence_inputs` builder hook. Each monitor inherits.
+  - **Defer:** v3.14.0 ships confidence_inputs without MonitorBase by adding inline at each monitor. Refactor opportunistically when next feature touches all 11.
+
+## v3.14.0 closed batch (2026-06-02 — audit-board Themes A + B)
+
+- [x] [2026-06-02] **CONF-002: confidence gate DORMANT in production** ✅ DONE v3.14.0 — `confidence_inputs` now populated by crypto-monitor (Phase 3 emit loop), price-monitor (`_attach_ci` in LONG/SHORT/LEVERAGED), options-monitor (inline gate in `execute_proposal`). `shared/alpaca_orders.py::place_stock_bracket/place_crypto_order/place_simple_buy` accept new param and forward to risk_officer (stocks/crypto) or inline `_confidence_gate` (options).
+- [x] [2026-06-02] **DATA-002: monitors don't emit confidence_inputs** ✅ DONE v3.14.0 — same as CONF-002 (cross-ref). New `shared/confidence_builder.py` DRY helper builds dict from common context.
+- [x] [2026-06-02] **TEST-002: no production-level integration test for confidence_inputs** ✅ DONE v3.14.0 — new `tests/test_confidence_wired_v3140.py` 13 tests including TestConfidenceBuilderDirect (4) + TestRiskOfficerHonorsConfidenceInputs (3) + TestAlpacaOrdersAcceptsConfidenceInputs (5) + TestHeartbeatExpansion (1 AST scan).
+- [x] [2026-06-02] **ARCH-001 / RUNTIME-002 / CONF-003: heartbeat partial 4/11** ✅ DONE v3.14.0 — 8 monitors wired (defense/twitter/reddit/geo/politician/options/options-exit/price). Heartbeat 11/11 EXPECTED_COMPONENTS. `score_system_health` returns true ratio.
+- [x] [2026-06-02] **DOC-003: crypto-oversold-bounce undocumented** ✅ DONE v3.14.0 — new `strategies/crypto-oversold-bounce.md` (~160 lines) with market hypothesis, entry/exit conditions, risk guards stack, empirical state, do-not-trade conditions.
+
+- [x] [2026-05-30] **READINESS-1: Heartbeat module not wired into the 11 monitors** _(closed 2026-06-02 v3.14.0 — all 11/11 monitors now ping `heartbeat.ping("<component>")` at end of __main__: v3.13.3 wired crypto/exit/incident/allocator; v3.14.0 wired defense/twitter/reddit/geo/politician/options/options-exit/price. `confidence.score_system_health` returns true ratio. New `TestHeartbeatExpansion` regression test in `tests/test_confidence_wired_v3140.py` AST-scans all 8 v3.14.0 files. Session-report risk_flags will flip 🟡→🟢 on next session run.)_
   - **Rationale:** `shared/heartbeat.py` shipped v3.12.0 as a library + tests, but no monitor calls `heartbeat.ping(name)` after a successful run yet. Result: `learning-loop/runtime_state.json::heartbeat` is empty → `confidence.score_system_health` cannot compute `components_alive` and falls back to neutral 0.5. One of 5 confidence components is "blind". System still safe (Cloudflare Worker firing + GH cron success/failure gives external pulse), but confidence-score readiness stays `partial`.
   - **When to implement:** as soon as a single full session (Mon 2026-06-01) confirms cron + monitor pipeline is healthy end-to-end. Low-risk surgical edit.
   - **Sketch:**
