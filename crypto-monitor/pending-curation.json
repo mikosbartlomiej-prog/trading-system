@@ -1,1 +1,18 @@
-{"narrative":"UNI/USD RSI 29.7 z 3× wolumenem na -2.49% 24h drawdownie to klasyczny oversold-bounce setup — kapitulacja jest, BTC 1h +0.27% wspiera, brak otwartych pozycji daje pełną pojemność. Wolumen 3× to minimum potwierdzenia, nie krzyk — rozmiar 1.0× bez boostu.","selected_signals":[{"ticker":"UNI/USD","action":"BUY","tier":2,"conviction":"medium","size_multiplier":1.0,"rationale":"RSI 29.7 po 2.49% 24h korekcie z wolumenem 3× średniej — klasyczny oversold exhaustion, nie falling knife (ruch za mały na panikatrap). BTC 1h +0.27% supportive. UNI DeFi blue-chip z v4 narrativem. Brak otwartych pozycji = zero concentration risk.","expected_horizon":"1d","key_risk":"BTC breaks below 1h open i spada -1.5%+ lub UNI traci $2.85 wsparcie przy braku wolumenowego odwrócenia — wtedy bounce się nie materializuje i SL $2.63 zostaje aktywowany."}],"rejected_signals":[],"macro_context":"BTC 1h +0.27% — neutralno-pozytywny reżim, nie altseason ale nie crash; DeFi TVL stabilne, brak major supply unlocks dla UNI w tym tygodniu, FOMC brak w kalendarzu.","confidence_in_curation":"medium"}
+{
+  "narrative": "UNI/USD RSI 29.7 na granicy strefy oversold z volume 3× avg — mean-reversion setup bez katalizatora, ale BTC +0.27% wspiera. Brak otwartych pozycji = czyste konto. Oversold-bounce thesis: szybki odszot do $3.29 jeśli selling pressure odpuści w kolejnych barach.",
+  "selected_signals": [
+    {
+      "ticker": "UNI/USD",
+      "action": "BUY",
+      "tier": 2,
+      "conviction": "medium",
+      "size_multiplier": 1.0,
+      "rationale": "RSI 29.7 poniżej progu 30, 24h move -2.49% (łagodny bleed, nie kapitulacja), volume 3.0× avg potwierdza aktywność kupujących. BTC 1h +0.27% neutralne/supportujące — brak ryzyka altseason reversal. Brak named catalyst dla UNI — czysty mean-reversion; rozmiar standardowy 1.0× bez premium za brak momentum.",
+      "expected_horizon": "1d",
+      "key_risk": "RSI może pozostać w depresji jeśli ogólna rotacja z DeFi governance tokens trwa; invalidacja poniżej $2.63 SL."
+    }
+  ],
+  "rejected_signals": [],
+  "macro_context": "BTC 1h +0.27% — reżim neutralny/lekko wspierający alts; brak sygnałów altseason; dzienne P&L konta +0.44% — system w zielonej strefie bez otwartych pozycji.",
+  "confidence_in_curation": "medium"
+}
