@@ -54,3 +54,21 @@
 [13:00:47 WARN]     CRWD BUY: skipped — market not open
 [13:00:47 WARN]     GLD BUY: skipped — market not open
 [13:00:47 INFO]   execution complete: 0 placed, 6 skipped, 0 failed
+
+[13:45:39 INFO] ============================================================
+[13:45:39 INFO] execute_orders() — auto-execute path
+[13:45:39 INFO] ============================================================
+[13:45:39 INFO]   market_status: open=True reason=open
+[13:45:39 INFO]     AMD BUY: derived qty=32 from target=$17,150 @ $525.90 (no prior position)
+[13:45:39 INFO]     AMD BUY placed: BUY 32.0000 @ $525.90  id=a8fac439-37fa-484d-8a57-fedf7bc91d31
+[13:45:39 INFO]     ORCL BUY: derived qty=55 from target=$13,101 @ $236.52 (no prior position)
+[13:45:40 INFO]     ORCL BUY placed: BUY 55.0000 @ $236.52  id=101da88e-f34c-4ed2-815b-a7cbf0803490
+[13:45:40 INFO]     PANW BUY: derived qty=45 from target=$13,101 @ $284.81 (no prior position)
+[13:45:41 INFO]     PANW BUY placed: BUY 45.0000 @ $284.81  id=ffc6f10c-d28a-4d9a-97fd-fa740b699998
+[13:45:41 INFO]     NOW BUY: derived qty=106 from target=$13,101 @ $123.35 (no prior position)
+[13:45:41 INFO]     NOW BUY placed: BUY 106.0000 @ $123.36  id=cc8879e9-00f7-44c2-9bdf-680e7c1e8cfe
+[13:45:41 INFO]     CRWD BUY: derived qty=17 from target=$13,101 @ $753.50 (no prior position)
+[13:45:42 INFO]     CRWD BUY placed: BUY 17.0000 @ $753.50  id=f866c5be-0b47-4a61-ac3c-e372c510567e
+[13:45:42 INFO]     GLD BUY: derived qty=16 from target=$6,669 @ $406.63 (no prior position)
+[13:45:42 INFO]     GLD BUY placed: BUY 16.0000 @ $406.63  id=47d81580-6f65-444c-9a55-851321c782e5
+[13:45:42 INFO]   execution complete: 6 placed, 0 skipped, 0 failed
