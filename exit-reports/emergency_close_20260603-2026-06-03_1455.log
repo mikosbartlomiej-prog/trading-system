@@ -1,0 +1,53 @@
+
+=== emergency_close_20260603 @ 2026-06-03T14:55:09Z ===
+Trigger: RED_DAY_AFTER_GREEN governor — peak $881 -> $283 (68% giveback)
+Targets: ['AMD', 'CRWD', 'GLD', 'NOW', 'ORCL', 'PANW', 'SPY']
+
+
+--- AMD ---
+  Reason: exit-profit-lock-AMD — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posit...
+  [AMD] no open orders to cancel
+  [AMD] DELETE OK -> order_id=b05acee4-556f-44fc-a768-b79d0f6b6001
+
+--- CRWD ---
+  Reason: exit-profit-lock-CRWD — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posi...
+  [CRWD] no open orders to cancel
+  [CRWD] DELETE OK -> order_id=5352eec9-ed6a-4e10-adf4-f5fb536d8a8e
+
+--- GLD ---
+  Reason: exit-profit-lock-GLD — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posit...
+  [GLD] no open orders to cancel
+  [GLD] DELETE OK -> order_id=10f8f715-2ef1-4447-b711-3574100b3630
+
+--- NOW ---
+  Reason: exit-profit-lock-NOW — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posit...
+  [NOW] no open orders to cancel
+  [NOW] DELETE OK -> order_id=7d2d3085-e0ae-4c28-863f-a90587a83f16
+
+--- ORCL ---
+  Reason: exit-profit-lock-ORCL — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posi...
+  [ORCL] no open orders to cancel
+  [ORCL] DELETE OK -> order_id=f0fd65ee-5b06-41ca-8447-7c8d033b6b2e
+
+--- PANW ---
+  Reason: exit-profit-lock-PANW — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posi...
+  [PANW] no open orders to cancel
+  [PANW] DELETE OK -> order_id=8b2877c6-25dc-4209-84ab-cc18255327cd
+
+--- SPY ---
+  Reason: exit-profit-lock-SPY — RED_DAY_AFTER_GREEN governor: peak $+881 -> current $+283 (68% giveback, threshold 50%). All intraday posit...
+  [SPY] no open orders to cancel
+  [SPY] DELETE 404 — position already closed (idempotent OK)
+
+=== SUMMARY ===
+  AMD: closed_delete  order_id=b05acee4-556f-44fc-a768-b79d0f6b6001
+  CRWD: closed_delete  order_id=5352eec9-ed6a-4e10-adf4-f5fb536d8a8e
+  GLD: closed_delete  order_id=10f8f715-2ef1-4447-b711-3574100b3630
+  NOW: closed_delete  order_id=7d2d3085-e0ae-4c28-863f-a90587a83f16
+  ORCL: closed_delete  order_id=f0fd65ee-5b06-41ca-8447-7c8d033b6b2e
+  PANW: closed_delete  order_id=8b2877c6-25dc-4209-84ab-cc18255327cd
+  SPY: already_closed  order_id=None
+
+Total: 7 targets, 0 errors
+
+MACHINE_READABLE_RESULT={"timestamp": "2026-06-03T14:55:09Z", "dry_run": false, "trigger": "RED_DAY_AFTER_GREEN", "peak_pnl_usd": 881, "current_pnl_usd": 283, "giveback_pct": 68, "failed": 0, "results": [{"symbol": "AMD", "status": "closed_delete", "order_id": "b05acee4-556f-44fc-a768-b79d0f6b6001"}, {"symbol": "CRWD", "status": "closed_delete", "order_id": "5352eec9-ed6a-4e10-adf4-f5fb536d8a8e"}, {"symbol": "GLD", "status": "closed_delete", "order_id": "10f8f715-2ef1-4447-b711-3574100b3630"}, {"symbol": "NOW", "status": "closed_delete", "order_id": "7d2d3085-e0ae-4c28-863f-a90587a83f16"}, {"symbol": "ORCL", "status": "closed_delete", "order_id": "f0fd65ee-5b06-41ca-8447-7c8d033b6b2e"}, {"symbol": "PANW", "status": "closed_delete", "order_id": "8b2877c6-25dc-4209-84ab-cc18255327cd"}, {"symbol": "SPY", "status": "already_closed", "order_id": null}]}
