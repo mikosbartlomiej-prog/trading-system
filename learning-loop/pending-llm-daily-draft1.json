@@ -1,0 +1,54 @@
+{
+  "narrative": "Dzień 2026-06-03: equity $95,279 (−$827 od startu sesji, −$3,167 od peak $98,446). Zero otwartych pozycji przy $95k kapitału — portfel bezczynny przez cały dzień, to największy problem operacyjny. BTC RSI 15.5 + ETH RSI 19.6 to dualne ekstremum: obydwa poniżej 20, czwarty dzień z rzędu poniżej RSI 25 — a crypto-oversold-bounce nadal nie odpaliło ani razu. SPY RSI 71.3 potwierdza stocks overbought i uzasadnia short-bias na options. Jedyny trade: PANW −$33.62 przez allocator-rebalance — bez znaczenia dla ogólnego obrazu; problem leży w pipeline, nie w parametrach.",
+  "regime_assessment": "trending_up",
+  "edge_assessment": "Edge niemożliwy do oceny przy 1 transakcji (−$33.62). SPY overbought (RSI 71.3) = short-bias options uzasadniony empirycznie. BTC/ETH na historycznych dołkach RSI (15.5 / 19.6) = jedyna wyraźna okazja long, ale pipeline nie skorzystał przez 4+ dni z rzędu — to jest strukturalny problem wymagający natychmiastowej diagnostyki.",
+  "state_overrides": {
+    "strategies": {
+      "geo-defense": {
+        "size_multiplier": 1.0,
+        "enabled": true,
+        "rationale": "Override adapter cooldown 0.64→1.0: by_strategy.geo-defense.trades_7d=0 i trades_lifetime=0 — 'win-rate 20%' na którym adapter bazował to artefakt z <2 częściowo zrekonstruowanych transakcji (fill_rate: 2 placed/2 filled = pipeline działa). Cooldown bez empirycznej podstawy to błąd adaptacyjny; przywracam baseline 1.0×. Adapter powinien reagować na dane, nie na noise z rekonstrukcji."
+      },
+      "crypto-oversold-bounce": {
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "BTC RSI=15.5 + ETH RSI=19.6 = dualne ekstremum wyprzedaży. Strategia ma 0 fires przy aktywnym setupie przez 4+ dni — likely bloker to 1-bar reversal gate (cena wciąż spada). Boost 1.0→1.5× zapewnia właściwy sizing kiedy reversal wreszcie nastąpi. Nie czekamy na dane — extreme RSI <20 to zbyt rzadki event żeby wchodzić z default 1.0×."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": "short"
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Extreme dual-crypto oversold boost: BTC<20 AND ETH<25 → crypto-oversold-bounce 1.8×",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "BTC RSI 15.5 + ETH RSI 19.6 on 2026-06-03 = simultaneous extreme oversold not captured by existing PR #8/PR #9 (those trigger at BTC<45 / ETH<30 for crypto-momentum). A dedicated function for the BTC<20 + ETH<25 combination ensures crypto-oversold-bounce gets max sizing (1.8×) precisely when mean-reversion probability is historically highest. Current gap: today qualifies for the boost but no code fires it.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_extreme_dual_crypto_oversold(today_stats: dict) -> tuple:\n    \"\"\"Boost crypto-oversold-bounce to 1.8x when BTC RSI < 20 AND ETH RSI < 25 simultaneously.\"\"\"\n    rsi = today_stats.get(\"rsi_snapshot\", {})\n    btc_today = rsi.get(\"BTC/USD\", {}).get(\"today\", 50)\n    eth_today = rsi.get(\"ETH/USD\", {}).get(\"today\", 50)\n    if btc_today < 20 and eth_today < 25:\n        return True, 1.8, f\"BTC RSI={btc_today:.1f} AND ETH RSI={eth_today:.1f} — extreme dual oversold, high-probability bounce\"\n    return False, 1.0, \"\"",
+      "test_addition": "class TestExtremeDualCryptoOversold(unittest.TestCase):\n    def test_fires_when_both_extreme(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 15.5}, \"ETH/USD\": {\"today\": 19.6}}}\n        fired, mult, reason = heuristic_extreme_dual_crypto_oversold(stats)\n        self.assertTrue(fired)\n        self.assertAlmostEqual(mult, 1.8)\n        self.assertIn(\"extreme dual oversold\", reason)\n    def test_no_fire_btc_above_threshold(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 21.0}, \"ETH/USD\": {\"today\": 19.0}}}\n        fired, _, _ = heuristic_extreme_dual_crypto_oversold(stats)\n        self.assertFalse(fired)\n    def test_no_fire_eth_above_threshold(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 15.0}, \"ETH/USD\": {\"today\": 27.0}}}\n        fired, _, _ = heuristic_extreme_dual_crypto_oversold(stats)\n        self.assertFalse(fired)\n    def test_missing_rsi_safe(self):\n        fired, mult, _ = heuristic_extreme_dual_crypto_oversold({})\n        self.assertFalse(fired)\n        self.assertAlmostEqual(mult, 1.0)",
+      "wire_into_adapt_strategy": "After heuristic_crypto_deep_oversold_boost check, before win-rate thresholds — apply to crypto-oversold-bounce strategy only: if fired, set cfg['size_multiplier'] = min(max(cfg.get('size_multiplier', 1.0), mult), 2.0)"
+    },
+    {
+      "title": "Geo-gold limit price fix — switch to ask+0.1% to cure persistent 33% fill rate",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "geo-gold fill_rate=33% (2 of 3 canceled, avg cancel 41 min) flagged identycznie przez 3 kolejne dni (2026-06-01/02/03). Pattern deterministyczny: limit BUY na GLD priced at mid/bid, market moves away, cancel o 41 min. Switching to ask+0.1% gwarantuje marketable limit przy entry.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-05",
+      "implementation_sketch": "1. geo-monitor/monitor.py: execute_geo_signal() — find get_latest_quote() call. 2. Zmiana: entry_price = quote['ask'] * 1.001 dla BUY side (było quote['mid'] lub quote['bid']). 3. SL i TP jako % od entry_price — bez zmian. 4. Test z mock quote (bid=418.0, ask=418.50): expect limit=418.92. 5. Opcjonalnie: dodaj 'entry_buffer_pct': 0.001 do GEO_SIGNAL_CONFIG jako configurable param."
+    },
+    {
+      "title": "Debug crypto-oversold-bounce pipeline — 0 fires przy BTC RSI 15.5 przez 4 dni",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "crypto-oversold-bounce enabled od 2026-05-30, 0 fires lifetime przy BTC RSI 15.5 dzisiaj (ekstremalne dno). Bloker to prawdopodobnie 1-bar reversal gate (closes[-1] > closes[-2]) — jeśli BTC wciąż spada, ta warunek nigdy nie jest spełniony podczas kapitulacji. Strategia ma martwą strefę podczas najtrudniejszych (i najlepszych) setup-ów.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-04",
+      "implementation_sketch": "1. Dodaj debug logging do crypto-monitor scan loop: print powód odrzucenia każdego oversold candidate. 2. Jeśli reversal gate blokuje: rozważ bypass przy RSI<18 (unconditional entry na extreme capitulation). 3. Alternatywa: zmień 1-bar reversal na 2-of-3 bars stabilization (closes[-1] > closes[-3]) — mniej restrykcyjne. 4. Volume gate: sprawdź czy >=25% avg 20d jest spełnione w trakcie sell-off (może być <25%). Jeśli tak, zmniejsz floor do 15% przy RSI<20. 5. Target: przynajmniej 1 trade w trakcie obecnego BTC oversold cycle."
+    }
+  ],
+  "confidence": "medium"
+}
