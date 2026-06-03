@@ -1,18 +1,1 @@
-{
-  "narrative": "UNI/USD RSI 29.7 z łagodnym -2.49% 24h — klasyczny oversold-bounce: brak paniki, brak kapitulacji, BTC +0.27% 1h stabilizuje rynek. Portfel czysty, zero koncentracji — idealne warunki na małą kontrariańską pozycję mean-reversion.",
-  "selected_signals": [
-    {
-      "ticker": "UNI/USD",
-      "action": "BUY",
-      "tier": 2,
-      "conviction": "medium",
-      "size_multiplier": 1.0,
-      "rationale": "RSI 29.7 (głęboko oversold), 24h move -2.49% (łagodne osuwanie, nie kapitulacja), volume 3× avg potwierdza aktywność przy niskich cenach, BTC 1h +0.27% — rynek krypto stabilny. Strategia oversold-bounce: nie wymaga named catalyst, wymaga stabilizacji po wyprzedaniu — monitor przeszedł 3-bar check. Brak otwartych pozycji eliminuje ryzyko koncentracji.",
-      "expected_horizon": "1d",
-      "key_risk": "UNI governance token bez konkretnego katalizatora DeFi może kontynuować powolny downtrend — RSI może utknąć w strefie 25-35 tygodniami bez odbicia; invalidation przy przełamaniu $2.85 bez odbicia w ciągu 4h."
-    }
-  ],
-  "rejected_signals": [],
-  "macro_context": "BTC 1h +0.27% — rynek krypto neutralnie pozytywny; post-halving ekspansja w toku, DeFi governance tokeny (UNI/AAVE) historycznie odbijają przy rotacji kapitału z BTC na alts; brak sygnału dominance -3% — alt long dozwolony.",
-  "confidence_in_curation": "medium"
-}
+{"narrative":"UNI/USD RSI 29.7 = statystyczne dno na tle 3× vol i spokojnego BTC 1h +0.27% — oversold-bounce setup jest ważny, ale UNI w wielotygodniowym downtrend więc odbicia są krótkie; emituję z 0.5× size jako ochronny sizing na mean-reversion, nie trendfollowing.","selected_signals":[{"ticker":"UNI/USD","action":"BUY","tier":2,"conviction":"medium","size_multiplier":0.5,"rationale":"RSI 29.7 głęboki oversold + vol 3× avg potwierdza wyczerpanie sprzedających + BTC 1h +0.27% neutralnie wspiera; 24h move -2.49% = spokojne zejście bez paniki, nie late-dump. Mean-reversion do $3.15-3.28 realistyczne w 12-24h. UNI brak specyficznego katalizatora dziś — pure stat edge.","expected_horizon":"1d","key_risk":"BTC przebija $105k support lub rotuje w dół >1% w 1h — UNI beta ~1.2× skasuje bounce natychmiast; też Alpaca paper spread 0.5-1% na UNI zjada część TP."}],"rejected_signals":[],"macro_context":"BTC 1h +0.27% neutralnie supportywny, brak altseason sygnału (0 alt open positions = system sam filtrował), no major macro driver today (post-FOMC).","confidence_in_curation":"medium"}
