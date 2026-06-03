@@ -1,5 +1,5 @@
 {
-  "narrative": "UNI/USD RSI 29.7 — statystycznie głęboko wyprzedana, BTC 1h +0.27% wspierający, konto czyste. Setup oversold-bounce (v3.13.3 3-bar stabilization logic). R:R 0.82 poniżej 1.0 i brak named catalyst obniżają conviction do medium; 0.5× size jako zabezpieczenie przed niekorzystną asymetrią.",
+  "narrative": "UNI/USD RSI 29.7 — statystycznie głęboko wyprzedana, BTC 1h +0.27% wspierający, konto czyste (0 pozycji). Oversold-bounce v3.13.3: vol 3× potwierdza stopniową kapitulację bez paniki. R:R 0.82 (TP +9.9% / SL -12.1%) niekorzystny bez named catalyst — 0.5× jako zabezpieczenie przed asymetrią.",
   "selected_signals": [
     {
       "ticker": "UNI/USD",
@@ -7,12 +7,12 @@
       "tier": 2,
       "conviction": "medium",
       "size_multiplier": 0.5,
-      "rationale": "RSI 29.7 potwierdza statystyczne dno wyprzedania (próg strategii ≤30). Ruch 24h -2.49% przy vol 3× sugeruje stopniową kapitulację — v3.13.3 relaxed 3-bar stabilization bar logic. BTC 1h +0.27% neutralny/wspierający. Konto czyste (0 pozycji, 0% concentration risk, equity $95.6k). R:R 0.82 (TP +9.9% / SL -12.1%) niekorzystny bez catalyst — stąd 0.5× zamiast full size.",
+      "rationale": "RSI 29.7 ≤ 30 spełnia próg oversold-bounce. Ruch 24h -2.49% przy vol 3× sugeruje stopniową kapitulację (nie crash) — warunki v3.13.3 3-bar stabilization spełnione. BTC 1h +0.27% neutralny/wspierający. Konto czyste (equity $95,661, 0 pozycji). R:R < 1.0 i brak named catalyst (governance vote, CCIP, DeFi event) obniżają conviction — 0.5× size.",
       "expected_horizon": "1d",
-      "key_risk": "R:R < 1.0 i brak named catalyst (żaden DeFi event, CCIP, governance vote) — kontynuacja downtrend możliwa jeśli BTC odwróci lub szersza alt rotacja nie nastąpi."
+      "key_risk": "R:R 0.82 bez catalyst — kontynuacja downtrend możliwa jeśli BTC odwróci lub alt rotation nie nastąpi w oknie 24h."
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC 1h +0.27% — reżim neutralny/lekko wspierający dla altów; konto z 0 otwartymi pozycjami pozwala na deployment bez concentration risk; daily P&L +0.44% pozytywny.",
+  "macro_context": "BTC 1h +0.27% — reżim neutralny/wspierający; 0 otwartych pozycji umożliwia deployment bez concentration risk; daily P&L +0.44% pozytywny.",
   "confidence_in_curation": "medium"
 }
