@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-03T06:50:39.897090+00:00",
+      "last_seen_iso": "2026-06-03T06:50:59.390725+00:00",
       "last_status": "ok",
-      "pings_today": 82
+      "pings_today": 83
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -46,7 +46,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-03T06:50:39.630575+00:00",
+    "last_update_at": "2026-06-03T06:50:59.239718+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-03T00:00:35.379474+00:00",
@@ -120,7 +120,7 @@
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
       "last_pct": 0.00641,
-      "last_seen_at": "2026-06-03T06:50:39.631504+00:00",
+      "last_seen_at": "2026-06-03T06:50:59.240548+00:00",
       "peak_pct": 0.01044
     },
     "RTX": {
@@ -144,7 +144,7 @@
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
       "last_pct": 0.00345,
-      "last_seen_at": "2026-06-03T06:50:39.743680+00:00",
+      "last_seen_at": "2026-06-03T06:50:59.319458+00:00",
       "peak_pct": 0.00756
     },
     "TSLA": {
