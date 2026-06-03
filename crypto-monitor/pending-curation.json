@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 29.7 to głęboki oversold, ale 24h move -2.49% oznacza kontynuację sprzedaży — brak wymaganego 1-bar reversal (closes[-1] > closes[-2]). R:R 0.82:1 (TP +9.9% vs SL -12.1%) jest poniżej minimum predatora; wolumen 3× to próg, nie sygnał kapitulacji; zero named katalizatora DeFi dla UNI (bez Uniswap v4, bez fee-switch vote, bez DeFi TVL spike). Predator odpuszcza — setup wymaga potwierdzenia odwrócenia, a nie wchodzenia w falling knife.",
+  "narrative": "UNI/USD RSI 29.7 spełnia próg technicznie, ale 24h move -2.49% = sprzedaż kontynuowana bez 1-bar reversal confirmation. R:R 0.82:1 (TP +9.9% vs SL -12.1%) jest poniżej 1:1 minimum przy strategii crypto-oversold-bounce z 0 lifetime fires produkcyjnych — predator nie waliduje sub-1:1 R:R na niezweryfikowanej strategii. Odpuszczam.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej 1:1 — predator nie wchodzi na sub-1:1 R:R bez udowodnionej strategii (crypto-oversold-bounce: 0 lifetime fires); 24h move -2.49% = sprzedaż trwa bez 1-bar reversal confirmation; wolumen 3× = minimum, nie wyczerpanie podaży; brak named katalizatora DeFi dla UNI."
+      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) sub-1:1 na strategii crypto-oversold-bounce z 0 potwierdzonych fills produkcyjnych; 24h move -2.49% = trwająca sprzedaż bez widocznego 1-bar reversal (closes[-1] > closes[-2]); vol 3× = próg minimum, nie sygnał wyczerpania podaży; zero named katalizatora DeFi/Uniswap v4 dzisiaj."
     }
   ],
-  "macro_context": "BTC 1h +0.27% neutralny, altseason nieaktywny; UNI strukturalnie słabe bez krótkoterminowego triggera DeFi — falling knife bez sygnału dna.",
+  "macro_context": "BTC 1h +0.27% lekko pozytywny — neutralne tło; brak rotacji altseason; UNI bez short-term DeFi triggera — falling knife bez potwierdzenia dna.",
   "confidence_in_curation": "high"
 }
