@@ -668,3 +668,9 @@
 - 2026-06-02 · rsi-alert [oversold]: BTC/USD RSI=18.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-06-02 · rsi-alert [oversold]: ETH/USD RSI=22.4 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-06-03 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-03 · crypto-momentum: SILENT 54d but LLM override 2026-05-30 active (4d ago < 14d lock) → keep enabled
+- 2026-06-03 · fill-rate alert [geo-gold]: fill rate 33% below 50% on closed orders (2 canceled / 3 closed, 0 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-03 · rsi-alert [oversold]: BTC/USD RSI=15.5 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-06-03 · rsi-alert [oversold]: ETH/USD RSI=19.6 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
