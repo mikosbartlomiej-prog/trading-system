@@ -1,12 +1,12 @@
 {
-  "narrative": "UNI/USD na RSI 29.7 to prawdziwe oversold, ale brak potwierdzenia odwrócenia — 24h move -2.49% oznacza kontynuację sprzedaży, nie wyczerpanie podaży. R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej progu predatora; wolumen 3× to minimum, nie sygnał kapitulacji; brak named katalizatora DeFi. Predator odpuszcza — czekamy na 1-bar reversal + vol 4×+.",
+  "narrative": "UNI/USD RSI 29.7 to głęboki oversold, ale 24h move -2.49% oznacza kontynuację sprzedaży — brak wymaganego 1-bar reversal (closes[-1] > closes[-2]). R:R 0.82:1 (TP +9.9% vs SL -12.1%) jest poniżej minimum predatora; wolumen 3× to próg, nie sygnał kapitulacji; zero named katalizatora DeFi dla UNI (bez Uniswap v4, bez fee-switch vote, bez DeFi TVL spike). Predator odpuszcza — setup wymaga potwierdzenia odwrócenia, a nie wchodzenia w falling knife.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej 1:1 — predator nie wchodzi na sub-1:1 R:R bez udowodnionej strategii (crypto-oversold-bounce: 0 lifetime fires); 24h move -2.49% = brak 1-bar reversal confirmation, sprzedaż trwa; wolumen 3× = minimum, nie wyczerpanie podaży; brak named katalizatora DeFi dla UNI (bez Uniswap v4 newsa, bez fee switch triggera, bez DeFi TVL spike)."
+      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej 1:1 — predator nie wchodzi na sub-1:1 R:R bez udowodnionej strategii (crypto-oversold-bounce: 0 lifetime fires); 24h move -2.49% = sprzedaż trwa bez 1-bar reversal confirmation; wolumen 3× = minimum, nie wyczerpanie podaży; brak named katalizatora DeFi dla UNI."
     }
   ],
-  "macro_context": "BTC dominacja stabilna, 1h +0.27% neutralna — altseason nieaktywny, DeFi blue-chips bez momentum; UNI strukturalnie słabe względem ETH bez short-term triggera.",
+  "macro_context": "BTC 1h +0.27% neutralny, altseason nieaktywny; UNI strukturalnie słabe bez krótkoterminowego triggera DeFi — falling knife bez sygnału dna.",
   "confidence_in_curation": "high"
 }
