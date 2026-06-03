@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-03T04:55:36.664416+00:00",
+      "last_seen_iso": "2026-06-03T05:00:40.816148+00:00",
       "last_status": "ok",
-      "pings_today": 59
+      "pings_today": 60
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -36,17 +36,17 @@
     "account_unavailable": false,
     "alerts_sent": {},
     "block_new_entries": false,
-    "current_equity": 95287.53,
-    "current_intraday_pnl": -818.515405933169,
-    "current_intraday_pnl_pct": -0.008516794156662255,
+    "current_equity": 95281.65,
+    "current_intraday_pnl": -824.3954059331736,
+    "current_intraday_pnl_pct": -0.00857797657214058,
     "date": "2026-06-03",
     "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 818.515405933169,
+    "giveback_usd": 824.3954059331736,
     "intraday_peak_equity": 96106.04540593317,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-06-03T04:55:36.268917+00:00",
+    "last_update_at": "2026-06-03T05:00:40.129681+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-03T00:00:35.379474+00:00",
@@ -119,8 +119,8 @@
     },
     "QQQ": {
       "first_seen_at": "2026-05-15T14:50:46.733960+00:00",
-      "last_pct": 0.00691,
-      "last_seen_at": "2026-06-03T04:55:36.269868+00:00",
+      "last_pct": 0.0063,
+      "last_seen_at": "2026-06-03T05:00:40.130629+00:00",
       "peak_pct": 0.01044
     },
     "RTX": {
@@ -143,8 +143,8 @@
     },
     "SPY": {
       "first_seen_at": "2026-05-15T14:50:46.734914+00:00",
-      "last_pct": 0.00409,
-      "last_seen_at": "2026-06-03T04:55:36.466649+00:00",
+      "last_pct": 0.00404,
+      "last_seen_at": "2026-06-03T05:00:40.378947+00:00",
       "peak_pct": 0.00756
     },
     "TSLA": {
