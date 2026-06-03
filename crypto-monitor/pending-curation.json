@@ -1,18 +1,12 @@
 {
-  "narrative": "UNI/USD RSI 29.7 — statystycznie głęboko wyprzedana, BTC 1h +0.27% wspierający, konto czyste (0 pozycji). Oversold-bounce v3.13.3: vol 3× potwierdza stopniową kapitulację bez paniki. R:R 0.82 (TP +9.9% / SL -12.1%) niekorzystny bez named catalyst — 0.5× jako zabezpieczenie przed asymetrią.",
-  "selected_signals": [
+  "narrative": "UNI/USD na RSI 29.7 to prawdziwe oversold, ale brak potwierdzenia odwrócenia — 24h move -2.49% oznacza kontynuację sprzedaży, nie wyczerpanie podaży. R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej progu predatora; wolumen 3× to minimum, nie sygnał kapitulacji; brak named katalizatora DeFi. Predator odpuszcza — czekamy na 1-bar reversal + vol 4×+.",
+  "selected_signals": [],
+  "rejected_signals": [
     {
       "ticker": "UNI/USD",
-      "action": "BUY",
-      "tier": 2,
-      "conviction": "medium",
-      "size_multiplier": 0.5,
-      "rationale": "RSI 29.7 ≤ 30 spełnia próg oversold-bounce. Ruch 24h -2.49% przy vol 3× sugeruje stopniową kapitulację (nie crash) — warunki v3.13.3 3-bar stabilization spełnione. BTC 1h +0.27% neutralny/wspierający. Konto czyste (equity $95,661, 0 pozycji). R:R < 1.0 i brak named catalyst (governance vote, CCIP, DeFi event) obniżają conviction — 0.5× size.",
-      "expected_horizon": "1d",
-      "key_risk": "R:R 0.82 bez catalyst — kontynuacja downtrend możliwa jeśli BTC odwróci lub alt rotation nie nastąpi w oknie 24h."
+      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) poniżej 1:1 — predator nie wchodzi na sub-1:1 R:R bez udowodnionej strategii (crypto-oversold-bounce: 0 lifetime fires); 24h move -2.49% = brak 1-bar reversal confirmation, sprzedaż trwa; wolumen 3× = minimum, nie wyczerpanie podaży; brak named katalizatora DeFi dla UNI (bez Uniswap v4 newsa, bez fee switch triggera, bez DeFi TVL spike)."
     }
   ],
-  "rejected_signals": [],
-  "macro_context": "BTC 1h +0.27% — reżim neutralny/wspierający; 0 otwartych pozycji umożliwia deployment bez concentration risk; daily P&L +0.44% pozytywny.",
-  "confidence_in_curation": "medium"
+  "macro_context": "BTC dominacja stabilna, 1h +0.27% neutralna — altseason nieaktywny, DeFi blue-chips bez momentum; UNI strukturalnie słabe względem ETH bez short-term triggera.",
+  "confidence_in_curation": "high"
 }
