@@ -1,18 +1,18 @@
 {
-  "narrative": "UNI/USD RSI 29.7 na granicy strefy oversold z volume 3× avg — mean-reversion setup bez katalizatora, ale BTC +0.27% wspiera. Brak otwartych pozycji = czyste konto. Oversold-bounce thesis: szybki odszot do $3.29 jeśli selling pressure odpuści w kolejnych barach.",
+  "narrative": "UNI/USD RSI 29.7 deep oversold na 3× wolumenie z BTC 1h +0.27% supportywnym — klasyczny mean-reversion setup bez named catalyst. DeFi governance token bez fee-sharing nie ma dziś silnego katalizatora wzrostu, więc sizing 0.5×; wchodzę na stabilizację RSI, nie na breakout.",
   "selected_signals": [
     {
       "ticker": "UNI/USD",
       "action": "BUY",
       "tier": 2,
       "conviction": "medium",
-      "size_multiplier": 1.0,
-      "rationale": "RSI 29.7 poniżej progu 30, 24h move -2.49% (łagodny bleed, nie kapitulacja), volume 3.0× avg potwierdza aktywność kupujących. BTC 1h +0.27% neutralne/supportujące — brak ryzyka altseason reversal. Brak named catalyst dla UNI — czysty mean-reversion; rozmiar standardowy 1.0× bez premium za brak momentum.",
+      "size_multiplier": 0.5,
+      "rationale": "RSI 29.7 przy 24h move -2.49% (spokojny drawdown, nie crash-panika) + BTC 1h +0.27% supportywne + vol 3× avg — warunki crypto-oversold-bounce spełnione. Brak named catalyst dla UNI (pure governance token, brak fee-sharing, DeFi TVL bez wyraźnego impulsu) → sizing 0.5×. SL $2.63 (-12%), TP $3.29 (+10%).",
       "expected_horizon": "1d",
-      "key_risk": "RSI może pozostać w depresji jeśli ogólna rotacja z DeFi governance tokens trwa; invalidacja poniżej $2.63 SL."
+      "key_risk": "Brak DeFi catalyst — jeśli BTC przebije 1h -1% lub UNI nie utrzyma $2.85 po wejściu, RSI może kontynuować w kierunku 20; SL -12% aktywny na $2.63."
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC 1h +0.27% — reżim neutralny/lekko wspierający alts; brak sygnałów altseason; dzienne P&L konta +0.44% — system w zielonej strefie bez otwartych pozycji.",
+  "macro_context": "BTC 1h +0.27% neutralnie pozytywny — altseason bez silnego sygnału; konto 0 otwartych pozycji, daily P&L +0.44%, czysta przestrzeń koncentracyjna.",
   "confidence_in_curation": "medium"
 }
