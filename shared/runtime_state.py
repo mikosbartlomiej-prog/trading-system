@@ -124,4 +124,10 @@ INTRADAY_SECTIONS = frozenset({
     # warnings (gap, low volume, fake move) that can ONLY LOWER confidence
     # (max +0.05 boost, max -0.10 penalty). Never places trades.
     "pre_open_plan",
+    # v3.21.0 (2026-06-04) — Evidence Budget (ETAP 9)
+    # Daily + per-run counters for shadow obs / variant evaluations /
+    # counterfactual sweeps / workflow runtime / report size. Safety
+    # actions bypass the budget (BUDGET_BYPASSES_SAFETY = True).
+    # Writer = "evidence-budget".
+    "evidence_budget",
 })
