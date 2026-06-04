@@ -682,3 +682,16 @@
 - 2026-06-03 · rsi-alert [oversold]: ETH/USD RSI=17.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-06-03 · peak-tracker: intraday: peak $+881 at 269+00:0 current $+416 giveback 53% state=RED_DAY_AFTER_GREEN max_gross=0.25 BLOCK_ENTRIES
 
+- 2026-06-04 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-04 · crypto-momentum: SILENT 56d but LLM override 2026-05-30 active (5d ago < 14d lock) → keep enabled
+- 2026-06-04 · geo-defense: SILENT 56d but LLM override 2026-05-30 active (5d ago < 14d lock) → keep enabled
+- 2026-06-04 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 56d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-04 · geo-gold: SILENT 56d with 3 placement attempts — insufficient sample for prune (need ≥5). v3.11.1 keeps enabled.
+- 2026-06-04 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 56d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-04 · options-momentum: SILENT 56d but LLM override 2026-05-30 active (5d ago < 14d lock) → keep enabled
+- 2026-06-04 · crypto-oversold-bounce: SILENT 56d but LLM override 2026-05-30 active (5d ago < 14d lock) → keep enabled
+- 2026-06-04 · fill-rate alert [geo-gold]: fill rate 33% below 50% on closed orders (2 canceled / 3 closed, 0 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-04 · fill-rate alert [unknown]: fill rate 41% below 50% on closed orders (10 canceled / 17 closed, 0 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-04 · rsi-alert [oversold]: BTC/USD RSI=13.5 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+- 2026-06-04 · rsi-alert [oversold]: ETH/USD RSI=17.1 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
+
