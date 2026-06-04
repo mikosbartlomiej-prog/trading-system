@@ -1,31 +1,36 @@
-# Backtesting Strategy Coverage (v3.15.0)
+# Backtesting Strategy Coverage (v3.17.0 — 2026-06-04)
 
 **Modules:**
-- `backtest/run.py` (walk-forward harness)
-- `backtest/strategies.py` (signal functions)
-- `backtest/strategy_registry.py` (NEW v3.15.0)
+- `backtest/run.py` (walk-forward + crypto-hourly + event-driven harness)
+- `backtest/strategies.py` (signal functions — bar-driven)
+- `backtest/crypto_data.py` (v3.16.0 hourly Alpaca v1beta3 fetcher)
+- `backtest/event_data.py` + `event_replay.py` + `event_strategies.py` (v3.16.0 GDELT MVP)
+- `backtest/strategy_registry.py` (registry with readiness levels)
 - `backtest/realism.py` (slippage + gap)
 
 **Audit-board feedback closed:** FB-005
-**Status:** registry shipped; coverage gap documented honestly
+**Drift guarded by:** `tests/test_strategy_registry_drift_v3170.py` — enforces
+that every strategy in `learning-loop/state.json::strategies` has a REGISTRY
+entry. Test runs in CI; flips red if operator adds/removes a strategy
+without keeping registry honest.
 
-## Honest coverage snapshot
+## Honest coverage snapshot (post v3.16.0 + v3.17.0)
 
-| Strategy | Live? | Backtest-ready? | Why |
+| Strategy | Live? | Readiness | Why |
 |---|---|---|---|
-| momentum-long | ✅ | ✅ HAS_SIGNAL | Walk-forward ready |
+| momentum-long | ✅ price-monitor | ✅ HAS_SIGNAL | Walk-forward ready |
 | momentum-long-loose | research | ✅ HAS_SIGNAL | Research-only variant |
-| overbought-short | disabled | ✅ HAS_SIGNAL | Backtested → showed -$2,065 11% WR; disabled live |
-| crypto-momentum | ✅ | ⚠ INTERFACE | Live; needs hourly crypto-bar fetcher in harness |
-| crypto-oversold-bounce | ✅ | ⚠ INTERFACE | Live (v3.13.3 relaxation); needs same hourly harness |
-| crypto-breakdown | n/a | n/a NOT_APPLICABLE | Alpaca paper crypto LONG-only |
-| geo-defense | ✅ | ⚠ EVENT_DRIVEN | Needs historical news replay |
-| geo-energy | ✅ | ⚠ EVENT_DRIVEN | Same |
-| geo-gold | ✅ | ⚠ EVENT_DRIVEN | Same |
-| geo-xom | disabled | n/a NOT_APPLICABLE | Deprecated routine path |
-| options-momentum | ✅ | ⚠ INTERFACE | Requires historical option chain (paid data; no free path) |
-| allocator-rebalance | ✅ | n/a NOT_APPLICABLE | Portfolio sim, not signal replay |
-| alloc-exit / alloc-reduce | admin | n/a NOT_APPLICABLE | Administrative tags |
+| overbought-short | disabled in state.json | ✅ HAS_SIGNAL | Backtested 2026-05-08 → -$2,065 / 11% WR; disabled live |
+| crypto-momentum | ✅ crypto-monitor | ✅ HAS_SIGNAL (v3.16.0) | Hourly Alpaca v1beta3 harness shipped |
+| crypto-oversold-bounce | ✅ crypto-monitor | ✅ HAS_SIGNAL (v3.16.0) | Same hourly harness |
+| crypto-breakdown | disabled (structural) | n/a NOT_APPLICABLE | Alpaca paper crypto LONG-only |
+| geo-defense | ✅ geo-monitor | ⚠ MVP_IN_PROGRESS (v3.16.0) | GDELT replay shipped; results ADVISORY until n≥50 |
+| geo-energy | ✅ geo-monitor | ⚠ MVP_IN_PROGRESS (v3.16.0) | Same |
+| geo-gold | ✅ geo-monitor | ⚠ MVP_IN_PROGRESS (v3.16.0) | Same |
+| geo-xom | enabled tag but deprecated routine path | EVENT_DRIVEN | Defunct; shares classifier with geo-energy |
+| options-momentum | ✅ options-monitor | ⚠ INTERFACE | Requires historical option chain (paid data; no free path). Operator decision deferred. |
+| allocator-rebalance | ✅ morning-allocator | n/a NOT_APPLICABLE | Portfolio sim, not signal replay |
+| alloc-exit / alloc-reduce | admin emission tags | n/a NOT_APPLICABLE | Administrative tags |
 
 ## What HAS_SIGNAL means
 

@@ -87,6 +87,12 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # Commits audit JSONL of buy-to-cover decision. Can be deleted after
     # successful run (kept for historical traceability).
     "cover-now-short-20260528.yml",
+    # v3.16.0 (2026-06-04) — doj-monitor commits its dedupe state
+    # (doj-monitor/state.json) + runtime_state.json (heartbeat + routine_budget).
+    # SEC 8-K + DOJ RSS emit-only monitor (FB-008 Option B). Cron 0 */2 24/7.
+    # Allowed write scope = ONLY doj-monitor/state.json + learning-loop/
+    # runtime_state.json (enforced by workflow's explicit `git add` lines).
+    "doj-monitor.yml",
 }
 
 # Workflows allowed to create PRs.
