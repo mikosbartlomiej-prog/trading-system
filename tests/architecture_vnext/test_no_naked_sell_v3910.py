@@ -45,6 +45,12 @@ ALLOWED_FILES = {
     # prefix "options-momentum-" — never closes positions. CLOSE for
     # options goes through options-exit-monitor which uses safe_close.
     "options-monitor/monitor.py",
+    # v3.21 broker_paper_adapter: hardened paper-only wrapper. Hard-asserts
+    # paper URL (ADAPTER_PAPER_ONLY=True), requires idempotency_key,
+    # MAX_ORDER_NOTIONAL_USD=100, gated behind ALLOW_BROKER_PAPER env flag,
+    # default dry-run. Submits its own paper orders by design — does NOT
+    # close positions through the system's normal exit paths.
+    "shared/broker_paper_adapter.py",
 }
 
 # DELETE /v2/positions is SAFE — Alpaca refuses to over-sell or create shorts
