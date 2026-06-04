@@ -97,6 +97,27 @@ def risk_profile() -> RiskProfile:
     return "BALANCED_PAPER"
 
 
+def active_universe() -> str:
+    """v3.18.0 (2026-06-04) — Active market universe identifier.
+
+    Read from ACTIVE_UNIVERSE env var. Default `US_LARGE` matches the existing
+    setup (Alpaca paper, US large-cap + ETF buckets). Other valid values:
+    `CRYPTO`, `US_MICROCAP`, `PL_GPW`, `CUSTOM`. Misconfigured value falls
+    back to `US_LARGE` so a typo doesn't accidentally route to a disabled
+    universe.
+
+    The pre-trade dispatch path (shared/allocator.py::_execute_one) calls
+    `universe_selector.is_paper_ready(active_universe())` BEFORE submitting
+    any order. If False → audit emit + skip with reason
+    `universe_not_paper_ready`.
+    """
+    raw = (os.environ.get("ACTIVE_UNIVERSE") or "US_LARGE").strip().upper()
+    valid = {"US_LARGE", "US_MICROCAP", "PL_GPW", "CRYPTO", "CUSTOM"}
+    if raw in valid:
+        return raw
+    return "US_LARGE"
+
+
 # ─── Profile-driven limits (used by portfolio_risk.py) ────────────────────────
 #
 # Numbers chosen to be free-tier safe, paper-friendly, and explicit. SAFE_FREE

@@ -54,6 +54,9 @@ RUNTIME_STATE_ACTORS: frozenset[str] = frozenset({
     "heartbeat",          # shared/heartbeat.py writes heartbeat section
     "confidence",         # shared/confidence.py writes confidence_history
     "session-reporter",   # scripts/session_report.py may emit snapshots
+    # v3.18.0 (2026-06-04) — pre-open session planner
+    "pre-open-planner",   # scripts/pre_open_session_planner.py writes pre_open_plan
+    "pre-open-planner-test",  # unit-test variant
     "test",
     "local-dev",
 })

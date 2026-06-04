@@ -885,6 +885,53 @@ class AccountAwareAllocator:
         is_crypto = "/" in sym
         ic_asset = "crypto" if is_crypto else asset_class
 
+        # v3.18.0 (2026-06-04) — Universe-readiness gate.
+        # BUY only (REDUCE/EXIT may need to close stale positions even after
+        # an operator universe flip). Crypto routes to CRYPTO universe;
+        # everything else to active universe. Fail-soft.
+        if action == ORDER_BUY:
+            try:
+                try:
+                    from runtime_config import active_universe as _au
+                    from universe_selector import is_paper_ready as _ipr
+                except ImportError:
+                    from shared.runtime_config import active_universe as _au   # type: ignore
+                    from shared.universe_selector import is_paper_ready as _ipr  # type: ignore
+                univ = "CRYPTO" if is_crypto else _au()
+                ready, reason = _ipr(univ)
+                if not ready:
+                    result["status"] = "skipped"
+                    result["reason"] = f"universe_not_paper_ready:{univ}:{reason}"
+                    self.trace.warn(
+                        f"{sym} {action}: skipped — universe {univ} not paper-ready ({reason})",
+                        indent=2,
+                    )
+                    # Audit emit (fail-soft)
+                    try:
+                        from datetime import datetime, timezone
+                        try:
+                            from audit import write_audit_event as _wae
+                        except ImportError:
+                            from shared.audit import write_audit_event as _wae  # type: ignore
+                        _wae({
+                            "type":        "universe_gate",
+                            "decision":    "REJECT",
+                            "symbol":      sym,
+                            "reason":      f"universe_not_paper_ready:{reason}",
+                            "universe_id": univ,
+                            "decided_at":  datetime.now(timezone.utc)
+                                                  .strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        }, kind="trading")
+                    except Exception:
+                        pass
+                    return result
+            except Exception as e:
+                # Fail-soft: universe gate never blocks on its own error.
+                self.trace.warn(
+                    f"{sym} {action}: universe gate unavailable ({e}) — proceeding",
+                    indent=2,
+                )
+
         # Honor caller-provided market_open hint (used by tests + cron-time
         # snapshot). Skip stocks if hint says closed; crypto bypasses.
         # NB: per-instrument check (can_trade_now) is enforced INSIDE

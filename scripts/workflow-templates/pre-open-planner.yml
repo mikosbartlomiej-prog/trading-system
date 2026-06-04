@@ -1,0 +1,118 @@
+name: Pre-Open Session Planner
+
+# v3.18.0 (2026-06-04) — Runs ~30 min before US market open. Fetches free
+# pre-market context (Yahoo + Nasdaq cascade), classifies behavior per
+# symbol via shared/pre_open_behavior.analyze_pre_open, and writes the
+# per-symbol plan to learning-loop/runtime_state.json::pre_open_plan.
+#
+# Monitors read the plan during the session via
+# shared.pre_open_plan.get_plan_for_symbol(symbol) and add the per-symbol
+# penalty/booster into confidence_inputs.
+#
+# CONTRACT
+# --------
+# - NEVER places orders.
+# - NEVER raises confidence by more than +0.05 per symbol.
+# - NEVER modifies risk limits.
+# - Pre-market data unavailable → entry = "no_data" warning, no boost.
+# - Fail-soft: any error is logged + script exits 0 (chain never breaks).
+#
+# DEPLOY
+# ------
+#   1. Copy this file to .github/workflows/pre-open-planner.yml via GitHub UI
+#      (OAuth proxy blocks workflow file pushes from Claude Code sessions).
+#   2. Required repo secrets (already present from other workflows):
+#        ALPACA_API_KEY, ALPACA_SECRET_KEY  (for daily-bar prev-close lookup)
+#   3. Optional secret: WORKFLOW_PAT (for committing runtime_state.json).
+#      Without it, the plan stays local to the runner only — monitors on
+#      OTHER runners will not see it. For end-to-end persistence, WORKFLOW_PAT
+#      is REQUIRED.
+
+on:
+  schedule:
+    # 13:00 UTC = 09:00 ET (30 min before market open). Weekdays only.
+    - cron: '0 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Override watchlist (space-separated symbols)'
+        required: false
+        type:     string
+        default:  ''
+      dry_run:
+        description: 'Print plan to stdout, do NOT persist'
+        required: false
+        type:     boolean
+        default:  false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      PYTHONIOENCODING: utf-8
+      LC_ALL: C
+      LANG:  C
+      ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+      STATE_WRITE_ACTOR: pre-open-planner
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run pre-open session planner
+        run: |
+          set +e
+          ARGS=""
+          if [ -n "${{ github.event.inputs.symbols }}" ]; then
+            ARGS="--symbols ${{ github.event.inputs.symbols }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python3 scripts/pre_open_session_planner.py $ARGS
+          # Planner is fail-soft and ALWAYS exits 0; nothing to assert here.
+
+      - name: Commit runtime_state.json (with retry-on-race)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -e
+          if ! git diff --quiet learning-loop/runtime_state.json; then
+            git config user.name  "pre-open-planner-bot"
+            git config user.email "actions@github.com"
+            git add learning-loop/runtime_state.json
+            git commit -m "pre-open-planner: plan $(date -u +%Y-%m-%d) [automerge]" || true
+            for i in 1 2 3; do
+              git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+                echo "pushed on attempt $i"
+                break
+              fi
+              echo "push failed attempt $i; sleeping"
+              sleep $((i * 2))
+            done
+          else
+            echo "runtime_state.json unchanged — nothing to commit"
+          fi

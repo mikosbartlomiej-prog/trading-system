@@ -117,7 +117,11 @@ INTRADAY_SECTIONS = frozenset({
     # v3.18.0 P0-002 (2026-06-04) — exit-monitor PDT block cooldown.
     # Persists "<symbol>|<recommendation>|<decision>": "<iso-timestamp>"
     # entries so cooldown survives fresh GitHub Actions runner checkouts.
-    # Was module-level dict in exit-monitor/monitor.py — reset every cron
-    # tick → dedup never engaged → 36 audit events for one position per day.
     "pdt_cooldown",
+    # v3.18.0 (2026-06-04) — pre-open session plan (FB-003 follow-up)
+    # Generated ~30 min before market open by scripts/pre_open_session_planner.py.
+    # Read by monitors during the session; carries per-symbol pre-market
+    # warnings (gap, low volume, fake move) that can ONLY LOWER confidence
+    # (max +0.05 boost, max -0.10 penalty). Never places trades.
+    "pre_open_plan",
 })

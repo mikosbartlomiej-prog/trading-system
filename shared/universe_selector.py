@@ -252,6 +252,207 @@ def can_switch(from_universe: str, to_universe: str,
     return True, "operator_decision_required"
 
 
+# ─── v3.18.0 (2026-06-04) — Paper-trading symbol filter ──────────────────────
+#
+# Forbidden symbol patterns. Conservative hard-coded list. If a symbol matches
+# ANY pattern → REJECT. Patterns chosen to block known low-quality / unsupported
+# instruments:
+#   - "_OB" / ".OB" / ".PK" suffix → OTC bulletin board / pink sheet
+#   - "_W" / "-W" suffix           → SPAC warrants (low liquidity, paper-side caveats)
+#   - "_R" / "-R" suffix           → rights (event-driven, irregular)
+#   - "_U" / "-U" suffix           → SPAC unit (low liquidity)
+#   - "$"                          → cashtag accidentally passed (not a real symbol)
+#   - leading underscore           → reserved Alpaca internal
+#   - empty / whitespace-only      → caller bug
+FORBIDDEN_SYMBOL_SUFFIXES = (".OB", "_OB", ".PK", "_W", "-W",
+                              "_R", "-R", "_U", "-U")
+FORBIDDEN_SYMBOL_CHARS    = ("$", "*", "?", "!")
+
+
+def _is_forbidden_symbol(symbol: str) -> tuple[bool, str]:
+    """Conservative pattern check. Returns (forbidden, reason)."""
+    if not symbol or not isinstance(symbol, str):
+        return True, "empty_or_invalid_symbol"
+    s = symbol.strip()
+    if not s:
+        return True, "empty_after_strip"
+    if s.startswith("_"):
+        return True, "leading_underscore_reserved"
+    for ch in FORBIDDEN_SYMBOL_CHARS:
+        if ch in s:
+            return True, f"contains_forbidden_char:{ch}"
+    su = s.upper()
+    for suf in FORBIDDEN_SYMBOL_SUFFIXES:
+        if su.endswith(suf):
+            return True, f"forbidden_suffix:{suf}"
+    return False, ""
+
+
+def filter_symbols_for_paper_trading(
+    symbols: list[str],
+    *,
+    spread_data: dict | None = None,
+    volume_data: dict | None = None,
+    history_data: dict | None = None,
+    universe_id: str | None = None,
+    strict: bool = False,
+    audit: bool = True,
+) -> tuple[list[str], dict[str, str]]:
+    """Filter symbols by liquidity + spread + data quality + history.
+
+    v3.18.0 (2026-06-04) — Paper-trading universe filter.
+
+    Args:
+        symbols: list of candidate symbol strings.
+        spread_data: optional {symbol → typical_spread_bps}.
+        volume_data: optional {symbol → daily_volume_usd}.
+        history_data: optional {symbol → days_with_bars_last_5d (int)}.
+        universe_id: universe to validate against. Default: active universe.
+        strict: if True, MISSING data → REJECT (conservative for unknown
+                universes). Default False (ALLOW with warning).
+        audit: if True, emit one audit JSONL line per rejection.
+
+    Returns:
+        (allowed_symbols, rejection_reasons) where rejection_reasons is
+        {symbol → reason_str}.
+
+    Rejection conditions (each fail-soft if data unavailable):
+      - typical_spread_bps > universe.typical_spread_bps * 2 → REJECT
+      - daily_volume_usd  < universe.min_liquidity_usd_daily → REJECT
+      - Forbidden symbol pattern (OTC / SPAC / etc.)         → REJECT
+      - No daily bars in last 5 days                         → REJECT
+                                                            (data unavailable)
+
+    Conservative defaults:
+      - Missing spread_data + strict=False → ALLOW with warning rationale.
+      - Missing volume_data + strict=False → ALLOW with warning rationale.
+      - Missing history_data + strict=False → ALLOW (assume bars exist if
+        symbol is on a known whitelist).
+
+    NEVER raises. Returns empty allowed list on unknown universe.
+
+    Audit contract:
+      One JSONL event per rejection at journal/autonomy/<date>.jsonl with
+      kind='trading' + type='universe_filter' + symbol + reason +
+      universe_id. Caller is risk-bound (no orders placed by this function).
+    """
+    rejections: dict[str, str] = {}
+    allowed: list[str] = []
+
+    if not symbols or not isinstance(symbols, list):
+        return [], {}
+
+    # Resolve universe — default to active universe if unspecified
+    if universe_id is None:
+        try:
+            from runtime_config import active_universe as _au
+        except ImportError:  # pragma: no cover
+            try:
+                from shared.runtime_config import active_universe as _au  # type: ignore
+            except Exception:
+                _au = lambda: "US_LARGE"  # noqa: E731 — fail-soft fallback
+        universe_id = _au()
+
+    spec = get_universe(universe_id)
+    if spec is None:
+        # Unknown universe → reject all (operator must explicitly enable).
+        for s in symbols:
+            rejections[s] = "unknown_universe"
+        return [], rejections
+
+    spread_threshold = spec.typical_spread_bps * 2.0 if spec.typical_spread_bps > 0 else None
+    volume_threshold = spec.min_liquidity_usd_daily if spec.min_liquidity_usd_daily > 0 else None
+
+    spread_data = spread_data or {}
+    volume_data = volume_data or {}
+    history_data = history_data or {}
+
+    for sym in symbols:
+        if not isinstance(sym, str):
+            rejections[str(sym)] = "non_string_symbol"
+            continue
+
+        # 1. Pattern check
+        forbidden, why = _is_forbidden_symbol(sym)
+        if forbidden:
+            rejections[sym] = f"forbidden_pattern:{why}"
+            continue
+
+        # 2. Spread check (fail-soft if data missing)
+        spread = spread_data.get(sym)
+        if spread is not None and spread_threshold is not None:
+            try:
+                if float(spread) > spread_threshold:
+                    rejections[sym] = (
+                        f"spread_exceeds:{spread:.1f}bps>{spread_threshold:.1f}bps"
+                    )
+                    continue
+            except (TypeError, ValueError):
+                pass
+        elif spread is None and strict:
+            rejections[sym] = "missing_spread_data_strict"
+            continue
+
+        # 3. Volume check (fail-soft if data missing)
+        vol = volume_data.get(sym)
+        if vol is not None and volume_threshold is not None:
+            try:
+                if float(vol) < volume_threshold:
+                    rejections[sym] = (
+                        f"volume_below:{vol:.0f}usd<{volume_threshold:.0f}usd"
+                    )
+                    continue
+            except (TypeError, ValueError):
+                pass
+        elif vol is None and strict:
+            rejections[sym] = "missing_volume_data_strict"
+            continue
+
+        # 4. History check (fail-soft if data missing)
+        hist = history_data.get(sym)
+        if hist is not None:
+            try:
+                if int(hist) < 1:
+                    rejections[sym] = "no_daily_bars_last_5d"
+                    continue
+            except (TypeError, ValueError):
+                pass
+        elif strict:
+            rejections[sym] = "missing_history_data_strict"
+            continue
+
+        allowed.append(sym)
+
+    # Audit emission — one event per rejection. Fail-soft.
+    if audit and rejections:
+        try:
+            from datetime import datetime, timezone
+            try:
+                from audit import write_audit_event
+            except ImportError:
+                from shared.audit import write_audit_event  # type: ignore
+            now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            for sym, reason in rejections.items():
+                rec = {
+                    "type":          "universe_filter",
+                    "decision":      "REJECT",
+                    "symbol":        sym,
+                    "reason":        reason,
+                    "universe_id":   universe_id,
+                    "strict_mode":   bool(strict),
+                    "decided_at":    now_iso,
+                }
+                try:
+                    write_audit_event(rec, kind="trading")
+                except Exception:
+                    # Never break the filter on audit failure
+                    pass
+        except Exception:
+            pass
+
+    return allowed, rejections
+
+
 __all__ = [
     "UNIV_US_LARGE", "UNIV_US_MICROCAP", "UNIV_PL_GPW",
     "UNIV_CRYPTO", "UNIV_CUSTOM",
@@ -259,4 +460,6 @@ __all__ = [
     "DEFAULT_UNIVERSES", "DEFAULT_CONFIG_PATH",
     "UniverseSpec",
     "get_universe", "list_enabled", "is_paper_ready", "can_switch",
+    "FORBIDDEN_SYMBOL_SUFFIXES", "FORBIDDEN_SYMBOL_CHARS",
+    "filter_symbols_for_paper_trading",
 ]
