@@ -3,21 +3,21 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-04T13:20:28.030978+00:00",
+      "last_seen_iso": "2026-06-04T13:45:43.292169+00:00",
       "last_status": "ok",
-      "pings_today": 160
+      "pings_today": 165
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-04T13:20:28.352171+00:00",
+      "last_seen_iso": "2026-06-04T13:45:25.642946+00:00",
       "last_status": "ok",
-      "pings_today": 156
+      "pings_today": 162
     },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-04T13:20:27.755969+00:00",
+      "last_seen_iso": "2026-06-04T13:45:28.947503+00:00",
       "last_status": "ok",
-      "pings_today": 154
+      "pings_today": 159
     },
     "politician-monitor": {
       "last_message": "emitted=0",
@@ -46,7 +46,7 @@
     "intraday_peak_pnl": 415.9800000000105,
     "intraday_peak_pnl_pct": 0.0043484837540259174,
     "last_action": "noop",
-    "last_update_at": "2026-06-04T13:20:28.349590+00:00",
+    "last_update_at": "2026-06-04T13:45:25.640444+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-04T00:05:37.576867+00:00",

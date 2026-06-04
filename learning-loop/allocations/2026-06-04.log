@@ -54,3 +54,25 @@
 [13:00:32 WARN]     QQQ BUY: skipped — market not open
 [13:00:32 WARN]     GLD BUY: skipped — market not open
 [13:00:32 INFO]   execution complete: 0 placed, 8 skipped, 0 failed
+
+[13:45:24 INFO] ============================================================
+[13:45:24 INFO] execute_orders() — auto-execute path
+[13:45:24 INFO] ============================================================
+[13:45:24 INFO]   market_status: open=True reason=open
+[13:45:24 INFO]     AMD BUY: derived qty=34 from target=$17,219 @ $498.51 (no prior position)
+[13:45:25 INFO]     AMD BUY placed: BUY 34.0000 @ $498.51  id=d13937df-c4aa-4ba3-b06a-375e6b6db799
+[13:45:25 INFO]     CRWD BUY: derived qty=19 from target=$13,153 @ $690.50 (no prior position)
+[13:45:25 INFO]     CRWD BUY placed: BUY 19.0000 @ $690.50  id=43bc5cbc-44b0-43f1-9ae6-154cd08170f9
+[13:45:25 INFO]     ORCL BUY: derived qty=58 from target=$13,153 @ $225.57 (no prior position)
+[13:45:26 INFO]     ORCL BUY placed: BUY 58.0000 @ $225.57  id=8e19fcca-cd5f-4033-a149-b853b6a0a28f
+[13:45:26 INFO]     PANW BUY: derived qty=48 from target=$13,153 @ $273.65 (no prior position)
+[13:45:26 INFO]     PANW BUY placed: BUY 48.0000 @ $273.65  id=d8382a43-fa00-44aa-b0ca-5e464151969c
+[13:45:26 INFO]     NOW BUY: derived qty=107 from target=$13,153 @ $122.10 (no prior position)
+[13:45:27 INFO]     NOW BUY placed: BUY 107.0000 @ $122.11  id=fa6d53a9-b5cf-4562-a02a-4b1d12e2c1fa
+[13:45:27 INFO]     SPY BUY: derived qty=12 from target=$9,566 @ $751.72 (no prior position)
+[13:45:27 INFO]     SPY BUY placed: BUY 12.0000 @ $751.72  id=a681f9e1-5e3a-4772-855d-38e33f581c17
+[13:45:27 INFO]     QQQ BUY: derived qty=13 from target=$9,566 @ $733.73 (no prior position)
+[13:45:28 INFO]     QQQ BUY placed: BUY 13.0000 @ $733.73  id=6006ea47-3219-4d6b-8c1d-859b710f9c2c
+[13:45:28 INFO]     GLD BUY: derived qty=16 from target=$6,696 @ $414.10 (no prior position)
+[13:45:28 INFO]     GLD BUY placed: BUY 16.0000 @ $414.10  id=56b35b4b-62fa-4904-b72d-1630098123a0
+[13:45:28 INFO]   execution complete: 8 placed, 0 skipped, 0 failed
