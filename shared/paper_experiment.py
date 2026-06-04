@@ -50,6 +50,32 @@ from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
+# v3.19.0 — Evidence Source Separation. Import is fail-soft because the
+# module needs to keep working on a clean repo even before v3.19 ships
+# everywhere; the local fallback re-implements just enough behaviour.
+try:
+    from evidence_source import EvidenceSource, is_paper_only, parse_source  # type: ignore
+except ImportError:  # pragma: no cover
+    try:
+        from shared.evidence_source import (  # type: ignore
+            EvidenceSource, is_paper_only, parse_source,
+        )
+    except ImportError:  # pragma: no cover
+        class EvidenceSource(str):  # type: ignore[no-redef]
+            BACKTEST = "BACKTEST"
+            REPLAY = "REPLAY"
+            PAPER = "PAPER"
+
+        def is_paper_only(s):  # type: ignore[no-redef]
+            return (isinstance(s, str) and s.upper() == "PAPER")
+
+        def parse_source(v, *, default="PAPER"):  # type: ignore[no-redef]
+            if isinstance(v, str):
+                u = v.strip().upper()
+                if u in ("PAPER", "BACKTEST", "REPLAY"):
+                    return u
+            return default
+
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -57,11 +83,43 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _ledger_dir() -> Path:
-    """Daily JSONL ledger directory. Overridable for tests."""
+    """Daily JSONL ledger directory. Overridable for tests.
+
+    By default this is the **paper-only** ledger. BACKTEST records go
+    under ``backtest_results/`` and REPLAY records under
+    ``replay_results/`` — both ignored by edge-gate metrics.
+    """
     return Path(
         os.environ.get("PAPER_EXPERIMENT_DIR")
         or _REPO_ROOT / "learning-loop" / "paper_experiments"
     )
+
+
+def _backtest_dir() -> Path:
+    """Directory for BACKTEST-source JSONL records (triage only)."""
+    return Path(
+        os.environ.get("BACKTEST_LEDGER_DIR")
+        or _REPO_ROOT / "learning-loop" / "backtest_results"
+    )
+
+
+def _replay_dir() -> Path:
+    """Directory for REPLAY-source JSONL records (triage + stress only)."""
+    return Path(
+        os.environ.get("REPLAY_LEDGER_DIR")
+        or _REPO_ROOT / "learning-loop" / "replay_results"
+    )
+
+
+def _dir_for_source(source: Any) -> Path:
+    """Return the ledger directory associated with a given source enum/str."""
+    val = parse_source(source, default=EvidenceSource.PAPER)
+    sv = val.value if hasattr(val, "value") else str(val).upper()
+    if sv == "BACKTEST":
+        return _backtest_dir()
+    if sv == "REPLAY":
+        return _replay_dir()
+    return _ledger_dir()
 
 
 def _ensure_dir(p: Path) -> None:
@@ -122,16 +180,26 @@ def record_paper_trade(
     opened_at: str | None = None,   # ISO 8601 UTC
     closed_at: str | None = None,   # ISO 8601 UTC
     *,
+    source: Any = EvidenceSource.PAPER,
     extra: dict[str, Any] | None = None,
 ) -> None:
-    """Append one closed paper trade to today's JSONL.
+    """Append one closed trade to today's JSONL.
+
+    v3.19.0 — accepts ``source`` (default PAPER) per Evidence Source
+    Separation. BACKTEST and REPLAY records are written to *separate*
+    ledger directories and are NEVER mixed into edge-gate metrics by
+    default. ``paper_only`` is always True only for the PAPER ledger
+    (the field is kept for backward compatibility of older readers).
 
     Fail-soft: invalid inputs are clamped / dropped, never raised. The
     function returns None.
     """
     try:
+        src = parse_source(source, default=EvidenceSource.PAPER)
+        sv = src.value if hasattr(src, "value") else str(src).upper()
         rec: dict[str, Any] = {
-            "paper_only":         True,
+            "paper_only":         (sv == "PAPER"),
+            "source":             sv,
             "strategy":           str(strategy or "unknown"),
             "symbol":             str(symbol or "?"),
             "entry":              _safe_float(entry),
@@ -163,7 +231,7 @@ def record_paper_trade(
             for k, v in extra.items():
                 if k not in rec:
                     rec[str(k)] = v
-        _append_line(rec)
+        _append_line(rec, source=src)
     except Exception:
         # Hard guarantee: never raise from this module.
         return None
@@ -179,8 +247,9 @@ def _compute_gross_pnl(rec: dict) -> float:
     return (exit_ - entry) * qty
 
 
-def _append_line(rec: dict[str, Any]) -> None:
-    d = _ledger_dir()
+def _append_line(rec: dict[str, Any], *,
+                  source: Any = EvidenceSource.PAPER) -> None:
+    d = _dir_for_source(source)
     _ensure_dir(d)
     iso = _utc_today().isoformat()
     path = d / f"{iso}.jsonl"
@@ -190,12 +259,18 @@ def _append_line(rec: dict[str, Any]) -> None:
 
 # ─── Loader ───────────────────────────────────────────────────────────────────
 
-def _iter_trades_in_window(window_days: int) -> Iterable[dict]:
+def _iter_trades_in_window(window_days: int,
+                            *,
+                            source: Any = EvidenceSource.PAPER) -> Iterable[dict]:
     """Yield trade records whose `closed_at` falls in the last N days.
+
+    v3.19.0 — defaults to the PAPER ledger directory. Pass ``source=``
+    explicitly to iterate BACKTEST or REPLAY ledgers (those rows are
+    NEVER counted toward edge-gate decisions).
 
     Fail-soft on missing dirs / malformed lines / bad dates.
     """
-    d = _ledger_dir()
+    d = _dir_for_source(source)
     if not d.exists():
         return
     today = _utc_today()
@@ -227,6 +302,31 @@ def _iter_trades_in_window(window_days: int) -> Iterable[dict]:
                     yield rec
         except OSError:
             continue
+
+
+def load_backtest_ledger(window_days: int = 180) -> list[dict]:
+    """Read BACKTEST-source records from the dedicated ledger directory.
+
+    Triage only. Returned records are NEVER used for edge-gate decisions.
+    """
+    return list(_iter_trades_in_window(window_days,
+                                          source=EvidenceSource.BACKTEST))
+
+
+def load_replay_ledger(window_days: int = 180) -> list[dict]:
+    """Read REPLAY-source records from the dedicated ledger directory.
+
+    Triage + stress only. Returned records are NEVER used for edge
+    approval.
+    """
+    return list(_iter_trades_in_window(window_days,
+                                          source=EvidenceSource.REPLAY))
+
+
+def load_paper_ledger(window_days: int = 180) -> list[dict]:
+    """Read PAPER-source records from the canonical ledger directory."""
+    return list(_iter_trades_in_window(window_days,
+                                          source=EvidenceSource.PAPER))
 
 
 # ─── Metrics ──────────────────────────────────────────────────────────────────
@@ -388,8 +488,18 @@ def _aggregate(records: list[dict]) -> dict:
     }
 
 
-def compute_strategy_metrics(strategy: str, window_days: int = 180) -> dict:
+def compute_strategy_metrics(strategy: str, window_days: int = 180,
+                             *,
+                             source_filter: Any = EvidenceSource.PAPER) -> dict:
     """Return a deterministic dict of metrics for `strategy` over `window_days`.
+
+    v3.19.0 — accepts ``source_filter`` (default PAPER). The function
+    reads JSONL only and ENFORCES that records from a non-matching
+    source are excluded from the aggregate. BACKTEST and REPLAY
+    aggregates can be computed by callers that explicitly pass
+    ``source_filter=EvidenceSource.BACKTEST`` etc., but the result is
+    annotated with ``source_filter`` so downstream consumers know
+    whether a metric is paper-only.
 
     Pure function: reads JSONL only. Fail-soft on missing file / bad data.
     """
@@ -397,11 +507,29 @@ def compute_strategy_metrics(strategy: str, window_days: int = 180) -> dict:
         return _empty_metrics("?", window_days)
     window_days = max(1, _safe_int(window_days, 180))
 
-    records = [
-        r for r in _iter_trades_in_window(window_days)
-        if r.get("strategy") == strategy
-    ]
+    flt = parse_source(source_filter, default=EvidenceSource.PAPER)
+    flt_val = flt.value if hasattr(flt, "value") else str(flt).upper()
+
+    # Read from the dedicated ledger for the requested source. Then also
+    # accept legacy rows in the PAPER ledger that predate the `source`
+    # field (treated as PAPER per the EvidenceSource.parse_source default).
+    candidates = list(_iter_trades_in_window(window_days, source=flt))
+    records: list[dict] = []
+    for r in candidates:
+        if r.get("strategy") != strategy:
+            continue
+        rec_source = parse_source(r.get("source"), default=EvidenceSource.PAPER)
+        rec_source_val = (
+            rec_source.value if hasattr(rec_source, "value")
+            else str(rec_source).upper()
+        )
+        if rec_source_val != flt_val:
+            # Record landed in the wrong directory (legacy data) or has
+            # an explicit different source field. EITHER way: refuse.
+            continue
+        records.append(r)
     base = _empty_metrics(strategy, window_days)
+    base["source_filter"] = flt_val
     base.update(_aggregate(records))
 
     # ── per-regime breakdown ─────────────────────────────────────────────
@@ -552,4 +680,8 @@ __all__ = [
     "record_paper_trade",
     "compute_strategy_metrics",
     "generate_edge_evidence_report",
+    # v3.19.0 — Evidence Source Separation
+    "load_backtest_ledger",
+    "load_replay_ledger",
+    "load_paper_ledger",
 ]
