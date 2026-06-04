@@ -1,33 +1,57 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "test",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-04T15:55:32.676403+00:00",
+    "comp-a": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-04T16:04:04.398600+00:00",
       "last_status": "ok",
-      "pings_today": 192
+      "pings_today": 2
+    },
+    "comp-b": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-04T16:04:04.399166+00:00",
+      "last_status": "ok",
+      "pings_today": 2
+    },
+    "crypto-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-04T16:10:57.514524+00:00",
+      "last_status": "ok",
+      "pings_today": 193
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-04T16:10:28.477283+00:00",
-      "last_status": "ok",
-      "pings_today": 190
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-04T16:10:29.883203+00:00",
+      "last_seen_iso": "2026-06-04T16:10:57.518246+00:00",
       "last_status": "ok",
       "pings_today": 188
     },
+    "options-exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-04T15:45:29.084462+00:00",
+      "last_status": "ok",
+      "pings_today": 183
+    },
     "politician-monitor": {
       "last_message": "emitted=0",
-      "last_seen_iso": "2026-06-04T16:00:58.047563+00:00",
+      "last_seen_iso": "2026-06-04T12:50:14.857575+00:00",
       "last_status": "ok",
-      "pings_today": 6
+      "pings_today": 5
+    },
+    "price-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-04T16:10:57.515332+00:00",
+      "last_status": "ok",
+      "pings_today": 3
     },
     "reddit-monitor": {
       "last_message": "sent=0",
       "last_seen_iso": "2026-06-03T23:42:04.799982+00:00",
+      "last_status": "ok",
+      "pings_today": 2
+    },
+    "test-monitor": {
+      "last_message": "smoke test",
+      "last_seen_iso": "2026-06-04T16:04:04.401312+00:00",
       "last_status": "ok",
       "pings_today": 2
     }
@@ -49,7 +73,7 @@
     "intraday_peak_pnl": 1156.140000000014,
     "intraday_peak_pnl_pct": 0.012085811835615795,
     "last_action": "noop",
-    "last_update_at": "2026-06-04T16:10:28.474751+00:00",
+    "last_update_at": "2026-06-04T15:45:26.010808+00:00",
     "max_gross_target": 0.25,
     "options_first_reduction": true,
     "peak_at": "2026-06-04T14:05:25.706913+00:00",
@@ -197,5 +221,12 @@
     "date": "2026-06-04",
     "last_updated": "2026-06-04T00:12:56.468293+00:00",
     "total": 1
+  },
+  "safe_mode": {
+    "active": false,
+    "entered_at": null,
+    "forced": false,
+    "reason": "",
+    "trigger": null
   }
 }

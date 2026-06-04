@@ -280,9 +280,14 @@ class TestApplyPositionLifecycleOrchestrator(unittest.TestCase):
         importlib.reload(runtime_state)
         import position_lifecycle_store
         importlib.reload(position_lifecycle_store)
-        # Import (don't reload) the monitor — it has side-effecty imports
-        # at module level. Module-level use is safe; we re-bind safe_close
-        # via mock.patch in each test.
+        # v3.17.0 — pop any cached `monitor` module from sys.modules so we
+        # get exit-monitor/monitor.py specifically (geo/defense/doj/etc.
+        # also ship `monitor.py` and namespace would otherwise collide).
+        sys.modules.pop("monitor", None)
+        # Put exit-monitor first on sys.path
+        if EXIT_MON_DIR in sys.path:
+            sys.path.remove(EXIT_MON_DIR)
+        sys.path.insert(0, EXIT_MON_DIR)
         import monitor as exit_monitor  # exit-monitor/monitor.py
         self.exit_monitor = exit_monitor
 
