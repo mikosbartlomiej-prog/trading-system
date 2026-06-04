@@ -1,12 +1,18 @@
 {
-  "narrative": "UNI/USD RSI 29.7 spełnia próg oversold, ale 24h move -2.49% = trend sprzedaży kontynuowany bez potwierdzenia dna. R:R strukturalnie 0.82:1 (TP +9.9% vs SL -12.1%) — sub-1:1 na strategii z 0 produkcyjnych fills; brak named DeFi/Uniswap catalyst dzisiaj. Predator odpuszcza falling knife bez confirmation candle.",
-  "selected_signals": [],
-  "rejected_signals": [
+  "narrative": "BTC RSI 19.9 to historycznie ekstremalne wyczerpanie sprzedawców — statystycznie te poziomy poprzedzały bounce 10-20% w ciągu 1-3 dni. Wolumen 1.08× neutralny (brak paniki), 1h zmiana -0.03% (stabilizacja), portfel czysty — setup oversold-bounce wycelowany dokładnie w tę sytuację.",
+  "selected_signals": [
     {
-      "ticker": "UNI/USD",
-      "reason": "R:R 0.82:1 (TP +9.9% vs SL -12.1%) strukturalnie sub-1:1 dla crypto-oversold-bounce z 0 potwierdzonych fills produkcyjnych — strategia bez empirycznego edge; 24h move -2.49% = trwająca wyprzedaż bez 1-bar reversal confirmation; vol 3× = absolutne minimum progu, nie wyczerpanie podaży; zero named katalizatora DeFi/Uniswap v4 w tej chwili."
+      "ticker": "BTC/USD",
+      "action": "BUY",
+      "tier": 1,
+      "conviction": "medium",
+      "size_multiplier": 1.0,
+      "rationale": "RSI 19.9 przy -2.83% 24h to dywergencja wyczerpania bez wolumenu krachu (1.08× avg) — sprzedawcy schodzą cicho. BTC 1h płaski (-0.03%), brak otwartych pozycji = zero ryzyka koncentracji. Brak wolumenu potwierdzającego odbicia (wymagałby 2-3× avg) utrzymuje conviction na medium; asymetria TP/SL (+20% vs -10.5%) akceptowalna dla Tier 1 bounce.",
+      "expected_horizon": "1d",
+      "key_risk": "BTC przebija $63,911 SL jeśli zewnętrzny katalizator makro (dane FOMC, crash equity) wywołuje kolejną falę sprzedaży przed reboundem."
     }
   ],
-  "macro_context": "BTC 1h +0.27% lekko pozytywny — neutralne tło; brak altseason rotacji; UNI at multi-month lows bez short-term DeFi triggera — falling knife bez dna confirmation.",
-  "confidence_in_curation": "high"
+  "rejected_signals": [],
+  "macro_context": "BTC dominance stabilna, reżim płaski — brak aktywnego altseason; wolumen poniżej średniej przy RSI <20 historycznie sygnalizuje ciche dno, nie kontynuację trendu spadkowego.",
+  "confidence_in_curation": "medium"
 }
