@@ -837,3 +837,73 @@ v3.21 adds:
 - operator_action_queue contains a processed REVIEW_EDGE_GATE entry
 
 When any criterion fails, leave `EDGE_GATE_ENABLED=false`.
+
+## Shadow Evidence Flow — activated 2026-06-04
+
+`scripts/workflow-templates/shadow-evidence-cycle.yml` has been
+auto-synced to `.github/workflows/shadow-evidence-cycle.yml`.
+
+### Workflow contract
+
+- **Cron:** 22:30 UTC weekdays (Mon-Fri). Runs after
+  `paper-experiment-update.yml` (22:00 UTC).
+- **Default mode:** `signal_only` (no shadow fill writes).
+- **Hard env lock:** `EVIDENCE_PRODUCTION_MODE: SIGNAL_ONLY` set at
+  workflow level — re-pasting cannot accidentally flip to broker mode.
+- **Manual modes:** `workflow_dispatch` with `mode: {signal_only,
+  shadow, broker}` and `dry_run: {false, true}`. **No `live` choice
+  exists.**
+- **Permissions:** `contents: write` only — for committing ledgers +
+  the rendered `docs/shadow_evidence_cycle_LATEST.md`.
+- **Push retry:** 3 attempts with `git pull --rebase` between each
+  to survive automerge race conditions.
+
+### Operator triggers
+
+```bash
+# Manual dry-run via GitHub UI (Actions → Shadow Evidence Cycle):
+#   mode=signal_only, dry_run=true   → no writes
+#   mode=shadow,      dry_run=true   → no writes
+#   mode=shadow,      dry_run=false  → writes shadow_ledger entries
+#   mode=broker,      dry_run=false  → only when ALLOW_BROKER_PAPER=true secret is set
+
+# Local equivalent:
+python3 -m scripts.run_shadow_evidence_cycle --dry-run --mode signal_only
+python3 -m scripts.run_shadow_evidence_cycle --mode signal_only
+```
+
+### Expected ledger growth
+
+The runner writes to:
+
+- `learning-loop/opportunity_ledger/<YYYY-MM-DD>.jsonl`
+- `learning-loop/shadow_ledger/<YYYY-MM-DD>.jsonl` (shadow mode only)
+
+Both directories are auto-created on first write. While
+`signals_seen=0`, no directories are created — this is the correct
+`NO_EVIDENCE_FLOW` state (the runner does not fabricate signals).
+
+### Reading throughput
+
+After the first 24 h with non-zero signal flow:
+
+```bash
+python3 scripts/evidence_throughput_report.py
+python3 scripts/signal_density_report.py
+python3 scripts/operator_decision_pack.py
+```
+
+The throughput report's `estimated_days_to_n50` per strategy tells
+you whether the current pace can reach the EDGE_GATE n=50 threshold
+in a reasonable window.
+
+### What the operator does NOT do
+
+- Do NOT set `EDGE_GATE_ENABLED=true` — the gate stays default-off.
+- Do NOT add `ALLOW_BROKER_PAPER=true` without reading
+  `docs/BROKER_PAPER_ADAPTER.md` first.
+- Do NOT manually create files in
+  `learning-loop/opportunity_ledger/` or
+  `learning-loop/shadow_ledger/` — only the runner writes to them.
+- Do NOT trigger the workflow with `mode=broker` unless paper-only
+  credentials are configured.

@@ -212,6 +212,12 @@ class TestNoNakedSellPath(unittest.TestCase):
                 # Skip __pycache__
                 if "__pycache__" in str(py_file):
                     continue
+                # Skip Cowork / Finder sidecar duplicates
+                # (filenames like "foo 2.py", "bar 3.py" produced by
+                # IDE workspace clones — not real source).
+                import re as _re
+                if _re.search(r" \d+\.py$", py_file.name):
+                    continue
                 violations.extend(_file_contains_naked_sell_post(py_file))
 
         if violations:
