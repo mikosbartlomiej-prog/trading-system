@@ -148,3 +148,67 @@ Operator should re-evaluate the pre-open planner architecture when:
 - `scripts/workflow-templates/pre-open-planner.yml` — cron workflow.
 - `shared/confidence_builder.py::_apply_v3150_adjustments` — consumer.
 - `tests/test_pre_open_plan_v3180.py` — unit tests.
+
+---
+
+## v2 plan extensions (v3.19.0 — 2026-06-04)
+
+The plan schema gains session-level + per-strategy fields. v1 readers
+continue to work — v2 fields are additive and optional.
+
+### v2 schema
+
+```json
+{
+  "plan_date":                      "2026-06-04",
+  "generated_at":                   "2026-06-04T13:00:00Z",
+  "symbols_planned":                25,
+  "warnings":                       ["pre_market_data_unavailable_majority"],
+  "per_symbol":                     { /* v1 per-symbol entries */ },
+
+  // v2 extensions
+  "expected_regime":                "NEUTRAL",
+  "high_risk_symbols":              ["TSLA", "MSTR"],
+  "do_not_trade_list":              ["NVDA"],
+  "observe_only_list":              ["AAPL"],
+  "strategy_warnings":              {"momentum-long": ["regime_mismatch"]},
+  "confidence_caps_per_strategy":   {"options-momentum": 0.55},
+  "confidence_caps_per_symbol":     {"TSLA": 0.60, "NVDA": 0.0},
+  "event_risk_warnings":            ["FOMC at 18:00 UTC"],
+  "liquidity_warnings":             ["GOOGL:low_volume_fake"],
+  "gap_warnings":                   ["TSLA:GAP_UP_WEAK_PRE_OPEN"],
+  "stale_data_warnings":            ["MSFT"],
+  "daily_experiment_objectives":    ["validate fills against expectations"]
+}
+```
+
+### Critical invariant: apply_pre_open_caps NEVER raises confidence
+
+```python
+from pre_open_plan import get_plan, apply_pre_open_caps
+plan = get_plan()
+adjusted = apply_pre_open_caps(plan,
+                                strategy="momentum-long",
+                                symbol="TSLA",
+                                current_confidence=0.78)
+# adjusted is ALWAYS <= 0.78 — this is enforced by the helper itself.
+```
+
+The helper applies, in order: per-strategy cap → per-symbol cap →
+`STALE_DATA_PENALTY` (-0.05) if the symbol is on `stale_data_warnings`
+→ hard zero if symbol is on `do_not_trade_list`. Each step CAN ONLY
+LOWER confidence — the helper guarantees that `adjusted ≤ original`.
+
+### CLI behaviour
+
+`scripts/pre_open_session_planner.py` automatically derives session-level
+v2 fields from per-symbol analysis:
+
+- Strong gap (`GAP_*_STRONG_PRE_OPEN`) → `do_not_trade_list` + cap 0.0
+- Weak gap → `high_risk_symbols` + cap 0.65
+- Low-volume fake move → `observe_only_list` + cap 0.45
+- High relative volume → `event_risk_warnings`
+- Insufficient data → `stale_data_warnings`
+
+These derivations are conservative — the operator can always edit the
+stored runtime_state to override before market open if needed.

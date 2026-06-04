@@ -198,8 +198,281 @@ def clear_plan() -> None:
         pass
 
 
+# ─── v3.19.0 (2026-06-04) — Pre-Open Planner v2 extensions ───────────────────
+#
+# WHY
+# ---
+# v1 (v3.18.0) plan carried per-symbol gap analysis only. v2 adds
+# session-level + per-strategy fields so the morning-allocator (or any
+# monitor) can see explicit warnings, do-not-trade lists, and observe-only
+# lists for a session BEFORE placing any order.
+#
+# v2 fields are OPTIONAL and BACKWARD-COMPATIBLE: a v1 plan in
+# runtime_state still parses cleanly; the new helpers return safe empty
+# defaults when fields are absent.
+#
+# v2 plan shape (added on top of v1):
+#   {
+#     ... v1 fields ...
+#     "expected_regime":              str,
+#     "high_risk_symbols":            [str, ...],
+#     "do_not_trade_list":            [str, ...],
+#     "observe_only_list":            [str, ...],
+#     "strategy_warnings":            {strategy: [str, ...]},
+#     "confidence_caps_per_strategy": {strategy: float in [0,1]},
+#     "confidence_caps_per_symbol":   {symbol: float in [0,1]},
+#     "event_risk_warnings":          [str, ...],
+#     "liquidity_warnings":           [str, ...],
+#     "gap_warnings":                 [str, ...],
+#     "stale_data_warnings":          [str, ...],
+#     "daily_experiment_objectives":  [str, ...],
+#   }
+#
+# SAFETY (defense-in-depth)
+# -------------------------
+# - apply_pre_open_caps NEVER raises confidence; it can only LOWER it.
+# - All cap values clamped to [0.0, 1.0] on read.
+# - Missing entries fall through to no-op (return input unchanged).
+# - Stale-data warning lowers confidence by an additional fixed amount.
+
+# Penalty applied when a symbol carries a stale_data warning for current
+# session (defense-in-depth, never raises confidence).
+STALE_DATA_PENALTY = 0.05
+
+_V2_LIST_FIELDS = (
+    "high_risk_symbols",
+    "do_not_trade_list",
+    "observe_only_list",
+    "event_risk_warnings",
+    "liquidity_warnings",
+    "gap_warnings",
+    "stale_data_warnings",
+    "daily_experiment_objectives",
+)
+
+_V2_DICT_FIELDS = (
+    "strategy_warnings",
+    "confidence_caps_per_strategy",
+    "confidence_caps_per_symbol",
+)
+
+
+def _clamp_unit(v: Any) -> float:
+    """Clamp value to [0.0, 1.0]."""
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return 1.0
+    if x != x:  # NaN
+        return 1.0
+    if x < 0.0:
+        return 0.0
+    if x > 1.0:
+        return 1.0
+    return x
+
+
+def _sanitize_v2(payload: dict, *, raw: dict) -> dict:
+    """Sanitize and attach v2 fields on top of the v1 payload."""
+    payload["expected_regime"] = str(raw.get("expected_regime") or "NEUTRAL")
+
+    for field in _V2_LIST_FIELDS:
+        v = raw.get(field) or []
+        if not isinstance(v, list):
+            v = [v] if v else []
+        payload[field] = [str(x) for x in v if x is not None and x != ""]
+
+    for field in _V2_DICT_FIELDS:
+        v = raw.get(field) or {}
+        if not isinstance(v, dict):
+            v = {}
+        cleaned: dict[str, Any] = {}
+        for k, val in v.items():
+            if not isinstance(k, str) or not k:
+                continue
+            if field == "strategy_warnings":
+                ws = val if isinstance(val, list) else ([val] if val else [])
+                cleaned[k] = [str(x) for x in ws if x]
+            elif field in ("confidence_caps_per_strategy",
+                           "confidence_caps_per_symbol"):
+                cleaned[k] = _clamp_unit(val)
+        payload[field] = cleaned
+
+    return payload
+
+
+# ─── v2 public API ───────────────────────────────────────────────────────────
+
+def store_plan_v2(
+    plan_date_iso: str,
+    per_symbol_plan: dict[str, dict],
+    *,
+    actor: str = "pre-open-planner",
+    overall_warnings: list[str] | None = None,
+    expected_regime: str = "NEUTRAL",
+    high_risk_symbols: list[str] | None = None,
+    do_not_trade_list: list[str] | None = None,
+    observe_only_list: list[str] | None = None,
+    strategy_warnings: dict[str, list[str]] | None = None,
+    confidence_caps_per_strategy: dict[str, float] | None = None,
+    confidence_caps_per_symbol: dict[str, float] | None = None,
+    event_risk_warnings: list[str] | None = None,
+    liquidity_warnings: list[str] | None = None,
+    gap_warnings: list[str] | None = None,
+    stale_data_warnings: list[str] | None = None,
+    daily_experiment_objectives: list[str] | None = None,
+) -> dict:
+    """Persist a v2 pre-open plan with all session-level fields.
+
+    Backward-compatible: a downstream v1 reader still sees the same v1
+    payload shape; v2 fields are simply ignored if unused.
+    """
+    payload = store_plan(
+        plan_date_iso,
+        per_symbol_plan,
+        actor=actor,
+        overall_warnings=overall_warnings,
+    )
+
+    raw_v2 = {
+        "expected_regime":              expected_regime,
+        "high_risk_symbols":            high_risk_symbols or [],
+        "do_not_trade_list":            do_not_trade_list or [],
+        "observe_only_list":            observe_only_list or [],
+        "strategy_warnings":            strategy_warnings or {},
+        "confidence_caps_per_strategy": confidence_caps_per_strategy or {},
+        "confidence_caps_per_symbol":   confidence_caps_per_symbol or {},
+        "event_risk_warnings":          event_risk_warnings or [],
+        "liquidity_warnings":           liquidity_warnings or [],
+        "gap_warnings":                 gap_warnings or [],
+        "stale_data_warnings":          stale_data_warnings or [],
+        "daily_experiment_objectives":  daily_experiment_objectives or [],
+    }
+    payload = _sanitize_v2(payload, raw=raw_v2)
+
+    try:
+        try:
+            from runtime_state import write_section
+        except ImportError:
+            from shared.runtime_state import write_section  # type: ignore
+        write_section("pre_open_plan", payload, actor=actor)
+    except Exception:
+        return payload
+
+    return payload
+
+
+def get_do_not_trade_list() -> list[str]:
+    """Return the do-not-trade list from the plan. [] if absent/corrupt."""
+    plan = get_plan()
+    v = plan.get("do_not_trade_list") or []
+    if not isinstance(v, list):
+        return []
+    return [str(x) for x in v if isinstance(x, str)]
+
+
+def get_observe_only_list() -> list[str]:
+    plan = get_plan()
+    v = plan.get("observe_only_list") or []
+    if not isinstance(v, list):
+        return []
+    return [str(x) for x in v if isinstance(x, str)]
+
+
+def get_strategy_warnings(strategy: str) -> list[str]:
+    plan = get_plan()
+    sw = plan.get("strategy_warnings") or {}
+    if not isinstance(sw, dict):
+        return []
+    ws = sw.get(strategy)
+    if not isinstance(ws, list):
+        return []
+    return [str(x) for x in ws if x]
+
+
+def apply_pre_open_caps(
+    plan: dict,
+    *,
+    strategy: str,
+    symbol: str,
+    current_confidence: float,
+) -> float:
+    """Apply plan caps to live confidence.
+
+    Returns adjusted confidence which is ALWAYS ≤ original — this layer
+    is a defense-in-depth and can ONLY LOWER confidence.
+
+    Order of operations (each step CANNOT raise the value):
+      1. Floor by per-strategy cap (if set).
+      2. Floor by per-symbol cap (if set).
+      3. Subtract STALE_DATA_PENALTY if symbol appears in
+         stale_data_warnings (or any warning list contains it).
+      4. If symbol in do_not_trade_list → set to 0.0.
+
+    Fail-soft: any malformed plan or non-numeric input → return the
+    original confidence unchanged.
+    """
+    try:
+        original = float(current_confidence)
+    except (TypeError, ValueError):
+        return 0.0
+
+    if not isinstance(plan, dict) or not plan:
+        return original
+
+    adjusted = original
+
+    # 1. Per-strategy cap
+    caps_strategy = plan.get("confidence_caps_per_strategy") or {}
+    if isinstance(caps_strategy, dict) and strategy:
+        cap_val = caps_strategy.get(strategy)
+        if cap_val is not None:
+            try:
+                cap_f = float(cap_val)
+                if cap_f < adjusted:
+                    adjusted = cap_f
+            except (TypeError, ValueError):
+                pass
+
+    # 2. Per-symbol cap
+    caps_symbol = plan.get("confidence_caps_per_symbol") or {}
+    if isinstance(caps_symbol, dict) and symbol:
+        cap_val = caps_symbol.get(symbol)
+        if cap_val is not None:
+            try:
+                cap_f = float(cap_val)
+                if cap_f < adjusted:
+                    adjusted = cap_f
+            except (TypeError, ValueError):
+                pass
+
+    # 3. Stale-data warning penalty
+    stale = plan.get("stale_data_warnings") or []
+    if isinstance(stale, list) and symbol and symbol in stale:
+        adjusted -= STALE_DATA_PENALTY
+
+    # 4. Do-not-trade hard zero
+    dnt = plan.get("do_not_trade_list") or []
+    if isinstance(dnt, list) and symbol and symbol in dnt:
+        adjusted = 0.0
+
+    # Final invariant: never raise above original; floor at 0.0
+    if adjusted > original:
+        adjusted = original
+    if adjusted < 0.0:
+        adjusted = 0.0
+
+    return adjusted
+
+
 __all__ = [
     "MAX_POSITIVE_ADJUSTMENT", "MIN_NEGATIVE_ADJUSTMENT",
+    "STALE_DATA_PENALTY",
     "get_plan", "get_plan_for_symbol",
     "store_plan", "clear_plan",
+    # v3.19.0
+    "store_plan_v2",
+    "get_do_not_trade_list", "get_observe_only_list",
+    "get_strategy_warnings",
+    "apply_pre_open_caps",
 ]

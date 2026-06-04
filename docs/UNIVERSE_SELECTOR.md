@@ -127,3 +127,94 @@ Operator should re-evaluate the active universe configuration when:
 - `shared/runtime_config.py::active_universe` — read the active universe.
 - `shared/allocator.py::_execute_one` — pre-trade gate insertion point.
 - `tests/test_universe_filter_v3180.py` — unit tests.
+
+---
+
+## v2 Ranking (v3.19.0 — 2026-06-04)
+
+The filter (v3.18.0) answers "which symbols pass the floor?". The v2
+ranking layer answers "which of them deserve attention FIRST?"
+
+### Hard constraints
+
+- `rank_symbols(...)` is a PURE function — no broker calls, no network,
+  no paid services.
+- Result is deterministic: same inputs → same ranking.
+- Ranking NEVER auto-trades. NEVER raises risk limits, position sizes,
+  or leverage. The risk engine retains final say on every order.
+- One JSONL audit line is appended per ranking decision
+  (`kind='trading'`, `type='universe_ranking'`,
+  `source='evidence_analysis'`).
+
+### Status enum
+
+| Status            | Meaning                                                          |
+|-------------------|------------------------------------------------------------------|
+| `TRADE_ELIGIBLE`  | Passes all gates AND has ≥5 closed paper trades.                 |
+| `OBSERVE_ONLY`    | Passes gates but evidence too thin (n_closed < 5).               |
+| `NEEDS_DATA`      | Missing volume_data AND history AND paper performance entries.   |
+| `REJECTED`        | Fails forbidden-pattern OR spread/liquidity hard gate.           |
+
+### Score components
+
+Each component is clamped to `[0.0, 1.0]`. Missing input → neutral 0.5
+so that absent data never silently rejects a symbol.
+
+| Component                  | Weight |
+|----------------------------|-------:|
+| `liquidity_score`          | 0.16   |
+| `paper_performance_score`  | 0.14   |
+| `spread_score`             | 0.12   |
+| `volatility_score`         | 0.10   |
+| `data_quality_score`       | 0.10   |
+| `regime_fit_score`         | 0.10   |
+| `strategy_compat_score`    | 0.08   |
+| `calibration_score`        | 0.08   |
+| `drawdown_history_score`   | 0.08   |
+| `recent_anomalies_score`   | 0.04   |
+
+Composite score is the weighted average (renormalised over present
+components — missing ones never zero out the score).
+
+### CLI
+
+```bash
+# Render top-of-universe ranking using local inputs
+python3 scripts/universe_ranking_report.py \
+    --symbols AAPL MSFT SPY \
+    --inputs-json data/ranking_inputs.json
+
+# Stdout dry-run
+python3 scripts/universe_ranking_report.py --dry-run
+```
+
+Outputs `docs/universe_ranking_LATEST.md` and
+`docs/universe_ranking_LATEST.json`.
+
+### Audit trail
+
+One JSONL line summarising the ranking decision is appended to
+`journal/autonomy/YYYY-MM-DD.jsonl`:
+
+```json
+{
+  "type":        "universe_ranking",
+  "source":      "evidence_analysis",
+  "decision":    "ANALYSED",
+  "universe_id": "US_LARGE",
+  "n_ranked":    25,
+  "n_eligible":  4,
+  "n_observe":   18,
+  "n_rejected":  2,
+  "n_needs_data": 1,
+  "top_5":       [{"symbol": "...", "score": 0.74, "status": "..."}],
+  "decided_at":  "2026-06-04T13:42:01Z"
+}
+```
+
+### Ranking-related files
+
+- `shared/universe_selector.py::rank_symbols` — pure ranking core.
+- `shared/universe_selector.py::write_universe_report` — md/json writer.
+- `scripts/universe_ranking_report.py` — CLI.
+- `tests/test_universe_selector_v2_v3190.py` — unit tests.

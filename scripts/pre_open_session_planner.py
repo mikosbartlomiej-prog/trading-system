@@ -222,19 +222,23 @@ def main(argv: list[str] | None = None) -> int:
         }, indent=2, default=str))
         return 0
 
+    # v3.19.0 — derive v2 session-level fields from per-symbol entries.
+    v2_fields = _build_v2_session_fields(per_symbol)
+
     # Persist
     try:
         try:
-            from pre_open_plan import store_plan
+            from pre_open_plan import store_plan_v2
         except ImportError:
-            from shared.pre_open_plan import store_plan  # type: ignore
+            from shared.pre_open_plan import store_plan_v2  # type: ignore
         # Ensure STATE_WRITE_ACTOR is acceptable
         os.environ.setdefault("STATE_WRITE_ACTOR", "pre-open-planner")
-        store_plan(
+        store_plan_v2(
             plan_date_iso=plan_date,
             per_symbol_plan=per_symbol,
             actor="pre-open-planner",
             overall_warnings=overall_warnings,
+            **v2_fields,
         )
     except Exception as e:
         # Fail-soft: print, but exit 0 — planner must not break the chain.
@@ -242,8 +246,86 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     print(f"[pre-open-planner] stored plan for {len(per_symbol)} symbols; "
-          f"summary={summary_counts}; warnings={overall_warnings}")
+          f"summary={summary_counts}; warnings={overall_warnings}; "
+          f"do_not_trade={len(v2_fields.get('do_not_trade_list') or [])}; "
+          f"observe_only={len(v2_fields.get('observe_only_list') or [])}")
     return 0
+
+
+def _build_v2_session_fields(per_symbol: dict[str, dict]) -> dict:
+    """Derive session-level v2 fields from per-symbol plan entries.
+
+    Conservative: no symbol enters do_not_trade UNLESS its label is a
+    strong gap or low-volume-fake-move; observe_only catches weaker
+    flags. Adjustments NEVER raise confidence (caller path enforces
+    this via pre_open_plan.apply_pre_open_caps).
+    """
+    high_risk: list[str] = []
+    do_not_trade: list[str] = []
+    observe_only: list[str] = []
+    event_risk: list[str] = []
+    liquidity: list[str] = []
+    gap: list[str] = []
+    stale_data: list[str] = []
+    caps_per_symbol: dict[str, float] = {}
+
+    for sym, entry in (per_symbol or {}).items():
+        if not isinstance(entry, dict):
+            continue
+        label = entry.get("label") or ""
+        warnings = entry.get("warnings") or []
+        if not isinstance(warnings, list):
+            warnings = []
+
+        # Strong pre-market gap → do-not-trade (operator can override).
+        if label in ("GAP_UP_STRONG_PRE_OPEN", "GAP_DOWN_STRONG_PRE_OPEN"):
+            do_not_trade.append(sym)
+            gap.append(f"{sym}:{label}")
+            caps_per_symbol[sym] = 0.0
+
+        # Low-volume fake move → observe only.
+        elif label == "LOW_VOLUME_FAKE_MOVE":
+            observe_only.append(sym)
+            liquidity.append(f"{sym}:low_volume_fake")
+            caps_per_symbol[sym] = min(caps_per_symbol.get(sym, 1.0), 0.45)
+
+        # Weak gap → cap to 0.65, mark high-risk.
+        elif label in ("GAP_UP_WEAK_PRE_OPEN", "GAP_DOWN_WEAK_PRE_OPEN"):
+            high_risk.append(sym)
+            gap.append(f"{sym}:{label}")
+            caps_per_symbol[sym] = min(caps_per_symbol.get(sym, 1.0), 0.65)
+
+        # High relative volume → high-risk (likely catalyst).
+        elif label == "HIGH_REL_VOLUME":
+            high_risk.append(sym)
+            event_risk.append(f"{sym}:high_rel_volume")
+
+        # Insufficient data → mark for observability (no auto-reject).
+        if label == "INSUFFICIENT_DATA" or "no_data" in warnings:
+            stale_data.append(sym)
+
+    objectives = [
+        "validate fills against paper expectations",
+        "monitor for stale-data symbols flagged in plan",
+    ]
+    if do_not_trade:
+        objectives.append(
+            f"avoid entries on {len(do_not_trade)} gap-flagged symbols")
+
+    return {
+        "expected_regime":              "NEUTRAL",
+        "high_risk_symbols":            sorted(set(high_risk)),
+        "do_not_trade_list":            sorted(set(do_not_trade)),
+        "observe_only_list":            sorted(set(observe_only)),
+        "strategy_warnings":            {},
+        "confidence_caps_per_strategy": {},
+        "confidence_caps_per_symbol":   caps_per_symbol,
+        "event_risk_warnings":          event_risk,
+        "liquidity_warnings":           liquidity,
+        "gap_warnings":                 gap,
+        "stale_data_warnings":          sorted(set(stale_data)),
+        "daily_experiment_objectives":  objectives,
+    }
 
 
 if __name__ == "__main__":
