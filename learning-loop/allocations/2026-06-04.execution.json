@@ -1,73 +1,81 @@
 {
   "plan_date": "2026-06-04",
-  "executed_at": "2026-06-04T13:00:32Z",
-  "n_placed": 0,
-  "n_skipped": 8,
+  "executed_at": "2026-06-04T13:45:28Z",
+  "n_placed": 8,
+  "n_skipped": 0,
   "n_failed": 0,
   "results": [
     {
       "symbol": "AMD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 34.0000 @ $498.51",
+      "attempted_at": "2026-06-04T13:45:24Z",
+      "alpaca_order_id": "d13937df-c4aa-4ba3-b06a-375e6b6db799"
     },
     {
       "symbol": "CRWD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 19.0000 @ $690.50",
+      "attempted_at": "2026-06-04T13:45:25Z",
+      "alpaca_order_id": "43bc5cbc-44b0-43f1-9ae6-154cd08170f9"
     },
     {
       "symbol": "ORCL",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 58.0000 @ $225.57",
+      "attempted_at": "2026-06-04T13:45:25Z",
+      "alpaca_order_id": "8e19fcca-cd5f-4033-a149-b853b6a0a28f"
     },
     {
       "symbol": "PANW",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 48.0000 @ $273.65",
+      "attempted_at": "2026-06-04T13:45:26Z",
+      "alpaca_order_id": "d8382a43-fa00-44aa-b0ca-5e464151969c"
     },
     {
       "symbol": "NOW",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 107.0000 @ $122.11",
+      "attempted_at": "2026-06-04T13:45:26Z",
+      "alpaca_order_id": "fa6d53a9-b5cf-4562-a02a-4b1d12e2c1fa"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 12.0000 @ $751.72",
+      "attempted_at": "2026-06-04T13:45:27Z",
+      "alpaca_order_id": "a681f9e1-5e3a-4772-855d-38e33f581c17"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 13.0000 @ $733.73",
+      "attempted_at": "2026-06-04T13:45:27Z",
+      "alpaca_order_id": "6006ea47-3219-4d6b-8c1d-859b710f9c2c"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-04T13:00:32Z"
+      "status": "placed",
+      "reason": "BUY 16.0000 @ $414.10",
+      "attempted_at": "2026-06-04T13:45:28Z",
+      "alpaca_order_id": "56b35b4b-62fa-4904-b72d-1630098123a0"
     }
   ]
 }
