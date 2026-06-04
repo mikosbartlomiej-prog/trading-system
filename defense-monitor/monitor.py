@@ -752,6 +752,64 @@ def run_scan():
         )
         print(f"      Headline: {signal['headline']}")
         print(f"      Keywords: {signal['keywords']}")
+        # v3.17.0 (2026-06-04) — Feedback context + confidence_inputs (Task 5).
+        # Wires instrument_profile + liquidity_sweep + lead_lag into the signal
+        # before it reaches risk_officer (via execute_stock_signal). Fail-soft
+        # at every step so a missing helper or stale data never blocks an alert.
+        try:
+            from market_data import get_daily_bars as _gdb
+        except ImportError:
+            try:
+                from shared.market_data import get_daily_bars as _gdb  # type: ignore
+            except ImportError:
+                _gdb = None  # type: ignore
+        try:
+            from feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx
+        except ImportError:
+            try:
+                from shared.feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx  # type: ignore
+            except ImportError:
+                def _build_feedback_ctx(**_kw):  # type: ignore
+                    return {}
+        try:
+            from confidence_builder import build_confidence_inputs as _build_ci
+        except ImportError:
+            try:
+                from shared.confidence_builder import build_confidence_inputs as _build_ci  # type: ignore
+            except ImportError:
+                def _build_ci(**_kw):  # type: ignore
+                    return None
+        _sym = signal["symbol"]
+        try:
+            _sym_bars = _gdb(_sym, days=35) if _gdb else None
+        except Exception:
+            _sym_bars = None
+        try:
+            _spy_b = _gdb("SPY", days=35) if _gdb else None
+            _spy_cl = ([float(x) for x in _spy_b["close"]]
+                        if (_spy_b and _spy_b.get("close")) else None)
+        except Exception:
+            _spy_cl = None
+        try:
+            _fb_ctx = _build_feedback_ctx(
+                symbol=_sym, bars=_sym_bars, index_closes=_spy_cl,
+            )
+        except Exception:
+            _fb_ctx = {}
+        try:
+            _norm_score = min(1.0, max(0.0, float(signal.get("score", 50)) / 100.0))
+            signal["confidence_inputs"] = _build_ci(
+                strategy=signal.get("strategy", "defense-news"),
+                primary_score=_norm_score,
+                bars=_sym_bars,
+                account_status=account,
+                source_type="dod_contract" if signal.get("source") == "DoD Contracts"
+                              else "defense-news",
+                source_confirmation_present=False,
+                **_fb_ctx,
+            )
+        except Exception as _ci_e:
+            print(f"      confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
         # Pre-market gate: defense-monitor runs 24/7 (cron 0,30 * * * *)
         # but Alpaca stock orders need regular session (09:30-16:00 ET).
         # If market closed → email-only with QUEUED prefix; don't try

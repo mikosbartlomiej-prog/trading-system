@@ -405,6 +405,61 @@ def execute_geo_signal(signal: dict) -> bool:
             mark_signal_acted(sym, "geo-news")
         except Exception as e:
             print(f"  geo signal-gate error ({type(e).__name__}: {e}) — proceeding")
+        # v3.17.0 (2026-06-04) — feedback context + confidence_inputs (Task 5).
+        # Fail-soft chain. Bars + SPY closes fetched on-demand from
+        # shared/market_data. If market_data unavailable, key omitted and
+        # downstream confidence_builder treats components as neutral.
+        try:
+            from market_data import get_daily_bars as _gdb
+        except ImportError:
+            try:
+                from shared.market_data import get_daily_bars as _gdb  # type: ignore
+            except ImportError:
+                _gdb = None  # type: ignore
+        try:
+            from feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx
+        except ImportError:
+            try:
+                from shared.feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx  # type: ignore
+            except ImportError:
+                def _build_feedback_ctx(**_kw):  # type: ignore
+                    return {}
+        try:
+            from confidence_builder import build_confidence_inputs as _build_ci
+        except ImportError:
+            try:
+                from shared.confidence_builder import build_confidence_inputs as _build_ci  # type: ignore
+            except ImportError:
+                def _build_ci(**_kw):  # type: ignore
+                    return None
+        try:
+            sym_bars = _gdb(sym, days=35) if _gdb else None
+        except Exception:
+            sym_bars = None
+        try:
+            spy_b = _gdb("SPY", days=35) if _gdb else None
+            spy_cl = [float(x) for x in spy_b["close"]] if (spy_b and spy_b.get("close")) else None
+        except Exception:
+            spy_cl = None
+        try:
+            fb_ctx = _build_feedback_ctx(
+                symbol=sym, bars=sym_bars, index_closes=spy_cl,
+            )
+        except Exception:
+            fb_ctx = {}
+        try:
+            signal["confidence_inputs"] = _build_ci(
+                strategy=signal.get("strategy", "geo-news"),
+                primary_score=float(signal.get("confidence", 0.6)),
+                regime=signal.get("regime"),
+                bars=sym_bars,
+                source_type="dod_contract" if signal.get("source") == "DoD Contracts"
+                              else "geo-news",
+                source_confirmation_present=False,
+                **fb_ctx,
+            )
+        except Exception as _ci_e:
+            print(f"  confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
         order = execute_stock_signal(signal)
         if order and order.get("id"):
             print(f"  Order {signal['action']} {sym}: id={order['id']} qty={order.get('qty')} @ ${order.get('limit_price')}")

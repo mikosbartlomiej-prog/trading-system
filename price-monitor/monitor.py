@@ -421,14 +421,39 @@ def run_checks():
             def _build_ci(**_kw):  # type: ignore
                 return None
 
-    def _attach_ci(signal_dict, *, side, score=None, regime=None):
+    # v3.17.0 (2026-06-04) — feedback modules helper (Task 5).
+    # Wires instrument_profile + liquidity_sweep + lead_lag analyses
+    # into confidence_inputs. Fail-soft: missing helpers / data → ctx={}.
+    try:
+        from feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx
+    except ImportError:
         try:
+            from shared.feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx  # type: ignore
+        except ImportError:
+            def _build_feedback_ctx(**_kw):  # type: ignore
+                return {}
+
+    def _attach_ci(signal_dict, *, side, score=None, regime=None,
+                    bars=None, index_closes=None):
+        try:
+            sym = signal_dict.get("symbol") or signal_dict.get("ticker") or ""
+            # v3.17.0 — feedback context (instrument profile + sweep + lead-lag)
+            try:
+                fb_ctx = _build_feedback_ctx(
+                    symbol=sym,
+                    bars=bars,
+                    index_closes=index_closes,
+                )
+            except Exception:
+                fb_ctx = {}
             signal_dict["confidence_inputs"] = _build_ci(
                 strategy      = signal_dict.get("strategy", "momentum-long"),
                 primary_score = score,
                 regime        = regime or regime_info["regime"],
+                bars          = bars,
                 bars_count    = 60,                # 60-day backtest window
                 account_status= account,
+                **fb_ctx,
             )
         except Exception as _ci_e:
             print(f"    confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
@@ -460,11 +485,22 @@ def run_checks():
     # Score every candidate; rank by score; pick top_n
     spy_bars = get_daily_bars("SPY", days=35)
     qqq_bars = get_daily_bars("QQQ", days=35)
+    # v3.17.0 — pre-extract SPY closes for lead-lag (fail-soft).
+    spy_closes = None
+    try:
+        if spy_bars and spy_bars.get("close"):
+            spy_closes = [float(x) for x in spy_bars["close"]]
+    except Exception:
+        spy_closes = None
+    # v3.17.0 — cache per-ticker bars so _attach_ci can reuse without
+    # re-fetching (avoids extra Alpaca calls / rate-limit risk).
+    bars_by_ticker: dict[str, dict] = {}
     scored = []
     for t in candidates_long:
         bars = get_daily_bars(t, days=35)
         if not bars:
             continue
+        bars_by_ticker[t] = bars
         s = score_symbol(t, bars, spy_bars=spy_bars, qqq_bars=qqq_bars)
         scored.append(s)
     scored.sort(key=lambda x: x["score"], reverse=True)
@@ -494,7 +530,9 @@ def run_checks():
             signal["regime"] = regime_info["regime"]
             signal["momentum_score"] = s["score"]
             signal["score_reason"] = s["reason"]
-            _attach_ci(signal, side="buy", score=s["score"])
+            _attach_ci(signal, side="buy", score=s["score"],
+                        bars=bars_by_ticker.get(ticker),
+                        index_closes=spy_closes)
             print(f"    >>> SYGNAL LONG: {ticker}! score={s['score']:+.3f} regime={regime_info['regime']} size=${new_size}")
             signals_found += 1
             sent = send_alert(signal)
@@ -523,7 +561,15 @@ def run_checks():
                 print(f"  >>> SYGNAL SHORT {ticker} pominiety (concentration {combined:.1f}% > 40%)")
                 continue
             signal["size_usd"] = new_size
-            _attach_ci(signal, side="sell_short")
+            # v3.17.0 — fetch bars fail-soft for SHORT side feedback context
+            short_bars = None
+            try:
+                short_bars = get_daily_bars(ticker, days=35)
+            except Exception:
+                short_bars = None
+            _attach_ci(signal, side="sell_short",
+                        bars=short_bars,
+                        index_closes=spy_closes)
             print(f"  >>> SYGNAL SHORT: {ticker}! (concentration={combined:.1f}%)")
             signals_found += 1
             sent = send_alert(signal)
@@ -547,7 +593,15 @@ def run_checks():
                 print(f"  >>> SYGNAL LEVERAGED {ticker} pominiety (concentration {combined:.1f}% > 40%)")
                 continue
             signal["size_usd"] = new_size
-            _attach_ci(signal, side="buy")
+            # v3.17.0 — fetch bars fail-soft for leveraged feedback context
+            lev_bars = None
+            try:
+                lev_bars = get_daily_bars(ticker, days=35)
+            except Exception:
+                lev_bars = None
+            _attach_ci(signal, side="buy",
+                        bars=lev_bars,
+                        index_closes=spy_closes)
             print(f"  >>> SYGNAL LEVERAGED: {ticker}! (concentration={combined:.1f}%)")
             signals_found += 1
             sent = send_alert(signal)

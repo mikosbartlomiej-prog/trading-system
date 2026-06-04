@@ -581,6 +581,19 @@ def run_scan():
             def _build_ci(**_kw):  # type: ignore
                 return None
 
+    # v3.17.0 (2026-06-04) — feedback modules helper (Task 5).
+    # NOTE: crypto skips lead_lag (no equity index analog). instrument_profile
+    # may return insufficient_data for crypto pairs (Alpaca stocks-bars
+    # endpoint doesn't serve crypto) — that's expected fail-soft behavior.
+    try:
+        from feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx
+    except ImportError:
+        try:
+            from shared.feedback_modules_helper import build_feedback_confidence_context as _build_feedback_ctx  # type: ignore
+        except ImportError:
+            def _build_feedback_ctx(**_kw):  # type: ignore
+                return {}
+
     def _primary_score_for(strategy_name: str, rsi_val: float | None) -> float | None:
         if rsi_val is None:
             return None
@@ -602,6 +615,16 @@ def run_scan():
             continue
         signal["size_usd"] = new_size
         # v3.14.0 — populate confidence_inputs for risk_officer gate
+        # v3.17.0 — extend with feedback ctx (sweep + instrument profile;
+        # lead_lag intentionally skipped — no equity index analog for crypto).
+        try:
+            fb_ctx = _build_feedback_ctx(
+                symbol=signal.get("symbol", ""),
+                bars=None,             # crypto signals don't carry bars dict
+                index_closes=None,     # SKIP lead_lag for crypto
+            )
+        except Exception:
+            fb_ctx = {}
         try:
             signal["confidence_inputs"] = _build_ci(
                 strategy=signal.get("strategy", "crypto-momentum"),
@@ -610,6 +633,7 @@ def run_scan():
                 bars_count=24,                # 1h x 24 bars analyzed
                 regime="NEUTRAL",             # crypto is regime-agnostic (24/7)
                 account_status=account,
+                **fb_ctx,
             )
         except Exception as _ci_e:
             print(f"  confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
