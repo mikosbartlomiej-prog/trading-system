@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-03T23:55:41.524820+00:00",
+      "last_seen_iso": "2026-06-04T00:00:34.648282+00:00",
       "last_status": "ok",
-      "pings_today": 287
+      "pings_today": 1
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -34,30 +34,26 @@
   },
   "intraday_governor": {
     "account_unavailable": false,
-    "alerts_sent": {
-      "PROFIT_LOCK": "2026-06-03T14:35:44.949682+00:00",
-      "RED_DAY_AFTER_GREEN": "2026-06-03T14:50:39.944935+00:00",
-      "legacy:PROFIT_LOCK": "2026-06-03T14:35:44.949094+00:00"
-    },
-    "block_new_entries": true,
+    "alerts_sent": {},
+    "block_new_entries": false,
     "current_equity": 95660.99,
     "current_intraday_pnl": 415.9800000000105,
     "current_intraday_pnl_pct": 0.004367472899630233,
-    "date": "2026-06-03",
-    "giveback_pct_of_peak": 0.5280730614328606,
-    "giveback_usd": 465.47000000000116,
-    "intraday_peak_equity": 96126.46,
-    "intraday_peak_pnl": 881.4500000000116,
-    "intraday_peak_pnl_pct": 0.009254553073174245,
-    "last_action": "noop",
-    "last_update_at": "2026-06-03T23:55:41.523010+00:00",
-    "max_gross_target": 0.25,
-    "options_first_reduction": true,
-    "peak_at": "2026-06-03T14:30:40.109269+00:00",
-    "pnl_state": "RED_DAY_AFTER_GREEN",
+    "date": "2026-06-04",
+    "giveback_pct_of_peak": 0.0,
+    "giveback_usd": 0.0,
+    "intraday_peak_equity": 95660.99,
+    "intraday_peak_pnl": 0.0,
+    "intraday_peak_pnl_pct": 0.0,
+    "last_action": "transition_NEW_DAY_to_GREEN",
+    "last_update_at": "2026-06-04T00:00:34.641468+00:00",
+    "max_gross_target": 1.5,
+    "options_first_reduction": false,
+    "peak_at": "2026-06-04T00:00:34.641468+00:00",
+    "pnl_state": "GREEN",
     "profit_floor_usd": 0.0,
     "session_start_equity": 95245.01,
-    "state_entered_at": "2026-06-03T14:50:39.331976+00:00",
+    "state_entered_at": "2026-06-04T00:00:34.641468+00:00",
     "top_giveback_symbols": []
   },
   "position_mfe": {
