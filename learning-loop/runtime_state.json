@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-04T14:20:29.346955+00:00",
+      "last_seen_iso": "2026-06-04T14:25:26.478464+00:00",
       "last_status": "ok",
-      "pings_today": 168
+      "pings_today": 169
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -39,17 +39,17 @@
       "legacy:PROFIT_LOCK": "2026-06-04T14:20:28.230398+00:00"
     },
     "block_new_entries": true,
-    "current_equity": 95882.88,
-    "current_intraday_pnl": 221.95000000001164,
-    "current_intraday_pnl_pct": 0.0023201739728017663,
+    "current_equity": 95861.26,
+    "current_intraday_pnl": 200.33000000000175,
+    "current_intraday_pnl_pct": 0.0020941673889225388,
     "date": "2026-06-04",
-    "giveback_pct_of_peak": 0.8080249796737342,
-    "giveback_usd": 934.1900000000023,
+    "giveback_pct_of_peak": 0.8267251370941241,
+    "giveback_usd": 955.8100000000122,
     "intraday_peak_equity": 96817.07,
     "intraday_peak_pnl": 1156.140000000014,
     "intraday_peak_pnl_pct": 0.012085811835615795,
-    "last_action": "red_after_green_close_intraday_block_until_next_session",
-    "last_update_at": "2026-06-04T14:20:25.375797+00:00",
+    "last_action": "noop",
+    "last_update_at": "2026-06-04T14:25:26.475832+00:00",
     "max_gross_target": 0.25,
     "options_first_reduction": true,
     "peak_at": "2026-06-04T14:05:25.706913+00:00",
