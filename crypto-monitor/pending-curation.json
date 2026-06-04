@@ -1,5 +1,5 @@
 {
-  "narrative": "BTC RSI 19.9 trzecią godzinę z rzędu — wyczerpanie sprzedawców potwierdzone niskim wolumenem 1.08× avg (brak paniki, cichy dołek). 1h zmiana -0.03% = stabilizacja bez kaskady. Portfel czysty, equity +0.21% dziś. Oversold-bounce TP $85,691 (+20%) vs SL $63,911 (-10.5%) daje R:R 1.9:1 — akceptowalne dla Tier 1.",
+  "narrative": "BTC RSI 19.9 przy wyczerpaniu presji sprzedażowej (1h: -0.03%) — ekstremalny oversold z czystą księgą $95.8k i pełną gotowością kapitałową. Volume 1.08× neutralny dla tej strategii: oversold-bounce edge leży w statystycznej rzadkości RSI <20 (<5% historii BTC), nie w potwierdzeniu wolumenowym przełamania. Predator wchodzi Tier 1 z medium conviction.",
   "selected_signals": [
     {
       "ticker": "BTC/USD",
@@ -7,12 +7,13 @@
       "tier": 1,
       "conviction": "medium",
       "size_multiplier": 1.0,
-      "rationale": "RSI 19.9 przy -2.83% 24h i wolumenie 1.08× avg to klasyczna dywergencja cichego wyczerpania: sprzedawcy schodzą bez paniki, brak impulsu krachu. Monitor potwierdził 3-barową stabilizację (v3.13.3). BTC 1h -0.03% = brak aktywnej presji sprzedażowej. Zero otwartych pozycji = czysta egzekucja bez ryzyka koncentracji.",
-      "expected_horizon": "1d",
-      "key_risk": "Makro-szok (Non-Farm Payroll, eskalacja geopolityczna) wywołuje nową falę sprzedaży zanim RSI znajdzie twarde dno — kontynuacja powolnego krwawienia mimo wyczerpania."
+      "rationale": "RSI 19.9 to historycznie ekstremalny poziom dla BTC — poniżej 20 rzadziej niż 5% historii, mean-reversion edge udokumentowany we wszystkich post-halving cyklach. BTC 1h -0.03% sygnalizuje wyczerpanie presji sprzedażowej bez kontynuacji dystrybucji. Volume 1.08× neutralne — oversold-bounce nie wymaga 3×+ vol (wymóg momentum/breakout; tutaj edge w ekstremalnym RSI + 3-bar stabilizacja). Konto czyste (0 pozycji, equity $95,861), brak ryzyka koncentracji. R:R 1.9:1 (TP $85,691 / SL $63,911).",
+      "expected_horizon": "2-3d",
+      "key_risk": "Brak wolumenowego potwierdzenia kapitulacji — RSI 19.9 może spaść do 10-15 przy kontynuacji wyprzedaży bez katalizatora odwrócenia; falling knife scenario możliwy; stop $63,911 musi być twardy."
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC dominance stabilna bez ruchu — brak aktywnego altseason; Tier 2 alts bez własnych setupów; RSI <20 na BTC historycznie poprzedza 10-20% bounce w 1-3 dni przy braku zewnętrznego katalizatora.",
-  "confidence_in_curation": "medium"
+  "macro_context": "BTC 1h flat (-0.03%) po 24h korekcie -2.83% prowadzącej do RSI 19.9; post-halving 2024 expansion historycznie wspiera Tier 1 mean-reversion przy ekstremalnych RSI-ach; alt_open_count=0, brak ryzyka korelacji.",
+  "confidence_in_curation": "medium",
+  "as_of": "2026-06-04T16:30:36Z"
 }
