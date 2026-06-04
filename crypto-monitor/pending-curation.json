@@ -13,7 +13,7 @@
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC 1h flat (-0.03%) po 24h korekcie -2.83% prowadzącej do RSI 19.9; altseason zablokowany przy BTC weakness; post-halving 2024 expansion historycznie wspiera Tier 1 mean-reversion przy ekstremalnych RSI-ach.",
+  "macro_context": "BTC 1h flat (-0.03%) po 24h korekcie -2.83% prowadzącej do RSI 19.9; post-halving 2024 expansion historycznie wspiera Tier 1 mean-reversion przy ekstremalnych RSI-ach; alt_open_count=0, brak ryzyka korelacji.",
   "confidence_in_curation": "medium",
-  "as_of": "2026-06-04T16:25:32Z"
+  "as_of": "2026-06-04T16:30:36Z"
 }
