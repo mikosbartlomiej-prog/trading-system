@@ -1,5 +1,5 @@
 {
-  "narrative": "BTC RSI 19.9 na daily — poziom kapitulacji obserwowany historycznie rzadziej niż 5 razy. Cena $71,409 stabilna (1h: -0.03%), sprzedający wyczerpani po wielotygodniowej korekcie. Volume 1.08× neutralne — brak panic-dump confirmation, ale też brak dystrybucji; ten setup to mean-reversion na ekstremalnym oversold, nie momentum breakout. Predator kupuje strach przy RSI <20, czyste konto bez otwartych pozycji.",
+  "narrative": "BTC RSI 19.9 — poziom ekstremalnego oversold obserwowany historycznie rzadziej niż 5 razy; 24h ruch -2.83% z ceną stabilizującą się (1h: -0.03%) sygnalizuje wyczerpanie sprzedających. Predator wchodzi na mean-reversion przy RSI <20 z czystą księgą i pełną gotowością kapitałową ($95k, 0 otwartych pozycji).",
   "selected_signals": [
     {
       "ticker": "BTC/USD",
@@ -7,12 +7,12 @@
       "tier": 1,
       "conviction": "medium",
       "size_multiplier": 1.0,
-      "rationale": "RSI 19.9 daily to historycznie ekstremalny oversold dla BTC — statystycznie oddaje +15-25% w ciągu 2-4 tygodni od takich poziomów. BTC 1h zmiana -0.03% potwierdza ustabilizowanie presji sprzedażowej. Volume 1.08× neutralne (nie potwierdza V-reversal objętościowo, ale nie wskazuje też na kontynuację dystrybucji). Brak otwartych pozycji eliminuje ryzyko koncentracji. TP +20% ($85,691) / SL -10.5% ($63,911) = R:R 1.9.",
+      "rationale": "RSI 19.9 to statystycznie ekstremalny oversold dla BTC — historycznie +15-25% w ciągu 2-4 tygodni od takich poziomów. BTC 1h -0.03% potwierdza stabilizację presji sprzedażowej bez kontynuacji dystrybucji. Volume 1.08× neutralne (brak volumetrycznego potwierdzenia V-reversal, ale też brak panik-dumpu). Brak otwartych pozycji eliminuje ryzyko koncentracji. TP +20% ($85,691) / SL -10.5% ($63,911) = R:R 1.9.",
       "expected_horizon": "2-3d",
-      "key_risk": "BTC nie osiągnął klasycznego volume-spike capitulation bottom — jeśli sellers powrócą po chwilowej stabilizacji i cena przebije $63,911 support, setup invalidowany; falling knife scenario możliwy bez wyraźnego catalysta odwrócenia."
+      "key_risk": "BTC nie osiągnął volume-spike capitulation bottom — jeśli sprzedający powrócą po chwilowej stabilizacji i cena przebije $63,911 support, setup invalidowany; falling knife scenario możliwy bez wyraźnego catalysta odwrócenia."
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC 1h praktycznie flat (-0.03%) po korekcie prowadzącej do RSI 19.9 daily; brak danych dominance/altseason w payloadzie; 0 otwartych pozycji = pełna gotowość kapitałowa na Tier 1 entry.",
+  "macro_context": "BTC 1h praktycznie flat (-0.03%) po wielotygodniowej korekcie prowadzącej do RSI 19.9; altseason blocked (BTC dominance kierunek bez danych inflow); 0 otwartych pozycji = pełna gotowość na Tier 1 mean-reversion entry.",
   "confidence_in_curation": "medium"
 }
