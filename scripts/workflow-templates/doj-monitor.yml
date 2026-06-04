@@ -1,0 +1,95 @@
+name: doj-monitor
+
+# v3.16 (2026-06-04) — SEC 8-K + DOJ press release scanner.
+# Emit-only path closing FB-008 with Option B from operator walkthrough.
+# No auto-execute, no Curator, no trade placement. Each fresh material
+# 8-K (items 1.01/1.02/1.03/5.02/8.01) and each DOJ press release with
+# a resolvable ticker emits a [DOJ-FILING] email and is recorded in
+# doj-monitor/state.json (dedup cache).
+
+on:
+  schedule:
+    # Every 2 hours, 24/7 — SEC EDGAR + DOJ feeds update on irregular
+    # but generally business-hours cadence. ~12 runs/day keeps inbox
+    # quiet and conserves GitHub Actions minutes.
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # persist doj-monitor/state.json dedup cache
+
+concurrency:
+  group: doj-monitor-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONIOENCODING:  utf-8
+      LC_ALL:            C
+      LANG:              C
+      # SEC compliance — must identify the requester with a real contact.
+      SEC_USER_AGENT:    ${{ secrets.SEC_USER_AGENT }}
+      # Email delivery (the only side effect of this monitor)
+      GMAIL_USER:        ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      NOTIFY_EMAIL:      ${{ secrets.NOTIFY_EMAIL }}
+      # Optional — used by drawdown / VIX guards (fail-open if missing)
+      ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+      FINNHUB_API_KEY:   ${{ secrets.FINNHUB_API_KEY }}
+      # Feature flags
+      AUTO_EXECUTE_DOJ:  "false"   # MUST stay false until Curator + risk wiring
+      USE_DOJ_CURATOR:   "false"
+      MAX_ALERTS_PER_RUN: "3"
+      # Risk profile (inherited from main system)
+      RISK_PROFILE:      "AGGRESSIVE_PAPER"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r doj-monitor/requirements.txt
+
+      - name: Run scan
+        run: |
+          cd doj-monitor
+          python monitor.py
+
+      - name: Commit state (dedup cache + heartbeat)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add doj-monitor/state.json || true
+          git add learning-loop/runtime_state.json || true
+
+          if git diff --staged --quiet; then
+            echo "No state changes to commit"
+            exit 0
+          fi
+
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git commit -m "doj-monitor: state $(date -u +%Y-%m-%d_%H%M) [automerge]"
+
+          for attempt in 1 2 3; do
+            if git push origin "$BRANCH"; then
+              echo "Push attempt $attempt succeeded"
+              break
+            fi
+            echo "Push attempt $attempt failed; rebase + retry"
+            git pull --rebase origin "$BRANCH" || true
+            sleep $((attempt * 2))
+          done
