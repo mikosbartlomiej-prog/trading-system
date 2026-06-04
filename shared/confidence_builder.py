@@ -253,31 +253,102 @@ def _apply_v3150_adjustments(out: dict, *,
             pass
 
     # ── Source tier ─────────────────────────────────────────────────────────
+    # v3.17.0 (Task 4 — 2026-06-04) — REAL policy enforcement.
+    # Previous behavior (v3.15.0): Tier 3 alone only got primary_score -=0.05.
+    # New behavior: Tier 3 / unknown alone → block_recommended=True (risk
+    # officer will REJECT). Tier 2 alone → primary_score CAPPED at ceiling
+    # (0.75) and meta-flagged "tier_2_dd_needs_confirmation"; day-trade
+    # strategies that lack price+volume confirmation additionally trigger
+    # block_recommended per source_quality.dd_is_day_trade_trigger contract
+    # (FB-015).
+    #
+    # Tier 1 (sec_8k, dod_contract, official_government, ...) → uncapped,
+    # never block_recommended (primary source by definition).
     if source_type:
         try:
             from source_quality import (
                 tier_for, confidence_ceiling_for, is_day_trade_eligible_alone,
-                TIER_3, TIER_UNKNOWN,
+                TIER_1, TIER_2, TIER_3, TIER_UNKNOWN,
             )
         except ImportError:
             try:
                 from shared.source_quality import (  # type: ignore
                     tier_for, confidence_ceiling_for, is_day_trade_eligible_alone,
-                    TIER_3, TIER_UNKNOWN,
+                    TIER_1, TIER_2, TIER_3, TIER_UNKNOWN,
                 )
             except ImportError:
                 tier_for = None
+                TIER_1 = TIER_2 = TIER_3 = TIER_UNKNOWN = None  # type: ignore
         if tier_for is not None:
             try:
                 tier = tier_for(source_type)
                 ceiling = confidence_ceiling_for(source_type)
                 meta["source_tier"] = tier
                 meta["source_ceiling"] = ceiling
-                # Tier 3 / unknown cannot drive day-trade alone.
+                meta["source_confirmation_present"] = bool(source_confirmation_present)
+
+                # Resolve current primary_score for capping decisions.
+                try:
+                    current_score = float(out.get("primary_score", 0.5))
+                except Exception:
+                    current_score = 0.5
+
+                # ── Tier 3 / Unknown without confirmation ──────────────────
+                # Hard policy: cannot reach trade-eligible state alone.
+                # block_recommended ensures risk_officer rejects.
                 if tier in (TIER_3, TIER_UNKNOWN) and not source_confirmation_present:
-                    # Cap the contribution by lowering primary_score adj.
-                    adj_total -= 0.05
+                    block_recommended = True
+                    block_reasons.append("tier_3_alone_not_eligible_for_trade")
                     meta["source_tier_capped"] = True
+                    # Cap primary_score to the tier ceiling so even if a
+                    # downstream caller mis-reads block_recommended, the
+                    # contribution to signal_strength is bounded below
+                    # ALLOW threshold.
+                    if current_score > ceiling:
+                        out["primary_score"] = ceiling
+                        meta["primary_score_capped_to"] = ceiling
+                        meta["primary_score_pre_cap"] = current_score
+
+                # ── Tier 2 without confirmation ────────────────────────────
+                # "DD only" case. Not auto-block (Tier 2 is "context"), but
+                # cap at ceiling and flag. If the signal carries day-trade
+                # intent without two confirmations, MUST block per FB-015
+                # (dd_is_day_trade_trigger contract).
+                elif tier == TIER_2 and not source_confirmation_present:
+                    meta["tier_2_dd_needs_confirmation"] = True
+                    if current_score > ceiling:
+                        out["primary_score"] = ceiling
+                        meta["primary_score_capped_to"] = ceiling
+                        meta["primary_score_pre_cap"] = current_score
+
+                    # FB-015: DD is NOT a day-trade trigger without
+                    # BOTH price + volume confirmation. Detect day-trade
+                    # intent via strategy name OR low-confirmation count.
+                    try:
+                        confirmations = int(out.get("confirmations") or 0)
+                    except Exception:
+                        confirmations = 0
+                    strategy_label = str(out.get("strategy", "")).lower()
+                    is_day_trade = ("day" in strategy_label
+                                     or confirmations < 2)
+                    if is_day_trade:
+                        block_recommended = True
+                        block_reasons.append(
+                            "tier_2_dd_lacks_price_volume_confirmation"
+                        )
+                        meta["tier_2_day_trade_block"] = True
+
+                # ── Tier 3 / Unknown WITH confirmation ─────────────────────
+                # Confirmation overrides the ceiling cap (signal_confirmation
+                # already validated price + volume independently). We do NOT
+                # block_recommended in this branch, but do log meta.
+                elif tier in (TIER_3, TIER_UNKNOWN) and source_confirmation_present:
+                    meta["source_tier_capped"] = False
+                    meta["source_tier_overridden_by_confirmation"] = True
+
+                # ── Tier 1 ─────────────────────────────────────────────────
+                # Primary source. No cap, no block.
+                # (Tier 2 + confirmation → also no cap, no block.)
             except Exception:
                 pass
 
