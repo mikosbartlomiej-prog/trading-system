@@ -23,20 +23,134 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from data import fetch_daily_bars, date_range_days_ago
+from crypto_data import fetch_hourly_crypto_bars
 from strategies import (
     momentum_long_signal_at,
     momentum_long_loose_signal_at,
     overbought_short_signal_at,
+    crypto_momentum_signal_at,
+    crypto_oversold_bounce_signal_at,
 )
 from replay import replay
 from realism import RealismConfig, replay_with_realism, compute_rich_metrics
 
 
 SIGNALS = {
-    "momentum-long":        momentum_long_signal_at,
-    "momentum-long-loose":  momentum_long_loose_signal_at,
-    "overbought-short":     overbought_short_signal_at,
+    "momentum-long":            momentum_long_signal_at,
+    "momentum-long-loose":      momentum_long_loose_signal_at,
+    "overbought-short":         overbought_short_signal_at,
+    "crypto-momentum":          crypto_momentum_signal_at,
+    "crypto-oversold-bounce":   crypto_oversold_bounce_signal_at,
 }
+
+# Strategies that need hourly crypto bars instead of daily stock bars.
+CRYPTO_STRATEGIES = {"crypto-momentum", "crypto-oversold-bounce"}
+
+
+def _explain_no_signal_crypto(idx: int, bars: dict, strategy: str) -> str:
+    """
+    Return a short human-readable reason why the crypto signal did NOT
+    fire at bar `idx`. Used by --explain-zero-fires when the strategy
+    produces 0 trades and the operator wants to see WHY.
+    """
+    from strategies import (
+        _rsi,
+        _crypto_24h_move_pct,
+        _crypto_avg_vol_safe,
+        CRYPTO_RSI_LONG_MIN,
+        CRYPTO_RSI_LONG_MAX_DEFAULT,
+        CRYPTO_VOL_MULT_DEFAULT,
+        CRYPTO_LOOKBACK_BARS,
+        CRYPTO_MOMENTUM_24H_MIN_PCT,
+        CRYPTO_MOMENTUM_24H_MAX_PCT,
+        CRYPTO_OVERSOLD_RSI_MAX,
+        CRYPTO_OVERSOLD_MIN_MOVE_PCT,
+        CRYPTO_OVERSOLD_VOL_FLOOR,
+    )
+
+    if idx < 25:
+        return "need 25+ bars"
+    closes  = bars["close"][:idx + 1]
+    highs   = bars["high"][:idx + 1]
+    volumes = bars["volume"][:idx + 1]
+
+    cur = closes[-1]
+    cur_vol = volumes[-1]
+    rsi = _rsi(closes)
+    move_24h = _crypto_24h_move_pct(closes)
+    high_20 = max(highs[-(CRYPTO_LOOKBACK_BARS + 1):-1]) if len(highs) > CRYPTO_LOOKBACK_BARS else None
+    if _crypto_avg_vol_safe(volumes):
+        avg_vol = sum(volumes[-(CRYPTO_LOOKBACK_BARS + 1):-1]) / CRYPTO_LOOKBACK_BARS
+    else:
+        return "avg-vol unsafe (too few non-zero bars)"
+
+    if strategy == "crypto-momentum":
+        if move_24h is None:
+            return "no 24h move (insufficient history)"
+        if not (CRYPTO_MOMENTUM_24H_MIN_PCT <= abs(move_24h) <= CRYPTO_MOMENTUM_24H_MAX_PCT):
+            return f"24h={move_24h:+.2f}% outside [{CRYPTO_MOMENTUM_24H_MIN_PCT},{CRYPTO_MOMENTUM_24H_MAX_PCT}]"
+        if high_20 is None or cur <= high_20:
+            return f"no breakout (cur={cur:.2f} <= 20-high={high_20:.2f if high_20 else 0})"
+        if cur_vol <= avg_vol * CRYPTO_VOL_MULT_DEFAULT:
+            return f"vol={cur_vol/avg_vol:.2f}x < {CRYPTO_VOL_MULT_DEFAULT}x"
+        if rsi is None:
+            return "rsi insufficient"
+        if not (CRYPTO_RSI_LONG_MIN <= rsi <= CRYPTO_RSI_LONG_MAX_DEFAULT):
+            return f"rsi={rsi:.1f} outside [{CRYPTO_RSI_LONG_MIN},{CRYPTO_RSI_LONG_MAX_DEFAULT}]"
+        return "passes filter (signal should have fired)"
+
+    if strategy == "crypto-oversold-bounce":
+        if rsi is None:
+            return "rsi insufficient"
+        if rsi > CRYPTO_OVERSOLD_RSI_MAX:
+            return f"rsi={rsi:.1f} > {CRYPTO_OVERSOLD_RSI_MAX} (not oversold)"
+        if move_24h is None:
+            return "no 24h move (insufficient history)"
+        if move_24h < CRYPTO_OVERSOLD_MIN_MOVE_PCT:
+            return f"24h={move_24h:+.2f}% < {CRYPTO_OVERSOLD_MIN_MOVE_PCT}% (catastrophe)"
+        if len(closes) < 4:
+            return "need 4+ bars for stabilization rule"
+        recent_avg = sum(closes[-3:]) / 3.0
+        baseline = closes[-4]
+        if recent_avg < baseline:
+            return f"not stabilizing (avg3={recent_avg:.2f} < closes[-4]={baseline:.2f})"
+        floor = avg_vol * (CRYPTO_VOL_MULT_DEFAULT * CRYPTO_OVERSOLD_VOL_FLOOR)
+        if cur_vol <= floor:
+            return f"vol={cur_vol:.0f} <= floor={floor:.0f}"
+        return "passes filter (signal should have fired)"
+
+    return "unknown strategy"
+
+
+def _explain_zero_fires(bars: dict, signal_fn, strategy: str,
+                          ticker: str, limit: int = 25) -> list[str]:
+    """
+    Run signal_fn across all bars, collect per-bar rejection reasons when
+    signal returns None. Cap at `limit` distinct reason×idx samples so the
+    log doesn't explode for a 4320-bar window.
+
+    Returns formatted strings ["idx=120 t=... reason=..."] for printing.
+    """
+    out: list[str] = []
+    n = len(bars["close"])
+    # Sample evenly across the bar window — first 5 + middle 10 + last 10.
+    if n <= limit:
+        sample_indices = list(range(25, n))
+    else:
+        sample_indices = list(range(25, min(30, n)))                          # first 5
+        mid_start = n // 2 - 5
+        sample_indices += list(range(max(25, mid_start), min(n, mid_start + 10)))  # middle 10
+        sample_indices += list(range(max(25, n - 10), n))                     # last 10
+    sample_indices = sorted(set(sample_indices))[:limit]
+
+    for idx in sample_indices:
+        sig = signal_fn(idx, bars)
+        if sig is not None:
+            continue
+        reason = _explain_no_signal_crypto(idx, bars, strategy)
+        ts = bars.get("time", [None]*n)[idx] if idx < len(bars.get("time", [])) else "?"
+        out.append(f"idx={idx} t={ts} → {reason}")
+    return out
 
 
 def main():
@@ -59,13 +173,33 @@ def main():
     p.add_argument("--asset-class", default="us_equity",
                     choices=["us_equity", "crypto", "us_option"],
                     help="For realism slippage tier (stocks/crypto/options)")
+    # v3.16 (2026-06-04) — crypto-specific args
+    p.add_argument("--hours", type=int, default=4320,
+                    help="For crypto strategies: hourly bars window "
+                         "(default 4320 = 180 days × 24h). Ignored for stock "
+                         "strategies which use --days.")
+    p.add_argument("--explain-zero-fires", action="store_true",
+                    help="When the strategy produces 0 trades, print per-bar "
+                         "rejection reasons (rate-limited to the first 25). "
+                         "Crypto strategies only.")
     args = p.parse_args()
 
     signal_fn = SIGNALS[args.strategy]
-    start, end = date_range_days_ago(args.days)
-    print(f"Backtest: strategy={args.strategy} window={start}..{end} tickers={args.tickers}")
+    is_crypto = args.strategy in CRYPTO_STRATEGIES
+    # Auto-promote asset-class for crypto strategies (operator-friendly default)
+    if is_crypto and args.asset_class == "us_equity":
+        args.asset_class = "crypto"
+
+    if is_crypto:
+        start, end = (None, None)
+        window_label = f"hours={args.hours}"
+    else:
+        start, end = date_range_days_ago(args.days)
+        window_label = f"window={start}..{end}"
+
+    print(f"Backtest: strategy={args.strategy} {window_label} tickers={args.tickers}")
     print(f"  mode={args.mode}  walk_forward={args.walk_forward or 'off'}  "
-          f"asset_class={args.asset_class}")
+          f"asset_class={args.asset_class}  hourly={is_crypto}")
 
     # Realism config — defaults aligned with Alpaca paper observed behavior
     realism_cfg = RealismConfig(
@@ -94,12 +228,29 @@ def main():
 
     for ticker in args.tickers:
         print(f"\n--- {ticker} ---")
-        bars = fetch_daily_bars(ticker, start, end, use_cache=not args.no_cache)
+        if is_crypto:
+            bars = fetch_hourly_crypto_bars(
+                ticker, hours=args.hours, use_cache=not args.no_cache
+            )
+        else:
+            bars = fetch_daily_bars(ticker, start, end, use_cache=not args.no_cache)
         if not bars:
             print(f"  no data — skipping")
             continue
         n_bars = len(bars['close'])
         print(f"  {n_bars} bars loaded")
+
+        # --explain-zero-fires: pre-scan to surface per-bar rejection reasons
+        # when (a) crypto strategy AND (b) operator opted in. Helpful for
+        # diagnosing 14-day STRAT-002 observation gaps.
+        if args.explain_zero_fires and is_crypto:
+            preview = _explain_zero_fires(
+                bars, signal_fn, args.strategy, ticker, limit=25,
+            )
+            if preview:
+                print(f"  zero-fire diagnostic ({len(preview)} sampled bars):")
+                for line in preview:
+                    print(f"    {line}")
 
         if args.walk_forward >= 2:
             # Split bars into N non-overlapping folds; report per-fold + aggregate

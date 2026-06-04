@@ -122,22 +122,30 @@ REGISTRY: dict = {
         notes="Backlog: refactor to direct execution.",
     ),
 
-    # ── Crypto (need crypto bars in backtest harness) ─────────────────────
+    # ── Crypto (v3.16 — hourly bar harness landed) ─────────────────────────
     "crypto-momentum": StrategyRegistration(
         name="crypto-momentum",
-        readiness=INTERFACE,
+        readiness=HAS_SIGNAL,
         signal_fn_name="crypto_momentum_signal_at",
         description="11-coin predator: breakout + RSI band + volume + 24h move bracket.",
         backtest_data_needed="hourly_crypto_bars",
-        notes="Live in crypto-monitor. Backtest stub registered; harness needs hourly crypto-bar fetcher.",
+        notes=("Live in crypto-monitor. v3.16 (2026-06-04): pure signal "
+                "fn + hourly Alpaca v1beta3 fetcher shipped; backtest-ready. "
+                "Use: python -m backtest.run --strategy crypto-momentum "
+                "--tickers BTC/USD ETH/USD --hours 4320 --mode both."),
     ),
     "crypto-oversold-bounce": StrategyRegistration(
         name="crypto-oversold-bounce",
-        readiness=INTERFACE,
+        readiness=HAS_SIGNAL,
         signal_fn_name="crypto_oversold_bounce_signal_at",
         description="Deep oversold mean-reversion (RSI ≤30 + 3-bar stabilization).",
         backtest_data_needed="hourly_crypto_bars",
-        notes="Live in crypto-monitor. Backtest stub registered; harness needs hourly crypto-bar fetcher. Audit-board STRAT-002 14-day observation in progress.",
+        notes=("Live in crypto-monitor. v3.16 (2026-06-04): pure signal "
+                "fn + hourly Alpaca v1beta3 fetcher shipped; backtest-ready. "
+                "Closes STRAT-002 observation question 2026-06-16. Use: "
+                "python -m backtest.run --strategy crypto-oversold-bounce "
+                "--tickers BTC/USD ETH/USD --hours 4320 --mode both "
+                "--explain-zero-fires."),
     ),
     "crypto-breakdown": StrategyRegistration(
         name="crypto-breakdown",
