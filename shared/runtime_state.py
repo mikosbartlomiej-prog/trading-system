@@ -109,4 +109,9 @@ INTRADAY_SECTIONS = frozenset({
     "safe_mode",           # runtime-operational safe mode (shared/safe_mode.py)
     "heartbeat",           # component liveness tracking (shared/heartbeat.py)
     "confidence_history",  # last N confidence reports (per-symbol)
+    # v3.17.0 (2026-06-04) — position lifecycle state machine (FB-011)
+    # Per-symbol PositionState snapshots persisted by exit-monitor; consumed
+    # by shared.position_manager. Holds INTAKE/ARMED/TRAILING/INVALIDATING/
+    # TIME_EXPIRED/CLOSED lifecycle + MFE/MAE marks + confidence-at-entry.
+    "positions",
 })

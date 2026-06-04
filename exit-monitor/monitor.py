@@ -482,6 +482,338 @@ def enrich_position(pos: dict, orders: list[dict]) -> dict:
 
 # ─── Wysyłanie do Claude Routine ─────────────────────────────────────────────
 
+# ─── PositionManager lifecycle wiring (v3.17.0, 2026-06-04 — Task 6) ─────────
+#
+# Wires shared/position_manager.py into exit-monitor. The lifecycle FSM runs
+# AFTER the existing emergency/SL/governor channels. Existing emergency logic
+# wins by ordering: positions already MARKET-closed via `place_emergency_close`
+# during this tick are skipped here (their symbol is in `already_closed`).
+#
+# For surviving positions, the lifecycle returns one of:
+#   HOLD            → no-op (existing exit logic still runs in enrich_position)
+#   PARTIAL_EXIT    → safe_close(qty * 0.5, reason="partial-exit")
+#   FULL_EXIT       → safe_close(qty, reason="full-exit")
+#   INVALIDATE      → safe_close(qty, reason="invalidation")
+#
+# Contract invariants:
+#   - kill_switch_armed → FULL_EXIT (highest priority in evaluate_position)
+#   - safe_mode_active   → FULL_EXIT (highest priority in evaluate_position)
+#   - emergency close from existing logic NEVER downgraded (we skip already_closed)
+#   - All sells go through shared.alpaca_orders.safe_close (Layer 2 invariant)
+#   - Every action audit-emits to journal/autonomy/YYYY-MM-DD.jsonl
+#   - State persisted to learning-loop/runtime_state.json::positions[<symbol>]
+#
+# Fail-soft contract: any error here is logged but never crashes the monitor.
+
+POSITION_LIFECYCLE_ACTIONS = ("PARTIAL_EXIT", "FULL_EXIT", "INVALIDATE")
+
+
+def _kill_switch_armed() -> bool:
+    """Read kill-switch / defensive_mode armed state from state.json. Fail-soft."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from defensive_mode import is_active as _df_active  # type: ignore
+        return bool(_df_active())
+    except Exception:
+        return False
+
+
+def _safe_mode_active() -> bool:
+    """Read safe_mode runtime state. Fail-soft."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from safe_mode import is_active as _sm_active  # type: ignore
+        return bool(_sm_active())
+    except Exception:
+        return False
+
+
+def _audit_lifecycle(*, symbol: str, decision: str, reason: str,
+                      lifecycle_from: str, lifecycle_to: str,
+                      pl_pct: float, peak_pct: float, trough_pct: float,
+                      hours_open: float, intent: str,
+                      action_taken: str, result: str,
+                      partial_qty_pct: float = 0.0,
+                      triggered_signals: tuple = (),
+                      kill_switch: bool = False,
+                      safe_mode: bool = False) -> None:
+    """Emit a position-lifecycle audit JSONL event. Fail-soft."""
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from audit import write_audit_event  # type: ignore
+        record = {
+            "decision_type":    "POSITION_LIFECYCLE",
+            "decision":         decision,
+            "reason":           reason,
+            "actor":            "exit-monitor",
+            "timestamp":        datetime.now(timezone.utc).isoformat(),
+            "affected_symbols": [symbol],
+            "strategy":         "position-manager",
+            "risk_metrics": {
+                "lifecycle_from":    lifecycle_from,
+                "lifecycle_to":      lifecycle_to,
+                "current_pl_pct":    pl_pct,
+                "peak_pl_pct":       peak_pct,
+                "trough_pl_pct":     trough_pct,
+                "hours_open":        hours_open,
+                "intent":            intent,
+                "partial_qty_pct":   partial_qty_pct,
+                "triggered_signals": list(triggered_signals),
+                "kill_switch":       kill_switch,
+                "safe_mode":         safe_mode,
+            },
+            "action_taken":     action_taken,
+            "result":           result,
+            "reversible":       False,  # exits are irreversible by design
+            "rollback_available": False,
+        }
+        write_audit_event(record, kind="trading")
+    except Exception as e:
+        print(f"  [pos-lifecycle] audit failed for {symbol}: {type(e).__name__}: {e}")
+
+
+def _resolve_intent(asset_class: str, hours_open: float) -> str:
+    """Map asset class + hold duration to position_manager intent enum."""
+    if (asset_class or "").lower() == "crypto":
+        return "swing"  # crypto held continuously; time-stop applies to swing
+    # If the position is < 6h old it's plausibly intraday; the state machine's
+    # intraday default of 6h will fire time_stop quickly on those.
+    if hours_open < 6.0:
+        return "intraday"
+    return "swing"
+
+
+def apply_position_lifecycle(positions: list[dict], orders: list[dict], *,
+                              already_closed_symbols: set,
+                              flagged_recommendations: dict,
+                              ) -> dict:
+    """Run shared.position_manager over each open position and act.
+
+    Args:
+        positions: live Alpaca positions list (from get_open_positions).
+        orders: recent Alpaca orders (used to derive entry timestamp).
+        already_closed_symbols: symbols already MARKET-closed this tick via
+            existing emergency / direct-close path. We skip them so that
+            position_manager never re-attempts an already-resolved close.
+        flagged_recommendations: dict {symbol: recommendation} from enrich_position
+            for context only; we honor existing emergency flags by skipping
+            ALREADY-closed symbols, but a non-HOLD rec on a STILL-open symbol
+            simply means existing path failed and lifecycle may try via safe_close.
+
+    Returns: stats dict (counts of HOLD/PARTIAL_EXIT/FULL_EXIT/INVALIDATE, errors).
+    """
+    stats = {
+        "HOLD": 0,
+        "PARTIAL_EXIT": 0,
+        "FULL_EXIT": 0,
+        "INVALIDATE": 0,
+        "skipped_closed": 0,
+        "errors": 0,
+        "actions_placed": 0,
+        "actions_skipped": 0,
+    }
+    if not positions:
+        return stats
+
+    # Lazy imports — fail-soft if position_manager / store missing.
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
+        from position_manager import (
+            open_position as _open_pos,
+            update_position_marks as _update_marks,
+            evaluate_position as _evaluate,
+            HOLD as _HOLD, PARTIAL_EXIT as _PARTIAL_EXIT,
+            FULL_EXIT as _FULL_EXIT, INVALIDATE as _INVALIDATE,
+            INTAKE as _INTAKE,
+        )
+        from position_lifecycle_store import (
+            load_position as _load_pos,
+            save_position as _save_pos,
+            remove_position as _remove_pos,
+        )
+        from alpaca_orders import safe_close as _safe_close
+    except Exception as e:
+        print(f"  [pos-lifecycle] imports failed ({type(e).__name__}: {e}) — skip")
+        stats["errors"] += 1
+        return stats
+
+    kill_armed = _kill_switch_armed()
+    sm_active  = _safe_mode_active()
+
+    for pos in positions:
+        symbol = pos.get("symbol", "")
+        if not symbol:
+            continue
+
+        if symbol in already_closed_symbols:
+            stats["skipped_closed"] += 1
+            continue
+
+        try:
+            qty           = abs(float(pos.get("qty", 0) or 0))
+            side          = pos.get("side", "long")
+            entry_price   = float(pos.get("avg_entry_price", 0) or 0)
+            current_price = float(pos.get("current_price", 0) or 0)
+            asset_class   = pos.get("asset_class", "")
+            if qty <= 0 or entry_price <= 0 or current_price <= 0:
+                stats["errors"] += 1
+                continue
+
+            # Load prior state or create fresh INTAKE entry.
+            state = _load_pos(symbol)
+            if state is None:
+                # Derive entry timestamp from most-recent FILLED open order
+                entry_iso = None
+                for order in sorted(orders or [],
+                                     key=lambda o: o.get("filled_at") or "",
+                                     reverse=True):
+                    if order.get("symbol") == symbol and order.get("filled_at"):
+                        entry_iso = order.get("filled_at", "")
+                        if entry_iso.endswith("Z"):
+                            entry_iso = entry_iso[:-1] + "+00:00"
+                        break
+                hours_open_est = 0.0
+                if entry_iso:
+                    try:
+                        et = datetime.fromisoformat(entry_iso)
+                        hours_open_est = max(
+                            0.0,
+                            (datetime.now(timezone.utc) - et).total_seconds() / 3600.0
+                        )
+                    except Exception:
+                        pass
+                intent = _resolve_intent(asset_class, hours_open_est)
+                state = _open_pos(
+                    symbol=symbol,
+                    entry_price=entry_price,
+                    entry_qty=qty,
+                    intent=intent,
+                    entry_confidence=None,
+                    now_iso=entry_iso or None,
+                )
+
+            # Update marks (price + P&L + MFE/MAE + time-since-entry).
+            state = _update_marks(
+                state,
+                current_price=current_price,
+                confidence_now=None,
+                profile_quality_now=None,
+            )
+
+            # Pure evaluation — returns recommendation + next_lifecycle.
+            decision = _evaluate(
+                state,
+                invalidation_signal=False,
+                safe_mode_active=sm_active,
+                kill_switch_armed=kill_armed,
+            )
+
+            rec = decision.recommendation
+            stats[rec] = stats.get(rec, 0) + 1
+
+            # HOLD: persist new marks + lifecycle (e.g. INTAKE → ARMED transition).
+            if rec == _HOLD:
+                # If the FSM advanced lifecycle (e.g. INTAKE → ARMED after grace),
+                # persist with the new lifecycle so next tick honours it.
+                next_lc = decision.next_lifecycle
+                if next_lc != state.lifecycle:
+                    _save_pos(state, next_lifecycle=next_lc)
+                else:
+                    _save_pos(state)
+                continue
+
+            # Action paths: PARTIAL_EXIT (0.5×), FULL_EXIT, INVALIDATE.
+            is_crypto = "/" in symbol or asset_class == "crypto"
+            close_side = "sell" if side == "long" else "buy"
+            if rec == _PARTIAL_EXIT:
+                exit_qty = max(qty * 0.5, 1.0) if not is_crypto else qty * 0.5
+                reason_tag = f"exit-partial-{state.lifecycle.lower()}"
+                action_label = "PARTIAL_EXIT"
+            elif rec == _FULL_EXIT:
+                exit_qty = qty
+                reason_tag = "exit-full"
+                action_label = "FULL_EXIT"
+            elif rec == _INVALIDATE:
+                exit_qty = qty
+                reason_tag = "exit-invalidation"
+                action_label = "INVALIDATE"
+            else:
+                # Should never reach here, but fail-soft
+                stats["errors"] += 1
+                continue
+
+            print(f"  [pos-lifecycle] {symbol} {action_label} "
+                  f"reason={decision.reason} pl={state.current_pl_pct*100:+.2f}% "
+                  f"hours={state.time_at_eval_hours:.1f} signals={list(decision.triggered_signals)}")
+
+            sc_result = None
+            sc_status = "not_attempted"
+            sc_reason = ""
+            try:
+                sc_result = _safe_close(
+                    symbol=symbol,
+                    intent_qty=float(exit_qty),
+                    intent_side=close_side,
+                    reason_tag=reason_tag,
+                    order_type="market",
+                    time_in_force="gtc" if is_crypto else "day",
+                    is_crypto=is_crypto,
+                    allow_market=True,
+                )
+                sc_status = sc_result.get("status", "unknown")
+                sc_reason = sc_result.get("reason", "")
+            except Exception as e:
+                sc_status = "exception"
+                sc_reason = f"{type(e).__name__}: {e}"
+                print(f"  [pos-lifecycle] safe_close exception {symbol}: {sc_reason}")
+
+            if sc_status == "placed":
+                stats["actions_placed"] += 1
+                action_taken_str = (
+                    f"safe_close({symbol}, qty={exit_qty}, "
+                    f"side={close_side}, reason={reason_tag})"
+                )
+                result_str = f"placed: alpaca_order_id={sc_result.get('alpaca_order_id', '?')}"
+                # FULL_EXIT / INVALIDATE → remove from store.
+                # PARTIAL_EXIT → keep state but advance lifecycle (TRAILING).
+                if rec in (_FULL_EXIT, _INVALIDATE):
+                    _remove_pos(symbol)
+                else:
+                    _save_pos(state, next_lifecycle=decision.next_lifecycle)
+            else:
+                stats["actions_skipped"] += 1
+                action_taken_str = (
+                    f"safe_close({symbol}, qty={exit_qty}) → {sc_status}"
+                )
+                result_str = f"{sc_status}: {sc_reason}"
+                # Persist updated marks even on skipped close so next tick re-tries.
+                _save_pos(state, next_lifecycle=decision.next_lifecycle)
+
+            _audit_lifecycle(
+                symbol=symbol,
+                decision=action_label,
+                reason=decision.reason,
+                lifecycle_from=state.lifecycle,
+                lifecycle_to=decision.next_lifecycle,
+                pl_pct=state.current_pl_pct,
+                peak_pct=state.peak_pl_pct,
+                trough_pct=state.trough_pl_pct,
+                hours_open=state.time_at_eval_hours,
+                intent=state.intent,
+                action_taken=action_taken_str,
+                result=result_str,
+                partial_qty_pct=decision.partial_qty_pct,
+                triggered_signals=decision.triggered_signals,
+                kill_switch=kill_armed,
+                safe_mode=sm_active,
+            )
+        except Exception as e:
+            stats["errors"] += 1
+            print(f"  [pos-lifecycle] error processing {symbol}: {type(e).__name__}: {e}")
+
+    return stats
+
+
 def send_to_routine(positions: list[dict], account: dict) -> bool:
     """Wysyła dane pozycji do Cloudflare Worker → Claude Routine"""
     if not CLOUDFLARE_WORKER_URL:
@@ -668,6 +1000,7 @@ def run_exit_check():
     emergency = direct_close
     closed_directly = 0
     deferred_count = 0
+    closed_symbols: set = set()
     for ep in emergency:
         # Trade-window pre-check: skip both DELETE and routine fallback if
         # market closed for this instrument's asset class (e.g. options
@@ -676,10 +1009,15 @@ def run_exit_check():
             deferred_count += 1
             continue
         result = place_emergency_close(ep)
-        if result:
+        if result and not result.get("deferred"):
             print(f"  {ep['recommendation']} closed directly: {ep['symbol']} qty={ep['qty']} "
                   f"id={result.get('id', '?')}")
             closed_directly += 1
+            closed_symbols.add(ep["symbol"])
+        elif result and result.get("deferred"):
+            # Pre-market defer marker — counted by place_emergency_close logic
+            # already, no further action here.
+            pass
         else:
             print(f"  {ep['recommendation']} close FAILED for {ep['symbol']} — "
                   f"falling back to routine")
@@ -695,6 +1033,30 @@ def run_exit_check():
               f"{deferred_count} deferred (market closed) — no routine call needed")
     else:
         print(f"\n  Wszystkie pozycje HOLD — pomijam routine call (oszczędzam budget).")
+
+    # ── PositionManager lifecycle (v3.17.0, Task 6) ──────────────────────────
+    # Run AFTER existing emergency/SL/governor closes. Symbols already
+    # MARKET-closed this tick are in `closed_symbols` and will be skipped
+    # (we never re-attempt closes that the existing path resolved).
+    # Returns stats dict; we log a one-line summary for ops observability.
+    try:
+        flagged_recs = {ep["symbol"]: ep["recommendation"] for ep in flagged}
+        lc_stats = apply_position_lifecycle(
+            positions, orders,
+            already_closed_symbols=closed_symbols,
+            flagged_recommendations=flagged_recs,
+        )
+        print(
+            f"  [pos-lifecycle] HOLD={lc_stats['HOLD']} "
+            f"PARTIAL_EXIT={lc_stats['PARTIAL_EXIT']} "
+            f"FULL_EXIT={lc_stats['FULL_EXIT']} "
+            f"INVALIDATE={lc_stats['INVALIDATE']} "
+            f"placed={lc_stats['actions_placed']} "
+            f"skipped_closed={lc_stats['skipped_closed']} "
+            f"errors={lc_stats['errors']}"
+        )
+    except Exception as _e:
+        print(f"  [pos-lifecycle] orchestrator failed ({type(_e).__name__}: {_e}) — fail-soft")
 
     notify_summary("Exit Monitor", len(flagged), len(flagged))
 
