@@ -1,0 +1,40 @@
+{
+  "narrative": "Equity $95,861 (+$200 / +0.21% dziś), konto w gotówce 100% po zamknięciu wszystkich pozycji. BTC RSI=11.8 i ETH RSI=14.6 — trzecia sesja z rzędu ekstremalnej wyprzedaży, najniższe odczyty w historii systemu — i ZERO krypto-trade od 57 dni. To nie jest brak setupu: to pipeline failure. allocator-rebalance to jedyna działająca alpha (100% WR lifetime ze state, +$470.80), ale z kontem w gotówce tracimy każdą minutę na najlepszym bounce setup-ie od tygodni. Operator musi sprawdzić crypto-monitor workflow logs i Cloudflare Worker dzisiaj.",
+  "regime_assessment": "choppy",
+  "edge_assessment": "Jedyna potwierdzona alpha: allocator-rebalance (100% WR lifetime, +$470.80 na 6 trade'ach ze state). Crypto: zero trades przy RSI 11-14 = PIPELINE FAILURE, nie brak edge. geo-gold + unknown: fill rate 33%/7.7% = kapitał blokowany bez efektu — 12 manually_canceled zleceń w avg 30.8 min.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-oversold-bounce": {
+        "size_multiplier": 2.0,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "BTC RSI=11.8, ETH RSI=14.6 — trzecia sesja ekstremum, poniżej każdego historycznego odczytu w tej bazie. Boost do 2.0× (max cap) — jeśli pipeline wreszcie odpali, nie możemy zmarnować setupu na 1.0×. Bez pipeline fix ten override jest symboliczny; operator check wymagany."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Crypto pipeline failure warning when BTC/ETH RSI ≤20 with 0 crypto trades 7d",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "BTC/ETH przy RSI 11-14 przez 3+ dni bez żadnego crypto-trade — ta sytuacja musi być widoczna w rationale.md jako ciągłe WARN, nie jednorazowy rsi-alert. Heurystyka dodaje stałą kontrolę pipeline-failure do codziennych analiz adaptera.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_crypto_pipeline_failure_warning(today_stats: dict) -> tuple[bool, str]:\n    \"\"\"Emit PIPELINE_WARN when BTC or ETH RSI is <=20 but no crypto trade fired in 7d.\"\"\"\n    rsi_snapshot = today_stats.get(\"rsi_snapshot\", {})\n    btc_rsi = rsi_snapshot.get(\"BTC/USD\", {}).get(\"today\", 100)\n    eth_rsi = rsi_snapshot.get(\"ETH/USD\", {}).get(\"today\", 100)\n    if btc_rsi > 20 and eth_rsi > 20:\n        return False, \"\"\n    by_strategy = today_stats.get(\"by_strategy\", {})\n    crypto_trades_7d = sum(\n        by_strategy.get(s, {}).get(\"trades_7d\", 0)\n        for s in (\"crypto-momentum\", \"crypto-oversold-bounce\", \"crypto-breakdown\")\n    )\n    if crypto_trades_7d > 0:\n        return False, \"\"\n    return True, (\n        f\"CRYPTO_PIPELINE_WARN — BTC/USD RSI={btc_rsi:.1f}, ETH/USD RSI={eth_rsi:.1f} \"\n        f\"(ekstremalna wyprzedaz) ale 0 krypto-trade w 7d. \"\n        \"Sprawdz: crypto-monitor workflow logs, Cloudflare Worker health, \"\n        \"Alpaca API creds, predator-bracket filter vs aktualny 24h move.\"\n    )\n",
+      "test_addition": "class TestCryptoPipelineFailureWarning(unittest.TestCase):\n    def test_fires_when_both_extreme_no_trades(self):\n        stats = {\n            \"rsi_snapshot\": {\"BTC/USD\": {\"today\": 11.8}, \"ETH/USD\": {\"today\": 14.6}},\n            \"by_strategy\": {}\n        }\n        fired, reason = heuristic_crypto_pipeline_failure_warning(stats)\n        self.assertTrue(fired)\n        self.assertIn(\"CRYPTO_PIPELINE_WARN\", reason)\n        self.assertIn(\"11.8\", reason)\n\n    def test_no_fire_when_both_rsi_normal(self):\n        stats = {\n            \"rsi_snapshot\": {\"BTC/USD\": {\"today\": 45.0}, \"ETH/USD\": {\"today\": 38.0}},\n            \"by_strategy\": {}\n        }\n        fired, _ = heuristic_crypto_pipeline_failure_warning(stats)\n        self.assertFalse(fired)\n\n    def test_no_fire_when_crypto_trades_present(self):\n        stats = {\n            \"rsi_snapshot\": {\"BTC/USD\": {\"today\": 11.8}, \"ETH/USD\": {\"today\": 14.6}},\n            \"by_strategy\": {\"crypto-oversold-bounce\": {\"trades_7d\": 1}}\n        }\n        fired, _ = heuristic_crypto_pipeline_failure_warning(stats)\n        self.assertFalse(fired)\n\n    def test_no_fire_on_missing_rsi_data(self):\n        stats = {\"by_strategy\": {}}\n        fired, _ = heuristic_crypto_pipeline_failure_warning(stats)\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": "Dodaj wywolanie pod koniec adapt_strategy() przed return: fired, warn = heuristic_crypto_pipeline_failure_warning(today_stats); if fired: rationale.append(warn)"
+    },
+    {
+      "title": "Investigate and fix 'unknown' fill rate 7.7% — stale geo/news limit orders wasting capital",
+      "lane": "backlog",
+      "risk": "medium",
+      "rationale": "15 placed / 1 filled / 12 manually_canceled w avg 30.8 min = 92% zmarnowanych zleceń blokujacych buying power. geo-gold ma ten sam problem (33% fill_rate, 15 min cancel). Prawdopodobna przyczyna: geo/news monitor nie uzywa aggressive_entry (q['ask'] z v3.8.9) albo stale bracket-children liczone jako 'unknown'.",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-07",
+      "implementation_sketch": "1. grep journal/autonomy/2026-06-04.jsonl dla 'canceled' orders — zidentyfikuj COID pattern. 2. Sprawdz geo-monitor/monitor.py::execute_geo_signal — czy uzywa execute_stock_signal z shared/alpaca_orders.py? Jesli tak, v3.8.9 aggressive_entry powinien dzialac. 3. Jesli nie: dodaj _aggressive_entry() call do geo execute path. 4. geo-gold: GLD less-liquid — sprawdz czy limit nie jest ustawiony ponizej ask spread. 5. Dla 2 otwartych AMD (sample_open_ids): sprawdz czy to GTC bracket-children (normalny stan) czy stale entry ordery (blad do anulowania)."
+    }
+  ],
+  "confidence": "medium"
+}
