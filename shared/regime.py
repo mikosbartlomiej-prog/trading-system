@@ -188,3 +188,188 @@ def _describe_decision(regime: str, source: str, sig: dict) -> str:
                      + (f", energy 5d={sig.get('energy_5d_pct')}%" if sig.get('energy_5d_pct') is not None else "")
                      + (f", BTC 24h={sig.get('btc_24h_pct')}%" if sig.get('btc_24h_pct') is not None else ""))
     return " | ".join(parts)
+
+
+# ─── v3.18.0 ETAP 7 — per-strategy regime fit ────────────────────────────────
+#
+# Each strategy declares the regimes it FITS, the regimes it is BLOCKED in,
+# and the score it would receive in any other regime. The data is hard-coded
+# (not via config) because: (a) it's source-of-truth-doc-level, (b) any change
+# is a strategy redesign requiring a code-review PR, (c) we don't want a
+# misconfigured config to silently un-block a strategy.
+#
+# fit_score scale:
+#   1.0   = preferred — strategy is in its native regime
+#   0.7   = acceptable — strategy is regime-agnostic
+#   0.5   = sub-optimal but allowed — keep sizing modest
+#   0.0   = strategy is BLOCKED in this regime (is_blocked=True)
+
+# Regimes considered. Strategies use these as keys in their preferred/blocked
+# sets; any regime NOT in either set gets sub_optimal_score.
+_REGIMES = ("RISK_ON", "RISK_OFF", "NEUTRAL", "INFLATION_SHOCK")
+
+# Strategy → (preferred set, blocked set, agnostic flag)
+# Mirrors config/aggressive_profile.json::buckets_per_regime, but expressed
+# from the strategy's perspective (not the bucket's).
+_STRATEGY_REGIME_MATRIX: dict = {
+    # Equity momentum
+    "momentum-long": {
+        "preferred": ("RISK_ON", "NEUTRAL"),
+        "blocked":   ("RISK_OFF", "INFLATION_SHOCK"),
+        "rationale": "Long stocks need risk appetite; blocked in panic + inflation rotation",
+    },
+    "overbought-short": {
+        "preferred": ("RISK_OFF", "INFLATION_SHOCK"),
+        "blocked":   ("RISK_ON",),
+        "rationale": "Short setups need fade-the-rip backdrop; shorts in uptrend = disaster",
+    },
+    # Crypto — 24/7 different cycle; regime-agnostic
+    "crypto-momentum": {
+        "preferred": (),
+        "blocked":   (),
+        "agnostic":  True,
+        "rationale": "Crypto cycles independent of equity regime",
+    },
+    "crypto-oversold-bounce": {
+        "preferred": (),
+        "blocked":   (),
+        "agnostic":  True,
+        "rationale": "Crypto mean-reversion runs on its own clock",
+    },
+    "crypto-breakdown": {
+        "preferred": (),
+        "blocked":   (),
+        "agnostic":  True,
+        "rationale": "Crypto-only setup; equity regime not informative",
+    },
+    # Geo / event
+    "geo-defense": {
+        "preferred": ("INFLATION_SHOCK", "RISK_OFF"),
+        "blocked":   ("RISK_ON",),
+        "rationale": "Defense names rally on geopolitical stress; muted in pure RISK_ON",
+    },
+    "geo-energy": {
+        "preferred": ("INFLATION_SHOCK", "RISK_OFF"),
+        "blocked":   (),  # not blocked in RISK_ON but sub-optimal
+        "rationale": "Energy fits inflation shock + risk-off; allowed elsewhere with caution",
+    },
+    "geo-gold": {
+        "preferred": ("INFLATION_SHOCK", "RISK_OFF"),
+        "blocked":   (),
+        "rationale": "Gold is the classic crisis hedge; works in inflation + RO regimes",
+    },
+    "geo-xom": {
+        "preferred": ("INFLATION_SHOCK", "RISK_OFF"),
+        "blocked":   (),
+        "rationale": "Single-name energy proxy; same regime fit as geo-energy",
+    },
+    # Options
+    "options-momentum": {
+        "preferred": ("RISK_ON",),
+        "blocked":   ("RISK_OFF",),
+        "rationale": "Long calls need bullish drift; puts handled by separate strategy",
+    },
+    # Allocator-level
+    "allocator-rebalance": {
+        "preferred": (),
+        "blocked":   (),
+        "agnostic":  True,
+        "rationale": "Allocator handles regime internally; mechanical rebalance is regime-neutral",
+    },
+}
+
+
+def per_strategy_regime_fit(strategy: str, current_regime: str) -> dict:
+    """Return per-strategy regime fit score + flags.
+
+    Returns:
+      {
+        "fit_score":         float in [0..1],   # confidence adjustment input
+        "preferred_regimes": tuple,              # e.g. ("RISK_ON", "NEUTRAL")
+        "blocked_regimes":   tuple,              # e.g. ("RISK_OFF",)
+        "is_blocked":        bool,
+        "rationale":         str,
+      }
+
+    Unknown strategy → returns neutral fit (0.5) with empty preferred/blocked
+    and a "strategy_unknown" rationale. Unknown regime → fit defaults to 0.5
+    (cannot determine).
+
+    Fail-soft: any internal error → returns neutral fit, never raises.
+    """
+    s = (strategy or "").strip()
+    r = (current_regime or "").strip().upper()
+    cfg = _STRATEGY_REGIME_MATRIX.get(s)
+
+    if cfg is None:
+        return {
+            "fit_score":         0.5,
+            "preferred_regimes": (),
+            "blocked_regimes":   (),
+            "is_blocked":        False,
+            "rationale":         f"strategy_unknown: {s!r} not in regime matrix",
+        }
+
+    preferred = tuple(cfg.get("preferred") or ())
+    blocked   = tuple(cfg.get("blocked") or ())
+    agnostic  = bool(cfg.get("agnostic"))
+    rationale = cfg.get("rationale", "")
+
+    # Unknown regime → neutral fit (cannot validate)
+    if r not in _REGIMES:
+        return {
+            "fit_score":         0.5,
+            "preferred_regimes": preferred,
+            "blocked_regimes":   blocked,
+            "is_blocked":        False,
+            "rationale":         f"{rationale} | regime={r!r} unknown — neutral fit",
+        }
+
+    # Regime-agnostic strategies: fixed 0.7 for ALL regimes (acceptable, not preferred)
+    if agnostic:
+        return {
+            "fit_score":         0.7,
+            "preferred_regimes": preferred,
+            "blocked_regimes":   blocked,
+            "is_blocked":        False,
+            "rationale":         f"{rationale} | regime-agnostic",
+        }
+
+    # Blocked → fit_score 0.0, is_blocked=True
+    if r in blocked:
+        return {
+            "fit_score":         0.0,
+            "preferred_regimes": preferred,
+            "blocked_regimes":   blocked,
+            "is_blocked":        True,
+            "rationale":         f"{rationale} | BLOCKED in {r}",
+        }
+
+    # Preferred → 1.0
+    if r in preferred:
+        return {
+            "fit_score":         1.0,
+            "preferred_regimes": preferred,
+            "blocked_regimes":   blocked,
+            "is_blocked":        False,
+            "rationale":         f"{rationale} | preferred in {r}",
+        }
+
+    # Sub-optimal (not preferred, not blocked) → 0.5
+    return {
+        "fit_score":         0.5,
+        "preferred_regimes": preferred,
+        "blocked_regimes":   blocked,
+        "is_blocked":        False,
+        "rationale":         f"{rationale} | sub-optimal in {r}",
+    }
+
+
+__all__ = [
+    "REGIMES",
+    "DEFAULT_REGIME",
+    "detect_regime",
+    "is_bucket_allowed",
+    "is_ticker_allowed",
+    "per_strategy_regime_fit",
+]

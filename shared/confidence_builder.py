@@ -78,6 +78,18 @@ def build_confidence_inputs(*,
                              source_type: str | None = None,
                              source_confirmation_present: bool = False,
                              pre_open_analysis=None,
+                             # v3.18.0 — confidence extension inputs
+                             daily_volume_usd: float | None = None,
+                             universe_spread_baseline_bps: float | None = None,
+                             strategy_n_closed_paper: int | None = None,
+                             strategy_profit_factor: float | None = None,
+                             recent_20_wr: float | None = None,
+                             estimated_slippage_bps: float | None = None,
+                             expected_edge_bps: float | None = None,
+                             price_move_atr: float | None = None,
+                             volume_ratio: float | None = None,
+                             days_to_earnings: float | None = None,
+                             days_to_fomc: float | None = None,
                              ) -> dict:
     """Build a confidence_inputs dict suitable for compute_confidence.
 
@@ -129,6 +141,64 @@ def build_confidence_inputs(*,
     if regime:
         out["regime"] = str(regime)
 
+    # v3.18.0 — pass-through of confidence-extension inputs (all optional).
+    # compute_confidence handles missing values via NEUTRAL_COMPONENT.
+    if daily_volume_usd is not None:
+        try:
+            out["daily_volume_usd"] = float(daily_volume_usd)
+        except Exception:
+            pass
+    if universe_spread_baseline_bps is not None:
+        try:
+            out["universe_spread_baseline_bps"] = float(universe_spread_baseline_bps)
+        except Exception:
+            pass
+    if strategy_n_closed_paper is not None:
+        try:
+            out["strategy_n_closed_paper"] = int(strategy_n_closed_paper)
+        except Exception:
+            pass
+    if strategy_profit_factor is not None:
+        try:
+            out["strategy_profit_factor"] = float(strategy_profit_factor)
+        except Exception:
+            pass
+    if recent_20_wr is not None:
+        try:
+            out["recent_20_wr"] = float(recent_20_wr)
+        except Exception:
+            pass
+    if estimated_slippage_bps is not None:
+        try:
+            out["estimated_slippage_bps"] = float(estimated_slippage_bps)
+        except Exception:
+            pass
+    if expected_edge_bps is not None:
+        try:
+            out["expected_edge_bps"] = float(expected_edge_bps)
+        except Exception:
+            pass
+    if price_move_atr is not None:
+        try:
+            out["price_move_atr"] = float(price_move_atr)
+        except Exception:
+            pass
+    if volume_ratio is not None:
+        try:
+            out["volume_ratio"] = float(volume_ratio)
+        except Exception:
+            pass
+    if days_to_earnings is not None:
+        try:
+            out["days_to_earnings"] = float(days_to_earnings)
+        except Exception:
+            pass
+    if days_to_fomc is not None:
+        try:
+            out["days_to_fomc"] = float(days_to_fomc)
+        except Exception:
+            pass
+
     # system_health — read from heartbeat module
     try:
         from heartbeat import health_snapshot
@@ -178,6 +248,32 @@ def build_confidence_inputs(*,
         source_confirmation_present=source_confirmation_present,
         pre_open_analysis=pre_open_analysis,
     )
+
+    # v3.18.0 — per-strategy regime fit gate.
+    # When the regime BLOCKS this strategy (e.g. momentum-long in RISK_OFF),
+    # we tag _v3150_meta.block_recommended so risk_officer rejects deterministically.
+    if strategy and regime:
+        try:
+            from regime import per_strategy_regime_fit
+        except ImportError:
+            try:
+                from shared.regime import per_strategy_regime_fit  # type: ignore
+            except ImportError:
+                per_strategy_regime_fit = None  # type: ignore
+        if per_strategy_regime_fit is not None:
+            try:
+                fit = per_strategy_regime_fit(strategy, regime)
+                meta.setdefault("regime_fit_score", fit["fit_score"])
+                meta.setdefault("regime_fit_rationale", fit["rationale"])
+                if fit.get("is_blocked"):
+                    existing = meta.get("block_reasons") or []
+                    existing.append("regime_blocked_for_strategy")
+                    meta["block_recommended"] = True
+                    meta["block_reasons"] = existing
+                    meta["regime_blocked"] = True
+            except Exception:
+                pass
+
     if not meta:
         out.pop("_v3150_meta", None)
     else:
