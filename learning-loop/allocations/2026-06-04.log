@@ -40,3 +40,17 @@
 [00:13:01 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
 [00:13:01 INFO] ── Step 8: plan complete ──
 [00:13:01 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:00:32 INFO] ============================================================
+[13:00:32 INFO] execute_orders() — auto-execute path
+[13:00:32 INFO] ============================================================
+[13:00:32 INFO]   market_status: open=False reason=pre_market
+[13:00:32 WARN]     AMD BUY: skipped — market not open
+[13:00:32 WARN]     CRWD BUY: skipped — market not open
+[13:00:32 WARN]     ORCL BUY: skipped — market not open
+[13:00:32 WARN]     PANW BUY: skipped — market not open
+[13:00:32 WARN]     NOW BUY: skipped — market not open
+[13:00:32 WARN]     SPY BUY: skipped — market not open
+[13:00:32 WARN]     QQQ BUY: skipped — market not open
+[13:00:32 WARN]     GLD BUY: skipped — market not open
+[13:00:32 INFO]   execution complete: 0 placed, 8 skipped, 0 failed
