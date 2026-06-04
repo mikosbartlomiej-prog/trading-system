@@ -26,6 +26,24 @@ for p in (SHARED_DIR, MONITOR_DIR, REPO_ROOT):
         sys.path.insert(0, p)
 
 
+def _ensure_doj_monitor_module():
+    """Force fresh import of doj-monitor's `monitor` module.
+
+    Multiple monitor directories (geo-monitor, doj-monitor, defense-monitor)
+    each contain a `monitor.py`. If another test imported a different
+    `monitor` first, sys.modules caches it. Ensure we get the doj-monitor
+    one by popping any prior cache + re-importing with MONITOR_DIR at
+    index 0 of sys.path.
+    """
+    import importlib
+    sys.modules.pop("monitor", None)
+    # Make sure doj-monitor is first on sys.path so the fresh import lands here.
+    if MONITOR_DIR in sys.path:
+        sys.path.remove(MONITOR_DIR)
+    sys.path.insert(0, MONITOR_DIR)
+    return importlib.import_module("monitor")
+
+
 # ─── Synthetic fixtures ───────────────────────────────────────────────────────
 
 SAMPLE_8K_ATOM = """<?xml version="1.0" encoding="UTF-8"?>
@@ -332,7 +350,7 @@ class TestMonitorDedup(unittest.TestCase):
         self.state_path = os.path.join(self.tmpdir, "state.json")
 
     def _patch_monitor(self, ticker_map=None):
-        import monitor as mon
+        mon = _ensure_doj_monitor_module()
         tm = ticker_map or {
             "0000320193": "AAPL",
             "0000012927": "BA",
@@ -382,7 +400,8 @@ class TestMonitorDedup(unittest.TestCase):
 
 class TestMonitorEmail(unittest.TestCase):
     def test_format_event_email_subject_includes_ticker(self):
-        from monitor import _format_event_email
+        _mon = _ensure_doj_monitor_module()
+        _format_event_email = _mon._format_event_email
         from event_monitor_interface import (
             EventCandidate, EventMonitorInterface,
         )
@@ -418,7 +437,9 @@ class TestMonitorEmail(unittest.TestCase):
 
 class TestStateRoundtrip(unittest.TestCase):
     def test_load_missing_returns_empty_state(self):
-        from monitor import _load_state, STATE_VERSION
+        _mon = _ensure_doj_monitor_module()
+        _load_state = _mon._load_state
+        STATE_VERSION = _mon.STATE_VERSION
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "absent.json")
             state = _load_state(path)
@@ -427,7 +448,10 @@ class TestStateRoundtrip(unittest.TestCase):
             self.assertEqual(state["version"], STATE_VERSION)
 
     def test_save_then_load_roundtrip(self):
-        from monitor import _load_state, _save_state, STATE_VERSION
+        _mon = _ensure_doj_monitor_module()
+        _load_state = _mon._load_state
+        _save_state = _mon._save_state
+        STATE_VERSION = _mon.STATE_VERSION
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "state.json")
             _save_state({"seen_event_ids": ["a", "b", "c"]}, path)
@@ -437,7 +461,10 @@ class TestStateRoundtrip(unittest.TestCase):
             self.assertIsNotNone(state["last_run_iso"])
 
     def test_save_caps_seen_ids(self):
-        from monitor import _save_state, SEEN_CAP, _load_state
+        _mon = _ensure_doj_monitor_module()
+        _save_state = _mon._save_state
+        _load_state = _mon._load_state
+        SEEN_CAP = _mon.SEEN_CAP
         with tempfile.TemporaryDirectory() as d:
             path = os.path.join(d, "state.json")
             ids = [f"id-{i}" for i in range(SEEN_CAP + 50)]
@@ -454,7 +481,7 @@ class TestMonitorHeartbeat(unittest.TestCase):
         # module must load + run_scan must return a dict.
         from sec_8k_client import _parse_atom
         from doj_press_client import _parse_rss
-        import monitor as mon
+        mon = _ensure_doj_monitor_module()
         filings = _parse_atom(SAMPLE_8K_ATOM)
         press = _parse_rss(SAMPLE_DOJ_RSS)
         tm = {"0000320193": "AAPL"}
@@ -480,7 +507,7 @@ class TestNoRealNetwork(unittest.TestCase):
 
     def test_no_sec_or_doj_get_invocation(self):
         import requests
-        import monitor as mon
+        mon = _ensure_doj_monitor_module()
         from sec_8k_client import _parse_atom
         from doj_press_client import _parse_rss
 
@@ -515,7 +542,7 @@ class TestNoRealNetwork(unittest.TestCase):
 
 class TestDOJMonitorDecisionPolicy(unittest.TestCase):
     def test_immediate_bankruptcy_is_day_trade_eligible(self):
-        from monitor import DOJMonitor
+        DOJMonitor = _ensure_doj_monitor_module().DOJMonitor
         from event_monitor_interface import EventCandidate, EVT_SEC_8K_FILING
         from source_quality import TIER_1
         ev = EventCandidate(
@@ -535,7 +562,7 @@ class TestDOJMonitorDecisionPolicy(unittest.TestCase):
         self.assertTrue(d.day_trade_eligible)
 
     def test_weeks_months_other_event_not_day_trade_eligible(self):
-        from monitor import DOJMonitor
+        DOJMonitor = _ensure_doj_monitor_module().DOJMonitor
         from event_monitor_interface import EventCandidate, EVT_SEC_8K_FILING
         from source_quality import TIER_1
         ev = EventCandidate(
