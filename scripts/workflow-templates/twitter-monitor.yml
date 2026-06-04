@@ -11,6 +11,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# v3.18.0 P0-001 (2026-06-04): contents:write required for heartbeat
+# snapshot persistence. Allowed write scope = ONLY
+# learning-loop/runtime_state.json (enforced by `git add` below).
+permissions:
+  contents: write
+
 jobs:
   scan-twitter:
     runs-on: ubuntu-latest
@@ -19,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -43,3 +51,27 @@ jobs:
           GMAIL_APP_PASSWORD:              ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:                    ${{ secrets.NOTIFY_EMAIL }}
         run: python twitter-monitor/monitor.py
+
+      - name: Commit runtime_state.json if changed
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet learning-loop/runtime_state.json 2>/dev/null; then
+            echo "no runtime_state changes"
+            exit 0
+          fi
+          git pull --ff-only origin main 2>/dev/null || true
+          git add learning-loop/runtime_state.json
+          if git diff --cached --quiet 2>/dev/null; then
+            exit 0
+          fi
+          git commit -m "twitter-monitor: runtime_state $(date -u +%Y-%m-%d_%H%M) [automerge]" || exit 0
+          for attempt in 1 2 3; do
+            if git push origin "${GITHUB_REF_NAME:-main}"; then
+              exit 0
+            fi
+            git pull --rebase origin "${GITHUB_REF_NAME:-main}" 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          echo "push failed after 3 attempts — runtime_state not persisted"

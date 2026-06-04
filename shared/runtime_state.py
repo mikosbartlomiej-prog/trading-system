@@ -114,4 +114,10 @@ INTRADAY_SECTIONS = frozenset({
     # by shared.position_manager. Holds INTAKE/ARMED/TRAILING/INVALIDATING/
     # TIME_EXPIRED/CLOSED lifecycle + MFE/MAE marks + confidence-at-entry.
     "positions",
+    # v3.18.0 P0-002 (2026-06-04) — exit-monitor PDT block cooldown.
+    # Persists "<symbol>|<recommendation>|<decision>": "<iso-timestamp>"
+    # entries so cooldown survives fresh GitHub Actions runner checkouts.
+    # Was module-level dict in exit-monitor/monitor.py — reset every cron
+    # tick → dedup never engaged → 36 audit events for one position per day.
+    "pdt_cooldown",
 })

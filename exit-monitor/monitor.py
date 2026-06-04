@@ -87,8 +87,79 @@ def _emergency_close_window_ok(ep: dict) -> bool:
 # position. Cooldown: silence audit + log noise for (symbol, rec) for
 # 60 min after a PDT block. Emergency closes BYPASS this — different
 # code path uses is_emergency=True which short-circuits.
-_PDT_BLOCK_COOLDOWN: dict = {}    # key: "SYM|REC|DECISION" → last block ts
+#
+# v3.18.0 P0-002 (2026-06-04) — persisted to learning-loop/runtime_state.json
+# section "pdt_cooldown". Without persistence, each fresh GitHub Actions
+# runner started with empty dict → cooldown never engaged → dedup broken.
+# Now: load on first PDT block (lazy), prune expired entries on every
+# write, write via shared.runtime_state with actor="exit-monitor".
+_PDT_BLOCK_COOLDOWN: dict = {}    # key: "SYM|REC|DECISION" → datetime
+_PDT_COOLDOWN_LOADED: bool = False
 PDT_BLOCK_COOLDOWN_S = 3600       # 60 min
+
+
+def _load_pdt_cooldown() -> dict:
+    """
+    Lazy-load cooldown dict from runtime_state.json::pdt_cooldown.
+
+    Stored format: {"<sym>|<rec>|<decision>": "<iso8601-utc>"}.
+    In-memory format: {key: datetime}. Conversion happens here.
+
+    Fail-soft: malformed JSON, OS errors → empty dict + warning. Bad
+    individual entries (non-ISO strings, etc.) are dropped silently.
+    Same key contract regardless of failure mode → callers never raise.
+    """
+    global _PDT_BLOCK_COOLDOWN, _PDT_COOLDOWN_LOADED
+    if _PDT_COOLDOWN_LOADED:
+        return _PDT_BLOCK_COOLDOWN
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from runtime_state import read_section
+        raw = read_section("pdt_cooldown")
+        if not isinstance(raw, dict):
+            print(f"  [pdt-cooldown] malformed (not dict) — starting empty")
+            _PDT_BLOCK_COOLDOWN = {}
+        else:
+            parsed: dict = {}
+            for k, v in raw.items():
+                if not isinstance(k, str) or not isinstance(v, str):
+                    continue
+                try:
+                    parsed[k] = datetime.fromisoformat(v)
+                except (ValueError, TypeError):
+                    continue
+            _PDT_BLOCK_COOLDOWN = parsed
+    except Exception as e:
+        print(f"  [pdt-cooldown] load failed ({type(e).__name__}: {e}) — starting empty")
+        _PDT_BLOCK_COOLDOWN = {}
+    _PDT_COOLDOWN_LOADED = True
+    return _PDT_BLOCK_COOLDOWN
+
+
+def _save_pdt_cooldown() -> None:
+    """
+    Prune expired entries (>3600s old) + write to runtime_state.json.
+
+    Fail-soft: errors are logged and swallowed — cooldown still works
+    in-process this run, persistence just won't reach origin until a
+    later cron tick succeeds.
+    """
+    global _PDT_BLOCK_COOLDOWN
+    now = datetime.now(timezone.utc)
+    pruned: dict = {}
+    for k, dt in _PDT_BLOCK_COOLDOWN.items():
+        if not isinstance(dt, datetime):
+            continue
+        if (now - dt).total_seconds() < PDT_BLOCK_COOLDOWN_S:
+            pruned[k] = dt
+    _PDT_BLOCK_COOLDOWN = pruned
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
+        from runtime_state import write_section
+        serialized = {k: dt.isoformat() for k, dt in pruned.items()}
+        write_section("pdt_cooldown", serialized, actor="exit-monitor")
+    except Exception as e:
+        print(f"  [pdt-cooldown] save failed ({type(e).__name__}: {e})")
 
 
 def place_emergency_close(ep: dict) -> dict | None:
@@ -191,16 +262,23 @@ def place_emergency_close(ep: dict) -> dict | None:
                 # for hours, all PDT_BLOCKed (dt=17). 36 audit events.
                 # Record audit once per (symbol, recommendation) per hour;
                 # subsequent skip is silent log only.
+                #
+                # v3.18.0 P0-002 (2026-06-04) — cooldown is now persisted
+                # to runtime_state.json so dedup survives runner restart.
+                _cooldown = _load_pdt_cooldown()
                 _now = datetime.now(timezone.utc)
                 _cooldown_key = f"{symbol}|{rec}|{pv.get('decision')}"
-                _last = _PDT_BLOCK_COOLDOWN.get(_cooldown_key)
-                _within_cooldown = (_last is not None
-                                     and (_now - _last).total_seconds() < PDT_BLOCK_COOLDOWN_S)
+                _last = _cooldown.get(_cooldown_key)
+                _within_cooldown = (
+                    isinstance(_last, datetime)
+                    and (_now - _last).total_seconds() < PDT_BLOCK_COOLDOWN_S
+                )
                 if not _within_cooldown:
                     _pdt_audit(pv, action="CLOSE", symbol=symbol,
                                extra={"recommendation": rec, "asset_class": asset_class,
                                        "intent": close_intent})
-                    _PDT_BLOCK_COOLDOWN[_cooldown_key] = _now
+                    _cooldown[_cooldown_key] = _now
+                    _save_pdt_cooldown()
                     if pv["decision"] == "DEFER":
                         print(f"  pdt-guard DEFER {symbol} ({rec}): {pv['reason']}")
                     else:  # BLOCK

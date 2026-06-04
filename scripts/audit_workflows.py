@@ -93,6 +93,17 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # Allowed write scope = ONLY doj-monitor/state.json + learning-loop/
     # runtime_state.json (enforced by workflow's explicit `git add` lines).
     "doj-monitor.yml",
+    # v3.18.0 P0-001 (2026-06-04) — heartbeat workflow permissions completion.
+    # 5 remaining monitor workflows persist heartbeat.ping() snapshots to
+    # learning-loop/runtime_state.json so confidence.score_system_health()
+    # returns true ratio across all 11 EXPECTED_COMPONENTS. Allowed write
+    # scope = ONLY learning-loop/runtime_state.json (enforced by workflow's
+    # explicit `git add learning-loop/runtime_state.json` line).
+    "defense-monitor.yml",
+    "geo-monitor.yml",
+    "options-monitor.yml",
+    "price-monitor.yml",
+    "twitter-monitor.yml",
 }
 
 # Workflows allowed to create PRs.
