@@ -115,6 +115,14 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # pre_open_behavior + pre_market_data. Plan stored in
     # runtime_state.json::pre_open_plan. NEVER places trades.
     "pre-open-planner.yml",
+    # v3.21.0 (2026-06-04) — shadow evidence cycle (ETAP 2).
+    # Daily runner observes active strategies, records every signal to
+    # the opportunity ledger, and (in --mode shadow) writes shadow
+    # ledger entries via evidence_production.estimate_shadow_fill.
+    # NEVER places real trades. Allowed write scope = ONLY
+    # learning-loop/shadow_ledger/ + learning-loop/opportunity_ledger/
+    # + docs/shadow_evidence_cycle_LATEST.md.
+    "shadow-evidence-cycle.yml",
 }
 
 # Workflows allowed to create PRs.

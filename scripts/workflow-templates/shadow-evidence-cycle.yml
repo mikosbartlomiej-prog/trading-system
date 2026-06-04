@@ -1,0 +1,114 @@
+name: Shadow Evidence Cycle — Daily Runner
+
+# v3.21.0 (2026-06-04) — ETAP 2 of the v3.21 sweep.
+#
+# Daily paper-only runner that:
+#   1. Iterates active strategies and observes their signals.
+#   2. Records EVERY signal to the Signal Opportunity Ledger.
+#   3. Pushes signals through the gate stack
+#      (confidence → quality → universe → regime → risk).
+#   4. For gate-approved signals in --mode shadow, writes a shadow
+#      ledger entry via evidence_production.estimate_shadow_fill.
+#   5. Re-renders docs/shadow_evidence_cycle_LATEST.md.
+#
+# Default mode is `signal_only` (NO shadow fill writes). Operator may
+# manually trigger `--mode shadow` via workflow_dispatch when they
+# want a deeper observation cycle.
+#
+# **Live mode is not supported.** The CLI hard-rejects --mode live.
+# No paid services. No LLM in the runtime trading path. The risk
+# engine is never bypassed. EDGE_GATE_ENABLED is never flipped.
+
+on:
+  schedule:
+    # 22:30 UTC daily Mon-Fri — runs AFTER paper-experiment-update.yml
+    # (22:00 UTC) so the freshest paper experiment artifacts are picked
+    # up by the observation cycle.
+    - cron: '30 22 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Evidence production mode (default signal_only)'
+        required: false
+        default: 'signal_only'
+        type: choice
+        options:
+          - signal_only
+          - shadow
+          - broker
+      dry_run:
+        description: 'Dry-run (skip ledger writes / report)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write     # runner commits opportunity + shadow ledgers + report
+
+concurrency:
+  group: shadow-evidence-cycle-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observe-and-record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run shadow evidence cycle (signal_only by default)
+        env:
+          PYTHONIOENCODING:  utf-8
+          LC_ALL:            C
+          LANG:              C
+          # Hard-locked at workflow level so a re-paste cannot
+          # accidentally enable broker mode without operator action.
+          EVIDENCE_PRODUCTION_MODE: SIGNAL_ONLY
+        run: |
+          MODE="${{ github.event.inputs.mode || 'signal_only' }}"
+          DRY="${{ github.event.inputs.dry_run || 'false' }}"
+          ARGS="--mode ${MODE}"
+          if [ "${DRY}" = "true" ]; then
+            ARGS="${ARGS} --dry-run"
+          fi
+          echo "Invoking: python -m scripts.run_shadow_evidence_cycle ${ARGS}"
+          python -m scripts.run_shadow_evidence_cycle ${ARGS}
+
+      - name: Commit and push shadow-evidence artifacts
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          # Narrow scope — only the ledgers + the LATEST report.
+          git add learning-loop/shadow_ledger/      2>/dev/null || true
+          git add learning-loop/opportunity_ledger/ 2>/dev/null || true
+          git add docs/shadow_evidence_cycle_LATEST.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No shadow-evidence changes (quiet day)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "shadow-evidence: daily cycle ${DATE} [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed shadow-evidence cycle on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — pull --rebase + retry"
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 3))
+            done
+          fi
