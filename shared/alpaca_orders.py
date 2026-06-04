@@ -228,6 +228,37 @@ def _confidence_gate(confidence_inputs: dict | None,
         return True, f"confidence-gate unavailable ({type(e).__name__}: {e})"
 
 
+def _emit_entry_audit_event(*, proposal: dict, result: str,
+                            result_reason: str = "",
+                            order: dict | None = None,
+                            risk_verdict: dict | None = None) -> None:
+    """v3.17.0 (2026-06-04, Task 3) — Emit one entry audit JSONL event.
+
+    Thin wrapper around shared._entry_audit.emit_entry_audit so the call
+    sites in place_stock_bracket / place_crypto_order / place_simple_buy
+    stay short and uniform. NEVER raises — audit emit failure cannot
+    block the entry decision (the decision is already made by the time
+    we call this). Audit emit propagates the existing
+    `proposal["_confidence_report"]` if risk_officer attached it.
+    """
+    try:
+        try:
+            from _entry_audit import emit_entry_audit  # type: ignore
+        except ImportError:
+            from shared._entry_audit import emit_entry_audit  # type: ignore
+        emit_entry_audit(
+            proposal=proposal,
+            result=result,
+            result_reason=result_reason,
+            order=order,
+            risk_verdict=risk_verdict,
+            actor="alpaca_orders",
+        )
+    except Exception as e:  # pragma: no cover — defensive fallback
+        print(f"  ⚠️  _emit_entry_audit_event failed (non-fatal): "
+              f"{type(e).__name__}: {e}")
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -400,34 +431,66 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         return None
 
     # Risk-officer gate (opt-out via USE_RISK_OFFICER=false). Hard violations
-    # block the trade; soft warnings are logged but don't reject. Fail-soft
-    # if the officer module is unavailable for any reason — proceed to place.
+    # block the trade; soft warnings are logged but don't reject.
+    #
+    # v3.17.0 (2026-06-04, Task 2) — FAIL-CLOSED for new entries. If the
+    # risk_officer module is unavailable OR evaluate_trade raises, REFUSE
+    # the entry. Critical gates failing must not silently let an order
+    # through. This applies ONLY to NEW ENTRIES; emergency closes /
+    # safe_close paths still operate (they bypass risk_officer entirely).
+    _proposal = {
+        "symbol":      symbol,
+        "action":      "BUY" if side == "buy" else "SELL_SHORT",
+        "size_usd":    qty * entry_price,
+        "entry_price": entry_price,
+        "stop_loss":   stop_loss,
+        "take_profit": take_profit,
+        "strategy":    strategy,
+    }
+    # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
+    if confidence_inputs:
+        _proposal["confidence_inputs"] = confidence_inputs
     try:
-        from risk_officer import evaluate_trade  # noqa: E402
-        _proposal = {
-            "symbol":      symbol,
-            "action":      "BUY" if side == "buy" else "SELL_SHORT",
-            "size_usd":    qty * entry_price,
-            "entry_price": entry_price,
-            "stop_loss":   stop_loss,
-            "take_profit": take_profit,
-            "strategy":    strategy,
-        }
-        # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
-        if confidence_inputs:
-            _proposal["confidence_inputs"] = confidence_inputs
-        verdict = evaluate_trade(_proposal)
-        if verdict.get("decision") == "REJECT":
-            print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
-            for f in verdict.get("checks_failed", []):
-                print(f"    - {f}")
-            return None
-        if verdict.get("warnings"):
-            print(f"  risk-officer warnings ({symbol}):")
-            for w in verdict["warnings"]:
-                print(f"    - {w}")
+        try:
+            from risk_officer import evaluate_trade  # type: ignore  # noqa: E402
+        except ImportError:
+            from shared.risk_officer import evaluate_trade  # type: ignore  # noqa: E402
     except Exception as e:
-        print(f"  risk-officer unavailable ({type(e).__name__}: {e}); proceeding")
+        reason = (
+            f"risk-officer module unavailable ({type(e).__name__}: {e}); "
+            f"refusing entry (fail-closed)"
+        )
+        print(f"  RISK-OFFICER UNAVAILABLE {symbol}: {reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected", result_reason=reason,
+        )
+        return None
+    try:
+        verdict = evaluate_trade(_proposal)
+    except Exception as e:
+        reason = (
+            f"risk-officer exception ({type(e).__name__}: {e}); "
+            f"refusing entry (fail-closed)"
+        )
+        print(f"  RISK-OFFICER EXCEPTION {symbol}: {reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected", result_reason=reason,
+        )
+        return None
+    if verdict.get("decision") == "REJECT":
+        print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
+        for f in verdict.get("checks_failed", []):
+            print(f"    - {f}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected",
+            result_reason=f"risk-officer REJECT: {verdict.get('rationale','')}",
+            risk_verdict=verdict,
+        )
+        return None
+    if verdict.get("warnings"):
+        print(f"  risk-officer warnings ({symbol}):")
+        for w in verdict["warnings"]:
+            print(f"    - {w}")
 
     # v3.9.6 (2026-05-22 — post-incident fix). TIF was "day" which caused
     # bracket OCO children (SL+TP) to EXPIRE at market close, leaving
@@ -453,11 +516,27 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
         if r.status_code in (200, 201):
-            return r.json()
+            order = r.json()
+            _emit_entry_audit_event(
+                proposal=_proposal, result="placed",
+                result_reason="bracket order placed",
+                order=order, risk_verdict=verdict,
+            )
+            return order
         print(f"  Alpaca bracket error {r.status_code}: {r.text[:200]}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"Alpaca {r.status_code}: {r.text[:200]}",
+            risk_verdict=verdict,
+        )
         return None
     except Exception as e:
         print(f"  Alpaca bracket exception: {e}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"broker exception: {type(e).__name__}: {e}",
+            risk_verdict=verdict,
+        )
         return None
 
 
@@ -524,35 +603,64 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker
     # (Alpaca crypto = simple limit only); we pass the strategy-level
     # values so the officer can validate R:R and per-trade size.
+    #
+    # v3.17.0 (2026-06-04, Task 2) — FAIL-CLOSED for new entries. If the
+    # risk_officer module is unavailable OR evaluate_trade raises, REFUSE
+    # the entry. Critical gates failing must not silently let an order
+    # through.
+    _proposal = {
+        "symbol":      symbol,
+        "action":      "BUY" if side == "buy" else "SELL_SHORT",
+        "size_usd":    qty * limit_price,
+        "entry_price": limit_price,
+        "stop_loss":   limit_price * 0.93 if side == "buy" else limit_price * 1.07,
+        "take_profit": limit_price * 1.20 if side == "buy" else limit_price * 0.80,
+        "strategy":    strategy,
+    }
+    # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
+    if confidence_inputs:
+        _proposal["confidence_inputs"] = confidence_inputs
     try:
-        from risk_officer import evaluate_trade  # noqa: E402
-        # For crypto, look up SL/TP from strategy defaults if available.
-        # If caller didn't compute them, the officer treats no-TP as a
-        # soft-warning trailing-exit assumption (won't reject).
-        _proposal = {
-            "symbol":      symbol,
-            "action":      "BUY" if side == "buy" else "SELL_SHORT",
-            "size_usd":    qty * limit_price,
-            "entry_price": limit_price,
-            "stop_loss":   limit_price * 0.93 if side == "buy" else limit_price * 1.07,
-            "take_profit": limit_price * 1.20 if side == "buy" else limit_price * 0.80,
-            "strategy":    strategy,
-        }
-        # v3.14.0 (2026-06-02) — pass confidence_inputs through (closes CONF-002).
-        if confidence_inputs:
-            _proposal["confidence_inputs"] = confidence_inputs
-        verdict = evaluate_trade(_proposal)
-        if verdict.get("decision") == "REJECT":
-            print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
-            for f in verdict.get("checks_failed", []):
-                print(f"    - {f}")
-            return None
-        if verdict.get("warnings"):
-            print(f"  risk-officer warnings ({symbol}):")
-            for w in verdict["warnings"]:
-                print(f"    - {w}")
+        try:
+            from risk_officer import evaluate_trade  # type: ignore  # noqa: E402
+        except ImportError:
+            from shared.risk_officer import evaluate_trade  # type: ignore  # noqa: E402
     except Exception as e:
-        print(f"  risk-officer unavailable ({type(e).__name__}: {e}); proceeding")
+        reason = (
+            f"risk-officer module unavailable ({type(e).__name__}: {e}); "
+            f"refusing entry (fail-closed)"
+        )
+        print(f"  RISK-OFFICER UNAVAILABLE {symbol}: {reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected", result_reason=reason,
+        )
+        return None
+    try:
+        verdict = evaluate_trade(_proposal)
+    except Exception as e:
+        reason = (
+            f"risk-officer exception ({type(e).__name__}: {e}); "
+            f"refusing entry (fail-closed)"
+        )
+        print(f"  RISK-OFFICER EXCEPTION {symbol}: {reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected", result_reason=reason,
+        )
+        return None
+    if verdict.get("decision") == "REJECT":
+        print(f"  RISK-OFFICER REJECT {symbol}: {verdict['rationale']}")
+        for f in verdict.get("checks_failed", []):
+            print(f"    - {f}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="rejected",
+            result_reason=f"risk-officer REJECT: {verdict.get('rationale','')}",
+            risk_verdict=verdict,
+        )
+        return None
+    if verdict.get("warnings"):
+        print(f"  risk-officer warnings ({symbol}):")
+        for w in verdict["warnings"]:
+            print(f"    - {w}")
 
     payload = {
         "symbol":         symbol,
@@ -567,11 +675,27 @@ def place_crypto_order(symbol: str, side: str, qty: float,
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
         if r.status_code in (200, 201):
-            return r.json()
+            order = r.json()
+            _emit_entry_audit_event(
+                proposal=_proposal, result="placed",
+                result_reason="crypto order placed",
+                order=order, risk_verdict=verdict,
+            )
+            return order
         print(f"  Alpaca crypto order error {r.status_code}: {r.text[:200]}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"Alpaca {r.status_code}: {r.text[:200]}",
+            risk_verdict=verdict,
+        )
         return None
     except Exception as e:
         print(f"  Alpaca crypto order exception: {e}")
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"broker exception: {type(e).__name__}: {e}",
+            risk_verdict=verdict,
+        )
         return None
 
 
@@ -627,9 +751,41 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
 
     # v3.14.0 (2026-06-02) — confidence gate (closes CONF-002).
     # Options path doesn't call risk_officer; gate inline.
-    conf_ok, conf_reason = _confidence_gate(confidence_inputs, symbol=symbol)
+    #
+    # v3.17.0 (2026-06-04, Task 2) — FAIL-CLOSED for options entries.
+    # Options entries bypass risk_officer by design (Alpaca paper
+    # AUTO_EXECUTE rule). The confidence gate is the primary critical
+    # check. If the confidence module raises, REFUSE the entry.
+    # _confidence_gate's existing contract already returns (True, "skip")
+    # when confidence_inputs is None (legacy caller) which we keep —
+    # only EXCEPTIONS inside compute_confidence become fail-closed.
+    _proposal_options = {
+        "symbol":      symbol,
+        "action":      "BUY_TO_OPEN",
+        "size_usd":    qty * limit_price,
+        "entry_price": limit_price,
+        "strategy":    strategy,
+    }
+    try:
+        conf_ok, conf_reason = _confidence_gate(confidence_inputs, symbol=symbol)
+    except Exception as e:
+        # _confidence_gate is itself fail-soft internally, but guard
+        # against any escape just in case.
+        reason = (
+            f"confidence-gate exception ({type(e).__name__}: {e}); "
+            f"refusing options entry (fail-closed)"
+        )
+        print(f"  CONFIDENCE EXCEPTION {symbol} (options): {reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal_options, result="rejected", result_reason=reason,
+        )
+        return None
     if not conf_ok:
         print(f"  CONFIDENCE BLOCK {symbol} (options): {conf_reason}")
+        _emit_entry_audit_event(
+            proposal=_proposal_options, result="rejected",
+            result_reason=f"confidence-gate BLOCK: {conf_reason}",
+        )
         return None
     if confidence_inputs:
         print(f"  confidence-gate {symbol}: {conf_reason}")
@@ -647,11 +803,25 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
         if r.status_code in (200, 201):
-            return r.json()
+            order = r.json()
+            _emit_entry_audit_event(
+                proposal=_proposal_options, result="placed",
+                result_reason="options buy_to_open placed",
+                order=order,
+            )
+            return order
         print(f"  Alpaca simple buy error {r.status_code}: {r.text[:200]}")
+        _emit_entry_audit_event(
+            proposal=_proposal_options, result="failed",
+            result_reason=f"Alpaca {r.status_code}: {r.text[:200]}",
+        )
         return None
     except Exception as e:
         print(f"  Alpaca simple buy exception: {e}")
+        _emit_entry_audit_event(
+            proposal=_proposal_options, result="failed",
+            result_reason=f"broker exception: {type(e).__name__}: {e}",
+        )
         return None
 
 
