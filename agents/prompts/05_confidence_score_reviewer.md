@@ -118,3 +118,19 @@ If any blocker raised, the entire score is invalidated until fixed.
 ## Free-operation requirement
 
 Confidence score is computed locally from cached data — no paid feeds.
+
+## v3.19 evidence-source checklist (appended 2026-06-04)
+
+Also verify:
+- Paper trades ledger (paper_experiments/<date>.jsonl) — n ≥ 50 per
+  enabled strategy required for edge approval
+- Confidence calibration report (docs/confidence_calibration_LATEST.md)
+  — strategy_quality_gate must read this
+- Strategy ranking report (docs/strategy_ranking_LATEST.md)
+- Universe ranking (docs/universe_ranking_LATEST.md)
+- Allocation simulator results (docs/allocation_simulation_LATEST.md)
+- Pre-open plan v2 fields (runtime_state.json::pre_open_plan)
+- Operator dashboard (docs/operator_dashboard_LATEST.md)
+- Learning loop report (docs/post_session_LATEST.md)
+- Backtest/replay evidence is TRIAGE ONLY — never approval evidence
+- EDGE_GATE_ENABLED must stay false unless paper criteria are met

@@ -154,3 +154,14 @@ Without these three references, a finding cannot move from
 Final Arbiter must verify that the entire audit-board pipeline ran
 locally without any paid SaaS. The runner `agents/run_agent_board.py`
 must succeed on a developer laptop with $0 spent.
+
+## v3.19 paper escalation block (appended 2026-06-04)
+
+BLOCK paper escalation if:
+- Paper ledger empty
+- Any enabled strategy n < 50
+- Confidence calibration uncalibrated
+- Strategy quality gate has REJECTED strategies
+- EDGE_GATE_ENABLED=true without empirical criteria
+- Operator dashboard shows P0/P1 blockers
+- Backtest/replay evidence used as paper approval
