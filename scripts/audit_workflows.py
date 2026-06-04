@@ -104,6 +104,17 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     "options-monitor.yml",
     "price-monitor.yml",
     "twitter-monitor.yml",
+    # v3.19.0 (2026-06-04) — paper trading experiment loop (ETAP 4/5).
+    # Daily cron after market close reads journal/autonomy/<date>.jsonl,
+    # appends paper trades to learning-loop/paper_experiments/<date>.jsonl,
+    # writes docs/edge_evidence_LATEST.md. NEVER places real trades.
+    # Allowed write scope = paper_experiments/ + docs/edge_evidence_LATEST.md.
+    "paper-experiment-update.yml",
+    # v3.19.0 (2026-06-04) — pre-open session planner (ETAP 9).
+    # Cron 30 min before market open builds pre-open plan via
+    # pre_open_behavior + pre_market_data. Plan stored in
+    # runtime_state.json::pre_open_plan. NEVER places trades.
+    "pre-open-planner.yml",
 }
 
 # Workflows allowed to create PRs.

@@ -22,8 +22,9 @@ backtest and replay records do NOT contribute) and reports:
 
 The output is a deterministic dict + a local Markdown report. The
 module DOES NOT mutate any thresholds. The Strategy Quality Gate reads
-the calibration as one of its inputs; an operator decides whether to
-adjust the confidence threshold.
+the calibration as one of its inputs and surfaces the diagnostic for
+review; threshold adjustments are governed by the Strategy Quality
+Gate rules (see docs/STRATEGY_RANKING.md), not by this module.
 
 CONTRACT
 --------
