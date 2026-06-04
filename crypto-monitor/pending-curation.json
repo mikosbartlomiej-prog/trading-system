@@ -1,5 +1,5 @@
 {
-  "narrative": "BTC RSI 19.9 przy wyczerpaniu presji sprzedażowej (1h: -0.03%) — ekstremalny oversold z czystą księgą $95.9k i pełną gotowością kapitałową. Volume 1.08× neutralny dla tej strategii: oversold-bounce edge leży w statystycznej rzadkości RSI <20 (<5% historii BTC), nie w potwierdzeniu wolumenowym przełamania. Predator wchodzi Tier 1 z medium conviction.",
+  "narrative": "BTC RSI 19.9 — skrajny oversold (sub-20 historycznie rzadki, silna statystyczna podstawa do odbicia mean-reversion). Cena stabilna w ciągu ostatniej 1h (-0.03%), brak aktywnego krachu. Słabość: volume ratio 1.08× — brak potwierdzenia wolumenowego świecy odwrócenia. Predator wchodzi na RSI < 20 z rozmontowanym portfelem (0 otwartych pozycji = czyste wejście, zero ryzyka koncentracji).",
   "selected_signals": [
     {
       "ticker": "BTC/USD",
@@ -7,13 +7,12 @@
       "tier": 1,
       "conviction": "medium",
       "size_multiplier": 1.0,
-      "rationale": "RSI 19.9 to historycznie ekstremalny poziom dla BTC — poniżej 20 rzadziej niż 5% historii, mean-reversion edge udokumentowany we wszystkich post-halving cyklach. BTC 1h -0.028% sygnalizuje wyczerpanie presji sprzedażowej bez kontynuacji dystrybucji. Volume 1.08× neutralne — oversold-bounce nie wymaga 3×+ vol (wymóg momentum/breakout; tutaj edge w ekstremalnym RSI + 3-bar stabilizacja). Konto czyste (0 pozycji, equity $95,861.26), brak ryzyka koncentracji. R:R 1.9:1 (TP $85,691 / SL $63,911).",
-      "expected_horizon": "2-3d",
-      "key_risk": "Brak wolumenowego potwierdzenia kapitulacji — RSI 19.9 może spaść do 10-15 przy kontynuacji wyprzedaży bez katalizatora odwrócenia; falling knife scenario możliwy; stop $63,911 musi być twardy."
+      "rationale": "RSI 19.9 to poziom ekstremalnego oversold (poniżej 20 zdarza się ~2-3% czasu w historii BTC i historycznie oznacza lokalne dno z wysokim prawdopodobieństwem odbicia). BTC 1h zmiana -0.028% = cena ustabilizowana, nie ma aktywnego krachu. Spadek 24h -2.83% to kontrolowana wyprzedaż, nie panika. SL -10.5% / TP +20% = R:R 1.9 akceptowalne dla strategii oversold-bounce. Główna słabość: volume 1.08× średniej — brak świecy potwierdzającej, predator wchodzi wyprzedzająco na ekstremalnym RSI, nie na potwierdzeniu.",
+      "expected_horizon": "1-2d",
+      "key_risk": "BTC kontynuuje powolny grind poniżej $71,000 w kierunku wsparcia $68,000 przed odbiciem; niski volume oznacza brak potwierdzenia kupujących na tym poziomie."
     }
   ],
   "rejected_signals": [],
-  "macro_context": "BTC 1h flat (-0.028%) po 24h korekcie -2.83% prowadzącej do RSI 19.9; post-halving 2024 expansion historycznie wspiera Tier 1 mean-reversion przy ekstremalnych RSI-ach; alt_open_count=0, brak ryzyka korelacji.",
-  "confidence_in_curation": "medium",
-  "as_of": "2026-06-04T16:35:32Z"
+  "macro_context": "BTC 1h praktycznie flat (-0.028%), RSI 19.9 = ekstremalny oversold bez aktywnego krachu; brak altcoinowych kandydatów (alt_open_count=0, no alt signals in payload); reżim BTC dominance neutralny.",
+  "confidence_in_curation": "medium"
 }
