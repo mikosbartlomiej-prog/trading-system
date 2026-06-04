@@ -1,0 +1,77 @@
+name: Paper Experiment — Daily Edge Evidence Update
+
+# v3.18.0 (2026-06-04) — ETAP 4+5 of v3.18.0 sweep.
+#
+# Reads the prior day's journal/autonomy/*.jsonl audit trail, extracts
+# closed paper trades, and updates learning-loop/paper_experiments/<date>.jsonl.
+# Then regenerates docs/edge_evidence_LATEST.md so the operator can
+# evaluate progress toward EDGE_GATE_ENABLED readiness.
+#
+# **PAPER-ONLY.** This workflow NEVER changes EDGE_GATE_ENABLED. It only
+# documents empirical evidence. Operator manually overrides via env var
+# after reviewing the report + Strategy Quality Gate output.
+
+on:
+  schedule:
+    # 22:00 UTC daily Mon-Fri — after US market close (20:00 UTC) +
+    # exit-monitor + daily-learning finished writing audit JSONL.
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write     # workflow commits ledger + report
+
+concurrency:
+  group: paper-experiment-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ingest-and-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update paper experiment ledger + generate report
+        env:
+          PYTHONIOENCODING:  utf-8
+          LC_ALL:            C
+          LANG:              C
+        run: |
+          python -m scripts.update_paper_experiment \
+            --lookback-days 3 \
+            --window-days 180
+
+      - name: Commit and push paper experiment artifacts
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add learning-loop/paper_experiments/ 2>/dev/null || true
+          git add docs/edge_evidence_LATEST.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No paper-experiment changes (quiet day)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "paper-experiment: daily ingest ${DATE} [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed paper-experiment ingest on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — pull --rebase + retry"
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 3))
+            done
+          fi
