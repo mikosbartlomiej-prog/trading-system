@@ -20,6 +20,12 @@ try:
     from market_data import compute_reaction_metrics
     from alpaca_orders import execute_stock_signal
     from notify import notify_signal, notify_summary
+    # v3.16.0 (2026-06-04) — pure classifier shared with backtest harness.
+    from geo_classifier import (
+        classify_event_to_signals as _shared_classify_event_to_signals,
+        cap_signals_per_run as _shared_cap_signals,
+        STRATEGY_XOM, STRATEGY_ENERGY,
+    )
 except ImportError:
     def vix_guard(): return ("OK", 1.0)
     def daily_drawdown_guard(account=None): return ("OK", "stub")
@@ -31,6 +37,10 @@ except ImportError:
     def execute_stock_signal(_s): return None
     def notify_signal(*a, **k): pass
     def notify_summary(*a, **k): pass
+    def _shared_classify_event_to_signals(*a, **k): return []
+    def _shared_cap_signals(s, n): return list(s)[:n] if n > 0 else list(s)
+    STRATEGY_XOM = "geo-xom"
+    STRATEGY_ENERGY = "geo-energy"
 
 
 GEO_SOURCE_TYPE_MAP = {
@@ -272,69 +282,58 @@ def fetch_rss_feeds() -> list[dict]:
 
 def _classify_news_to_signals(news_items: list[dict], top_priority: str) -> list[dict]:
     """
-    v3.8.7 (2026-05-16): direct execution classifier (replaces deprecated
-    routine path). For each news item, build (ticker, side, strategy)
-    signal dict mirroring defense-monitor's pattern. Mapping based on
-    keyword bucket + sentiment.
+    v3.16.0 (2026-06-04): delegates to shared/geo_classifier.classify_event_to_signals
+    so the live monitor and backtest harness share the same logic. Output shape
+    preserved (dict matching defense-monitor's pattern + execute_stock_signal
+    expectations).
 
-    Pattern rules:
-      - "iran attack" / "israel strike" / "missile" / "hezbollah" / "hamas"
-          → defense LONG (RTX, LMT primary)
-      - "oil embargo" / "strait of hormuz" / "iran" / "opec"
-          → energy LONG (XOM, CVX, USO primary)
-      - "nuclear" / "war" / generic escalation
-          → gold LONG (GLD safe haven)
-      - "trade war" / "trump tariff" / "trump sanction" (non-iran)
-          → broad SHORT-bias (skip — too noisy, requires direction context)
+    v3.8.7 history (preserved for context):
+      - Direct execution classifier (replaces deprecated routine path).
+      - Pattern rules:
+          - "iran attack" / "israel strike" / "missile" / "hezbollah" / "hamas"
+              → defense LONG (RTX, LMT primary)
+          - "oil embargo" / "strait of hormuz" / "iran" / "opec"
+              → energy LONG (XOM, CVX primary)
+          - "nuclear" / "war" / generic escalation
+              → gold LONG (GLD safe haven)
+      - Sizing per docs/STRATEGY.md §4.4: $8k HIGH, $4k MEDIUM.
+      - Per-run MAX_TRADES_PER_RUN=2 cap.
 
-    Sizing per docs/STRATEGY.md §4.4 (geo bucket): $8k HIGH, $4k MEDIUM.
-    Per-event MAX_TRADES_PER_RUN=2 cap prevents news-cluster overload.
+    Live-monitor invariants preserved:
+      - First-5 news items only (score-sorted).
+      - Dedup by ticker across the run.
+      - Strategy "geo-xom" alias for XOM/CVX (legacy state.json key).
     """
     signals: list[dict] = []
     seen_tickers: set[str] = set()
-    DEFENSE_KW    = ("iran attack", "iran missile", "israel strike", "missile",
-                     "hezbollah", "hamas", "middle east war")
-    ENERGY_KW     = ("oil embargo", "strait of hormuz", "oil supply",
-                     "iran ", "iran nuclear", "opec", "trump sanction iran")
-    GOLD_KW       = ("nuclear", "war ", "tensions escalate", "diplomatic crisis")
-
-    size_usd = SIZE_USD_HIGH_PRIORITY if top_priority == "HIGH" else SIZE_USD_MEDIUM_PRIORITY
 
     for item in news_items[:5]:    # process top-5 by score
-        title_lower = (item.get("title") or "").lower()
-        summary_lower = (item.get("summary") or "").lower()
-        haystack = title_lower + " " + summary_lower
-
-        triggered: list[tuple[str, str, str]] = []   # (bucket, ticker, strategy)
-
-        if any(kw in haystack for kw in DEFENSE_KW):
-            for t in ASSET_MAP["defense"][:2]:    # RTX + LMT primary
-                triggered.append(("defense", t, "geo-defense"))
-        if any(kw in haystack for kw in ENERGY_KW):
-            for t in ASSET_MAP["energy"][:2]:     # XOM + CVX primary
-                triggered.append(("energy", t, "geo-xom" if t in ("XOM","CVX") else "geo-energy"))
-        if any(kw in haystack for kw in GOLD_KW):
-            triggered.append(("gold", "GLD", "geo-gold"))
-
-        for bucket, ticker, strategy in triggered:
-            if ticker in seen_tickers:
-                continue          # one trade per ticker per run
+        # Per-item priority override: if caller passes "HIGH", apply globally
+        # to all items (matches pre-v3.16 behavior). Future refactor could
+        # use per-item score for finer sizing.
+        item_signals = _shared_classify_event_to_signals(
+            headline=item.get("title", "") or "",
+            summary=item.get("summary", "") or "",
+            source_type=item.get("source", "geo-news"),
+            detected_at_iso=item.get("time", "") or "",
+            event_scoring_result=item.get("scoring") or None,
+            priority=top_priority,
+            score=item.get("score", 0),
+        )
+        for gs in item_signals:
+            ticker = gs.primary_tickers[0] if gs.primary_tickers else ""
+            if not ticker or ticker in seen_tickers:
+                continue
             seen_tickers.add(ticker)
-            signals.append({
-                "symbol":   ticker,
-                "action":   "BUY",
-                "size_usd": size_usd,
-                "sl_pct":   GEO_SL_PCT,
-                "tp_pct":   GEO_TP_PCT,
-                "strategy": strategy,
-                "score":    item.get("score", 0),
-                "source":   item.get("source", "geo-news"),
-                "headline": (item.get("title", "") or "")[:120],
-                "url":      item.get("url", ""),
-                "bucket":   bucket,
-                "priority": top_priority,
-            })
-    return signals[:MAX_TRADES_PER_RUN]
+            # Convert GeoSignal → live monitor's expected dict shape.
+            live_dict = gs.to_live_signal()
+            # Preserve fields the live pipeline reads downstream.
+            live_dict["url"]   = item.get("url", "")
+            live_dict["score"] = item.get("score", 0)
+            live_dict["source"] = item.get("source", "geo-news")
+            signals.append(live_dict)
+
+    return _shared_cap_signals(signals, MAX_TRADES_PER_RUN)
 
 
 def execute_geo_signal(signal: dict) -> bool:

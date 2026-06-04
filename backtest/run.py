@@ -153,10 +153,84 @@ def _explain_zero_fires(bars: dict, signal_fn, strategy: str,
     return out
 
 
+# v3.16.0 (2026-06-04) — event-driven strategies route through event_replay
+# instead of bar replay. Caller selects via --strategy geo-defense etc.
+EVENT_STRATEGY_NAMES = ("geo-defense", "geo-energy", "geo-gold", "geo-all")
+
+
+def _run_event_backtest(strategy: str, start_iso: str, end_iso: str,
+                          tickers: list, use_cache: bool) -> int:
+    """Phase 1 MVP event-backtest path. Returns process exit code."""
+    from event_strategies import EVENT_STRATEGIES
+    from event_replay import replay_events, strategy_set_for
+    from event_data import fetch_events_for_range, DEFAULT_DEFENSE_PREFIXES
+
+    classifier = EVENT_STRATEGIES.get(strategy)
+    if classifier is None:
+        print(f"unknown event strategy: {strategy}")
+        return 2
+
+    print(f"Event backtest: strategy={strategy} window={start_iso}..{end_iso} "
+          f"tickers={tickers}")
+    print(f"  (MVP: results ADVISORY ONLY; statistical power threshold n>=50 not enforced)")
+
+    # Fetch events.
+    events = fetch_events_for_range(start_iso, end_iso,
+                                      DEFAULT_DEFENSE_PREFIXES,
+                                      use_cache=use_cache)
+    print(f"  events_loaded: {len(events)}")
+    if not events:
+        print("  no events in window — exiting (advisory)")
+        return 0
+
+    # Market-data callback: bar-aligned, cached by `backtest.data`.
+    def _market_data_fn(symbol: str):
+        return fetch_daily_bars(symbol, start_iso, end_iso, use_cache=use_cache)
+
+    result = replay_events(
+        events,
+        classifier_fn=classifier,
+        market_data_fn=_market_data_fn,
+        strategy_filter=strategy_set_for(strategy),
+    )
+    trades = result["trades"]
+    summary = result["summary"]
+    print(f"  trades: {summary['n_trades']}  wr: {summary['win_rate']*100:.0f}%  "
+          f"pnl: ${summary['total_pnl_usd']:,.2f}  avg/trade: {summary['avg_pnl_pct']:+.2f}%")
+    print(f"  debug: {result['debug']}")
+
+    # Persist (same shape as bar replay).
+    results_dir = os.path.join(HERE, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    fname = f"{strategy}-event-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M')}.json"
+    out = os.path.join(results_dir, fname)
+    with open(out, "w") as f:
+        json.dump({
+            "strategy":     strategy,
+            "mode":         "event_driven",
+            "readiness":    "MVP_IN_PROGRESS",
+            "window":       {"start": start_iso, "end": end_iso},
+            "tickers_hint": tickers,
+            "trades":       trades,
+            "summary":      summary,
+            "debug":        result["debug"],
+        }, f, indent=2)
+    print(f"  ledger written: {out}")
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--strategy", choices=list(SIGNALS), required=True)
-    p.add_argument("--tickers", nargs="+", required=True)
+    p.add_argument("--strategy", required=True,
+                    help="bar strategy (momentum-long/...) or event strategy "
+                         "(geo-defense/geo-energy/geo-gold/geo-all)")
+    p.add_argument("--tickers", nargs="*", default=[],
+                    help="tickers (bar mode); ignored for event mode "
+                         "(market-data fetched per signal)")
+    p.add_argument("--start", default=None,
+                    help="event mode: window start YYYY-MM-DD (alt to --days)")
+    p.add_argument("--end", default=None,
+                    help="event mode: window end YYYY-MM-DD (default today)")
     p.add_argument("--days", type=int, default=180,
                     help="Calendar days of history to replay (default 180)")
     p.add_argument("--no-cache", action="store_true",
@@ -183,6 +257,25 @@ def main():
                          "rejection reasons (rate-limited to the first 25). "
                          "Crypto strategies only.")
     args = p.parse_args()
+
+    # v3.16.0 — dispatch event-driven strategies to event_replay.
+    if args.strategy in EVENT_STRATEGY_NAMES:
+        if args.start and args.end:
+            start_iso, end_iso = args.start, args.end
+        elif args.start:
+            start_iso = args.start
+            end_iso = datetime.now(timezone.utc).date().isoformat()
+        else:
+            start_iso, end_iso = date_range_days_ago(args.days)
+        rc = _run_event_backtest(args.strategy, start_iso, end_iso,
+                                  args.tickers, use_cache=not args.no_cache)
+        sys.exit(rc)
+
+    if args.strategy not in SIGNALS:
+        p.error(f"unknown strategy {args.strategy!r}; choose from "
+                f"{list(SIGNALS) + list(EVENT_STRATEGY_NAMES)}")
+    if not args.tickers:
+        p.error("--tickers required for bar-driven strategies")
 
     signal_fn = SIGNALS[args.strategy]
     is_crypto = args.strategy in CRYPTO_STRATEGIES

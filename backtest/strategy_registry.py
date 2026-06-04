@@ -39,10 +39,11 @@ from typing import Callable, Optional
 
 # ─── Readiness levels ─────────────────────────────────────────────────────────
 
-HAS_SIGNAL      = "HAS_SIGNAL"          # ready for walk-forward backtest
-INTERFACE       = "INTERFACE"           # registered but no backtest function
-EVENT_DRIVEN    = "EVENT_DRIVEN"        # needs event replay, not bars
-NOT_APPLICABLE  = "NOT_APPLICABLE"      # admin / no actual trading signal
+HAS_SIGNAL        = "HAS_SIGNAL"          # ready for walk-forward backtest
+INTERFACE         = "INTERFACE"           # registered but no backtest function
+EVENT_DRIVEN      = "EVENT_DRIVEN"        # needs event replay, not bars
+MVP_IN_PROGRESS   = "MVP_IN_PROGRESS"     # harness exists, n < 50; advisory only
+NOT_APPLICABLE    = "NOT_APPLICABLE"      # admin / no actual trading signal
 
 
 @dataclass(frozen=True)
@@ -88,30 +89,35 @@ REGISTRY: dict = {
         notes="Disabled live (2026-05-08 backtest showed -$2,065 11% WR).",
     ),
 
-    # ── Event-driven (need replay infrastructure not bars) ────────────────
+    # ── Event-driven (Phase 1 MVP harness landed v3.16.0; n < 50 threshold)
     "geo-defense": StrategyRegistration(
         name="geo-defense",
-        readiness=EVENT_DRIVEN,
-        signal_fn_name=None,
+        readiness=MVP_IN_PROGRESS,
+        signal_fn_name="geo_defense_event_strategy",
         description="Geopolitical defense escalation → BUY ITA/LMT/RTX.",
         backtest_data_needed="historical_news_events_with_tickers",
-        notes="Needs event replay over historical news feed. Live wired in geo-monitor.",
+        notes=("v3.16.0 (2026-06-04): event-driven backtest harness shipped "
+                "via backtest.event_data (GDELT 2.0) + backtest.event_replay. "
+                "Results ADVISORY ONLY until n>=50 trades accumulated. "
+                "Live wired in geo-monitor."),
     ),
     "geo-energy": StrategyRegistration(
         name="geo-energy",
-        readiness=EVENT_DRIVEN,
-        signal_fn_name=None,
+        readiness=MVP_IN_PROGRESS,
+        signal_fn_name="geo_energy_event_strategy",
         description="Energy supply shock → BUY XLE/XOM/CVX.",
         backtest_data_needed="historical_energy_news",
-        notes="Same as geo-defense. Replay TBD.",
+        notes=("v3.16.0 (2026-06-04): event-driven harness shipped, advisory "
+                "only until n>=50."),
     ),
     "geo-gold": StrategyRegistration(
         name="geo-gold",
-        readiness=EVENT_DRIVEN,
-        signal_fn_name=None,
+        readiness=MVP_IN_PROGRESS,
+        signal_fn_name="geo_gold_event_strategy",
         description="Geopolitical risk → BUY GLD.",
         backtest_data_needed="historical_news_risk_index",
-        notes="Replay TBD.",
+        notes=("v3.16.0 (2026-06-04): event-driven harness shipped, advisory "
+                "only until n>=50."),
     ),
     "geo-xom": StrategyRegistration(
         name="geo-xom",
@@ -119,7 +125,7 @@ REGISTRY: dict = {
         signal_fn_name=None,
         description="Defunct (deprecated routine path) — disabled in state.json.",
         backtest_data_needed="n/a",
-        notes="Backlog: refactor to direct execution.",
+        notes="Backlog: refactor to direct execution. Shares classifier with geo-energy.",
     ),
 
     # ── Crypto (v3.16 — hourly bar harness landed) ─────────────────────────
@@ -211,6 +217,13 @@ def list_by_readiness(readiness: str) -> list[StrategyRegistration]:
 
 
 def is_backtest_ready(name: str) -> bool:
+    """True only when a strategy meets the statistical-power threshold for
+    EDGE_GATE flip.
+
+    MVP_IN_PROGRESS deliberately returns False — the harness exists but n<50
+    so results are advisory only. Caller must wait until n>=50 (backtest)
+    AND n>=20 (live) per audit-board STRAT-003.
+    """
     r = REGISTRY.get(name)
     return bool(r and r.readiness == HAS_SIGNAL)
 
@@ -221,23 +234,27 @@ def is_known(name: str) -> bool:
 
 def coverage_report() -> dict:
     """Honest snapshot of backtest coverage."""
-    counts = {HAS_SIGNAL: 0, INTERFACE: 0, EVENT_DRIVEN: 0, NOT_APPLICABLE: 0}
+    counts = {HAS_SIGNAL: 0, INTERFACE: 0, EVENT_DRIVEN: 0,
+              MVP_IN_PROGRESS: 0, NOT_APPLICABLE: 0}
     for r in REGISTRY.values():
         counts[r.readiness] = counts.get(r.readiness, 0) + 1
-    total_tradeable = counts[HAS_SIGNAL] + counts[INTERFACE] + counts[EVENT_DRIVEN]
-    backtest_ready  = counts[HAS_SIGNAL]
+    total_tradeable = (counts[HAS_SIGNAL] + counts[INTERFACE]
+                       + counts[EVENT_DRIVEN] + counts[MVP_IN_PROGRESS])
+    backtest_ready = counts[HAS_SIGNAL]
     return {
         "total_registered":   len(REGISTRY),
         "by_readiness":       counts,
         "backtest_ready_pct": (backtest_ready / total_tradeable * 100.0)
                                if total_tradeable else 0.0,
         "tradeable_uncovered": [r.name for r in REGISTRY.values()
-                                  if r.readiness in (INTERFACE, EVENT_DRIVEN)],
+                                  if r.readiness in (INTERFACE, EVENT_DRIVEN,
+                                                      MVP_IN_PROGRESS)],
     }
 
 
 __all__ = [
-    "HAS_SIGNAL", "INTERFACE", "EVENT_DRIVEN", "NOT_APPLICABLE",
+    "HAS_SIGNAL", "INTERFACE", "EVENT_DRIVEN", "MVP_IN_PROGRESS",
+    "NOT_APPLICABLE",
     "StrategyRegistration", "REGISTRY",
     "get", "list_all", "list_by_readiness",
     "is_backtest_ready", "is_known", "coverage_report",
