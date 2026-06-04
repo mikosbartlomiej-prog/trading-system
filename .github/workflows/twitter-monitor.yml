@@ -12,10 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 # v3.18.0 P0-001 (2026-06-04): contents:write required for heartbeat
-# snapshot persistence. Without commit step, heartbeat.ping() updates
-# runtime_state in-process but never reaches origin → confidence
-# system_health component sees stale snapshot. Allowed write scope =
-# ONLY learning-loop/runtime_state.json (enforced by `git add` below).
+# snapshot persistence. Allowed write scope = ONLY
+# learning-loop/runtime_state.json (enforced by `git add` below).
 permissions:
   contents: write
 
@@ -55,8 +53,6 @@ jobs:
         run: python twitter-monitor/monitor.py
 
       - name: Commit runtime_state.json if changed
-        # v3.18.0 P0-001 — persist heartbeat snapshot to main with
-        # retry-on-non-fast-forward (mirror crypto-monitor pattern).
         if: always()
         run: |
           git config user.name  "github-actions[bot]"
