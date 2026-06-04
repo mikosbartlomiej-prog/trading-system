@@ -276,3 +276,68 @@ flip is operator-driven, not automatic.
 - `agents_review_only = True` (audit board outputs reports, never
   mutates state)
 - `no_paid_services = True` (deep E2E test scans for paid imports)
+
+---
+
+## v3.21 — Evidence Throughput & Strategy Discovery (added 2026-06-04)
+
+v3.21 adds 9 new modules + 1 daily runner. The layer is strictly
+outside the runtime trading decision path. None of these modules can
+mutate runtime state, place trades, raise risk limits, weaken gates,
+or flip `EDGE_GATE_ENABLED`.
+
+### Modules and invariants
+
+| Module | What it does | Cannot do |
+| --- | --- | --- |
+| `shared/evidence_throughput.py` | Per day/strategy/symbol/regime aggregate of opportunity + shadow + paper + counterfactual counts; estimated days to n=50 | Place trades; mutate runtime |
+| `shared/signal_density_audit.py` | Per-strategy density status (DEAD/TOO_SPARSE/NOISY/HEALTHY_DENSITY/HIGH_REJECTION_BUT_PROMISING/NEEDS_VARIANT_DISCOVERY/NEEDS_UNIVERSE_EXPANSION) | Auto-disable a strategy; mutate state.json |
+| `scripts/run_shadow_evidence_cycle.py` | Daily runner; modes `signal_only` (default) / `shadow` / `broker`; `--mode live` is rejected by argparse | Place real broker orders in shadow mode; bypass gates; bypass risk engine |
+| `shared/multi_horizon_outcomes.py` | Outcomes at 5/15/30/60min + EOD + next session open | Count toward paper trade `n`; uses evidence_source="MULTI_HORIZON" segregated from PAPER |
+| `shared/observation_priority.py` | Per strategy-symbol-regime priority score and status | Enable trading; no alpaca_orders import |
+| `shared/strategy_discovery_sandbox.py` | Variant proposals only into `strategy_variant_quarantine` | Enable runtime; place trades; remove gates (3 invariant flags asserted) |
+| `shared/broker_paper_adapter.py` | Hardened paper wrapper; requires `ALLOW_BROKER_PAPER=true`; dry-run default; MAX_ORDER_NOTIONAL_USD=100; idempotency_key required; fail-closed | Use live URL; raise notional cap; skip audit; submit without idempotency_key |
+| `shared/fill_model_calibration.py` | Shadow vs broker paper fill comparison; < 20 paired observations → INSUFFICIENT_BROKER_PAPER_DATA | Mutate model on insufficient data; pretend calibration occurred |
+| `shared/evidence_budget.py` | Deterministic caps (500 obs/day, 20 variants/day, 30 symbols/strategy, 200 counterfactuals/run, 600s runtime) | Suppress safety reports (BUDGET_BYPASSES_SAFETY=True) |
+| `shared/operator_action_queue.py` | Action queue with deterministic phrasing | Auto-apply (QUEUE_NEVER_AUTO_APPLIES=True); risky actions are non-auto-apply by design |
+
+### Evidence-source segregation rule (extended)
+
+v3.21 introduces `evidence_source="MULTI_HORIZON"` as an additional
+non-PAPER marker. Together with v3.20's COUNTERFACTUAL, the segregation
+rules are:
+
+- A strategy cannot be promoted to `EDGE_APPROVED_FOR_EXPERIMENT`
+  using BACKTEST, REPLAY, COUNTERFACTUAL, or MULTI_HORIZON evidence.
+- Only records with `evidence_source="PAPER"` (broker paper or
+  shadow-sim under `SHADOW_PAPER_SIM`) count toward `n >= 50`.
+- Mixing any other source into a paper trade record is a P0 finding.
+
+### EDGE_GATE_ENABLED flip criteria (extended with v3.21 checks)
+
+In addition to v3.20 criteria, v3.21 adds verification gates:
+
+1. v3.20 list (1-9) unchanged
+2. Signal density audit must show the strategy in
+   HEALTHY_DENSITY or HIGH_REJECTION_BUT_PROMISING status
+3. Evidence throughput must show HEALTHY_SHADOW_FLOW or
+   HEALTHY_BROKER_PAPER_FLOW with `estimated_days_to_n50` already in
+   the past
+4. Fill model calibration must NOT be in
+   INSUFFICIENT_BROKER_PAPER_DATA when BROKER_PAPER mode is used
+5. Operator action queue must have a `REVIEW_EDGE_GATE` action that
+   has been processed (reviewed via Multi-Agent Audit Board)
+
+Even with all criteria met, the flip remains operator-driven, not
+automatic.
+
+### v3.21 invariants the contract enforces
+
+- `evidence_runner_no_live_mode = True` (argparse rejects `--mode live`)
+- `broker_paper_paper_only = True` (hard URL assert at adapter level)
+- `discovery_quarantine_only = True` (no runtime variant writes)
+- `multi_horizon_segregated = True` (separate evidence_source marker)
+- `operator_queue_never_auto_applies = True` (per-entry can_auto_apply)
+- `budget_bypasses_safety = True` (safety reports never throttled)
+- `fill_model_no_silent_mutation = True` (insufficient → no model change)
+

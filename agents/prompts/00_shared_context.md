@@ -279,4 +279,92 @@ verdicts are permitted.
 
 ---
 
+## v3.21 coverage (added 2026-06-04)
+
+v3.21 adds the Evidence Throughput & Strategy Discovery
+Acceleration layer. When reviewing, also check these v3.21 modules:
+
+- `shared/evidence_throughput.py` — per day / strategy / symbol /
+  regime aggregates of opportunity + shadow + paper + counterfactual
+  counts; estimated days to n=50; statuses (NO_EVIDENCE_FLOW /
+  TOO_SLOW_TO_REACH_N50 / HEALTHY_SHADOW_FLOW /
+  HEALTHY_BROKER_PAPER_FLOW / NEEDS_MORE_SYMBOLS /
+  NEEDS_MORE_SIGNAL_DENSITY / NEEDS_MORE_REGIME_COVERAGE).
+  Read-only; never places trades.
+- `shared/signal_density_audit.py` — labels every strategy as
+  DEAD_STRATEGY / TOO_SPARSE / NOISY_STRATEGY / HEALTHY_DENSITY /
+  HIGH_REJECTION_BUT_PROMISING / NEEDS_VARIANT_DISCOVERY /
+  NEEDS_UNIVERSE_EXPANSION. Audit emit per assignment.
+- `scripts/run_shadow_evidence_cycle.py` — daily runner with
+  `--dry-run` and `--mode {signal_only,shadow,broker}`. NO live
+  mode (parser rejects --mode live). Cron template at
+  `scripts/workflow-templates/shadow-evidence-cycle.yml`. Invariants
+  LIVE_MODE_NOT_SUPPORTED, RUNNER_NEVER_BYPASSES_GATES,
+  RUNNER_NEVER_PLACES_BROKER_ORDERS.
+- `shared/multi_horizon_outcomes.py` — outcomes at 5/15/30/60min +
+  EOD + next session open horizons. evidence_source="MULTI_HORIZON"
+  (segregated from PAPER). Missing data → UNKNOWN. NEVER count as
+  paper trade `n`.
+- `shared/observation_priority.py` — per strategy-symbol-regime
+  priority_score in [0,1]; statuses PRIORITY_OBSERVE /
+  NORMAL_OBSERVE / LOW_PRIORITY / DO_NOT_OBSERVE / NEEDS_DATA.
+  Does NOT enable trading.
+- `shared/strategy_discovery_sandbox.py` — generates variant
+  proposals only into `strategy_variant_quarantine`. Invariants
+  DISCOVERY_NEVER_ENABLES_RUNTIME, DISCOVERY_NEVER_PLACES_TRADES,
+  DISCOVERY_NEVER_REMOVES_GATES.
+- `shared/broker_paper_adapter.py` — hardened paper wrapper.
+  Requires `ALLOW_BROKER_PAPER=true` env. Hard-asserts paper URL.
+  Default dry-run. MAX_ORDER_NOTIONAL_USD=100. Missing credentials
+  → SHADOW_FALLBACK. Invariants ADAPTER_PAPER_ONLY,
+  ADAPTER_REQUIRES_IDEMPOTENCY, ADAPTER_FAIL_CLOSED.
+- `shared/fill_model_calibration.py` — compares shadow vs broker
+  paper fills. < 20 paired observations → status
+  INSUFFICIENT_BROKER_PAPER_DATA. Does NOT mutate model.
+- `shared/evidence_budget.py` — deterministic caps (500 shadow
+  observations/day, 20 variants/day, 30 symbols/strategy, 200
+  counterfactuals/run, 600s workflow runtime). Invariant
+  BUDGET_BYPASSES_SAFETY = True (safety reports always pass).
+- `shared/operator_action_queue.py` — append-only queue in
+  `learning-loop/operator_action_queue.jsonl`. Action types:
+  REVIEW_STRATEGY / REVIEW_VARIANT / DISABLE_CANDIDATE /
+  KEEP_OBSERVING / ADD_DATA_SOURCE_REVIEW / CHECK_BROKER_PAPER /
+  REVIEW_GATE_CALIBRATION / REVIEW_FILL_MODEL / REVIEW_EDGE_GATE /
+  NO_ACTION. Every entry has `can_auto_apply=False` (asserted).
+  Invariants QUEUE_NEVER_AUTO_APPLIES,
+  QUEUE_RISKY_ACTIONS_NON_AUTO_APPLY. Deterministic phrasing only
+  ("non-auto-apply by design", "review-gated", "governed by").
+
+### Final Arbiter v3.21 escalation triggers (P0)
+
+In addition to v3.20 triggers, the Final Arbiter MUST block
+escalation and set primary verdict to NEEDS_FIXES with secondary
+NOT_SAFE_FOR_LIVE_TRADING when:
+
+- `scripts/run_shadow_evidence_cycle.py` can be invoked with
+  `--mode live` (live mode must be rejected at parser level)
+- `shared/broker_paper_adapter.py` does not hard-assert paper URL
+  before any HTTP request
+- `shared/strategy_discovery_sandbox.py` writes a variant directly
+  into `learning-loop/state.json::strategies` (must go through
+  `strategy_variant_quarantine.register_variant`)
+- `shared/evidence_throughput.py` reports zero flow for 5+
+  consecutive days while runner workflow has been deployed
+- `shared/signal_density_audit.py` flags >= 50% of strategies as
+  DEAD_STRATEGY but no follow-up action exists in operator queue
+- `shared/fill_model_calibration.py` reports model mutated despite
+  INSUFFICIENT_BROKER_PAPER_DATA status
+- `shared/operator_action_queue.py` contains any entry where
+  `can_auto_apply=True` (queue invariant violation)
+- `shared/evidence_budget.py` reports BUDGET_BYPASSES_SAFETY=False
+  or any safety report was suppressed by budget
+- `EDGE_GATE_ENABLED=true` observed without n>=50 broker paper or
+  shadow paper evidence (SHADOW + COUNTERFACTUAL + MULTI_HORIZON do
+  not satisfy this; only `evidence_source="PAPER"` records count)
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.

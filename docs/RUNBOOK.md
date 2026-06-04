@@ -726,3 +726,114 @@ for v in list_variants():
 
 Variants NEVER enter the runtime trading path. Promotion to a runtime
 strategy requires an explicit operator-issued review trigger.
+
+## v3.21 Evidence Throughput & Strategy Discovery (added 2026-06-04)
+
+### Daily shadow evidence cycle
+
+```bash
+# Dry-run (validates pipeline, no writes)
+python3 scripts/run_shadow_evidence_cycle.py --dry-run
+
+# Signal-only mode (records opportunity entries, no fills)
+python3 scripts/run_shadow_evidence_cycle.py --mode signal_only
+
+# Shadow mode (records shadow fills with conservative slippage)
+python3 scripts/run_shadow_evidence_cycle.py --mode shadow
+
+# Broker paper mode (requires ALLOW_BROKER_PAPER=true)
+ALLOW_BROKER_PAPER=true \
+    python3 scripts/run_shadow_evidence_cycle.py --mode broker
+```
+
+**Live mode does NOT exist** — `--mode live` is rejected by argparse.
+
+### v3.21 module reports
+
+```bash
+python3 scripts/evidence_throughput_report.py
+python3 scripts/signal_density_report.py
+python3 scripts/multi_horizon_outcome_report.py
+python3 scripts/observation_priority_report.py
+python3 scripts/strategy_discovery_report.py
+python3 scripts/fill_model_calibration_report.py
+python3 scripts/operator_action_queue_render.py
+```
+
+### Validating v3.21 invariants
+
+```bash
+python3 -m unittest tests.test_deep_e2e_v3210            # 41 steps, no network
+python3 -m unittest tests.test_audit_board_v3_21_appends_v3210
+```
+
+### Modes of shadow runner (env: `EVIDENCE_PRODUCTION_MODE`)
+
+| Mode | What it does | Side effects |
+| --- | --- | --- |
+| `SIGNAL_ONLY` (default) | Records every signal to opportunity ledger | learning-loop/opportunity_ledger/ entries |
+| `SHADOW_PAPER_SIM` | + simulates fills with 5bps slippage + 1bps spread | learning-loop/shadow_ledger/ entries |
+| `BROKER_PAPER` | Opt-in via env; hard-asserts paper URL; falls back to SHADOW_PAPER_SIM if credentials missing | Alpaca paper API + audit JSONL |
+
+### Strategy density labels (`shared/signal_density_audit.py`)
+
+When reviewing `docs/signal_density_LATEST.md`:
+
+- **DEAD_STRATEGY** — Zero signals in window. Candidate for disable
+  (file an operator queue action; do not auto-disable).
+- **TOO_SPARSE** — < 5 signals AND no fills. Watch list.
+- **NOISY_STRATEGY** — High signal volume but low average confidence.
+  Discovery sandbox may propose tighter-threshold variants.
+- **HIGH_REJECTION_BUT_PROMISING** — Rejection ratio >= 70% but
+  accepted minority has confidence >= 0.65. Risk gate doing its job.
+- **NEEDS_VARIANT_DISCOVERY** — One-symbol or one-regime dependence.
+  Discovery sandbox may propose universe / regime variants.
+- **NEEDS_UNIVERSE_EXPANSION** — Healthy density but single-symbol
+  concentration. Add ticker candidates to the universe.
+- **HEALTHY_DENSITY** — Default healthy state.
+
+### Broker paper adapter — operator checklist
+
+Before flipping `ALLOW_BROKER_PAPER=true`:
+
+1. Verify `ALPACA_PAPER_BASE_URL` env var contains
+   `paper-api.alpaca.markets`. The adapter rejects any URL without
+   the `paper` prefix.
+2. Verify `MAX_ORDER_NOTIONAL_USD` in `shared/broker_paper_adapter.py`
+   is still 100 (very small for paper experiments).
+3. Verify `DEFAULT_DRY_RUN = True` — every caller must explicitly
+   pass `dry_run=False`.
+4. Verify `ADAPTER_REQUIRES_IDEMPOTENCY = True` — calls without
+   `idempotency_key` are rejected.
+5. Audit JSONL captures every attempt.
+6. Without credentials, the adapter returns `SHADOW_FALLBACK` and
+   defers to `evidence_production.estimate_shadow_fill`.
+
+### Operator action queue
+
+```bash
+# Render the queue as Markdown
+python3 scripts/operator_action_queue_render.py
+# → docs/operator_action_queue_LATEST.md
+```
+
+Every queue entry has `can_auto_apply=False`. The queue is
+informational; v3.21 modules emit actions, the operator reviews and
+manually executes follow-ups (e.g., flipping a strategy enabled flag,
+flipping `EDGE_GATE_ENABLED`, registering a variant for replay).
+
+### EDGE_GATE_ENABLED — flip criteria extended in v3.21
+
+In addition to the v3.20 criteria (n>=50, PF_LB>=1.3, expectancy_LB>0,
+WR_LB>=0.40, calibrated, 2+ regimes, no overfit, no degradation),
+v3.21 adds:
+
+- signal_density_audit shows HEALTHY_DENSITY or
+  HIGH_REJECTION_BUT_PROMISING
+- evidence_throughput shows HEALTHY_SHADOW_FLOW or
+  HEALTHY_BROKER_PAPER_FLOW
+- fill_model_calibration not in INSUFFICIENT_BROKER_PAPER_DATA
+  (if BROKER_PAPER mode is used)
+- operator_action_queue contains a processed REVIEW_EDGE_GATE entry
+
+When any criterion fails, leave `EDGE_GATE_ENABLED=false`.
