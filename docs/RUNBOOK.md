@@ -659,3 +659,70 @@ print(notify._classify_subject('[BUY] AAPL'))                # digest
 print(notify._classify_subject('[Defense Monitor] 0 signal(s), 0 sent'))  # suppress
 "
 ```
+
+## v3.20 Evidence Production — operational quickstart (added 2026-06-04)
+
+### Daily local report generation (no network required)
+
+```bash
+# Consolidated decision pack
+python3 scripts/operator_decision_pack.py
+# → docs/operator_decision_pack_LATEST.md
+# → docs/operator_decision_pack_LATEST.json
+
+# Per-module reports
+python3 scripts/evidence_lower_bounds_report.py
+python3 scripts/strategy_robustness_report.py
+python3 scripts/counterfactual_report.py
+python3 scripts/gate_calibration_report.py
+python3 scripts/exit_quality_report.py
+python3 scripts/experiment_scheduler_run.py
+```
+
+### Modes of evidence production (env: `EVIDENCE_PRODUCTION_MODE`)
+
+| Mode | What it does | Where it writes |
+| --- | --- | --- |
+| `SIGNAL_ONLY` (default) | Records signal facts only, no fill | nothing on disk |
+| `SHADOW_PAPER_SIM` | Local fill sim with conservative slippage/spread | `learning-loop/shadow_ledger/<date>.jsonl` |
+| `BROKER_PAPER` | Opt-in only; hard-asserts paper URL; falls back to SHADOW if creds missing | broker + audit log |
+
+### Validating v3.20 invariants
+
+```bash
+python3 -m unittest tests.test_deep_e2e_v3200            # 38 steps, no network
+python3 -m unittest tests.test_operator_decision_pack_v3200
+python3 -m unittest tests.test_audit_board_v3_20_appends_v3200
+```
+
+### EDGE_GATE_ENABLED — must remain FALSE without
+
+The flip from `false` to `true` requires (per `docs/AUTONOMY_CONTRACT.md`
+v3.20 section):
+
+- `n >= 50` paper trades closed for the strategy
+- bootstrap PF lower bound `>= 1.3`
+- expectancy lower bound `> 0`
+- Wilson WR lower bound `>= 0.40`
+- confidence calibration monotonic
+- ≥ 2 regimes observed
+- no `overfit_suspicion` flag
+- no `EVIDENCE_DEGRADING` status
+- operator review of decision pack + audit board verdict
+
+When any criterion fails, leave `EDGE_GATE_ENABLED=false`.
+
+### Inspecting variant quarantine
+
+```bash
+ls learning-loop/variant_quarantine/            # registered variants
+python3 -c "
+import sys; sys.path.insert(0, 'shared')
+from strategy_variant_quarantine import list_variants
+for v in list_variants():
+    print(v['id'], v['parent_strategy'], v['status'])
+"
+```
+
+Variants NEVER enter the runtime trading path. Promotion to a runtime
+strategy requires an explicit operator-issued review trigger.

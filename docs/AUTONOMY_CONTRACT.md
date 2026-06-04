@@ -200,3 +200,79 @@ runtime decision path is unaffected by Audit Board verdicts during
 a session.
 
 See `docs/AGENTS_DOCUMENTATION.md` and `agents/README.md` for details.
+
+---
+
+## v3.20 — Evidence Production layer (added 2026-06-04)
+
+v3.20 adds a deterministic, free, paper-only evidence production
+and counterfactual learning layer. The layer is **strictly outside
+the runtime trading decision path** — runtime trading still goes
+through the same gates (confidence + risk_officer + safe_mode +
+kill_switch + portfolio_risk + risk_classification). v3.20 modules
+either record observations or compute diagnostics; none of them can
+mutate runtime state, place trades, raise risk limits, weaken gates,
+or flip `EDGE_GATE_ENABLED`.
+
+### Modules and invariants
+
+| Module | What it does | Cannot do |
+| --- | --- | --- |
+| `shared/evidence_production.py` | 3 modes (SIGNAL_ONLY default, SHADOW_PAPER_SIM, BROKER_PAPER) for collecting fill-attempt records | Place live trades; default mode never trades; BROKER_PAPER hard-asserts paper URL |
+| `shared/signal_opportunity_ledger.py` | Records EVERY signal (accept/reject/observe-only) with full gate breakdown | Place trades; modify gates |
+| `shared/counterfactual_outcomes.py` | Computes hypothetical outcomes for rejected signals (24h/48h horizons) | Count toward paper trade `n`; outcome carries `evidence_source="COUNTERFACTUAL"` |
+| `shared/gate_calibration.py` | Per-gate accept/reject quality, missed opportunity, protection value | Auto-weaken risk gate; risk-gate rejections labeled `safety_correct_rejection` |
+| `shared/evidence_lower_bounds.py` | Wilson lower CI on WR, bootstrap PF/expectancy lower bounds, drawdown upper bound | Promote a strategy on mean alone; promotion requires `EVIDENCE_ROBUST_CANDIDATE` (n>=50 + PF_LB>=1.3 + expectancy_LB>0) |
+| `shared/strategy_robustness.py` | Parameter sweeps, ablations, slippage sensitivity, drop-one tests | Optimize automatically; mutate runtime; `SANDBOX_NEVER_OPTIMIZES = SANDBOX_NEVER_MUTATES_RUNTIME = True` |
+| `shared/strategy_variant_quarantine.py` | Variant registry in `learning-loop/variant_quarantine/<id>.json` | Have LIVE status; enter runtime trading path; auto-promote |
+| `shared/experiment_scheduler.py` | Deterministic plan for next-cycle observations | Place trades; raise risk; change gates (`SCHEDULER_NEVER_PLACES_TRADES = SCHEDULER_NEVER_RAISES_RISK = SCHEDULER_NEVER_CHANGES_GATES = True`) |
+| `shared/exit_quality.py` | Per-strategy/symbol/regime/confidence-bucket MFE/MAE/giveback/stop-efficiency analysis | Mutate exit rules; only emits recommendations |
+| `scripts/operator_decision_pack.py` | One read-only consolidated artifact (`docs/operator_decision_pack_LATEST.{md,json}`) | Place trades; mutate state; recommend live trading |
+
+### Evidence-source segregation rule
+
+`shared/evidence_source.py::EvidenceSource` enum has three values:
+`BACKTEST`, `REPLAY`, `PAPER`. v3.20 adds the string constant
+`"COUNTERFACTUAL"` for counterfactual outcomes (does NOT modify the
+enum, to avoid mixing into existing flows). The rule is invariant:
+
+- A strategy cannot be promoted to `EDGE_APPROVED_FOR_EXPERIMENT`
+  using BACKTEST, REPLAY, or COUNTERFACTUAL evidence.
+- Only PAPER evidence (broker paper or shadow-sim with mode
+  `SHADOW_PAPER_SIM`) counts toward `n >= 50`.
+- Mixing any other evidence source into a paper trade record is a P0
+  finding for the Audit Board (`agents/prompts/00_shared_context.md`
+  Final Arbiter v3.20 escalation triggers).
+
+### EDGE_GATE_ENABLED flip criteria (unchanged from v3.11)
+
+`EDGE_GATE_ENABLED` may flip from default `false` to `true` ONLY when
+**all** of these hold:
+
+1. `n >= 50` paper trades closed for the strategy
+2. Profit factor lower bound (bootstrap 5th percentile) `>= 1.3`
+3. Expectancy lower bound `> 0`
+4. Win rate Wilson lower bound `>= 0.40` (strategy-specific)
+5. Confidence calibration buckets monotonic (per
+   `shared/confidence_calibration.py`)
+6. At least 2 distinct regimes observed
+7. No `overfit_suspicion` flag from `shared/strategy_robustness.py`
+8. No `EVIDENCE_DEGRADING` status from `shared/evidence_lower_bounds.py`
+9. Operator review of `docs/operator_decision_pack_LATEST.md` and
+   audit-board verdict `APPROVE_PAPER_TRADING_WITH_WARNINGS` or
+   stronger
+
+If any criterion fails, `EDGE_GATE_ENABLED` stays `false`. The
+flip is operator-driven, not automatic.
+
+### v3.20 invariants the contract enforces
+
+- `live_trading_disabled = True` (assert_paper_only at every entry)
+- `edge_gate_enabled = False` by default
+- `no_promises_of_profit = True` (no docstring/markdown text promises
+  edge or profit)
+- `evidence_sources_segregated = True` (enforced by EvidenceSource
+  enum + counterfactual marker)
+- `agents_review_only = True` (audit board outputs reports, never
+  mutates state)
+- `no_paid_services = True` (deep E2E test scans for paid imports)

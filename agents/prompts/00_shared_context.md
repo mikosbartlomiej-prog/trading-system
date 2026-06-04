@@ -201,4 +201,82 @@ These phrases are red flags. Findings containing them are invalid.
 
 ---
 
+## v3.20 coverage (added 2026-06-04)
+
+When reviewing, you must also check the v3.20 Evidence Production
+& Counterfactual Learning layer:
+
+- `shared/evidence_production.py` — 3 modes (SIGNAL_ONLY default,
+  SHADOW_PAPER_SIM, BROKER_PAPER). Default never live. BROKER_PAPER
+  hard-asserts paper URL. Shadow fills go to
+  `learning-loop/shadow_ledger/<date>.jsonl` with `evidence_source=PAPER`
+  and `execution_source=SHADOW_SIM`.
+- `shared/signal_opportunity_ledger.py` — records every signal
+  (accepted/rejected/observe-only) to
+  `learning-loop/opportunity_ledger/<date>.jsonl`. 6 gate types
+  (confidence/risk/universe/regime/spread_slippage/quality). Every
+  accepted entry has audit_link.
+- `shared/counterfactual_outcomes.py` — hypothetical outcomes for
+  rejected signals. CRITICAL: carries `evidence_source="COUNTERFACTUAL"`
+  and MUST NOT count toward paper trade `n`. Mixing counterfactual
+  with paper evidence is a P0 finding.
+- `shared/gate_calibration.py` — per-gate accept/reject quality.
+  CRITICAL: risk gate rejections that hypothetically would have
+  profited are labeled `safety_correct_rejection` not
+  `trading_opportunity_miss`. Risk gate NEVER auto-weakens.
+- `shared/evidence_lower_bounds.py` — Wilson lower CI on WR, bootstrap
+  PF/expectancy lower bounds, drawdown upper bound. Statuses:
+  EVIDENCE_TOO_WEAK / EVIDENCE_IMPROVING / EVIDENCE_ROBUST_CANDIDATE /
+  EVIDENCE_DEGRADING / EVIDENCE_REJECT. EDGE_GATE flip requires
+  EVIDENCE_ROBUST_CANDIDATE (n>=50, PF_LB>=1.3, expectancy_LB>0).
+- `shared/strategy_robustness.py` — sandbox; never optimizes, never
+  mutates runtime. Output: robustness_score + fragility_warnings +
+  overfit_suspicion + dependency flags.
+- `shared/strategy_variant_quarantine.py` — variants in
+  `learning-loop/variant_quarantine/<id>.json`. Statuses:
+  QUARANTINED / REPLAY_TESTING / SHADOW_OBSERVE / REJECTED /
+  CANDIDATE_FOR_MANUAL_REVIEW. NO LIVE status. Variants cannot
+  enter runtime trading path.
+- `shared/experiment_scheduler.py` — deterministic; never places
+  trades, never raises risk, never changes gates. Output to
+  `learning-loop/experiment_plans/experiment_plan_<date>.json` +
+  `docs/experiment_plan_LATEST.md`.
+- `shared/exit_quality.py` — recommendations only; no runtime
+  mutation. Per-strategy/symbol/regime/confidence-bucket MFE/MAE/
+  giveback/stop-efficiency.
+- `scripts/operator_decision_pack.py` — consolidates v3.19 + v3.20
+  modules into one read-only artifact. Outputs
+  `docs/operator_decision_pack_LATEST.{md,json}`.
+
+### Final Arbiter v3.20 escalation triggers (P0)
+
+The Final Arbiter MUST block escalation and set primary verdict
+to NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when any
+of the following is true:
+
+- opportunity ledger empty for >= 5 paper-experiment-update runs
+- counterfactual entries mixed into paper trade ledger (any
+  paper-trade entry whose evidence_source is not PAPER)
+- a strategy variant status mutated to a value NOT in
+  {QUARANTINED, REPLAY_TESTING, SHADOW_OBSERVE, REJECTED,
+  CANDIDATE_FOR_MANUAL_REVIEW}
+- evidence_lower_bounds for a strategy show
+  probability_of_negative_expectancy > 0.5 while the strategy
+  is still PAPER_ENABLED in state.json::strategies
+- robustness sandbox reports overfit_suspicion=true for a
+  strategy proposed for EDGE_APPROVED_FOR_EXPERIMENT
+- EDGE_GATE_ENABLED=true observed in any config without
+  n>=50 paper, PF_LB>=1.3, calibrated confidence, and >=2
+  regimes observed
+- exit_quality flags >30% of closed trades with
+  profit_giveback_pct > 30% but no follow-up recommendation
+  in experiment plan
+- gate_calibration shows bad_acceptance_rate > 0.25 for the
+  confidence gate without a follow-up calibration ticket
+
+The arbiter NEVER recommends LIVE_TRADING — only PAPER_TRADING_*
+verdicts are permitted.
+
+---
+
 ## End of shared context.
