@@ -356,9 +356,20 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
     # existing callers that don't pass confidence inputs yet).
     conf_inputs = proposal.get("confidence_inputs")
     if isinstance(conf_inputs, dict) and conf_inputs:
+        # v3.15.0 — honor block_recommended from feedback-driven inputs
+        # BEFORE compute_confidence (cheaper, no maths needed). Reasons:
+        # liquidity_sweep BLOCK, source-tier ineligibility, etc.
+        meta = conf_inputs.get("_v3150_meta", {}) or {}
+        if meta.get("block_recommended"):
+            reasons = meta.get("block_reasons", []) or ["v3.15.0_block_recommended"]
+            failed.append("v3.15.0_block: " + ",".join(str(r) for r in reasons))
+        # Strip meta before passing to compute_confidence (it would be an
+        # unknown kwarg).
+        cleaned_inputs = {k: v for k, v in conf_inputs.items()
+                          if not str(k).startswith("_v3150")}
         try:
             from confidence import compute_confidence  # type: ignore
-            report = compute_confidence(**conf_inputs)
+            report = compute_confidence(**cleaned_inputs)
             if report.decision == "BLOCK":
                 failed.append(
                     f"confidence={report.total:.3f} < threshold "
@@ -374,6 +385,8 @@ def evaluate_trade(proposal: dict[str, Any]) -> dict[str, Any]:
             # Surface report for downstream audit (set on a dict the
             # caller passes — proposal mutated for traceability).
             proposal["_confidence_report"] = report.to_dict()
+            if meta:
+                proposal["_v3150_meta"] = meta
         except Exception as e:
             warnings.append(f"confidence_check_skipped ({type(e).__name__}: {e})")
     else:

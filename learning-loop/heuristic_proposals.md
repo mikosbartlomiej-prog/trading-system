@@ -329,7 +329,61 @@ implements them at the right moment. Auto-surfaced in
 `scripts/session_report.py::derive_risk_flags` as `🟡` info badges so
 they appear daily until resolved.
 
-## v3.15 scope (queued post audit-board 2026-06-02 + v3.14.0 ship)
+## v3.15.0 shipped 2026-06-04 — trader feedback batch (10 modules + 56 tests)
+
+Closed via v3.15.0: FB-001 InstrumentProfile, FB-003 LeadLagAnalyzer,
+FB-004 DynamicInstrumentProfiler, FB-005 StrategyRegistry, FB-006 SourceQualityPolicy,
+FB-011 PositionManager (module + tests; exit-monitor wiring v3.16),
+FB-012 LiquiditySweepGuard, FB-013 SessionEffectivenessMonitor,
+FB-014 Tier 3 social-source cap, FB-015 DD-not-day-trade-trigger rule.
+
+Interface-only (data/operator decision needed): FB-002 pre-open behavior,
+FB-007/008 event-monitor interface + MockDOJMonitor, FB-010 universe abstraction.
+
+Already covered: FB-009 defense monitor.
+
+Documentation: `docs/feedback_requirements.md`, `docs/feedback_implementation_v3150.md`,
+6 module-specific docs in `docs/`.
+
+## v3.15.x backlog (after trader-feedback batch)
+
+- [ ] [2026-06-04] **v3.14.1 — Heartbeat wiring infra fix** _(P0, 30 min, revisit asap)_
+  - Wire `permissions: contents: write` + commit step into 5 workflow YAMLs:
+    `defense-monitor.yml`, `twitter-monitor.yml`, `geo-monitor.yml`,
+    `options-monitor.yml`, `price-monitor.yml`.
+  - Heartbeat code is correct (v3.14.0) but runtime_state.json writes don't
+    reach origin → heartbeat shows 5/11 instead of 11/11.
+- [ ] [2026-06-04] **v3.14.1 — PDT cooldown persist** _(P0, 1h)_
+  - `exit-monitor._PDT_BLOCK_COOLDOWN: dict = {}` is module-level state.
+    Resets every cron tick. Persist to `runtime_state.json::pdt_cooldown`.
+- [ ] [2026-06-04] **v3.16 — Wire position_manager into exit-monitor** _(P1, 2-3h)_
+  - Persist `PositionState` per symbol in `runtime_state.json::positions`.
+  - `exit-monitor.run_exit_check` calls `evaluate_position()` per pos.
+  - Audit `LIFECYCLE_TRANSITION` events.
+- [ ] [2026-06-04] **v3.16 — Wire session_effectiveness into monitors** _(P1, 2h)_
+  - Each monitor + risk gate emits matching `EVT_*` event.
+  - New workflow `session-effectiveness-check.yml` every 15 min: report +
+    safe_mode trigger on degradation.
+- [ ] [2026-06-04] **v3.16 — Wire instrument_profile + liquidity_sweep into 3 monitors** _(P1, 2h)_
+  - crypto/price/options-monitor build `instrument_profile` via DynamicProfiler.
+  - Pass profile + recent bars to `liquidity_sweep_guard.evaluate_sweep_risk`.
+  - Both flow into `confidence_inputs`.
+- [ ] [2026-06-04] **v3.16 — Wire source_quality into news monitors** _(P1, 1h)_
+  - defense / twitter / reddit / politician / geo monitors classify their
+    `source_type` and pass through `confidence_inputs.source_type`.
+- [ ] [2026-06-04] **v3.17 — Pre-open behavior real data source** _(P2, operator decision)_
+  - Operator decides: brokerage pre-market export OR another free source.
+  - Module ships with synthetic-data tests; ready to wire when source picked.
+- [ ] [2026-06-04] **v3.17 — Hourly crypto-bar backtest harness** _(P2, 3-4h)_
+  - Add hourly bar fetcher to `backtest/data.py`.
+  - Port `check_crypto_signal` to `backtest/strategies.py::crypto_momentum_signal_at`.
+  - Backtest crypto-momentum + crypto-oversold-bounce over 6 months.
+  - Required before flipping EDGE_GATE_ENABLED=true.
+- [ ] [2026-06-04] **v3.17 — Event-driven backtest harness** _(P2, 4-6h)_
+  - Historical news event replay for geo-defense/-energy/-gold.
+  - Build minimal event-stream + replay loop.
+
+## v3.15 scope from audit-board 2026-06-02 (pre-existing)
 
 These items remained P1/P2 after v3.14.0 closed Themes A (confidence gate
 activation + heartbeat completion) and the DOC-003 strategy doc. They will

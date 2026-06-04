@@ -1,0 +1,68 @@
+{
+  "_version": "3.15.0",
+  "_updated": "2026-06-04",
+  "_description": "Market universe configuration. Read by shared/universe_selector.py. The active universe is US_LARGE for paper trading. Other universes are defined for documentation + future operator decision; they are DISABLED until explicit operator opt-in + data/broker validation.",
+  "_constraints": [
+    "All universes must operate on FREE data sources.",
+    "Switching universes is an operator decision, not automated.",
+    "Strategies do NOT transfer across universes — must be re-validated per universe.",
+    "Microcaps are NOT safer; they have higher illiquidity + manipulation risk.",
+    "PL/GPW requires a non-Alpaca broker — disabled until integration exists."
+  ],
+
+  "US_LARGE": {
+    "id": "US_LARGE",
+    "description": "US large-cap equities + popular ETFs (current default)",
+    "enabled": true,
+    "data_source": "alpaca_iex_free",
+    "free_data_available": true,
+    "broker_supported": true,
+    "typical_spread_bps": 2.0,
+    "typical_slippage_bps": 5.0,
+    "min_liquidity_usd_daily": 10000000,
+    "risk_limit_multipliers": {"size": 1.0, "sl": 1.0, "tp": 1.0},
+    "notes": "Default universe. Matches config/watchlists.json buckets."
+  },
+
+  "US_MICROCAP": {
+    "id": "US_MICROCAP",
+    "description": "US microcap equities (< $300M market cap)",
+    "enabled": false,
+    "data_source": "alpaca_iex_free",
+    "free_data_available": true,
+    "broker_supported": true,
+    "typical_spread_bps": 50.0,
+    "typical_slippage_bps": 80.0,
+    "min_liquidity_usd_daily": 100000,
+    "risk_limit_multipliers": {"size": 0.25, "sl": 1.5, "tp": 1.5},
+    "notes": "DISABLED — high illiquidity + manipulation risk. Requires explicit operator opt-in + LiquiditySweepGuard active + much smaller per-position size + wider spread tolerance. Backtest before enabling."
+  },
+
+  "PL_GPW": {
+    "id": "PL_GPW",
+    "description": "Polish GPW (Warsaw Stock Exchange)",
+    "enabled": false,
+    "data_source": "gpw_open_data_free",
+    "free_data_available": true,
+    "broker_supported": false,
+    "typical_spread_bps": 20.0,
+    "typical_slippage_bps": 30.0,
+    "min_liquidity_usd_daily": 500000,
+    "risk_limit_multipliers": {"size": 0.5, "sl": 1.2, "tp": 1.2},
+    "notes": "DISABLED — no free Polish paper broker integration. GPW publishes daily snapshots (free) but Alpaca does not support PL. Operator would need to wire a PL broker SDK before this can run paper. Strategies would NOT transfer from US."
+  },
+
+  "CRYPTO": {
+    "id": "CRYPTO",
+    "description": "24/7 crypto via Alpaca",
+    "enabled": true,
+    "data_source": "alpaca_crypto_free",
+    "free_data_available": true,
+    "broker_supported": true,
+    "typical_spread_bps": 10.0,
+    "typical_slippage_bps": 15.0,
+    "min_liquidity_usd_daily": 50000000,
+    "risk_limit_multipliers": {"size": 0.5, "sl": 1.0, "tp": 1.0},
+    "notes": "Long-only on Alpaca paper. See crypto-monitor for the 11-coin universe."
+  }
+}
