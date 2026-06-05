@@ -54,3 +54,25 @@
 [13:00:53 WARN]     QQQ BUY: skipped — market not open
 [13:00:53 WARN]     GLD BUY: skipped — market not open
 [13:00:53 INFO]   execution complete: 0 placed, 8 skipped, 0 failed
+
+[16:15:13 INFO] ============================================================
+[16:15:13 INFO] execute_orders() — auto-execute path
+[16:15:13 INFO] ============================================================
+[16:15:13 INFO]   market_status: open=True reason=open
+[16:15:13 INFO]     WDAY BUY: derived qty=71 from target=$10,545 @ $147.73 (no prior position)
+[16:15:14 ERR ]     WDAY BUY failed
+[16:15:14 INFO]     ORCL BUY: derived qty=49 from target=$10,545 @ $213.00 (no prior position)
+[16:15:16 ERR ]     ORCL BUY failed
+[16:15:16 INFO]     CRWD BUY: derived qty=15 from target=$10,545 @ $687.76 (no prior position)
+[16:15:17 ERR ]     CRWD BUY failed
+[16:15:17 INFO]     PANW BUY: derived qty=38 from target=$10,545 @ $276.40 (no prior position)
+[16:15:19 ERR ]     PANW BUY failed
+[16:15:19 INFO]     NOW BUY: derived qty=95 from target=$10,545 @ $110.67 (no prior position)
+[16:15:20 ERR ]     NOW BUY failed
+[16:15:20 INFO]     SPY BUY: derived qty=12 from target=$9,586 @ $745.46 (no prior position)
+[16:15:21 ERR ]     SPY BUY failed
+[16:15:22 INFO]     QQQ BUY: derived qty=13 from target=$9,586 @ $719.18 (no prior position)
+[16:15:23 ERR ]     QQQ BUY failed
+[16:15:23 INFO]     GLD BUY: derived qty=24 from target=$9,586 @ $397.74 (no prior position)
+[16:15:24 ERR ]     GLD BUY failed
+[16:15:24 INFO]   execution complete: 0 placed, 0 skipped, 8 failed
