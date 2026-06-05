@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-04T23:55:21.439924+00:00",
+      "last_seen_iso": "2026-06-05T00:00:25.716551+00:00",
       "last_status": "ok",
-      "pings_today": 270
+      "pings_today": 1
     },
     "geo-monitor": {
       "last_message": "",
@@ -70,29 +70,26 @@
   },
   "intraday_governor": {
     "account_unavailable": false,
-    "alerts_sent": {
-      "RED_DAY_AFTER_GREEN": "2026-06-04T14:20:28.231386+00:00",
-      "legacy:PROFIT_LOCK": "2026-06-04T14:20:28.230398+00:00"
-    },
-    "block_new_entries": true,
+    "alerts_sent": {},
+    "block_new_entries": false,
     "current_equity": 95861.26,
     "current_intraday_pnl": 200.33000000000175,
     "current_intraday_pnl_pct": 0.0020941673889225388,
-    "date": "2026-06-04",
-    "giveback_pct_of_peak": 0.8267251370941241,
-    "giveback_usd": 955.8100000000122,
-    "intraday_peak_equity": 96817.07,
-    "intraday_peak_pnl": 1156.140000000014,
-    "intraday_peak_pnl_pct": 0.012085811835615795,
-    "last_action": "noop",
-    "last_update_at": "2026-06-04T23:55:21.437317+00:00",
-    "max_gross_target": 0.25,
-    "options_first_reduction": true,
-    "peak_at": "2026-06-04T14:05:25.706913+00:00",
-    "pnl_state": "RED_DAY_AFTER_GREEN",
-    "profit_floor_usd": 289.0350000000035,
+    "date": "2026-06-05",
+    "giveback_pct_of_peak": 0.0,
+    "giveback_usd": 0.0,
+    "intraday_peak_equity": 95861.26,
+    "intraday_peak_pnl": 0.0,
+    "intraday_peak_pnl_pct": 0.0,
+    "last_action": "transition_NEW_DAY_to_FLAT",
+    "last_update_at": "2026-06-05T00:00:25.709551+00:00",
+    "max_gross_target": 1.5,
+    "options_first_reduction": false,
+    "peak_at": "2026-06-05T00:00:25.709551+00:00",
+    "pnl_state": "FLAT",
+    "profit_floor_usd": 0.0,
     "session_start_equity": 95660.93,
-    "state_entered_at": "2026-06-04T14:20:25.375797+00:00",
+    "state_entered_at": "2026-06-05T00:00:25.709551+00:00",
     "top_giveback_symbols": []
   },
   "position_mfe": {
