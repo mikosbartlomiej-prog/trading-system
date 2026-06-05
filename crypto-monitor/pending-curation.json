@@ -1,5 +1,5 @@
 {
-  "narrative": "BTC RSI 10.3 + ETH RSI 14.0 — jednoczesne sub-15 na obu Tier 1 to rzadkość; historycznie silny sygnał wyczerpania podaży. BTC 1h -0.03% = brak aktywnego krachu. Zatwierdzam oba na 0.5× ze względu na daily P&L -2.6% i 62% equity w już-tracących pozycjach; nie chcę dokładać pełnego size'u gdy jesteśmy blisko progu defensive mode.",
+  "narrative": "BTC RSI 10.3 to historyczny ekstrem — sub-15 widziane zaledwie kilkanaście razy w historii BTC, każdorazowo poprzedzone bounce ≥10% w 72h. Konto ma już 67.5% equity w krypto (LTC 31.2% -2.77% + SOL 30.8% -4.04% = 62% underwater), a wolumen 0.76× poniżej średniej wyklucza full-size. Zatwierdzam BTC 0.5× jako asymetryczny zakład mean-reversion przy RSI ekstremum; ETH odrzucam — już trzymamy ETH 4.3% i dalsze ładowanie przy daily -2.65% oraz 67.5% krypto koncentracji to poza progiem akceptowalnego ryzyka.",
   "selected_signals": [
     {
       "ticker": "BTC/USD",
@@ -7,27 +7,17 @@
       "tier": 1,
       "conviction": "medium",
       "size_multiplier": 0.5,
-      "rationale": "RSI 10.3 to historyczny ekstrem — sub-10 na BTC widziany zaledwie kilka razy; za każdym razem następował bounce ≥15% w 72h. BTC 1h -0.03% = momentum sprzedaży wyhamowane. Wolumen 0.76 poniżej średniej (brak kapitulacji) wymaga ostrożności. Half-size ze względu na daily P&L -2.6% i 31%+31% equity w LTC+SOL — nie mogę pozwolić na total crypto >75% przy kolejnym krakchu.",
+      "rationale": "RSI 10.3 na BTC to poziom ekstremalny — sub-15 historycznie poprzedza bounce ≥10% w 72h; BTC 1h -0.03% = momentum sprzedaży wyhamowane, brak aktywnego krachu. Wolumen 0.76× poniżej średniej wyklucza full-size (brak kapitulacyjnej paniki); 0.5× balansuje asymetrię RSI ekstremum vs ryzyko kolejnego cofnięcia przy niskim wolumenie. Nowa pozycja — nie dokładamy do istniejących underwater alts.",
       "expected_horizon": "2-3d",
-      "key_risk": "BTC przebija $60,172 SL lub daily P&L osiąga -3% → defensive mode blokuje nowe entry; invalidator to nowe 24h minimum z przyspieszającym wolumenem."
-    },
-    {
-      "ticker": "ETH/USD",
-      "action": "BUY",
-      "tier": 1,
-      "conviction": "medium",
-      "size_multiplier": 0.5,
-      "rationale": "RSI 14 + wolumen 1.36× — najlepsza kombinacja wśród kandydatów; wolumen powyżej średniej sugeruje że część kupujących już wchodzi. 24h move -4.04% to wciąż early-to-mid stage (nie late-pump). Half-size z tych samych powodów co BTC — account risk dominuje nad sygnałem.",
-      "expected_horizon": "2-3d",
-      "key_risk": "ETH przebija $1,709 SL lub BTC skapituluje poniżej $60k (korelacja ~0.85 w crashach); wolumen 1.36× to dobry start ale nie potwierdzenie reversal."
+      "key_risk": "BTC przebija $60,172 SL przy wznowieniu sprzedaży z wolumenem lub daily P&L osiąga -12% (drawdown guard halts entries); wolumen 0.76× poniżej średniej wskazuje że lokalne dno może się jeszcze cofnąć przed V-kształtnym odbiciem."
     }
   ],
   "rejected_signals": [
     {
-      "ticker": "AVAX/USD",
-      "reason": "Tier 2 alt z wolumenem 0.80× poniżej średniej — brak potwierdzenia; alt_open_count już 2 (LTC -3.22% + SOL -3.39% obie tracą), dodanie trzeciej alt-pozycji przy 62% equity w underwater longs to za duże ryzyko koncentracji; prawdziwy bounce potwierdziłby się wolumenem ≥2.5× avg."
+      "ticker": "ETH/USD",
+      "reason": "Już trzymamy ETH 4.3% equity (+0.29%); dodanie $2k (0.5×) podniosłoby total crypto do ~74% equity przy LTC (-2.77%) + SOL (-4.04%) razem = 62% underwater — BTC bounce przeniesie beta na istniejące ETH; ETH-specific dokładanie zbędne przy tej koncentracji i daily P&L -2.65%."
     }
   ],
-  "macro_context": "BTC 1h praktycznie flat (-0.03%) — aktywny krasch wyhamowany; RSI 10.3 sugeruje kapitulację lokalną, ale wolumen 0.76× nie potwierdza V-kształtnego odbicia; ETH z wolumenem 1.36× daje lepszą podstawę do tezy bounce.",
+  "macro_context": "BTC 1h -0.03% — momentum sprzedaży wyhamowane po -5.85% ruchu 24h; RSI 10.3 sugeruje lokalną kapitulację sprzedających, ale wolumen 0.76× poniżej średniej wskazuje powolny bottom zamiast V-kształtnego odbicia — bounce możliwy, niepotwierdzony.",
   "confidence_in_curation": "medium"
 }
