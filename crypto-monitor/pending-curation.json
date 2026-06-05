@@ -1,16 +1,16 @@
 {
-  "narrative": "ODRZUCAM oba sygnały (16:40 UTC) — portfel 73.4% equity w crypto longach (LTC 31% / SOL 31.1% obie na stracie, łącznie ~-$1,690 unrealized), daily P&L -2.02% i zbliżamy się do progu -3%; BTC RSI 10.3 i ETH RSI 14 to historycznie ekstremalne oversold ale vol 0.76×/1.36× to definitywny brak V-reversal capitulation bar — predator nie dokłada do tonącej, przeładowanej książki bez potwierdzenia dna.",
+  "narrative": "ODRZUCAM oba sygnały (16:45 UTC, potwierdzone) — portfel 73.3% equity w crypto longach (LTC 31% / SOL 31.1% obie na stracie -2.71/-2.39%), daily P&L -2.05%; BTC RSI 10.3 i ETH RSI 14 to historycznie ekstremalne oversold ale BTC vol 0.76× to definitywny brak V-reversal capitulation bar — predator nie dokłada do tonącej, przeładowanej książki bez volume potwierdzenia.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "BTC/USD",
-      "reason": "Volume 0.76× poniżej średniej przy -5.85% 24h selloff — brak kapitulacyjnego spiku kupców (wymagane ≥3×); dodanie $8k push-uje total crypto do ~82% przy LTC+SOL na 62% equity pod wodą i daily P&L -2.02% zbliżającym się do -3% circuit breaker."
+      "reason": "Volume 0.76× poniżej średniej przy -5.85% 24h selloff — brak kapitulacyjnego spiku kupców (oversold bounce wymaga ≥ przyśpieszonego volume); dodanie $8k BUY podniosłoby crypto do ~82% equity przy LTC+SOL na 62% equity pod wodą i daily P&L -2.05%."
     },
     {
       "ticker": "ETH/USD",
-      "reason": "ETH już w portfelu (8.6% equity, +0.78%); vol 1.36× daleko poniżej ≥3× confirmation threshold; piramidowanie w risk-off session z total crypto 73.4% i dwoma masywymi tracącymi pozycjami (LTC -2.71%, SOL -2.39%) jest błędem zarządzania ryzykiem — sygnał dobry, kontekst portfela zabija trade."
+      "reason": "ETH już w portfelu (8.5% equity, +0.45%); vol 1.36× marginalnie powyżej średniej ale daleko od wymaganego spike; piramidowanie w risk-off session z total crypto 73.3% i dwoma masywymi tracącymi pozycjami (LTC -2.71%, SOL -2.39%) jest błędem zarządzania ryzykiem — koncentracja zabija trade."
     }
   ],
-  "macro_context": "BTC 1h -0.03% neutralny po 5.85% 24h korekcie — stabilizacja ale bez volume spike (0.76×) nie potwierdza kapitulacji; portfel overweight crypto 73.4% z LTC+SOL na 62% equity tracących; priorytet: redukcja LTC/SOL gdy zbliżą się do SL -8%, nie nowe wejścia.",
+  "macro_context": "BTC 1h -0.03% neutralny po 5.85% 24h korekcie — stabilizacja bez volume spike nie potwierdza kapitulacji; portfel overweight crypto 73.3% z LTC+SOL na 62% equity tracących; priorytet: monitorowanie SL na LTC/SOL, nie nowe wejścia.",
   "confidence_in_curation": "high"
 }
