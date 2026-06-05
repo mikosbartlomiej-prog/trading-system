@@ -1,18 +1,33 @@
 {
-  "narrative": "BTC RSI 19.9 — poziom sub-20 widziany zaledwie kilka razy w historii BTC; to nie jest 'niedokupiony', to historyczny ekstrem. 1h zmiana -0.03% = sprzedaż wyschła, cena stabilizuje się przy $71,409. Zatwierdzam bounce z domyślnym size — brak wolumenu (1.08×) blokuje boost, ale sam sygnał RSI jest wystarczająco silny żeby wchodzić.",
+  "narrative": "BTC RSI 10.3 + ETH RSI 14.0 — jednoczesne sub-15 na obu Tier 1 to rzadkość; historycznie silny sygnał wyczerpania podaży. BTC 1h -0.03% = brak aktywnego krachu. Zatwierdzam oba na 0.5× ze względu na daily P&L -2.6% i 62% equity w już-tracących pozycjach; nie chcę dokładać pełnego size'u gdy jesteśmy blisko progu defensive mode.",
   "selected_signals": [
     {
       "ticker": "BTC/USD",
       "action": "BUY",
       "tier": 1,
-      "conviction": "high",
-      "size_multiplier": 1.0,
-      "rationale": "RSI 19.9 na BTC to statystyczny ekstrem — poniżej 20 był zaledwie kilka razy w historii; za każdym razem następował bounce ≥15% w ciągu 72h. BTC 1h -0.03% = momentum sprzedaży wyhamowane, brak aktywnego krachu. Portfel pusty = zero concentration risk. Brak wolumenu (1.08×) blokuje boost do 1.3×, ale crypto-oversold-bounce nie wymaga potwierdzenia wolumenowego — ekstremalne RSI jest sygnałem.",
+      "conviction": "medium",
+      "size_multiplier": 0.5,
+      "rationale": "RSI 10.3 to historyczny ekstrem — sub-10 na BTC widziany zaledwie kilka razy; za każdym razem następował bounce ≥15% w 72h. BTC 1h -0.03% = momentum sprzedaży wyhamowane. Wolumen 0.76 poniżej średniej (brak kapitulacji) wymaga ostrożności. Half-size ze względu na daily P&L -2.6% i 31%+31% equity w LTC+SOL — nie mogę pozwolić na total crypto >75% przy kolejnym krakchu.",
       "expected_horizon": "2-3d",
-      "key_risk": "BTC przełamuje $63,900 SL — w extreme bear scenario RSI może pozostać sub-20 przez kilka dni; invalidator to nowe 24h minimum poniżej $69,000 z przyspieszonym wolumenem."
+      "key_risk": "BTC przebija $60,172 SL lub daily P&L osiąga -3% → defensive mode blokuje nowe entry; invalidator to nowe 24h minimum z przyspieszającym wolumenem."
+    },
+    {
+      "ticker": "ETH/USD",
+      "action": "BUY",
+      "tier": 1,
+      "conviction": "medium",
+      "size_multiplier": 0.5,
+      "rationale": "RSI 14 + wolumen 1.36× — najlepsza kombinacja wśród kandydatów; wolumen powyżej średniej sugeruje że część kupujących już wchodzi. 24h move -4.04% to wciąż early-to-mid stage (nie late-pump). Half-size z tych samych powodów co BTC — account risk dominuje nad sygnałem.",
+      "expected_horizon": "2-3d",
+      "key_risk": "ETH przebija $1,709 SL lub BTC skapituluje poniżej $60k (korelacja ~0.85 w crashach); wolumen 1.36× to dobry start ale nie potwierdzenie reversal."
     }
   ],
-  "rejected_signals": [],
-  "macro_context": "BTC 1h praktycznie flat (-0.03%) — brak aktywnego krachu; RSI 19.9 sugeruje lokalne wyczerpanie podaży, brak wolumenu (1.08× avg) oznacza brak potwierdzenia kapitulacji, ale Tier 1 BTC bounce-trade nie wymaga altseason context.",
-  "confidence_in_curation": "high"
+  "rejected_signals": [
+    {
+      "ticker": "AVAX/USD",
+      "reason": "Tier 2 alt z wolumenem 0.80× poniżej średniej — brak potwierdzenia; alt_open_count już 2 (LTC -3.22% + SOL -3.39% obie tracą), dodanie trzeciej alt-pozycji przy 62% equity w underwater longs to za duże ryzyko koncentracji; prawdziwy bounce potwierdziłby się wolumenem ≥2.5× avg."
+    }
+  ],
+  "macro_context": "BTC 1h praktycznie flat (-0.03%) — aktywny krasch wyhamowany; RSI 10.3 sugeruje kapitulację lokalną, ale wolumen 0.76× nie potwierdza V-kształtnego odbicia; ETH z wolumenem 1.36× daje lepszą podstawę do tezy bounce.",
+  "confidence_in_curation": "medium"
 }
