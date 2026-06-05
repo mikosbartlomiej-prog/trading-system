@@ -1,16 +1,16 @@
 {
-  "narrative": "ODRZUCAM oba sygnały (16:25 UTC) — portfel 73.4% equity w crypto longach (LTC 30.9%, SOL 31.2%, ETH 8.6%, AVAX 2.7%); BTC RSI 10.3 jest historycznie ekstremalny ale vol 0.76× (poniżej nawet średniej) to definitywny brak kapitulacyjnego V-reversal baru — predator czeka na volume spike ≥3× jako potwierdzenie odbicia, nie wchodzi w 'śpiący' oversold bez impulsu kupna.",
+  "narrative": "ODRZUCAM oba sygnały (16:30 UTC) — portfel 73.5% equity w crypto longach (LTC 30.9%, SOL 31.3%, ETH 8.6%, AVAX 2.7%); BTC RSI 10.3 historycznie ekstremalny ale vol 0.76× (poniżej średniej) to definitywny brak volume V-reversal bar — predator czeka na vol ≥3× jako potwierdzenie odbicia, nie wchodzi w 'śpiący' oversold bez impulsu kupna przy already-stressed koncentracji 62.2% LTC+SOL.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "BTC/USD",
-      "reason": "Volume 0.76× (poniżej 1× — brak nawet normalnego obrotu, nie mówiąc o 3× confirmation); RSI 10.3 historycznie silne oversold ale bez volume V-reversal bar może dalej opadać; łączna ekspozycja crypto 73.4% → po +$8k ~82% w jednej klasie przy daily P&L -1.74% i LTC/SOL pod wodą (-2.77%/-1.76%)."
+      "reason": "Volume 0.76× poniżej 1× (brak nawet normalnego obrotu, nie mówiąc o 3× confirmation); RSI 10.3 historycznie silne oversold ale bez volume spike V-reversal może dalej opadać; dodanie $8k push-uje ekspozycję crypto do ~82% przy daily P&L -1.69% i LTC/SOL pod wodą (-2.77%/-1.48%)."
     },
     {
       "ticker": "ETH/USD",
-      "reason": "ETH/USD już w portfelu (8.6% equity, +1.92% P&L); vol 1.36× — daleko poniżej 3× progu potwierdzenia; piramidowanie bez nowego katalizatora przy łącznej koncentracji crypto 73.4% przekroczyłoby 77% equity w jednej klasie aktywów."
+      "reason": "ETH/USD już w portfelu (8.6% equity, +1.64% P&L) — piramidowanie tego samego aktywa; vol 1.36× daleko poniżej 3× progu potwierdzenia; łączna koncentracja crypto 73.5% + $4k = 77.7% equity w jednej klasie aktywów jest niedopuszczalna przy otwartych LTC+SOL na ~31% każde."
     }
   ],
-  "macro_context": "BTC 1h -0.03% (neutral/flat); całodniowa sesja risk-off (BTC -5.85% 24h, ETH -4.04% 24h); RSI ekstremum 10.3/14 historycznie poprzedza bounce'y ale wymagany volume spike ≥3× jako confirmation — przy aktualnym 0.76×/1.36× kapitulacja nie jest potwierdzona wolumenem; czekamy na V-reversal bar.",
+  "macro_context": "BTC 1h -0.034% neutralny/flat; całodniowa sesja risk-off (BTC -5.85% 24h, ETH -4.04% 24h); RSI 10.3/14 historycznie poprzedza bounce'y ale wymagany vol spike ≥3× jako confirmation — przy 0.76×/1.36× kapitulacja nie jest potwierdzona; poczekać na V-reversal bar.",
   "confidence_in_curation": "high"
 }
