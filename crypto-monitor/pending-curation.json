@@ -1,16 +1,16 @@
 {
-  "narrative": "73.3% equity już w krypto (LTC 31.2% -2.77%, SOL 30.9% -3.76%, ETH 8.5% -1.18%, AVAX 2.7%) — cały book underwater, daily P&L -2.63% zbliżające się do progu -3%. Poprzednia kuracja (16:06) zatwierdziła BTC 0.5× przy RSI 10.3; duplikowanie zakładu 4 minuty później z wolumenem 0.76× poniżej średniej to averaging-down w skoncentrowanej stracie, nie predator edge. Zero nowych wejść.",
+  "narrative": "ODRZUCAM obie propozycje (16:15 UTC). Portfel ma już 73% equity w długich krypto (LTC 31.1%, SOL 31%, ETH 8.5%, AVAX 2.7%) i dzień -2.29% — dodanie $12k = ~86% ekspozycji w jednej klasie aktywów podczas gdy wszystkie 4 pozycje są pod wodą lub flat. BTC RSI 10.3 wygląda atrakcyjnie, ale volume_ratio 0.76× = brak kupujących potwierdzających odbicie; to może być wolno opadający nóż, nie kapitulacja z V-odbiciem.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "BTC/USD",
-      "reason": "Poprzednia kuracja zatwierdziła BTC 0.5× o 16:06 (ta sama teza RSI ekstremum); duplikat 4 minuty później przy 73.3% crypto koncentracji i daily -2.63%; volume 0.76× poniżej średniej = brak kapitulacyjnego wolumenu; predator nie dokłada do skoncentrowanej pozycji gdy cały book krwawi."
+      "reason": "Volume ratio 0.76× (poniżej średniej) — brak potwierdzenia kupujących dla oversold bounce; portfel już 73% equity w krypto longach, dodanie $8k = ~86% koncentracja; daily P&L -2.29% sygnalizuje generalny risk-off w crypto dziś."
     },
     {
       "ticker": "ETH/USD",
-      "reason": "Już trzymamy ETH 8.5% equity (-1.18%); total crypto ekspozycja 73.3% equity; dodanie $4k ETH pchnęłoby krypto do ~77.5% przy daily -2.63%; LTC/SOL z beta do ETH/BTC już zapewniają pełną ekspozycję na potencjalny bounce — redundantna pozycja."
+      "reason": "Pozycja ETH/USD już otwarta (8.5% equity, -0.03% P&L) — piramidowanie w istniejący flat trade bez wyraźnego sygnału odwrócenia; łączna ekspozycja krypto 73% przed dodaniem, wszystkie alt-pozycje (SOL -3%, LTC -2.77%) głęboko pod wodą."
     }
   ],
-  "macro_context": "BTC 1h -0.03% = momentum sprzedaży wyhamowane po -5.85% ruchu 24h; RSI 10.3 to historycznie rzadki ekstrem, ale volume 0.76× poniżej średniej nie potwierdza kapitulacji — slow bleed, nie V-odbicie; 73.3% portfolio w krypto entirely underwater = żadnych nowych zakładów do momentu odbicia lub stop loss na istniejących.",
+  "macro_context": "BTC 1h -0.03% (flat, ani supportive ani hostile); market w generalnym crypto risk-off (BTC -5.85% 24h, ETH -4.04% 24h); RSI extremal readings na 10.3/14 statystycznie poprzedzają odbicie, ale bez volume confirmation setup jest przedwczesny — predator czeka na potwierdzający candle z volume ≥3×.",
   "confidence_in_curation": "high"
 }
