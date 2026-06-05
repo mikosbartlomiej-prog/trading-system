@@ -1,17 +1,17 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "intraday-monitor",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-05T01:45:31.657599+00:00",
+      "last_seen_iso": "2026-06-05T01:35:26.825435+00:00",
       "last_status": "ok",
-      "pings_today": 15
+      "pings_today": 14
     },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-05T01:40:30.520125+00:00",
+      "last_seen_iso": "2026-06-05T01:30:49.664030+00:00",
       "last_status": "ok",
-      "pings_today": 16
+      "pings_today": 15
     },
     "doj-monitor": {
       "last_message": "emitted=0",
@@ -21,21 +21,21 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-05T01:45:23.968836+00:00",
+      "last_seen_iso": "2026-06-05T01:35:23.247486+00:00",
       "last_status": "ok",
-      "pings_today": 19
+      "pings_today": 17
     },
     "geo-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-05T01:45:27.553820+00:00",
+      "last_seen_iso": "2026-06-05T01:15:27.178639+00:00",
       "last_status": "ok",
-      "pings_today": 5
+      "pings_today": 4
     },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-05T01:45:21.775197+00:00",
+      "last_seen_iso": "2026-06-05T01:35:22.862858+00:00",
       "last_status": "ok",
-      "pings_today": 20
+      "pings_today": 18
     },
     "options-monitor": {
       "last_message": "",
@@ -63,9 +63,9 @@
     },
     "twitter-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-05T01:45:49.243434+00:00",
+      "last_seen_iso": "2026-06-05T01:35:42.027798+00:00",
       "last_status": "ok",
-      "pings_today": 22
+      "pings_today": 19
     }
   },
   "intraday_governor": {
@@ -82,7 +82,7 @@
     "intraday_peak_pnl": 200.33000000000175,
     "intraday_peak_pnl_pct": 0.0020941673889225388,
     "last_action": "noop",
-    "last_update_at": "2026-06-05T01:45:23.966241+00:00",
+    "last_update_at": "2026-06-05T01:35:23.245223+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-05T00:05:26.796298+00:00",
@@ -222,13 +222,13 @@
   },
   "routine_budget": {
     "by_routine": {
-      "daily-learning-pm": 2
+      "daily-learning-pm": 1
     },
     "by_tier": {
-      "P0_essential": 2
+      "P0_essential": 1
     },
-    "date": "2026-06-04",
-    "last_updated": "2026-06-04T22:15:18.406153+00:00",
-    "total": 2
+    "date": "2026-06-05",
+    "last_updated": "2026-06-05T01:37:07.588506+00:00",
+    "total": 1
   }
 }
