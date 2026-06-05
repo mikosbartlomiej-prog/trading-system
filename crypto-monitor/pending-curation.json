@@ -1,16 +1,16 @@
 {
-  "narrative": "BTC RSI 10.3 i ETH RSI 14 to ekstremalnie przesprzedane poziomy, ale wolumen BTC 0.76x poniżej sredniej to dealbreaker — brak kapitulacyjnego spike'u kupujacych, to nóz w locie. Konto juz na 73.5% equity w krypto (LTC 30.9% + SOL 31.4% obie tracace) przy -1.72% dziennym P&L — predator odmawia dokładania do przeładowanej ksiazki bez volume potwierdzenia.",
+  "narrative": "Portfel już wbity w krypto 73.6% equity (LTC 30.9% + SOL 31.4% + ETH 8.6% + AVAX 2.7%) — każde dodatkowe wejście to koncentracja 3× powyżej limitu 25%. BTC RSI 10.3 ekstremalnie oversold, ale volume_ratio 0.76 to below-average: oversold bounce bez potwierdzenia wolumenowego to falling knife, nie setup. Zero wejść dzisiaj.",
   "selected_signals": [],
   "rejected_signals": [
     {
       "ticker": "BTC/USD",
-      "reason": "Volume 0.76x ponizej sredniej przy -5.85% 24h selloff — brak kapitulacyjnego volume spike wymaganego dla oversold-bounce; dodanie $8k BUY podniesie crypto ekspozycje do ~82% equity z LTC+SOL juz na 62% pod woda."
+      "reason": "volume_ratio 0.76 poniżej średniej — oversold bounce bez wolumenowego potwierdzenia to falling knife, nie setup; total crypto exposure portfela 73.6% equity (LTC 30.9% + SOL 31.4% aktywne) = concentration kill przed jakimkolwiek nowym wejściem."
     },
     {
       "ticker": "ETH/USD",
-      "reason": "ETH juz w portfelu (8.5% equity, +0.8%); volume 1.36x marginalnie powyzej sredniej ale daleko od wymaganego spike; piramidowanie przy 73.5% crypto i -1.72% daily P&L z alt_open_count=3 na cap to koncentracja na sterydach."
+      "reason": "Otwarta pozycja ETH/USD +1.94% na 8.6% equity już istnieje — redundantny zakup tego samego instrumentu; total crypto 73.6% niszczy nowe wejście przez concentration cap; volume_ratio 1.36 słaby dla tier-1 bounce setup."
     }
   ],
-  "macro_context": "BTC 1h -0.03% neutralny po -5.85% korekcie — stabilizacja bez volume spike nie potwierdza kapitulacji; portfel overweight crypto 73.5% z LTC+SOL na 62% equity tracacych; priorytet to monitowowanie SL na istniejacych pozycjach, nie nowe wejscia.",
+  "macro_context": "BTC 1h -0.03% (stabilne), ale -5.85% 24h = trend spadkowy niezakończony; LTC -2.71% i SOL -1.02% na otwartych pozycjach sygnalizują dalszą presję na alty; RSI poniżej 15 na BTC/ETH historycznie poprzedza V-recovery ALE wymaga volume spike jako triggera — brak go w tej chwili.",
   "confidence_in_curation": "high"
 }
