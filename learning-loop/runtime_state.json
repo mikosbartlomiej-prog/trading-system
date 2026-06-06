@@ -1,5 +1,5 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "intraday-monitor",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -1364,13 +1364,15 @@
   },
   "routine_budget": {
     "by_routine": {
-      "crypto-curator": 3
+      "crypto-curator": 3,
+      "daily-learning-pm": 1
     },
     "by_tier": {
+      "P0_essential": 1,
       "P2_optional": 3
     },
     "date": "2026-06-06",
-    "last_updated": "2026-06-06T00:31:02.832948+00:00",
-    "total": 3
+    "last_updated": "2026-06-06T01:28:22.743327+00:00",
+    "total": 4
   }
 }
