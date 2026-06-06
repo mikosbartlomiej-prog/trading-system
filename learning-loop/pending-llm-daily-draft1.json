@@ -1,0 +1,46 @@
+{
+  "narrative": "Dwie pilne anomalie jednocześnie: (1) BTC RSI 5.7 + ETH RSI 4.3 — poziomy kapitulacji rzadsze niż raz na dwa lata; crypto-momentum 1.5× long i crypto-oversold-bounce są włączone, ale przez 60 kolejnych dni nie padł ANI JEDEN trade — to dowód na broken pipeline, nie brak setupu. (2) Equity -$8,913 od szczytu ($98,446→$89,533) z 0 przypisanymi zamknięciami i 0 otwartymi pozycjami — anomalia danych wymagająca natychmiastowej weryfikacji w Alpaca dashboard. SPY RSI 48.6 (neutral) potwierdza, że to nie broad market crash — to crypto-specific selloff plus prawdopodobnie straty alloc-rebalance spoza okna atrybucji.",
+  "regime_assessment": "risk_off",
+  "edge_assessment": "Brak zrealizowanej przewagi w ciągu 24h — 0 trade'ów z żadnej strategii. Strukturalna przewaga na crypto oversold istnieje (BTC/ETH RSI < 10 = historyczne dno z >70% prawdopodobieństwem odbicia), ale nie można jej zrealizować gdy pipeline nie wykonuje. Jedyne 2 'unknown' fills to prawdopodobnie allocator exits nieprzypisane do strategii.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-oversold-bounce": {
+        "size_multiplier": 2.0,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "BTC RSI 5.7 + ETH RSI 4.3 to historyczne dno — strategia crypto-oversold-bounce istnieje DOKŁADNIE dla tego scenariusza. Podnoszę size_multiplier 1.0->2.0 (max per bounds). Każdy dzień bez wejścia przy tym RSI to zmarnowana alpha rzędu +20-40% potential bounce."
+      },
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "Podtrzymuję poprzednią LLM override 1.5x long (active do 2026-06-13 per 14d lock). Problem nie leży w parametrach — leży w pipeline. Operator musi zbadać gdzie wykonanie pada."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "heuristic_pipeline_health_warn: detect boosted-but-silent strategies",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "crypto-momentum ma 1.5x boost i 0 trade'ow przez 60 dni — obecne SILENT warnings nie odrozniaja 'normalnie cicho' od 'boosted ale pipeline broken'. Ta funkcja surfacuje ten specific pattern jako PIPELINE_HEALTH_WARN w rationale.md, dajac operatorowi jasne ostrzezenie.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "\ndef heuristic_pipeline_health_warn(name: str, cfg: dict, today_str: str) -> tuple:\n    \"\"\"Detect strategies boosted but silent for 7+ days -- likely pipeline break.\"\"\"\n    if not cfg.get(\"enabled\", False):\n        return False, \"\"\n    mult = cfg.get(\"size_multiplier\", 1.0)\n    if mult <= 1.0:\n        return False, \"\"\n    if cfg.get(\"trades_7d\", 0) > 0:\n        return False, \"\"\n    enabled_at = cfg.get(\"enabled_at\")\n    if not enabled_at:\n        return False, \"\"\n    try:\n        from datetime import date as _date\n        days_since = (_date.fromisoformat(today_str) - _date.fromisoformat(enabled_at)).days\n    except Exception:\n        return False, \"\"\n    if days_since >= 7:\n        return True, f\"PIPELINE_HEALTH_WARN: boosted {mult:.1f}x but 0 trades in {days_since}d -- monitor pipeline suspect\"\n    return False, \"\"\n",
+      "test_addition": "\nclass TestPipelineHealthWarn(unittest.TestCase):\n    def test_fires_on_boosted_silent(self):\n        cfg = {\"enabled\": True, \"size_multiplier\": 1.5, \"trades_7d\": 0, \"enabled_at\": \"2026-05-19\"}\n        fired, reason = heuristic_pipeline_health_warn(\"crypto-momentum\", cfg, \"2026-06-06\")\n        self.assertTrue(fired)\n        self.assertIn(\"PIPELINE_HEALTH_WARN\", reason)\n\n    def test_no_fire_if_trades_present(self):\n        cfg = {\"enabled\": True, \"size_multiplier\": 1.5, \"trades_7d\": 1, \"enabled_at\": \"2026-05-19\"}\n        fired, _ = heuristic_pipeline_health_warn(\"crypto-momentum\", cfg, \"2026-06-06\")\n        self.assertFalse(fired)\n\n    def test_no_fire_if_not_boosted(self):\n        cfg = {\"enabled\": True, \"size_multiplier\": 1.0, \"trades_7d\": 0, \"enabled_at\": \"2026-05-19\"}\n        fired, _ = heuristic_pipeline_health_warn(\"x\", cfg, \"2026-06-06\")\n        self.assertFalse(fired)\n\n    def test_no_fire_if_recently_enabled(self):\n        cfg = {\"enabled\": True, \"size_multiplier\": 1.5, \"trades_7d\": 0, \"enabled_at\": \"2026-06-04\"}\n        fired, _ = heuristic_pipeline_health_warn(\"x\", cfg, \"2026-06-06\")\n        self.assertFalse(fired)\n\n    def test_no_fire_if_disabled(self):\n        cfg = {\"enabled\": False, \"size_multiplier\": 1.5, \"trades_7d\": 0, \"enabled_at\": \"2026-05-19\"}\n        fired, _ = heuristic_pipeline_health_warn(\"x\", cfg, \"2026-06-06\")\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": "after _flag_silent_strategies loop, iterate strategies and append the warn message to rationale_lines when heuristic_pipeline_health_warn(name, cfg, today_str) fires"
+    },
+    {
+      "title": "P0 equity gap: critical alert when >5% drop with 0 trades and 0 open positions",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Equity spadlo -$8,913 (9.6% od szczytu) z 0 atrybucja przez 3 kolejne dni. Obecny WARN nie blokuje systemu i nie eskaluje do operatora w wystarczajaco pilny sposob. Potrzebujemy osobnego emaila [CRITICAL-EQUITY-GAP] gdy: delta > -5% AND open_positions=[] AND cumulative_trades=0.",
+      "effort_estimate": "1h",
+      "revisit_date": "2026-06-07",
+      "implementation_sketch": "W learning-loop/analyzer.py::compute_equity_gap_alert: jesli abs(delta_usd/prev_equity) >= 0.05 AND len(open_positions)==0 AND cumulative_trades==0 zmien severity na 'P0_CRITICAL'. W shared/notify.py: nowy notify_critical_equity_gap(delta_usd, prev_equity, current_equity) wysylajacy email z subject '[CRITICAL-EQUITY-GAP] -$X.X w oknie 24h bez trade-ow'. Wywolywany z analyzer.py po compute_equity_gap_alert gdy severity==P0_CRITICAL."
+    }
+  ],
+  "confidence": "low"
+}
