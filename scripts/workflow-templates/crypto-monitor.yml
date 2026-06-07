@@ -68,28 +68,59 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # v3.22.2 (2026-06-07) — also persist opportunity_ledger entries
-          # written by the 13 _emit_opportunity sites + halt-emit paths.
-          # Without this, the ledger never reaches origin and the entire
-          # v3.22 evidence flow stays dormant.
-          if git diff --quiet learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null; then
-            if [ ! -d learning-loop/opportunity_ledger ] || \
-               [ -z "$(ls -A learning-loop/opportunity_ledger 2>/dev/null)" ]; then
-              echo "no runtime_state or ledger changes"
-              exit 0
-            fi
-          fi
-          git pull --ff-only origin main 2>/dev/null || true
+
+          # v3.22.3 (2026-06-07) — fix push race condition with parallel
+          # automerges. Previous 3-attempt loop ended exit 0 on push
+          # failure, silently dropping ledger entries. Now: rebase
+          # FIRST to absorb any concurrent automerge commits, debug
+          # the working tree, allow up to 5 push retries with rebase
+          # between each, and exit 1 on final failure so the job
+          # surface the problem instead of hiding it.
+
+          # 1) Rebase first so our commit goes on top of any concurrent
+          #    automerge that landed during the scan.
+          git pull --rebase origin "${GITHUB_REF_NAME:-main}" || true
+
+          # 2) Debug snapshot before staging.
+          echo "===== Debug before add ====="
+          pwd
+          git status --short learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null || true
+          ls -la learning-loop 2>/dev/null || true
+          ls -la learning-loop/opportunity_ledger 2>/dev/null || true
+          find learning-loop -maxdepth 3 -type f 2>/dev/null | sort | head -30 || true
+
+          # 3) Stage the narrow scope we are allowed to persist.
           git add learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null || true
+
+          # 4) Debug snapshot after staging.
+          echo "===== Debug after add ====="
+          git status --short learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null || true
+          git diff --cached --name-only 2>/dev/null || true
+
+          # 5) Nothing to commit? Exit clean.
           if git diff --cached --quiet 2>/dev/null; then
+            echo "No staged runtime_state/opportunity_ledger changes to commit"
             exit 0
           fi
-          git commit -m "crypto-monitor: runtime_state + opportunity_ledger $(date -u +%Y-%m-%d_%H%M) [automerge]" || exit 0
-          for attempt in 1 2 3; do
+
+          # 6) Build the commit (single message, narrow scope).
+          git commit -m "crypto-monitor: runtime_state + opportunity_ledger $(date -u +%Y-%m-%d_%H%M) [automerge]"
+
+          # 7) Push with up-to-5 retries. Rebase between attempts; never
+          #    force-push. Exit 1 if all attempts fail so the job surface
+          #    the persistence failure.
+          for attempt in 1 2 3 4 5; do
             if git push origin "${GITHUB_REF_NAME:-main}"; then
+              echo "Persisted crypto-monitor runtime_state + opportunity_ledger (attempt ${attempt})"
               exit 0
             fi
-            git pull --rebase origin "${GITHUB_REF_NAME:-main}" 2>/dev/null || true
+            echo "Push failed attempt ${attempt}; rebasing and retrying"
+            if ! git pull --rebase origin "${GITHUB_REF_NAME:-main}"; then
+              echo "Rebase failed; aborting without force-push"
+              git rebase --abort 2>/dev/null || true
+              exit 1
+            fi
             sleep $((attempt * 2))
           done
-          echo "push failed after 3 attempts — budget state not persisted"
+          echo "push failed after 5 retries — crypto opportunity ledger not persisted"
+          exit 1
