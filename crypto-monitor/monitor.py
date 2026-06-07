@@ -37,6 +37,67 @@ except ImportError:
     def get_open_positions(): return []
     def execute_crypto_signal(_s): return None
 
+
+# v3.22.0 (2026-06-07) — Signal Opportunity Ledger emit (ETAP 4).
+#
+# Crypto-momentum has been SILENT for 62+ days. Diagnosis: signals are
+# evaluated but never recorded to the opportunity ledger, so we have no
+# durable evidence of WHY trades did not fire. This helper is the single
+# write-point. It is observability-only — it NEVER places trades and
+# NEVER mutates the signal-decision logic.
+def _emit_opportunity(*, strategy: str, symbol: str,
+                      signal_state: str,
+                      raw_signal: dict | None = None,
+                      rsi: float | None = None,
+                      confidence_inputs: dict | None = None,
+                      market_regime: str | None = "NEUTRAL",
+                      universe_status: str | None = "WHITELISTED",
+                      gate_decisions: list | None = None,
+                      rejection_reasons: list | None = None,
+                      paper_action: str | None = None,
+                      audit_link: str | None = None) -> None:
+    """Append one entry to the daily opportunity ledger.
+
+    Fail-soft: any exception (import failure, disk error, etc.) must NOT
+    crash the monitor or change trade behavior. Decision points pass
+    a paper_action of "signal_detected" / "executed" / "rejected" so the
+    ledger captures both fires and misses.
+    """
+    try:
+        try:
+            from signal_opportunity_ledger import record_opportunity
+        except ImportError:
+            from shared.signal_opportunity_ledger import record_opportunity  # type: ignore
+    except Exception:
+        return
+    try:
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        signal_id = f"crypto-{strategy}-{symbol.replace('/', '')}-{ts}"
+        payload = dict(raw_signal or {})
+        if rsi is not None and "rsi" not in payload:
+            payload["rsi"] = rsi
+        payload.setdefault("signal_state", signal_state)
+        record_opportunity(
+            signal_id=signal_id,
+            strategy=strategy,
+            symbol=symbol,
+            raw_signal=payload,
+            confidence_score=None,
+            confidence_components=(confidence_inputs or {}),
+            risk_decision=signal_state,
+            gate_decisions=gate_decisions or [],
+            rejection_reasons=rejection_reasons or [],
+            market_regime=market_regime,
+            universe_status=universe_status,
+            paper_action=paper_action,
+            shadow_action=None,
+            audit_link=audit_link,
+        )
+    except Exception as _e:
+        # Observability layer never breaks the monitor.
+        print(f"  opportunity-ledger emit failed (non-fatal): "
+              f"{type(_e).__name__}")
+
 # Default: AUTO_EXECUTE via Alpaca REST. USE_ROUTINE=true -> legacy worker path.
 USE_ROUTINE = os.environ.get("USE_ROUTINE", "false").lower() == "true"
 
@@ -345,6 +406,15 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
         if tier == 2 and btc_1h_change is not None \
                 and btc_1h_change <= BTC_DOMINANCE_GUARD_PCT:
             print(f"  {symbol}: BTC 1h={btc_1h_change:+.2f}% — oversold-bounce alt long BLOCKED")
+            _emit_opportunity(
+                strategy="crypto-oversold-bounce", symbol=symbol,
+                signal_state="REJECT", rsi=rsi, raw_signal=common,
+                gate_decisions=[{"gate": "regime", "decision": "BLOCK",
+                                 "reason": f"btc_1h={btc_1h_change:+.2f}% <= "
+                                           f"dominance_guard={BTC_DOMINANCE_GUARD_PCT}%"}],
+                rejection_reasons=["btc_dominance_guard"],
+                paper_action="rejected",
+            )
             # Fall through to brak sygnału (don't enter)
         else:
             # Wider stop on oversold-bounce (further from entry) — bounce
@@ -355,13 +425,21 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
                   f"RSI={rsi:.1f} ≤ {OVERSOLD_BOUNCE_RSI_MAX} "
                   f"24h={move_24h:+.2f}% reversal (prior={closes[-2]:.2f} → {current_price:.2f}) "
                   f"vol={common['volume_ratio']}x")
-            return {**common,
+            sig = {**common,
                 "action":      "BUY",
                 "strategy":    "crypto-oversold-bounce",
                 "stop_loss":   stop_loss,
                 "take_profit": take_profit,
                 "size_usd":    cfg["size_long"],
             }
+            _emit_opportunity(
+                strategy="crypto-oversold-bounce", symbol=symbol,
+                signal_state="DETECTED", rsi=rsi, raw_signal=sig,
+                gate_decisions=[{"gate": "quality", "decision": "PASS",
+                                 "reason": "oversold_bounce_setup"}],
+                paper_action="signal_detected",
+            )
+            return sig
 
     # ── PREDATOR FILTERS (apply BEFORE breakout check to short-circuit) ──
     if move_24h is not None and not (
@@ -369,6 +447,16 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
     ):
         print(f"  {symbol}: move_24h={move_24h:+.2f}% poza zakresem "
               f"[{MOMENTUM_24H_MIN_PCT}%..{MOMENTUM_24H_MAX_PCT}%] — skip")
+        _emit_opportunity(
+            strategy="crypto-momentum", symbol=symbol,
+            signal_state="REJECT", rsi=rsi, raw_signal=common,
+            gate_decisions=[{"gate": "quality", "decision": "BLOCK",
+                             "reason": f"predator_bracket move_24h={move_24h:+.2f}% "
+                                       f"outside [{MOMENTUM_24H_MIN_PCT},"
+                                       f"{MOMENTUM_24H_MAX_PCT}]"}],
+            rejection_reasons=["predator_bracket"],
+            paper_action="rejected",
+        )
         return None
 
     # ── LONG entry ─────────────────────────────────────────────────────
@@ -380,18 +468,35 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
                 and btc_1h_change <= BTC_DOMINANCE_GUARD_PCT:
             print(f"  {symbol}: BTC 1h={btc_1h_change:+.2f}% (<= {BTC_DOMINANCE_GUARD_PCT}%) "
                   f"— alt long BLOCKED (BTC crash)")
+            _emit_opportunity(
+                strategy="crypto-momentum", symbol=symbol,
+                signal_state="REJECT", rsi=rsi, raw_signal=common,
+                gate_decisions=[{"gate": "regime", "decision": "BLOCK",
+                                 "reason": f"btc_dominance_guard "
+                                           f"btc_1h={btc_1h_change:+.2f}%"}],
+                rejection_reasons=["btc_dominance_guard"],
+                paper_action="rejected",
+            )
             return None
         stop_loss   = round(current_price * (1 - sl_pct), 4)
         take_profit = round(current_price * (1 + tp_pct), 4)
         print(f"  LONG {symbol} [T{tier}]: ${current_price:.2f} > high20=${high_20:.2f}, "
               f"RSI={rsi:.1f}, vol={common['volume_ratio']}x, 24h={common['move_24h_pct']}%")
-        return {**common,
+        sig = {**common,
             "action":      "BUY",
             "strategy":    "crypto-momentum",
             "stop_loss":   stop_loss,
             "take_profit": take_profit,
             "size_usd":    cfg["size_long"],
         }
+        _emit_opportunity(
+            strategy="crypto-momentum", symbol=symbol,
+            signal_state="DETECTED", rsi=rsi, raw_signal=sig,
+            gate_decisions=[{"gate": "quality", "decision": "PASS",
+                             "reason": "breakout_long"}],
+            paper_action="signal_detected",
+        )
+        return sig
 
     # ── SHORT entry ────────────────────────────────────────────────────
     # Gated by ENABLE_CRYPTO_SHORT (default False as of v3.8.1) — Alpaca
@@ -406,23 +511,47 @@ def check_crypto_signal(symbol: str, btc_1h_change: float | None
             print(f"  SHORT {symbol} [T{tier}] detected but NOT emitted — "
                   f"crypto-breakdown disabled (Alpaca paper crypto = LONG-only). "
                   f"price=${current_price:.2f} low20=${low_20:.2f} RSI={rsi:.1f}")
+            _emit_opportunity(
+                strategy="crypto-breakdown", symbol=symbol,
+                signal_state="REJECT", rsi=rsi, raw_signal=common,
+                gate_decisions=[{"gate": "universe", "decision": "BLOCK",
+                                 "reason": "alpaca_paper_crypto_long_only"}],
+                rejection_reasons=["short_disabled"],
+                paper_action="rejected",
+            )
             return None
         stop_loss   = round(current_price * (1 + sl_pct), 4)
         take_profit = round(current_price * (1 - tp_pct), 4)
         print(f"  SHORT {symbol} [T{tier}]: ${current_price:.2f} < low20=${low_20:.2f}, "
               f"RSI={rsi:.1f}, vol={common['volume_ratio']}x, 24h={common['move_24h_pct']}%")
-        return {**common,
+        sig = {**common,
             "action":      "SELL_SHORT",
             "strategy":    "crypto-breakdown",
             "stop_loss":   stop_loss,
             "take_profit": take_profit,
             "size_usd":    cfg["size_short"],
         }
+        _emit_opportunity(
+            strategy="crypto-breakdown", symbol=symbol,
+            signal_state="DETECTED", rsi=rsi, raw_signal=sig,
+            gate_decisions=[{"gate": "quality", "decision": "PASS",
+                             "reason": "breakdown_short"}],
+            paper_action="signal_detected",
+        )
+        return sig
 
     print(
         f"  {symbol} [T{tier}]: ${current_price:.2f} hi20=${high_20:.2f} lo20=${low_20:.2f} "
         f"RSI={f'{rsi:.1f}' if rsi else 'N/A'} vol={common['volume_ratio']}x "
         f"24h={common['move_24h_pct']}% — brak sygnału"
+    )
+    _emit_opportunity(
+        strategy="crypto-momentum", symbol=symbol,
+        signal_state="NO_SIGNAL", rsi=rsi, raw_signal=common,
+        gate_decisions=[{"gate": "quality", "decision": "BLOCK",
+                         "reason": "no_setup_breakout_or_bounce"}],
+        rejection_reasons=["no_setup"],
+        paper_action="rejected",
     )
     return None
 
@@ -545,10 +674,29 @@ def run_scan():
         if signal["tier"] >= 2 and signal["action"] == "BUY" and alt_open >= MAX_ALT_POSITIONS:
             print(f"  >>> {symbol} skipped — alt cap ({alt_open}/{MAX_ALT_POSITIONS})")
             rejected_alt_cap += 1
+            _emit_opportunity(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                symbol=symbol, signal_state="REJECT",
+                rsi=signal.get("rsi"), raw_signal=signal,
+                gate_decisions=[{"gate": "risk", "decision": "BLOCK",
+                                 "reason": f"alt_cap {alt_open}/"
+                                           f"{MAX_ALT_POSITIONS}"}],
+                rejection_reasons=["alt_cap"],
+                paper_action="rejected",
+            )
             continue
         if has_open_position(symbol):
             print(f"  >>> {signal['action']} {symbol} pominięty (otwarta pozycja)")
             rejected_open_pos += 1
+            _emit_opportunity(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                symbol=symbol, signal_state="REJECT",
+                rsi=signal.get("rsi"), raw_signal=signal,
+                gate_decisions=[{"gate": "risk", "decision": "BLOCK",
+                                 "reason": "duplicate_position"}],
+                rejection_reasons=["duplicate_position"],
+                paper_action="rejected",
+            )
             continue
         candidates.append(signal)
 
@@ -612,6 +760,16 @@ def run_scan():
         if not ok:
             print(f"  >>> {signal['action']} {signal['symbol']} pominięty "
                   f"(concentration {combined:.1f}% > 40%)")
+            _emit_opportunity(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                symbol=signal["symbol"], signal_state="REJECT",
+                rsi=signal.get("rsi"), raw_signal=signal,
+                gate_decisions=[{"gate": "risk", "decision": "BLOCK",
+                                 "reason": f"concentration "
+                                           f"{combined:.1f}% > 40%"}],
+                rejection_reasons=[f"concentration:{combined:.1f}"],
+                paper_action="rejected",
+            )
             continue
         signal["size_usd"] = new_size
         # v3.14.0 — populate confidence_inputs for risk_officer gate
@@ -642,6 +800,25 @@ def run_scan():
         sent = send_alert(signal)
         if sent:
             alerts_sent += 1
+            _emit_opportunity(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                symbol=signal["symbol"], signal_state="APPROVE",
+                rsi=signal.get("rsi"), raw_signal=signal,
+                gate_decisions=[{"gate": "risk", "decision": "PASS",
+                                 "reason": "executed_via_alpaca"}],
+                paper_action="executed",
+                audit_link=f"alpaca:order:{signal['symbol'].replace('/', '')}",
+            )
+        else:
+            _emit_opportunity(
+                strategy=signal.get("strategy", "crypto-momentum"),
+                symbol=signal["symbol"], signal_state="REJECT",
+                rsi=signal.get("rsi"), raw_signal=signal,
+                gate_decisions=[{"gate": "risk", "decision": "BLOCK",
+                                 "reason": "alpaca_reject_or_deferred"}],
+                rejection_reasons=["alpaca_reject_or_deferred"],
+                paper_action="rejected",
+            )
         # Pass reason so notify subject shows [DEFERRED] / [NOT-SENT] instead
         # of "[SELL]" with generic "Alert NOT sent (error)" body.
         notify_signal(signal, sent, reason="" if sent else "alpaca_reject")
