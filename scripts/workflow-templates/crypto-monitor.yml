@@ -68,16 +68,23 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet learning-loop/runtime_state.json 2>/dev/null; then
-            echo "no runtime_state changes"
-            exit 0
+          # v3.22.2 (2026-06-07) — also persist opportunity_ledger entries
+          # written by the 13 _emit_opportunity sites + halt-emit paths.
+          # Without this, the ledger never reaches origin and the entire
+          # v3.22 evidence flow stays dormant.
+          if git diff --quiet learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null; then
+            if [ ! -d learning-loop/opportunity_ledger ] || \
+               [ -z "$(ls -A learning-loop/opportunity_ledger 2>/dev/null)" ]; then
+              echo "no runtime_state or ledger changes"
+              exit 0
+            fi
           fi
           git pull --ff-only origin main 2>/dev/null || true
-          git add learning-loop/runtime_state.json
+          git add learning-loop/runtime_state.json learning-loop/opportunity_ledger/ 2>/dev/null || true
           if git diff --cached --quiet 2>/dev/null; then
             exit 0
           fi
-          git commit -m "crypto-monitor: routine_budget state $(date -u +%Y-%m-%d_%H%M) [automerge]" || exit 0
+          git commit -m "crypto-monitor: runtime_state + opportunity_ledger $(date -u +%Y-%m-%d_%H%M) [automerge]" || exit 0
           for attempt in 1 2 3; do
             if git push origin "${GITHUB_REF_NAME:-main}"; then
               exit 0
