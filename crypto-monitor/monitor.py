@@ -630,13 +630,34 @@ def run_scan():
 
     # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
     account = get_account_status()
-    dd_status, _ = daily_drawdown_guard(account=account)
+    dd_status, dd_reason = daily_drawdown_guard(account=account)
     if dd_status == "HALT":
+        # v3.22.1 — observability emit so the operator can see WHY no
+        # signals were evaluated. The halt itself is correct + unchanged;
+        # this is a fail-soft diagnostic record only.
+        for _sym in ("BTC/USD", "ETH/USD"):
+            _emit_opportunity(
+                strategy="crypto-momentum",
+                symbol=_sym,
+                signal_state="HALTED_BY_DRAWDOWN_GUARD",
+                rejection_reasons=[f"daily_drawdown_guard:{dd_reason}"],
+                paper_action="halted",
+                market_regime="RISK_OFF",
+            )
         notify_summary("Crypto Monitor", 0, 0)
         return
 
     vix_status, size_mult = vix_guard()
     if vix_status == "HALT":
+        for _sym in ("BTC/USD", "ETH/USD"):
+            _emit_opportunity(
+                strategy="crypto-momentum",
+                symbol=_sym,
+                signal_state="HALTED_BY_VIX_GUARD",
+                rejection_reasons=["vix_guard:HALT"],
+                paper_action="halted",
+                market_regime="RISK_OFF",
+            )
         notify_summary("Crypto Monitor", 0, 0)
         return
 

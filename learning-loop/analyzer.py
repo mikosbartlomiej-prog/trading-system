@@ -1361,6 +1361,15 @@ def run():
     llm_narrative_lines: list[str] = []
 
     if llm_resp:
+        # v3.22.1 — record successful LLM run so the consecutive_failures
+        # counter resets and any pending REVIEW_LLM_OUTAGE doesn't keep
+        # re-enqueuing.
+        try:
+            sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+            from llm_availability import record_run as _llm_record_run  # noqa: E402
+            _llm_record_run(success=True, reason="senior_pm_ok")
+        except Exception as _e:
+            print(f"  llm_availability.record_run failed: {_e}")
         # Apply overrides (whitelist-enforced)
         overrides = llm_resp.get("state_overrides") or {}
         new_state, applied = safe_apply_overrides(new_state, overrides)
@@ -1500,6 +1509,15 @@ def run():
         llm_narrative_lines.append(
             f"{date_iso} · LLM unavailable (skipped) — deterministic adapter only"
         )
+        # v3.22.1 (2026-06-07) — record LLM availability + escalate to
+        # operator action queue after 2 consecutive failures. NEVER
+        # auto-clears the LLM override lock (operator-only).
+        try:
+            sys.path.insert(0, os.path.join(LEARNING_DIR, "..", "shared"))
+            from llm_availability import record_run as _llm_record_run  # noqa: E402
+            _llm_record_run(success=False, reason="senior_pm_unavailable")
+        except Exception as _e:
+            print(f"  llm_availability.record_run failed: {_e}")
 
     # Merge deterministic + LLM rationale into one log entry block
     full_rationale = llm_narrative_lines + rationale

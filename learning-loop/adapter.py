@@ -342,6 +342,27 @@ def _flag_silent_strategies(state: dict, today_stats: dict,
                             f"{last_llm_at} active ({days_since_llm}d ago "
                             f"< {LLM_OVERRIDE_LOCK_DAYS}d lock) → keep enabled"
                         )
+                        # v3.22.1 — escalate to operator action queue when
+                        # LLM is unavailable AND this strategy is in a long
+                        # silence that the lock cannot be revised away from.
+                        try:
+                            import sys, os
+                            sys.path.insert(
+                                0,
+                                os.path.join(
+                                    os.path.dirname(__file__), "..", "shared"
+                                ),
+                            )
+                            from llm_availability import (  # noqa: E402
+                                escalate_silent_strategy_lock,
+                            )
+                            escalate_silent_strategy_lock(
+                                strategy=name,
+                                silent_days=int(days_tracked),
+                                last_override_iso=last_llm_at,
+                            )
+                        except Exception:
+                            pass  # fail-soft — escalation must not break adapter
                         continue
                 except (ValueError, TypeError):
                     pass  # malformed date → fall through
