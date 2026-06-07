@@ -130,4 +130,10 @@ INTRADAY_SECTIONS = frozenset({
     # actions bypass the budget (BUDGET_BYPASSES_SAFETY = True).
     # Writer = "evidence-budget".
     "evidence_budget",
+    # v3.22.0 (2026-06-07) — LLM availability tracker.
+    # Counts consecutive Senior PM unavailability runs and stamps
+    # last_run_at/last_success/history. After thresholds, escalates
+    # to operator_action_queue (non-auto-apply by design).
+    # Writer = "llm-availability".
+    "llm_availability",
 })

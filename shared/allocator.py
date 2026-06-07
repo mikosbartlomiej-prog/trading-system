@@ -1196,9 +1196,41 @@ class AccountAwareAllocator:
             result["reason"] = f"BUY {abs(qty):.4f} @ ${ref_price:.2f}"
             self.trace.info(f"{sym} BUY placed: {result['reason']}  id={resp['id']}", indent=2)
         else:
+            # v3.22 (2026-06-07) — structured rejection capture replaces
+            # the bare "Alpaca rejected order (see stdout)" line. resp may
+            # be None or a dict carrying http_status/exception_str/
+            # response_body when alpaca_orders.py decorates the failure.
             result["status"] = "failed"
-            result["reason"] = "Alpaca rejected order (see stdout)"
-            self.trace.err(f"{sym} BUY failed", indent=2)
+            try:
+                from order_rejection_audit import (
+                    build_rejection_payload, format_reason_line, emit_audit,
+                )
+            except ImportError:
+                from shared.order_rejection_audit import (  # type: ignore
+                    build_rejection_payload, format_reason_line, emit_audit,
+                )
+            r = resp if isinstance(resp, dict) else {}
+            payload = build_rejection_payload(
+                symbol=sym,
+                side="buy",
+                order_qty=qty,
+                order_notional=(qty * ref_price) if (qty and ref_price) else None,
+                http_status=r.get("http_status"),
+                exception_str=r.get("exception_str") or r.get("error"),
+                response_body=r.get("response_body"),
+                strategy="allocator-rebalance",
+            )
+            result["rejection_category"] = payload["rejection_category"]
+            result["http_status"] = payload["http_status"]
+            result["alpaca_message"] = payload["alpaca_message"]
+            result["order_notional"] = payload["order_notional"]
+            result["order_qty"] = payload["order_qty"]
+            result["reason"] = format_reason_line(payload)
+            try:
+                emit_audit(payload)
+            except Exception:
+                pass
+            self.trace.err(f"{sym} BUY failed: {result['reason']}", indent=2)
         return result
 
     def _exec_reduce(self, order: dict, sym: str, qty: float,
