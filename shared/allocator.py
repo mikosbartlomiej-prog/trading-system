@@ -850,14 +850,64 @@ class AccountAwareAllocator:
             key=lambda o: action_priority.get(o.get("action", ""), 9),
         )
 
+        # ── ETAP 3 (incident 2026-06-07): BP / over-allocation pre-check ──
+        # Deterministic gate that drops tail BUY orders whose cumulative
+        # notional would exceed available BP or breach the gross exposure
+        # cap. Non-BUYs (EXIT/REDUCE) pass through untouched — they free
+        # capital. Fail-soft when account_status is unavailable.
+        try:
+            try:
+                from allocator_bp_guard import check_buying_power_pre_execution
+            except ImportError:
+                from shared.allocator_bp_guard import check_buying_power_pre_execution
+            try:
+                from risk_guards import get_account_status, get_open_positions
+            except ImportError:
+                from shared.risk_guards import get_account_status, get_open_positions
+            acct = get_account_status() or {}
+            positions = get_open_positions() or []
+            bp_check = check_buying_power_pre_execution(
+                sorted_orders, acct, positions,
+            )
+            self.trace.info(
+                "bp_guard: "
+                f"requested ${bp_check['total_requested_notional']:.0f} "
+                f"available ${bp_check['total_available_bp']:.0f} "
+                f"open_exposure ${bp_check['total_open_exposure']:.0f} | "
+                f"{bp_check['reason']}"
+            )
+            if bp_check.get("warning"):
+                self.trace.warn(f"bp_guard: {bp_check['warning']}")
+            # Surface deferred orders as execution results so they show up
+            # in <date>.execution.json — the operator can see exactly which
+            # BUYs were dropped and why.
+            for d in bp_check["deferred_orders"]:
+                results.append({
+                    "symbol":         d.get("symbol", ""),
+                    "action":         d.get("action", ""),
+                    "asset_class":    d.get("asset_class", "us_equity"),
+                    "status":         "deferred_bp",
+                    "reason":         d.get("deferred_reason", ""),
+                    "bp_projected":   d.get("bp_projected"),
+                    "bp_available":   d.get("bp_available"),
+                    "exposure_projected": d.get("exposure_projected"),
+                    "exposure_cap_usd":   d.get("exposure_cap_usd"),
+                    "attempted_at":   _utcnow_iso(),
+                })
+            sorted_orders = list(bp_check["allowed_orders"])
+        except Exception as e:  # noqa: BLE001  fail-soft contract
+            self.trace.warn(f"bp_guard: gate error (fail-soft, proceeding): {e}")
+
         for o in sorted_orders:
             results.append(self._execute_one(o, market_open, defensive["active"]))
 
         n_placed = sum(1 for r in results if r["status"] == "placed")
         n_skipped = sum(1 for r in results if r["status"] == "skipped")
         n_failed = sum(1 for r in results if r["status"] == "failed")
+        n_deferred_bp = sum(1 for r in results if r["status"] == "deferred_bp")
         self.trace.info(
-            f"execution complete: {n_placed} placed, {n_skipped} skipped, {n_failed} failed"
+            f"execution complete: {n_placed} placed, {n_skipped} skipped, "
+            f"{n_failed} failed, {n_deferred_bp} deferred_bp"
         )
         return results
 
