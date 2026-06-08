@@ -1,8 +1,70 @@
 # Alpaca Paper Position Reconciliation Report
 
-**Generated:** 2026-06-08 (UPDATED after operator manual dashboard verification)
+**Generated:** 2026-06-08 (v3.23.1 — refined AMD after operator pulled Order History)
 **Status:** `DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE`
 **Previous report status:** `STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED`
+
+## v3.23.1 update — AMD now reconciled
+
+After v3.23 shipped the broker-state reconciliation modules,
+operator pulled the actual Alpaca paper Order History for AMD and
+provided sanitized values. AMD is no longer in the
+`BROKER_SIDE_CLOSED_OR_DASHBOARD_VERIFIED_NOT_OPEN` bucket — it's
+now in the more precise `EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD`
+status, with secondary audit-gap finding
+`MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`.
+
+### AMD trade pair (from sanitized manual Order History)
+
+| Side | Type | Qty | Avg fill | Total $ | Filled at | Submitter |
+| --- | --- | --- | --- | --- | --- | --- |
+| buy_to_open | limit | 34 | $497.875 | $16,927.75 | 2026-06-05T15:39:57-04:00 | access_key |
+| sell_to_close | **market** | 34 | $485.02 | $16,490.68 | 2026-06-05T17:35:45-04:00 | **access_key** |
+
+Plus 2 canceled protective orders (do NOT count as fills):
+
+- Limit sell_to_close @ $558.33 canceled 2026-06-05T16:00:48-04:00
+- Stop sell_to_close @ $473.58 canceled 2026-06-05T16:00:43-04:00
+
+### AMD realized P/L
+
+| Field | Value |
+| --- | --- |
+| Buy total | $16,927.75 |
+| Sell total | $16,490.68 |
+| Realized P/L | **-$437.07** |
+| P/L % | **-2.58%** |
+
+### Audit gap finding
+
+The close was a market sell submitted via Alpaca `access_key` but
+NO matching `safe_close` event exists in
+`journal/autonomy/2026-06-04.jsonl` or `2026-06-05.jsonl`. This is
+the v3.23.1 finding `MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`.
+Some external script/manual workflow/one-shot bypassed
+`shared/alpaca_orders.py::safe_close()`. Required action:
+**`INVESTIGATE_MARKET_CLOSE_WITHOUT_SAFE_CLOSE_AUDIT`**.
+
+### Impact on drawdown
+
+- AMD's -$437 explains **only ~7.6% of the -$5,741 baseline drop**.
+- Remaining ~-$5,304 likely from the CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL
+  `safe_close` cycle at 06-04 14:00-14:20 UTC, but exact fill prices
+  are still pending operator extraction from the dashboard.
+
+### Older AMD trades (May 27/28/29, Jun 03)
+
+Operator also provided older AMD rows. **They are intentionally
+NOT used in this incident reconstruction** because (a) they
+belong to different open/close cycles outside the 2026-06-04
+allocator-batch window, and (b) the system has no matching local
+open/close events for them in the incident window. They are
+documented in
+`learning-loop/position_reconciliation/manual_order_history_AMD_2026-06-04.json`
+under `ignored_trade_pairs` for audit completeness.
+
+---
+
 
 ## TL;DR — what's actually open vs what local state thinks
 

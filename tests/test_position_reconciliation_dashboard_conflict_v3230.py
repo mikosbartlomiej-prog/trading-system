@@ -113,12 +113,26 @@ class TestFailSoft(unittest.TestCase):
 
 class TestNoOrderPlacingInModule(unittest.TestCase):
     def test_module_does_not_import_alpaca_orders(self):
+        # AST-walk: no Call nodes naming forbidden functions, no
+        # Import/ImportFrom of alpaca_orders. Docstrings/comments are
+        # skipped by AST so they can legitimately mention safe_close
+        # as the diagnosed mechanism.
+        import ast
         src = (REPO_ROOT / "shared" / "position_reconciliation_status.py").read_text()
-        for forbidden in [
-            "from alpaca_orders", "import alpaca_orders",
-            "place_stock_bracket(", "safe_close(", "place_crypto_order(",
-        ]:
-            self.assertNotIn(forbidden, src)
+        tree = ast.parse(src)
+        forbidden_names = {"place_stock_bracket", "place_crypto_order",
+                            "place_simple_buy", "safe_close"}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                name = (func.id if isinstance(func, ast.Name)
+                         else func.attr if isinstance(func, ast.Attribute)
+                         else None)
+                if name in forbidden_names:
+                    self.fail(f"forbidden call to {name!r}")
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                if getattr(node, "module", None) == "alpaca_orders":
+                    self.fail("forbidden import of alpaca_orders")
 
 
 if __name__ == "__main__":

@@ -54,6 +54,19 @@ STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN        = "STALE_LOCAL_CLOSED_BUT_DASHBOARD
 STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN_DUST   = "STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN_DUST"
 VERIFIED_CLOSED_FROM_AUDIT_SAFE_CLOSE        = "VERIFIED_CLOSED_FROM_AUDIT_SAFE_CLOSE"
 
+# v3.23.1 (2026-06-08) — refined AMD-style closes after operator
+# provided manual Order History extracts from the dashboard.
+DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED       = "DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED"
+EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD = (
+    "EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD"
+)
+# Secondary issue marker (not a reconciliation status itself but
+# emitted alongside when applicable). The actual market sell_to_close
+# was placed via Alpaca access_key but no safe_close audit row exists.
+MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT = (
+    "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT"
+)
+
 ALL_STATUSES: frozenset[str] = frozenset({
     VERIFIED_OPEN,
     VERIFIED_CLOSED,
@@ -71,6 +84,8 @@ ALL_STATUSES: frozenset[str] = frozenset({
     STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN,
     STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN_DUST,
     VERIFIED_CLOSED_FROM_AUDIT_SAFE_CLOSE,
+    DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED,
+    EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD,
 })
 
 # Module invariants — test-asserted.
@@ -142,14 +157,62 @@ def classify(
     broker_evidence: str | None,
     has_audit_safe_close: bool = False,
     dust: bool = False,
+    manual_order_history_evidence: bool = False,
+    manual_order_history_close_type: str | None = None,
+    submitter_source: str | None = None,
 ) -> ReconciliationResult:
     """Return a deterministic reconciliation status.
 
     See docstring of module for input semantics.
     Pure function — no I/O.
+
+    v3.23.1: when ``manual_order_history_evidence`` is True (operator
+    has provided a sanitized order-history row from the Alpaca paper
+    dashboard with explicit close type and submitter source), the
+    classifier returns a more precise status:
+
+    - DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED (any close type, any
+      submitter)
+    - EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD (market sell
+      via ``access_key`` submitter — signals an audit-gap finding
+      that the caller should attach separately)
     """
     local = _norm_local(local_state)
     broker = _norm_broker(broker_evidence)
+
+    # 0. (v3.23.1) Manual order-history evidence takes precedence over
+    #    the loose "dashboard says not_open" inference because we now
+    #    have a concrete close order id + price + timestamp.
+    if manual_order_history_evidence:
+        cls = (manual_order_history_close_type or "").strip().lower()
+        sub = (submitter_source or "").strip().lower()
+        if cls == "market" and sub == "access_key":
+            return ReconciliationResult(
+                symbol=symbol,
+                status=EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD,
+                rationale=(
+                    "Operator-provided Order History row shows the close was a "
+                    "market sell_to_close placed via Alpaca access_key submitter. "
+                    "Position is verified closed, but the absence of a local "
+                    "safe_close audit row indicates an external script bypassed "
+                    "shared/alpaca_orders.py::safe_close(). "
+                    "See: MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT."
+                ),
+                local_state=local_state, broker_evidence=broker_evidence,
+                has_audit_safe_close=has_audit_safe_close, dust=dust,
+                requires_api_followup=False,
+            )
+        return ReconciliationResult(
+            symbol=symbol,
+            status=DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED,
+            rationale=(
+                "Operator-provided Order History row verifies the position is "
+                "closed. Close price and timestamp are known."
+            ),
+            local_state=local_state, broker_evidence=broker_evidence,
+            has_audit_safe_close=has_audit_safe_close, dust=dust,
+            requires_api_followup=False,
+        )
 
     # 1. Dashboard NOT_OPEN + has safe_close → audit-verified closed.
     if broker in ("dashboard_not_open", "api_not_open") and has_audit_safe_close:
@@ -326,6 +389,9 @@ __all__ = [
     "STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN",
     "STALE_LOCAL_CLOSED_BUT_DASHBOARD_OPEN_DUST",
     "VERIFIED_CLOSED_FROM_AUDIT_SAFE_CLOSE",
+    "DASHBOARD_ORDER_HISTORY_VERIFIED_CLOSED",
+    "EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD",
+    "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
     "ALL_STATUSES",
     # Invariants
     "NEVER_CLOSES_POSITIONS", "NEVER_MODIFIES_POSITIONS",

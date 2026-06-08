@@ -1,0 +1,98 @@
+{
+  "source": "OPERATOR_ORDER_HISTORY_MANUAL",
+  "source_caveats": [
+    "manual operator extraction from Alpaca paper dashboard 'Order History'",
+    "NOT a full Alpaca API account history call",
+    "NOT a substitute for /v2/orders or /v2/account/activities API responses",
+    "operator manually transcribed values; precision is what was visible in the dashboard UI"
+  ],
+  "captured_at_iso": "2026-06-08T11:45:00+00:00",
+  "account_label": "Alpaca Paper (per CLAUDE.md reference)",
+  "symbol": "AMD",
+  "incident_window": "2026-06-04 to 2026-06-05",
+  "trade_pair_used_for_incident_reconstruction": {
+    "open": {
+      "order_id":          "d13937df-c4aa-4ba3-b06a-375e6b6db799",
+      "type":              "limit",
+      "side":              "buy_to_open",
+      "qty":               34,
+      "filled_qty":        34,
+      "avg_fill_price":    497.875,
+      "total_amount_usd":  16927.75,
+      "submitted_at_iso":  "2026-06-04T15:45:32-04:00",
+      "filled_at_iso":     "2026-06-05T15:39:57-04:00",
+      "status":            "filled",
+      "submitter_source":  "access_key"
+    },
+    "close": {
+      "order_id":          "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+      "type":              "market",
+      "side":              "sell_to_close",
+      "qty":               34,
+      "filled_qty":        34,
+      "avg_fill_price":    485.02,
+      "total_amount_usd":  16490.68,
+      "submitted_at_iso":  "2026-06-05T17:35:44-04:00",
+      "filled_at_iso":     "2026-06-05T17:35:45-04:00",
+      "status":            "filled",
+      "submitter_source":  "access_key",
+      "audit_gap_note": "No local safe_close event in journal/autonomy/2026-06-04.jsonl OR 2026-06-05.jsonl matches this market sell. The submitter_source=access_key indicates an API-key-authenticated caller, but no local audit row was written."
+    },
+    "canceled_protective_orders": [
+      {
+        "type":           "limit",
+        "side":           "sell_to_close",
+        "qty":            34,
+        "limit_price":    558.33,
+        "status":         "canceled",
+        "canceled_at_iso": "2026-06-05T16:00:48-04:00",
+        "purpose":        "take_profit_child",
+        "note":           "Canceled, so does NOT count as fill"
+      },
+      {
+        "type":           "stop",
+        "side":           "sell_to_close",
+        "qty":            34,
+        "stop_price":     473.58,
+        "status":         "canceled",
+        "canceled_at_iso": "2026-06-05T16:00:43-04:00",
+        "purpose":        "stop_loss_child",
+        "note":           "Canceled, so does NOT count as fill"
+      }
+    ]
+  },
+  "ignored_trade_pairs": {
+    "note": [
+      "Operator also provided AMD rows from 2026-05-27, 2026-05-28, 2026-05-29, 2026-06-03.",
+      "Those are intentionally NOT used for the 2026-06-04 incident reconstruction",
+      "because (a) they belong to different open/close cycles outside the 2026-06-04",
+      "BUYs-on-allocator-batch window, and (b) the system has no matching local",
+      "open/close events for them within the incident window. They are documented",
+      "here for audit completeness but not included in the v3.23.1 reconciliation."
+    ]
+  },
+  "realized_pnl_usd": -437.07,
+  "realized_pnl_pct": -2.58,
+  "pnl_check": {
+    "buy_total":  16927.75,
+    "sell_total": 16490.68,
+    "diff":       -437.07,
+    "matches_operator_reported_values": true
+  },
+  "audit_gap_finding": {
+    "kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
+    "evidence": [
+      "Order History shows market sell_to_close filled at 2026-06-05T17:35:45-04:00 with submitter_source=access_key",
+      "journal/autonomy/2026-06-04.jsonl + 2026-06-05.jsonl contain ZERO safe_close events for AMD",
+      "shared/alpaca_orders.py::safe_close() is the local writer that should produce these events",
+      "An external scripted caller (operator manual order, one-shot script, ad-hoc workflow, ...) appears to have submitted the sell without going through safe_close()"
+    ],
+    "operator_action": "INVESTIGATE_MARKET_CLOSE_WITHOUT_SAFE_CLOSE_AUDIT"
+  },
+  "what_this_input_is_not": [
+    "NOT a full Alpaca API /v2/orders dump",
+    "NOT a verified single-source-of-truth for cash / buying power / day-trade count",
+    "NOT a substitute for an authenticated API reconciliation script",
+    "NOT a place to invent fill data; only operator-transcribed fields are used"
+  ]
+}

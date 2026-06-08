@@ -1,11 +1,12 @@
 {
-  "version": "v3.22.5",
-  "generated_at_iso": "2026-06-08T11:15:00+00:00",
+  "version": "v3.23.1",
+  "generated_at_iso": "2026-06-08T12:00:00+00:00",
   "status": "DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE",
   "previous_report_status": "STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED",
-  "reconciliation_source": "operator-dashboard + local-state + audit-jsonl",
+  "reconciliation_source": "operator-dashboard + operator-order-history + local-state + audit-jsonl",
   "alpaca_api_called": false,
   "operator_dashboard_verified": true,
+  "operator_order_history_provided_for": ["AMD"],
   "credentials": {
     "alpaca_api_key_present": false,
     "alpaca_secret_key_present": false,
@@ -32,7 +33,35 @@
   "total_dashboard_market_value_usd": 10965.0,
   "total_dashboard_unrealized_pl_usd": 478.0,
   "previously_inferred_equity_positions_rejected": [
-    {"symbol": "AMD",  "inferred_cost_basis": 16949.34, "audit_safe_close_events_06_04": 0, "actual_dashboard_state": "NOT_OPEN", "anomaly_note": "Zero close events in audit JSONL but dashboard says NOT open — likely bracket SL/TP filled at broker, position-manager runtime state stale"},
+    {
+      "symbol": "AMD",
+      "v3221_status": "BROKER_SIDE_CLOSED_OR_DASHBOARD_VERIFIED_NOT_OPEN",
+      "v3231_status": "EXTERNAL_API_MARKET_CLOSE_VERIFIED_FROM_DASHBOARD",
+      "secondary_finding": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
+      "manual_order_history_source": "learning-loop/position_reconciliation/manual_order_history_AMD_2026-06-04.json",
+      "open_order_id": "d13937df-c4aa-4ba3-b06a-375e6b6db799",
+      "open_qty": 34,
+      "open_avg_fill_price": 497.875,
+      "open_total_usd": 16927.75,
+      "open_filled_at_iso": "2026-06-05T15:39:57-04:00",
+      "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+      "close_type": "market",
+      "close_side": "sell_to_close",
+      "close_qty": 34,
+      "close_avg_fill_price": 485.02,
+      "close_total_usd": 16490.68,
+      "close_filled_at_iso": "2026-06-05T17:35:45-04:00",
+      "close_submitter_source": "access_key",
+      "realized_pnl_usd": -437.07,
+      "realized_pnl_pct": -2.58,
+      "canceled_protective_orders_count": 2,
+      "audit_safe_close_event_present": false,
+      "actual_dashboard_state": "CLOSED",
+      "actions_required": [
+        "INVESTIGATE_MARKET_CLOSE_WITHOUT_SAFE_CLOSE_AUDIT",
+        "IDENTIFY_EXTERNAL_SCRIPT_BYPASSING_SAFE_CLOSE"
+      ]
+    },
     {"symbol": "CRWD", "inferred_cost_basis": 13119.50, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
     {"symbol": "ORCL", "inferred_cost_basis": 13083.06, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
     {"symbol": "PANW", "inferred_cost_basis": 13135.20, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
@@ -44,11 +73,13 @@
   "drawdown_diagnosis": {
     "dashboard_open_positions_explain_drawdown": false,
     "actual_cause": "REALIZED_LOSSES_FROM_RAPID_CLOSE_CYCLE_2026_06_04",
-    "evidence": "journal/autonomy/2026-06-04.jsonl shows 7 safe_close events for CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL within 35 minutes of 13:45 UTC open",
-    "amd_anomaly": "AMD has 0 safe_close events in audit JSONL but is NOT on dashboard — bracket SL/TP likely fired at broker without analyzer attribution",
+    "evidence": "journal/autonomy/2026-06-04.jsonl shows 7 safe_close events for CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL within 35 minutes of 13:45 UTC open; AMD market sell -$437.07 verified from dashboard Order History",
+    "amd_known_realized_loss_usd": -437.07,
+    "amd_does_not_explain_full_drawdown": true,
+    "remaining_drawdown_source_note": "AMD's -$437 explains only ~7.6% of the -$5,741 baseline drop. Remaining ~-$5,304 likely from CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL safe_close cycle but exact fill prices not yet pulled from dashboard.",
     "analyzer_wiring_bug": {
-      "symptom": "state.json::cumulative.total_trades = 0 despite confirmed closes in audit JSONL",
-      "root_cause_hypothesis": "reconstruct_trades in learning-loop/analyzer.py cannot FIFO-pair allocator-rebalance opens with safe_close exits",
+      "symptom": "state.json::cumulative.total_trades = 0 despite confirmed closes in audit JSONL + manual order history",
+      "root_cause_hypothesis": "reconstruct_trades in learning-loop/analyzer.py cannot FIFO-pair allocator-rebalance opens with safe_close exits OR with broker-side market closes",
       "operator_impact": "LLM Senior PM persona sees strategies as SILENT 64 days, blocking deterministic adapter from acting on real RSI signals"
     },
     "baseline_staleness": {
@@ -64,7 +95,7 @@
     "halt_active": true,
     "halt_correctly_blocks_new_entries": true,
     "should_be_disabled": false,
-    "evidence": "learning-loop/opportunity_ledger/2026-06-08.jsonl (86 entries today, all HALTED_BY_DRAWDOWN_GUARD)"
+    "evidence": "learning-loop/opportunity_ledger/2026-06-08.jsonl entries today all HALTED_BY_DRAWDOWN_GUARD"
   },
   "ethusd_status": {
     "lifecycle_local": "TIME_EXPIRED",
@@ -79,7 +110,8 @@
     "orphan_position_ETHUSD": "exit-monitor recurring 403, but position at +$523 → operator review recommended not urgent",
     "position_manager_widely_stale": ["AVAXUSD", "SOLUSD", "LTCUSD", "AMD"],
     "analyzer_trade_attribution_broken": true,
-    "amd_lifecycle_gap": true,
+    "amd_lifecycle_gap_resolved_by_v3231": "AMD is verified closed at $485.02 (-$437.07 realized); secondary audit-gap finding logged",
+    "audit_gap_finding": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT — investigate which external script submitted AMD market sell without going through shared/alpaca_orders.py::safe_close()",
     "buying_power_issue_inferred_06_05": true
   },
   "invariants": {
@@ -91,26 +123,31 @@
     "does_not_place_orders": true,
     "does_not_mutate_state_json": true,
     "does_not_mutate_runtime_state": true,
-    "does_not_lower_drawdown_guard_threshold": true
+    "does_not_lower_drawdown_guard_threshold": true,
+    "does_not_invent_pnl": true
   },
-  "recommendation": "INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY",
-  "secondary_recommendation": "KEEP_DRAWDOWN_GUARD_ACTIVE",
+  "recommendation": "INVESTIGATE_MARKET_CLOSE_WITHOUT_SAFE_CLOSE_AUDIT",
+  "secondary_recommendations": [
+    "RECONSTRUCT_REMAINING_2026_06_04_TRADES_WITH_REAL_FILL_PRICES",
+    "KEEP_DRAWDOWN_GUARD_ACTIVE",
+    "KEEP_EDGE_GATE_DISABLED"
+  ],
   "operator_action_items": [
-    "Verify Alpaca paper Order History 06-04 14:00-15:00 UTC: 7 equity closes should be visible",
-    "Verify AMD trade history: did SL/TP bracket child fire?",
+    "Identify which external script/manual workflow placed the AMD market sell_to_close at 2026-06-05T17:35:45-04:00 without going through shared/alpaca_orders.py::safe_close()",
+    "Pull Order History for CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL to obtain real fill prices and reconcile total realized P&L vs the -$5,741 baseline drop",
     "DO NOT manually close ETHUSD (at +$523 profit)",
-    "DO NOT manually close AVAXUSD (small loss, normal)",
     "DO NOT lower drawdown_guard threshold",
     "DO NOT enable ALLOW_BROKER_PAPER=true",
     "DO NOT flip EDGE_GATE_ENABLED=true",
-    "Consider resetting state.json::cumulative.starting_equity to a fresh baseline (operator-level decision, not automated)",
-    "File a backlog item: fix analyzer.py reconstruct_trades to FIFO-pair allocator-rebalance opens with safe_close exits"
+    "Consider resetting state.json::cumulative.starting_equity to a fresh baseline (operator-level decision, not automated)"
   ],
   "answers_to_spec_questions": {
     "dashboard_confirms_8_equity_positions": "NO",
     "current_dashboard_positions_explain_drawdown": "NO",
     "eth_avax_need_manual_close": "NO",
     "drawdown_guard_should_be_disabled": "NO",
-    "next_action": "INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY + check Alpaca order history for 2026-06-04"
+    "amd_known_now": "YES — verified closed at $485.02 with -$437.07 realized via manual Order History",
+    "amd_explains_full_drawdown": "NO — AMD's -$437 is only ~7.6% of the -$5,741 drop",
+    "next_action": "INVESTIGATE_MARKET_CLOSE_WITHOUT_SAFE_CLOSE_AUDIT + RECONSTRUCT_REMAINING_2026_06_04_TRADES_WITH_REAL_FILL_PRICES"
   }
 }

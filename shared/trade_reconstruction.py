@@ -46,6 +46,8 @@ TRADE_BROKER_SIDE_CLOSE_INFERRED   = "TRADE_BROKER_SIDE_CLOSE_INFERRED"
 TRADE_UNMATCHED_OPEN               = "TRADE_UNMATCHED_OPEN"
 TRADE_UNMATCHED_CLOSE              = "TRADE_UNMATCHED_CLOSE"
 TRADE_PARTIAL_CLOSE                = "TRADE_PARTIAL_CLOSE"
+# v3.23.1 — operator-provided sanitized order-history evidence.
+TRADE_CLOSED_WITH_PNL_MANUAL_ORDER_HISTORY = "TRADE_CLOSED_WITH_PNL_MANUAL_ORDER_HISTORY"
 
 ALL_TRADE_STATUSES: frozenset[str] = frozenset({
     TRADE_CLOSED_WITH_PNL,
@@ -54,6 +56,7 @@ ALL_TRADE_STATUSES: frozenset[str] = frozenset({
     TRADE_UNMATCHED_OPEN,
     TRADE_UNMATCHED_CLOSE,
     TRADE_PARTIAL_CLOSE,
+    TRADE_CLOSED_WITH_PNL_MANUAL_ORDER_HISTORY,
 })
 
 # Invariants — test-asserted.
@@ -363,6 +366,65 @@ def filter_close_events_from_audit(events: list[dict]) -> list[dict]:
     return [e for e in events if _is_close_event(e)]
 
 
+def trade_from_manual_order_history(
+    *,
+    symbol: str,
+    open_qty: float,
+    open_price: float,
+    open_ts: str,
+    close_qty: float,
+    close_price: float,
+    close_ts: str,
+    close_type: str | None = None,
+    submitter_source: str | None = None,
+) -> Trade:
+    """Build a v3.23.1 Trade from operator-provided sanitized Order History.
+
+    Used ONLY when manual operator transcription provides the missing
+    close-side data that audit JSONL doesn't have. Never invents prices.
+    """
+    open_q = _safe_float(open_qty) or 0.0
+    close_q = _safe_float(close_qty) or 0.0
+    op = _safe_float(open_price)
+    cp = _safe_float(close_price)
+    if op is None or cp is None or open_q <= 0 or close_q <= 0:
+        return Trade(
+            symbol=symbol,
+            status=TRADE_CLOSED_PRICE_MISSING,
+            qty=min(open_q, close_q),
+            open_price=op, open_ts=open_ts,
+            open_source="manual_order_history",
+            close_price=cp, close_ts=close_ts,
+            close_source="manual_order_history",
+            realized_pnl_usd=None,
+            notes="manual order history but missing qty/price",
+        )
+    qty = min(open_q, close_q)
+    realized = round((cp - op) * qty, 4)
+    notes_parts = ["paired from operator-provided manual Order History"]
+    if close_type:
+        notes_parts.append(f"close_type={close_type}")
+    if submitter_source:
+        notes_parts.append(f"submitter_source={submitter_source}")
+        if submitter_source.lower() == "access_key" and (close_type or "").lower() == "market":
+            notes_parts.append(
+                "audit-gap: MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT"
+            )
+    return Trade(
+        symbol=symbol,
+        status=TRADE_CLOSED_WITH_PNL_MANUAL_ORDER_HISTORY,
+        qty=qty,
+        open_price=op,
+        open_ts=open_ts,
+        open_source="manual_order_history",
+        close_price=cp,
+        close_ts=close_ts,
+        close_source="manual_order_history",
+        realized_pnl_usd=realized,
+        notes="; ".join(notes_parts),
+    )
+
+
 __all__ = [
     "TRADE_CLOSED_WITH_PNL", "TRADE_CLOSED_PRICE_MISSING",
     "TRADE_BROKER_SIDE_CLOSE_INFERRED",
@@ -375,4 +437,6 @@ __all__ = [
     "reconstruct_v323",
     "filter_open_events_from_audit",
     "filter_close_events_from_audit",
+    "TRADE_CLOSED_WITH_PNL_MANUAL_ORDER_HISTORY",
+    "trade_from_manual_order_history",
 ]
