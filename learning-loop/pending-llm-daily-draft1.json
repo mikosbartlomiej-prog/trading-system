@@ -1,0 +1,52 @@
+{
+  "narrative": "Equity lekko odbiło dziś ($89,822→$90,120, +$298) — koreluje z rosnącym RSI krypto: BTC 8.2→14.3, ETH 13.5→19.1. To jest klasyczny 3-bar stabilization pattern przed odbiciem i czwarty dzień z rzędu tych sygnałów. Ale pipeline krypto wciąż nie odpala (64 dni, 0 tradów) mimo że parametry crypto-oversold-bounce i crypto-momentum są ustawione na ten dokładny setup. Zmieniam options-momentum side_bias z short na null: SPY RSI spadł z 69 do 48.6 — uzasadnienie short-bias całkowicie zniknęło. Priorytet P0 niezmieniony: naprawa pipeline krypto — każda kolejna doba to stracone alpha na historycznie rzadkim setupie.",
+  "regime_assessment": "risk_off",
+  "edge_assessment": "Jedyna działająca strategia to allocator-rebalance (7 tradów, 28.6% WR, +$200.33) — za mała próba na potwierdzenie przewagi statystycznej. Teoretycznie najsilniejsza edge: crypto-oversold-bounce + crypto-momentum przy BTC RSI 14.3 / ETH 19.1 z rosnącym trendem (dno potwierdzone) — ale pipeline structural failure blokuje wykonanie od 64 dni. Geo-* 64d SILENT = confirmed pipeline failure we wszystkich 4 strategiach.",
+  "state_overrides": {
+    "strategies": {
+      "crypto-oversold-bounce": {
+        "size_multiplier": 2.0,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "MAINTAIN 2.0×: BTC RSI 8.2→14.3, ETH 13.5→19.1 w ciągu 24h = trend RSI rosnący potwierdza dno i początek stabilizacji. To jest dokładnie moment wejścia dla tej strategii. Gdy pipeline zostanie naprawiony, 2.0× gwarantuje właściwy rozmiar pozycji na ten historycznie rzadki setup."
+      },
+      "crypto-momentum": {
+        "size_multiplier": 1.5,
+        "side_bias": "long",
+        "enabled": true,
+        "rationale": "MAINTAIN 1.5× hard_safety=true: RSI recovery potwierdza tezę. Parametry właściwe, problem leży wyłącznie w pipeline execution."
+      },
+      "options-momentum": {
+        "size_multiplier": 0.5,
+        "side_bias": null,
+        "enabled": true,
+        "rationale": "ZMIANA side_bias short→null: SPY RSI spadł 69→48.6 = neutral terytorium. Uzasadnienie short-bias zniknęło. Przy 1 tradzie lifetime i braku directional conviction, null jest właściwsze niż forced short-bias. 0.5× rozmiaru utrzymuję jako ostrożnościowy."
+      }
+    },
+    "global_overrides": {
+      "options_side_bias": null
+    }
+  },
+  "new_heuristic_proposals": [
+    {
+      "title": "Crypto pipeline failure escalation: BTC RSI < 20 AND ETH RSI < 25 AND 0 crypto trades 7d → flag in rationale",
+      "lane": "auto_pr",
+      "risk": "low",
+      "rationale": "Przez 4 doby BTC RSI poniżej 20 i 0 crypto trades mimo skrajnej wyprzedaności — adapter.py powinien eksplicytnie flagować ten stan w rationale żeby analityk i operator mieli jeden spójny zapis diagnostyczny. Czysta funkcja, brak I/O, nie zmienia state.",
+      "target_file": "learning-loop/adapter.py",
+      "code_patch": "def heuristic_crypto_pipeline_failure_escalation(today_stats: dict, state: dict) -> tuple:\n    \"\"\"Flag sustained crypto pipeline failure during extreme oversold conditions.\"\"\"\n    rsi_snap = today_stats.get(\"rsi_snapshot\", {})\n    btc_rsi = rsi_snap.get(\"BTC/USD\", {}).get(\"today\", 100)\n    eth_rsi = rsi_snap.get(\"ETH/USD\", {}).get(\"today\", 100)\n    strats = state.get(\"strategies\", {})\n    cm_trades = strats.get(\"crypto-momentum\", {}).get(\"trades_7d\", 0) or 0\n    cb_trades = strats.get(\"crypto-oversold-bounce\", {}).get(\"trades_7d\", 0) or 0\n    if btc_rsi < 20 and eth_rsi < 25 and (cm_trades + cb_trades) == 0:\n        return True, f\"CRYPTO-PIPELINE-ESCALATION: BTC RSI {btc_rsi:.1f} ETH RSI {eth_rsi:.1f} — extreme oversold with 0 crypto trades 7d. Pipeline likely broken. Operator: check crypto-monitor GH Actions logs and Alpaca positions.\"\n    return False, \"\"\n",
+      "test_addition": "class TestCryptoPipelineFailureEscalation(unittest.TestCase):\n    def test_triggers_on_extreme_oversold_no_trades(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 14.3}, \"ETH/USD\": {\"today\": 19.1}}}\n        state = {\"strategies\": {\"crypto-momentum\": {\"trades_7d\": 0}, \"crypto-oversold-bounce\": {\"trades_7d\": 0}}}\n        fired, reason = heuristic_crypto_pipeline_failure_escalation(stats, state)\n        self.assertTrue(fired)\n        self.assertIn(\"CRYPTO-PIPELINE-ESCALATION\", reason)\n\n    def test_no_trigger_when_crypto_trades_exist(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 14.3}, \"ETH/USD\": {\"today\": 19.1}}}\n        state = {\"strategies\": {\"crypto-momentum\": {\"trades_7d\": 1}, \"crypto-oversold-bounce\": {\"trades_7d\": 0}}}\n        fired, _ = heuristic_crypto_pipeline_failure_escalation(stats, state)\n        self.assertFalse(fired)\n\n    def test_no_trigger_when_rsi_normal(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 48.6}, \"ETH/USD\": {\"today\": 52.0}}}\n        state = {\"strategies\": {\"crypto-momentum\": {\"trades_7d\": 0}, \"crypto-oversold-bounce\": {\"trades_7d\": 0}}}\n        fired, _ = heuristic_crypto_pipeline_failure_escalation(stats, state)\n        self.assertFalse(fired)\n\n    def test_no_trigger_when_rsi_missing(self):\n        stats = {\"rsi_snapshot\": {}}\n        state = {\"strategies\": {\"crypto-momentum\": {\"trades_7d\": 0}, \"crypto-oversold-bounce\": {\"trades_7d\": 0}}}\n        fired, _ = heuristic_crypto_pipeline_failure_escalation(stats, state)\n        self.assertFalse(fired)\n\n    def test_no_trigger_eth_rsi_above_threshold(self):\n        stats = {\"rsi_snapshot\": {\"BTC/USD\": {\"today\": 15.0}, \"ETH/USD\": {\"today\": 26.0}}}\n        state = {\"strategies\": {\"crypto-momentum\": {\"trades_7d\": 0}, \"crypto-oversold-bounce\": {\"trades_7d\": 0}}}\n        fired, _ = heuristic_crypto_pipeline_failure_escalation(stats, state)\n        self.assertFalse(fired)\n",
+      "wire_into_adapt_strategy": null
+    },
+    {
+      "title": "Persistent equity gap alert: 2 consecutive days of equity_gap WARN with 0 attributed trades → structured diagnostic email",
+      "lane": "backlog",
+      "risk": "low",
+      "rationale": "Equity spadło $8,327 od szczytu z 0 przypisanymi tradami — drugi dzień z rzędu. SL fills i allocator closes nie są widoczne w atrybucji. Trwały gap powinien wysyłać email z konkretną listą kroków diagnostycznych (check Alpaca /v2/orders?status=closed&after=2d, porównaj z allocations/*.execution.json).",
+      "effort_estimate": "2-3h",
+      "revisit_date": "2026-06-15",
+      "implementation_sketch": "W analyzer.py sprawdź czy history/<date-1>.md też zawierał equity-gap [WARN]. Jeśli tak → wywołaj nowy notify.py::notify_equity_gap_persistent(delta_usd, prev_equity, current_equity, days_count). Email subject: [ATTRIBUTION-GAP-DAY-N]. Body: diagnostyka w 3 krokach (Alpaca orders tab, allocations/*.execution.json, runtime_state.json::intraday_governor). Files: analyzer.py + shared/notify.py."
+    }
+  ],
+  "confidence": "medium"
+}
