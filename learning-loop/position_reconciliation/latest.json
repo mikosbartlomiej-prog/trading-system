@@ -1,6 +1,112 @@
 {
-  "version": "v3.24.0",
-  "generated_at_iso": "2026-06-08T21:00:00+00:00",
+  "version": "v3.25.0",
+  "generated_at_iso": "2026-06-09T00:30:00+00:00",
+  "v325_followups": {
+    "title": "CRYPTO_POSITION_SIZING_LADDERING_EXIT_POLICY_AND_UNLOCK_READINESS",
+    "trigger": "V3_24_REATTRIBUTED_DRAWDOWN_TO_SOL_LTC_CLOSE_CYCLE",
+    "generated_at_iso": "2026-06-09T00:30:00+00:00",
+    "new_modules": {
+      "shared/crypto_exposure_policy.py": {
+        "purpose": "hard crypto exposure / laddering / cooldown policy",
+        "defaults": {
+          "MAX_CRYPTO_GROSS_EXPOSURE_PCT": 0.10,
+          "MAX_CRYPTO_PER_SYMBOL_EXPOSURE_PCT": 0.03,
+          "MAX_CRYPTO_MEANINGFUL_OPEN_SYMBOLS": 2,
+          "MAX_CRYPTO_LADDER_ORDERS_PER_SYMBOL_PER_DAY": 1,
+          "MIN_CRYPTO_BUY_COOLDOWN_MINUTES": 240,
+          "BLOCK_BUY_IF_SYMBOL_ALREADY_OPEN_ABOVE_PCT": 0.01,
+          "BLOCK_BUY_IF_PENDING_ORDER_EXISTS": true,
+          "BLOCK_BUY_IF_DRAWDOWN_GUARD_ACTIVE": true,
+          "BLOCK_BUY_IF_RECENT_REALIZED_CRYPTO_LOSS": true,
+          "RECENT_LOSS_COOLDOWN_HOURS": 72,
+          "RECENT_LOSS_THRESHOLD_USD_ABS": 500.0
+        },
+        "wired_into": "shared/alpaca_orders.py::place_crypto_order via _crypto_exposure_policy_gate (fail-CLOSED for BUY)"
+      },
+      "shared/crypto_exit_policy.py": {
+        "purpose": "structured exit-reason + audit-required + dust-operator-decision + precision guard",
+        "allowed_exit_reasons": [
+          "EXIT_REASON_EMERGENCY", "EXIT_REASON_STOP_LIKE",
+          "EXIT_REASON_TIME_EXPIRY", "EXIT_REASON_RISK_REDUCTION",
+          "EXIT_REASON_OPERATOR_REQUESTED", "EXIT_REASON_TAKE_PROFIT",
+          "EXIT_REASON_REBALANCE", "EXIT_REASON_REGIME_FLIP"
+        ],
+        "market_exit_allowed_reasons": [
+          "EXIT_REASON_EMERGENCY", "EXIT_REASON_STOP_LIKE",
+          "EXIT_REASON_RISK_REDUCTION", "EXIT_REASON_OPERATOR_REQUESTED"
+        ]
+      },
+      "shared/trading_unlock_readiness.py": {
+        "purpose": "deterministic readiness verdict ladder",
+        "verdicts": [
+          "TRADING_UNLOCK_BLOCKED",
+          "SIGNAL_SHADOW_UNLOCK_READY",
+          "BROKER_PAPER_CANARY_NOT_READY",
+          "BROKER_PAPER_CANARY_READY",
+          "LIVE_TRADING_NOT_SUPPORTED"
+        ],
+        "expected_verdict_after_v3_25": "SIGNAL_SHADOW_UNLOCK_READY",
+        "broker_paper_status": "STAYS_BLOCKED"
+      }
+    },
+    "new_tests": [
+      "tests/test_crypto_exposure_policy_v3250.py",
+      "tests/test_crypto_exit_policy_v3250.py",
+      "tests/test_trading_unlock_readiness_v3250.py"
+    ],
+    "incident_report": {
+      "md": "docs/CRYPTO_SOL_LTC_POSITION_SIZING_INCIDENT.md",
+      "json": "learning-loop/position_reconciliation/crypto_sol_ltc_sizing_incident_latest.json",
+      "classification_partial_confirmed": [
+        "CRYPTO_REPEATED_BUY_LADDERING_INTENDED_BUT_UNCAPPED",
+        "CRYPTO_PENDING_ORDER_NOT_CONSIDERED",
+        "CRYPTO_MAX_SYMBOL_EXPOSURE_MISSING",
+        "CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS"
+      ]
+    },
+    "status_tokens_added": [
+      "CRYPTO_HARD_EXPOSURE_CAP_ADDED",
+      "CRYPTO_AGGREGATE_EXPOSURE_CAP_ADDED",
+      "CRYPTO_PER_SYMBOL_EXPOSURE_CAP_ADDED",
+      "CRYPTO_LADDERING_GUARD_ADDED",
+      "CRYPTO_BUY_COOLDOWN_ADDED",
+      "CRYPTO_PENDING_ORDER_PRECHECK_REQUIRED",
+      "CRYPTO_DRAWDOWN_GUARD_BLOCKS_NEW_BUYS",
+      "CRYPTO_RECENT_LOSS_COOLDOWN_ADDED",
+      "CRYPTO_EXIT_AUDIT_REQUIRED",
+      "CRYPTO_EXIT_REASON_REQUIRED",
+      "CRYPTO_DUST_EXIT_OPERATOR_DECISION",
+      "CRYPTO_MARKET_EXIT_REQUIRES_RISK_REASON",
+      "CRYPTO_PRECISION_CLOSE_GUARD_ACTIVE",
+      "SIGNAL_SHADOW_UNLOCK_READY",
+      "BROKER_PAPER_CANARY_NOT_READY"
+    ],
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "operator_verified_no_open_orders": true,
+      "operator_verified_no_open_equity_positions": true,
+      "open_crypto_positions_meaningful": ["ETHUSD", "AVAXUSD"],
+      "open_crypto_positions_dust": ["SOLUSD", "LTCUSD"]
+    },
+    "next_action_items_v325": [
+      "RUN_SIGNAL_SHADOW_ONLY_EVIDENCE_COLLECTION",
+      "KEEP_BROKER_PAPER_DISABLED",
+      "KEEP_EDGE_GATE_DISABLED",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "COLLECT_50_NORMAL_OPPORTUNITIES",
+      "COLLECT_20_COMPLETED_SHADOW_OUTCOMES",
+      "REVIEW_ETH_AVAX_OPEN_CRYPTO_POSITIONS",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "INVESTIGATE_CRYPTO_POSITION_SIZING_AND_EXIT_POLICY_SOL_LTC_2026_06_06"
+    ]
+  },
   "v324_followups": {
     "title": "FULL_ORDER_HISTORY_DRAWDOWN_REATTRIBUTION",
     "trigger": "OPERATOR_PROVIDED_BROADER_ALPACA_PAPER_ORDER_HISTORY_EXPORT",

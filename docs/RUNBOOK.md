@@ -1002,3 +1002,82 @@ The audit invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` is
 **True** by contract. The Final Arbiter checks it. CI checks it.
 Operator must keep it True.
 
+
+---
+
+## Scenario Z — Crypto buy is being blocked (v3.25)
+
+Symptoms:
+
+- A planned crypto buy logs `CRYPTO-EXPOSURE-POLICY BLOCK <symbol>
+  [<DECISION>]: <reason>`.
+
+What to check:
+
+1. The `<DECISION>` token directly identifies which guard fired:
+   - `CRYPTO_BUY_BLOCKED_BY_EXISTING_POSITION` — symbol already
+     above 1% of equity; do not re-buy. Use exit policy if reduction
+     is desired.
+   - `CRYPTO_BUY_BLOCKED_BY_SYMBOL_EXPOSURE_CAP` — proposed buy
+     would push the symbol above 3% of equity (default cap).
+   - `CRYPTO_BUY_BLOCKED_BY_AGGREGATE_EXPOSURE_CAP` — proposed buy
+     would push total crypto above 10% of equity (default cap).
+   - `CRYPTO_BUY_BLOCKED_BY_PENDING_ORDER` — there is already an
+     open order for the symbol; wait for it to fill or cancel.
+   - `CRYPTO_BUY_BLOCKED_BY_LADDER_LIMIT` — symbol already had a
+     buy today (default cap = 1 / symbol / day).
+   - `CRYPTO_BUY_BLOCKED_BY_COOLDOWN` — last buy was less than
+     240 minutes ago (default).
+   - `CRYPTO_BUY_BLOCKED_BY_DRAWDOWN_GUARD` — drawdown guard is
+     active. All new crypto buys are blocked until cleared.
+   - `CRYPTO_BUY_BLOCKED_BY_RECENT_REALIZED_LOSS_COOLDOWN` — the
+     symbol realized ≥ $500 loss within the last 72 h.
+   - `CRYPTO_BUY_BLOCKED_BY_TOO_MANY_MEANINGFUL_OPEN_SYMBOLS` —
+     already 2 meaningful crypto positions open (default cap).
+2. To temporarily relax a single guard, set the matching env var
+   listed in `shared/crypto_exposure_policy.py::ENV_OVERRIDES`. **Do
+   NOT raise these caps to enable risky behavior.** Operator override
+   should be the exception, audited, and reverted quickly.
+3. The block did NOT submit any order. No state was mutated.
+
+What the operator does NOT do:
+
+- Do NOT raise the aggregate cap above 10% just because a single
+  trade is blocked.
+- Do NOT delete the audit JSONL entries that record the block.
+- Do NOT add the legacy `emergency_close_*.py.disabled` scripts back
+  to `scripts/` to "force" a buy.
+- Do NOT flip `EDGE_GATE_ENABLED` or `ALLOW_BROKER_PAPER`.
+- Do NOT lower the drawdown guard threshold.
+
+`EDGE_GATE_ENABLED` stays `false`. Live trading stays blocked.
+
+---
+
+## Scenario AA — Checking unlock readiness (v3.25)
+
+To check whether the system is in a state where signal/shadow flows
+or broker paper can be enabled:
+
+```python
+from shared.trading_unlock_readiness import (
+    evaluate_from_current_repo_state,
+)
+report = evaluate_from_current_repo_state()
+print(report.verdict)
+print("missing for broker paper:", report.missing_for_broker_paper)
+```
+
+Expected verdict in v3.25: `SIGNAL_SHADOW_UNLOCK_READY`.
+
+To make broker paper canary ready (a future sprint):
+
+1. Collect ≥ 50 normal non-halt opportunities of evidence.
+2. Collect ≥ 20 completed shadow outcomes.
+3. Confirm no audit-bypass findings, no unexplained exposure growth,
+   no repeated-buy-loop violations, no crypto exposure cap breach.
+4. Confirm daily learning + trade reconstruction stable.
+5. Get explicit operator approval.
+
+The module returns `BROKER_PAPER_CANARY_READY` only when ALL of the
+above are true.

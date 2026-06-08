@@ -123,8 +123,15 @@ class TestLatestJSONReattribution(unittest.TestCase):
     def setUpClass(cls):
         cls.data = _load(LATEST_JSON)
 
-    def test_version_v324(self):
-        self.assertEqual(self.data["version"], "v3.24.0")
+    def test_version_at_least_v324(self):
+        # v3.24+ updates (v3.25, ...) preserve the v324_followups
+        # block. Real invariant: that block exists (asserted next).
+        v = self.data["version"]
+        self.assertTrue(
+            v.startswith("v3.24") or v.startswith("v3.25")
+            or v.startswith("v3.26"),
+            f"unexpected version family: {v}",
+        )
 
     def test_v324_followups_block_present(self):
         self.assertIn("v324_followups", self.data)

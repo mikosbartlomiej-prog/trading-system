@@ -134,3 +134,23 @@ drawdown is now **disproved**. The full 8-symbol equity batch is
 close to flat (-$236.74). Drawdown reattribution lives in
 `learning-loop/position_reconciliation/latest.json::v324_followups`
 and in `docs/INCIDENT_2026_06_07.md`.
+
+---
+
+## v3.25.0 addendum — crypto sizing root-cause fix (2026-06-09)
+
+Following the v3.24 reattribution of the drawdown to the SOL/LTC
+realized close cycle, v3.25 adds the missing crypto guards. Equity
+trade reconstruction is unchanged; this addendum is here to make the
+cross-reference visible to readers of this doc.
+
+- `docs/CRYPTO_SOL_LTC_POSITION_SIZING_INCIDENT.md` — root-cause
+  investigation.
+- `shared/crypto_exposure_policy.py` — hard per-symbol +
+  aggregate exposure caps, laddering limit, cooldown, recent-loss
+  cooldown, pending-order pre-check, drawdown-guard hard block.
+- `shared/crypto_exit_policy.py` — structured exit-reason enum,
+  audit-emission requirement, precision-close guard, dust operator
+  decision.
+- `shared/trading_unlock_readiness.py` — deterministic verdict
+  gate. Expected verdict: `SIGNAL_SHADOW_UNLOCK_READY`.

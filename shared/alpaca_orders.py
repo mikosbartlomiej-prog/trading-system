@@ -200,6 +200,142 @@ def _pdt_gate(symbol: str, side: str, size_usd: float,
         return True, f"pdt-guard unavailable ({type(e).__name__}: {e})"
 
 
+def _crypto_exposure_policy_gate(
+    symbol: str, side: str, size_usd: float, *,
+    mode: str = "broker_paper",
+) -> tuple[bool, str, str | None]:
+    """v3.25.0 (2026-06-09) — hard crypto exposure / laddering / cooldown gate.
+
+    Defense-in-depth wrapper around
+    ``shared/crypto_exposure_policy.py::evaluate_crypto_buy``. Runs only
+    on the BUY side. Pulls current crypto positions from the existing
+    risk_guards helper, pending orders from the existing open-orders
+    fetcher, drawdown-guard state from runtime config / portfolio_risk,
+    and the per-symbol buy history from runtime_state.json (when present).
+
+    Fail-CLOSED for BUY: if any context call fails, the gate REFUSES the
+    buy. This is the v3.25 contract — the SOL/LTC pattern must never
+    sneak through because a context fetch errored.
+
+    Returns (ok, reason, decision_token). decision_token is the precise
+    enum (e.g. "CRYPTO_BUY_BLOCKED_BY_SYMBOL_EXPOSURE_CAP") for the
+    audit / shadow layer.
+
+    No-ops for non-crypto symbols and for the SELL side — returns
+    (True, "skip", None).
+    """
+    s = symbol.upper()
+    if not (s.endswith("USD") or s.endswith("/USD")):
+        return True, "non-crypto symbol", None
+    if side != "buy":
+        return True, "sell side — exit policy handles this", None
+    try:
+        from crypto_exposure_policy import (
+            CryptoExposureInputs, evaluate_crypto_buy,
+        )
+    except ImportError:
+        try:
+            from shared.crypto_exposure_policy import (
+                CryptoExposureInputs, evaluate_crypto_buy,
+            )
+        except Exception as e:
+            return False, f"crypto-exposure-policy import failed ({e})", None
+
+    # Pull live context. Each helper is fail-closed for BUY: any error
+    # surfaces as a block reason.
+    try:
+        try:
+            from risk_guards import get_open_positions, get_account_status
+        except ImportError:
+            from shared.risk_guards import get_open_positions, get_account_status
+        positions = get_open_positions() or []
+    except Exception as e:
+        return False, f"positions fetch failed ({type(e).__name__}: {e})", None
+    try:
+        account = get_account_status()
+        equity_usd = float(account.get("equity") or 0.0) if account else 0.0
+    except Exception:
+        equity_usd = 0.0
+    if equity_usd <= 0:
+        return False, "equity unavailable — BUY fail-closed", None
+
+    # Convert positions to {symbol: notional_usd}.
+    positions_usd: dict[str, float] = {}
+    for pos in positions:
+        try:
+            sym = (pos.get("symbol") or "").upper()
+            if not sym:
+                continue
+            mv = float(pos.get("market_value")
+                        or pos.get("qty") and (
+                            float(pos.get("qty", 0))
+                            * float(pos.get("current_price", 0))
+                        )
+                        or 0.0)
+            positions_usd[sym] = mv
+        except Exception:
+            continue
+
+    # Pending orders for this symbol.
+    try:
+        open_orders = _fetch_open_orders() or []
+        pending = sum(
+            1 for o in open_orders
+            if (o.get("symbol") or "").upper() in (s, s.replace("/", ""))
+        )
+    except Exception:
+        pending = 0
+
+    # Drawdown guard active? Use portfolio_risk profile flag where
+    # available. Fail-closed = treat as active if anything unclear (BUY
+    # must err on the side of blocking).
+    drawdown_active = False
+    try:
+        from intraday_governor import current_fsm_state
+        fsm = current_fsm_state() or {}
+        # Any post-PROFIT_LOCK / DEFEND_DAY / RED_DAY_AFTER_GREEN state
+        # means new entries should be blocked.
+        st = (fsm.get("state") or "").upper()
+        if st in ("PROFIT_LOCK", "DEFEND_DAY", "RED_DAY_AFTER_GREEN"):
+            drawdown_active = True
+    except Exception:
+        pass
+
+    # Per-symbol buy history from runtime_state (best-effort).
+    buys_today_by_symbol: dict[str, int] = {}
+    last_buy_epoch_by_symbol: dict[str, float] = {}
+    recent_pnl_by_symbol: dict[str, float] = {}
+    try:
+        from runtime_state import read_section
+        hist = read_section("crypto_buy_history") or {}
+        if isinstance(hist, dict):
+            buys_today_by_symbol = (hist.get("buys_today_by_symbol")
+                                      or {})
+            last_buy_epoch_by_symbol = (hist.get("last_buy_epoch_by_symbol")
+                                          or {})
+            recent_pnl_by_symbol = (hist.get("recent_realized_pnl_by_symbol_usd")
+                                      or {})
+    except Exception:
+        pass
+
+    inputs = CryptoExposureInputs(
+        symbol=s,
+        proposed_buy_usd=float(size_usd),
+        equity_usd=float(equity_usd),
+        current_positions_usd=positions_usd,
+        pending_orders_by_symbol={s: pending},
+        drawdown_guard_active=drawdown_active,
+        recent_realized_pnl_by_symbol_usd=recent_pnl_by_symbol,
+        buys_today_by_symbol=buys_today_by_symbol,
+        last_buy_epoch_by_symbol=last_buy_epoch_by_symbol,
+        mode=mode,
+    )
+    decision = evaluate_crypto_buy(inputs)
+    if decision.is_allow or decision.is_shadow_only:
+        return True, decision.reason, decision.decision
+    return False, decision.reason, decision.decision
+
+
 def _confidence_gate(confidence_inputs: dict | None,
                      symbol: str = "?") -> tuple[bool, str]:
     """v3.14.0 (2026-06-02) — inline confidence gate (closes CONF-002).
@@ -598,6 +734,19 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     )
     if not pdt_ok:
         print(f"  PDT-GUARD BLOCK {symbol}: {pdt_reason}")
+        return None
+
+    # v3.25.0 (2026-06-09) — hard crypto exposure / laddering / cooldown
+    # policy. Defense-in-depth on top of portfolio_risk_gate. Specifically
+    # designed to block the SOL/LTC pattern (per-cron $2,500 buys that
+    # accumulated to ~$30k cost basis per symbol). Fail-CLOSED for buys.
+    cep_ok, cep_reason, cep_decision = _crypto_exposure_policy_gate(
+        symbol=symbol, side=side, size_usd=qty * limit_price,
+        mode="broker_paper",
+    )
+    if not cep_ok:
+        print(f"  CRYPTO-EXPOSURE-POLICY BLOCK {symbol} "
+              f"[{cep_decision}]: {cep_reason}")
         return None
 
     # Risk-officer gate. Crypto orders don't carry SL/TP at the broker

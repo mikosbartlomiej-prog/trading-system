@@ -1,0 +1,102 @@
+{
+  "version": "v3.25.0",
+  "generated_at_iso": "2026-06-09T00:00:00+00:00",
+  "investigation_type": "CRYPTO_SOL_LTC_POSITION_SIZING_ROOT_CAUSE",
+  "incident": {
+    "date_iso": "2026-06-06",
+    "symbols": ["SOLUSD", "LTCUSD"],
+    "combined_cost_basis_usd_approx": 59928.10,
+    "combined_realized_loss_usd_approx": -5594.06,
+    "approx_equity_share_per_symbol_pct": 30.0,
+    "approx_equity_share_combined_pct": 60.0,
+    "approx_paper_equity_baseline_usd": 100000.0,
+    "per_symbol": {
+      "SOLUSD": {
+        "qty_closed": 451.353798,
+        "avg_fill_price_usd": 60.070217093,
+        "sell_amount_usd": 27112.92063161,
+        "reconstructed_cost_basis_usd": 29964.073425576,
+        "realized_pnl_usd_approx": -2851.15
+      },
+      "LTCUSD": {
+        "qty_closed": 675.170322,
+        "avg_fill_price_usd": 40.317423304,
+        "sell_amount_usd": 27221.127674372,
+        "reconstructed_cost_basis_usd": 29964.030112620,
+        "realized_pnl_usd_approx": -2742.90
+      }
+    }
+  },
+  "existing_controls": {
+    "max_alt_positions_count_cap": {
+      "where": "crypto-monitor/monitor.py:194",
+      "value": 3,
+      "effectiveness": "INSUFFICIENT_CAPS_COUNT_NOT_DOLLAR_SIZE"
+    },
+    "has_open_position_binary_check": {
+      "where": "crypto-monitor/monitor.py:709",
+      "behavior": "skip BUY when broker reports qty > 0 for symbol",
+      "effectiveness": "INSUFFICIENT_DOES_NOT_BLOCK_LADDERING_AFTER_FILL"
+    },
+    "max_crypto_exposure_pct_aggregate": {
+      "where": "shared/portfolio_risk.py:345-351 + runtime_config profiles",
+      "value_aggressive_paper_pct": 25.0,
+      "value_balanced_paper_pct": 20.0,
+      "value_safe_free_pct": 10.0,
+      "effectiveness": "PARTIAL_EITHER_INSUFFICIENT_OR_RACE_OR_WIRING_GAP"
+    },
+    "portfolio_risk_gate_in_place_crypto_order": {
+      "where": "shared/alpaca_orders.py::_portfolio_risk_gate inside place_crypto_order",
+      "effectiveness": "PRESENT_BUT_INSUFFICIENT_ALONE"
+    },
+    "trade_window_gate": {"where": "place_crypto_order via instrument_windows.can_trade_now", "relevance": "NOT_RELEVANT_TO_SIZING"},
+    "pdt_gate":         {"where": "place_crypto_order::_pdt_gate", "relevance": "NOT_RELEVANT_TO_SIZING"},
+    "intraday_governor_gate": {"where": "place_crypto_order::_intraday_governor_gate", "relevance": "PRESENT_BUT_CAN_FIRE_TOO_LATE_FOR_REPEATED_LADDERING"}
+  },
+  "missing_controls_pre_v3_25": [
+    "per-symbol crypto dollar exposure cap (only count cap MAX_ALT_POSITIONS)",
+    "pending-order pre-check (next cron could fire BUY while prior limit is resting)",
+    "min cooldown between consecutive buys of the same crypto symbol",
+    "max laddering buys per symbol per day",
+    "recent-realized-loss cooldown after closing a crypto symbol at significant loss",
+    "explicit drawdown-guard hard-block on crypto buys (not just generic entry guard)"
+  ],
+  "root_cause_classification": {
+    "CRYPTO_REPEATED_BUY_LADDERING_INTENDED_BUT_UNCAPPED": "CONFIRMED",
+    "CRYPTO_REPEATED_BUY_RUNAWAY_LOOP": "NOT_CONFIRMED",
+    "CRYPTO_POSITION_ALREADY_OPEN_BUT_BUY_REPEATED": "PARTIAL_REQUIRES_CRON_TIMELINE",
+    "CRYPTO_PENDING_ORDER_NOT_CONSIDERED": "CONFIRMED",
+    "CRYPTO_MAX_SYMBOL_EXPOSURE_MISSING": "CONFIRMED",
+    "CRYPTO_AGGREGATE_EXPOSURE_CAP_MISSING": "PARTIAL_25PCT_CAP_EXISTS_BUT_EITHER_INSUFFICIENT_OR_RACE",
+    "CRYPTO_DRAWDOWN_GUARD_TRIGGERED_TOO_LATE": "CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS",
+    "CRYPTO_EXIT_POLICY_MARKET_CLOSE_WITHOUT_PRECHECK": "CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS",
+    "CRYPTO_ORDER_AUDIT_PATH_UNCLEAR": "CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS",
+    "CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS": "CONFIRMED_FOR_CRON_BY_CRON_TIMELINE"
+  },
+  "evidence_confidence": "MEDIUM_HIGH_FOR_MISSING_CAPS_LOW_FOR_TIMING_AND_AUDIT_PATH",
+  "v3_25_response": {
+    "modules_added": [
+      "shared/crypto_exposure_policy.py",
+      "shared/crypto_exit_policy.py",
+      "shared/trading_unlock_readiness.py"
+    ],
+    "tests_added": [
+      "tests/test_crypto_exposure_policy_v3250.py",
+      "tests/test_crypto_exit_policy_v3250.py",
+      "tests/test_trading_unlock_readiness_v3250.py"
+    ],
+    "expected_unlock_verdict": "SIGNAL_SHADOW_UNLOCK_READY",
+    "broker_paper_status": "STAYS_BLOCKED"
+  },
+  "what_this_investigation_does_not_do": [
+    "does not place orders",
+    "does not close SOLUSD or LTCUSD",
+    "does not close ETHUSD or AVAXUSD",
+    "does not enable broker_paper",
+    "does not enable live trading",
+    "does not reset starting_equity baseline",
+    "does not lower drawdown guard",
+    "does not infer or invent client_order_id",
+    "does not fabricate P/L"
+  ]
+}

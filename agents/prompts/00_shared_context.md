@@ -583,4 +583,76 @@ PAPER_TRADING_* verdicts.
 
 ---
 
+## v3.25.0 coverage (added 2026-06-09)
+
+v3.25 ships the crypto position-sizing / laddering / cooldown / exit
+guards plus a deterministic unlock-readiness gate, in response to the
+v3.24 reattribution that placed the bulk of the -$5,741 drawdown on
+the SOLUSD + LTCUSD realized close cycle on 2026-06-06.
+
+When reviewing, also check:
+
+- `docs/CRYPTO_SOL_LTC_POSITION_SIZING_INCIDENT.md` +
+  `learning-loop/position_reconciliation/crypto_sol_ltc_sizing_incident_latest.json`
+  — root-cause investigation. Confirmed: laddering uncapped, per-symbol
+  dollar cap missing, pending-order pre-check missing. Some details
+  marked `CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS`.
+- `shared/crypto_exposure_policy.py` — hard per-symbol +
+  aggregate caps, laddering limit, cooldown, recent-loss cooldown,
+  pending-order pre-check, drawdown-guard hard block. Defaults
+  conservative (10% aggregate / 3% per symbol / 2 meaningful
+  symbols / 1 buy per symbol per day / 240 min cooldown / 72 h
+  recent-loss cooldown / $500 loss threshold). Wired into
+  `place_crypto_order` via `_crypto_exposure_policy_gate`,
+  fail-CLOSED for BUY.
+- `shared/crypto_exit_policy.py` — closed enum of allowed exit
+  reasons + narrower `MARKET_EXIT_ALLOWED_REASONS`. Dust exits
+  require operator approval. Precision rounding NEVER rounds up.
+  Repeated close attempts within 10 min are deduped.
+- `shared/trading_unlock_readiness.py` — verdict ladder
+  `TRADING_UNLOCK_BLOCKED` → `SIGNAL_SHADOW_UNLOCK_READY` →
+  `BROKER_PAPER_CANARY_NOT_READY` → `BROKER_PAPER_CANARY_READY` →
+  `LIVE_TRADING_NOT_SUPPORTED`. Maximum verdict in v3.25 is
+  `SIGNAL_SHADOW_UNLOCK_READY`. Live trading is permanently marked
+  unsupported.
+- `docs/TRADING_UNLOCK_READINESS.md` — operator-facing guide.
+- New tests pin: SOL/LTC 60% combined exposure blocked; repeated
+  5-min buys blocked; per-symbol 3% cap; aggregate 10% cap; market
+  exit requires risk reason; dust exit requires operator approval;
+  precision never rounds up; broker paper requires evidence.
+
+### Final Arbiter v3.25.0 escalation triggers (P0)
+
+In addition to all v3.23.x + v3.24 triggers, the Final Arbiter MUST
+block escalation and set primary verdict to NEEDS_FIXES with
+secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- crypto **aggregate exposure cap is missing** or weakened past the
+  v3.25 default (10% gross)
+- crypto **per-symbol cap is missing** or weakened past the v3.25
+  default (3% per symbol)
+- repeated crypto buys can happen **every 5 minutes** (cooldown
+  weakened below the v3.25 default 240 min)
+- an **existing meaningful position does not block** a new buy of
+  the same symbol
+- a **pending order does not block** a duplicate buy of the same
+  symbol
+- the **drawdown guard does not block** new crypto buys when active
+- a **recent realized crypto loss does not trigger cooldown** under
+  default thresholds
+- a **market exit lacks a structured reason** from `ALLOWED_EXIT_REASONS`
+- **dust is auto-closed** without operator decision
+- `evaluate_unlock_readiness` returns `BROKER_PAPER_CANARY_READY`
+  **without** the four evidence thresholds met AND explicit operator
+  approval
+- `EDGE_GATE_ENABLED` is flipped to True
+- `ALLOW_BROKER_PAPER` is enabled
+- baseline `state.json::cumulative.starting_equity` is reset silently
+- live trading is enabled in any form
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.

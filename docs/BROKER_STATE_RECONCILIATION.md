@@ -208,3 +208,30 @@ question list lives in
 
 AMD reconciliation is unchanged: P/L -$437.07, source still
 `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
+
+---
+
+## v3.25.0 addendum — crypto exposure / exit / unlock readiness (2026-06-09)
+
+v3.25 adds three new shared modules and one investigation report:
+
+- `docs/CRYPTO_SOL_LTC_POSITION_SIZING_INCIDENT.md` — partial
+  root cause identified (laddering uncapped, per-symbol dollar cap
+  missing, pending-order pre-check missing, recent-loss cooldown
+  missing). Some details remain `CRYPTO_ROOT_CAUSE_REQUIRES_MORE_LOGS`.
+- `shared/crypto_exposure_policy.py` — hard guards wired into
+  `shared/alpaca_orders.py::place_crypto_order` via the new
+  `_crypto_exposure_policy_gate`. Defense-in-depth on top of the
+  existing `portfolio_risk` and `intraday_governor` gates. Fail-CLOSED
+  for crypto buys.
+- `shared/crypto_exit_policy.py` — every market crypto exit must
+  carry a risk-side reason; dust exits require operator decision;
+  precision rounding never rounds up; repeated close attempts within
+  10 min are deduped.
+- `shared/trading_unlock_readiness.py` — deterministic readiness
+  verdict. Maximum permissible verdict in v3.25 is
+  `SIGNAL_SHADOW_UNLOCK_READY`. Broker paper stays blocked.
+
+Audit-bypass invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT`
+remains `True`. AMD close source still
+`AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
