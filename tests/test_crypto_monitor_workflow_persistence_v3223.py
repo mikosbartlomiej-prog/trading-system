@@ -58,6 +58,17 @@ class TestCryptoMonitorTemplateContract(unittest.TestCase):
         self.assertIn("for attempt in 1 2 3 4 5;", self.template_src,
                        "push retry loop must have 5 attempts")
 
+    def test_template_uses_autostash_on_rebase(self):
+        # v3.22.4 — without --autostash, continuous monitor file
+        # writes (routine_budget etc) cause "cannot pull with rebase:
+        # You have unstaged changes" between push retries. 38/50 runs
+        # were failing for this reason. Both rebase points must
+        # carry --autostash.
+        count = self.template_src.count("git pull --rebase --autostash")
+        self.assertGreaterEqual(count, 2,
+                                  "both pre-add rebase and retry-loop rebase "
+                                  "must use --autostash; found %d" % count)
+
     def test_template_exits_1_on_final_push_failure(self):
         # The final echo + exit 1 must be present.
         tail = self.template_src[self.template_src.find("for attempt in 1 2 3 4 5;"):]

@@ -78,8 +78,11 @@ jobs:
           # surface the problem instead of hiding it.
 
           # 1) Rebase first so our commit goes on top of any concurrent
-          #    automerge that landed during the scan.
-          git pull --rebase origin "${GITHUB_REF_NAME:-main}" || true
+          #    automerge that landed during the scan. Use --autostash
+          #    because the monitor process continuously writes other
+          #    files (routine_budget, etc) and we don't want those
+          #    unstaged changes to abort the rebase.
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME:-main}" || true
 
           # 2) Debug snapshot before staging.
           echo "===== Debug before add ====="
@@ -115,7 +118,11 @@ jobs:
               exit 0
             fi
             echo "Push failed attempt ${attempt}; rebasing and retrying"
-            if ! git pull --rebase origin "${GITHUB_REF_NAME:-main}"; then
+            # --autostash again: between push attempts the runner can
+            # produce additional unstaged file writes (routine_budget,
+            # incremental state). Without it, rebase aborts with
+            # "cannot pull with rebase: You have unstaged changes."
+            if ! git pull --rebase --autostash origin "${GITHUB_REF_NAME:-main}"; then
               echo "Rebase failed; aborting without force-push"
               git rebase --abort 2>/dev/null || true
               exit 1
