@@ -39,7 +39,12 @@ class TestGHActionsInvestigationJSONHasOperatorUIBlock(unittest.TestCase):
             cls.data = json.load(f)
 
     def test_version_bumped(self):
-        self.assertEqual(self.data["version"], "v3.23.3.1")
+        # v3.23.3.x updates preserve all earlier facts; accept any
+        # version in the v3.23.3 family.
+        self.assertTrue(
+            self.data["version"].startswith("v3.23.3."),
+            f"unexpected version: {self.data['version']}",
+        )
 
     def test_operator_ui_verification_block_present(self):
         self.assertIn("operator_ui_verification_2026_06_08_eod", self.data)
@@ -107,7 +112,12 @@ class TestAuditBypassJSONReferencesUIVerification(unittest.TestCase):
             cls.data = json.load(f)
 
     def test_version_bumped(self):
-        self.assertEqual(self.data["version"], "v3.23.3.1")
+        # v3.23.3.x updates preserve all earlier facts; accept any
+        # version in the v3.23.3 family.
+        self.assertTrue(
+            self.data["version"].startswith("v3.23.3."),
+            f"unexpected version: {self.data['version']}",
+        )
 
     def test_action_items_use_narrowed_next_action(self):
         items = self.data["action_items"]
@@ -143,7 +153,12 @@ class TestLatestJSONHasV3233_1Followup(unittest.TestCase):
             cls.data = json.load(f)
 
     def test_version_bumped(self):
-        self.assertEqual(self.data["version"], "v3.23.3.1")
+        # v3.23.3.x updates preserve all earlier facts; accept any
+        # version in the v3.23.3 family.
+        self.assertTrue(
+            self.data["version"].startswith("v3.23.3."),
+            f"unexpected version: {self.data['version']}",
+        )
 
     def test_v3233_1_followups_present(self):
         self.assertIn("v3233_1_followups", self.data)

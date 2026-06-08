@@ -220,3 +220,70 @@ against the paper endpoint.
 - Does NOT enable live trading or broker_paper.
 - Does NOT reset the equity baseline.
 - Does NOT lower the drawdown guard.
+
+---
+
+## Operator order-state verification — v3.23.3.2
+
+After the v3.23.3.1 UI verification of the AMD close row, the
+operator performed an additional Alpaca paper dashboard check on
+the Orders view. Findings:
+
+- **NO hanging / open orders** exist in the Alpaca paper account.
+- All visible orders are either **filled** or **canceled**.
+- No pending AMD TP / SL or stale AMD open order is visible.
+
+### Status tokens added
+
+- `OPERATOR_VERIFIED_NO_OPEN_ORDERS_ALL_FILLED_OR_CANCELED`
+
+Note: the operator did **NOT** explicitly verify the Positions /
+"View All" panel, so the position state is NOT inferred from this
+order-state check. The status token
+`OPERATOR_VERIFIED_NO_OPEN_POSITIONS` is **NOT** added — it would
+require a separate explicit confirmation against the Positions view.
+
+### Risk-impact narrative
+
+- No visible open / pending orders means there is **no known stale
+  TP / SL / open-order risk** remaining in the Alpaca UI. The
+  surface area for accidental fills caused by orphan brackets or
+  forgotten manual orders is currently zero (per dashboard).
+- This **reduces operational risk** but does **NOT** resolve the
+  AMD close submitter source. The submitter remains unresolved —
+  see `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
+- This also does **NOT** reconstruct the 7 remaining 2026-06-04
+  trades (CRWD / NOW / QQQ / SPY / GLD / PANW / ORCL). Their
+  reconstruction still requires
+  `docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md` to be
+  completed.
+- This does **NOT** confirm or deny that crypto / equity positions
+  are currently flat. The dashboard's Orders view shows order
+  state, not position state.
+
+### What this verification preserves
+
+- AMD realized P/L: **-$437.07** (unchanged)
+- AMD close order ID: `7f3ac850-49aa-4ccb-b075-c0ecb56c5871`
+- AMD close status: `AMD_CLOSE_MANUALLY_VERIFIED_FROM_ALPACA_UI_OPERATOR_TRANSCRIPTION`
+- client_order_id status: `CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE`
+- source status: `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`
+
+### Next operator actions (carried over, unchanged)
+
+- `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`
+- `PROVIDE_ORDER_HISTORY_FOR_CRWD_NOW_QQQ_SPY_GLD_PANW_ORCL`
+- `KEEP_DRAWDOWN_GUARD_ACTIVE`
+- `KEEP_EDGE_GATE_DISABLED`
+- `DO_NOT_ENABLE_BROKER_PAPER`
+- `DO_NOT_RESTORE_QUARANTINED_LEGACY_ORDER_SCRIPTS`
+
+### What this verification does NOT do
+
+- Does NOT place orders, modify positions, close anything.
+- Does NOT enable live trading or broker_paper.
+- Does NOT infer position state from order state.
+- Does NOT infer or fabricate a `client_order_id`.
+- Does NOT change AMD realized P/L.
+- Does NOT reset the equity baseline.
+- Does NOT lower the drawdown guard.

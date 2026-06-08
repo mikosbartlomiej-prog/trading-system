@@ -201,3 +201,26 @@ Classification: `AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS`.
 - `ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT` — still True.
 - `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` — **new in v3.23.3,
   test-asserted**, currently True.
+
+---
+
+## v3.23.3.2 follow-up — operator orders-view verification
+
+Operator verified the Alpaca paper dashboard Orders view: **no
+hanging / open orders** are present. All visible orders are filled
+or canceled. No pending AMD TP / SL or stale AMD open order is
+visible.
+
+Status token added:
+- `OPERATOR_VERIFIED_NO_OPEN_ORDERS_ALL_FILLED_OR_CANCELED`
+
+Position-state verification was NOT performed in this check, so
+`OPERATOR_VERIFIED_NO_OPEN_POSITIONS` is intentionally NOT added.
+
+Impact:
+- Operational risk surface from orphan brackets / stale open
+  orders is currently zero per dashboard.
+- AMD audit-gap status is **unchanged**: source still unresolved,
+  next action still `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
+- Audit-bypass invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT`
+  remains True (quarantine intact).

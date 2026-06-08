@@ -1,7 +1,7 @@
 {
-  "version": "v3.23.3.1",
-  "generated_at_iso": "2026-06-08T18:00:00+00:00",
-  "investigation_type": "GH_ACTIONS_FORENSICS_PLUS_OPERATOR_UI_VERIFICATION",
+  "version": "v3.23.3.2",
+  "generated_at_iso": "2026-06-08T19:00:00+00:00",
+  "investigation_type": "GH_ACTIONS_FORENSICS_PLUS_OPERATOR_UI_VERIFICATION_PLUS_ORDER_STATE_CHECK",
   "target": {
     "symbol": "AMD",
     "order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
@@ -119,6 +119,28 @@
       "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
+  },
+  "operator_order_state_verification_2026_06_08_v3233_2": {
+    "checked_at_iso_utc": "2026-06-08T19:00:00+00:00",
+    "scope": "ALPACA_PAPER_DASHBOARD_ORDERS_VIEW_ONLY",
+    "no_hanging_or_open_orders_visible": true,
+    "all_visible_orders_filled_or_canceled": true,
+    "no_pending_amd_tp_sl_or_stale_amd_open_order_visible": true,
+    "status_tokens_added": [
+      "OPERATOR_VERIFIED_NO_OPEN_ORDERS_ALL_FILLED_OR_CANCELED"
+    ],
+    "operator_verified_no_open_positions": false,
+    "operator_verified_no_open_positions_rationale": "Operator verified only the Orders view; the Positions / View All panel was NOT explicitly checked. Order-state verification does NOT imply position-state verification. The token OPERATOR_VERIFIED_NO_OPEN_POSITIONS is intentionally NOT added until a separate positions confirmation is performed.",
+    "risk_impact": {
+      "stale_tp_sl_or_open_order_risk_remaining": "none-visible",
+      "amd_close_submitter_source_resolved": false,
+      "remaining_7_symbols_reconstructed": false,
+      "position_flatness_confirmed": false
+    },
+    "amd_close_status_unchanged": "AMD_CLOSE_MANUALLY_VERIFIED_FROM_ALPACA_UI_OPERATOR_TRANSCRIPTION",
+    "amd_realized_pnl_usd_unchanged": -437.07,
+    "client_order_id_status_unchanged": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+    "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
   },
   "next_required_action": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
   "next_required_action_options": [

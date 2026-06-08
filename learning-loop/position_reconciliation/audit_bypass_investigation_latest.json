@@ -1,6 +1,6 @@
 {
-  "version": "v3.23.3.1",
-  "generated_at_iso": "2026-06-08T18:00:00+00:00",
+  "version": "v3.23.3.2",
+  "generated_at_iso": "2026-06-08T19:00:00+00:00",
   "audit_gap_kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
   "incident_symbol": "AMD",
   "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
@@ -12,12 +12,23 @@
   "confirmed_path": null,
   "action_items": [
     "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+    "PROVIDE_ORDER_HISTORY_FOR_CRWD_NOW_QQQ_SPY_GLD_PANW_ORCL",
     "KEEP_DRAWDOWN_GUARD_ACTIVE",
     "KEEP_EDGE_GATE_DISABLED",
     "DO_NOT_ENABLE_BROKER_PAPER",
     "DO_NOT_RESTORE_QUARANTINED_LEGACY_ORDER_SCRIPTS",
     "DO_NOT_INFER_CLIENT_ORDER_ID"
   ],
+  "operator_order_state_verification_2026_06_08_v3233_2": {
+    "scope": "ALPACA_PAPER_DASHBOARD_ORDERS_VIEW_ONLY",
+    "status_tokens": [
+      "OPERATOR_VERIFIED_NO_OPEN_ORDERS_ALL_FILLED_OR_CANCELED"
+    ],
+    "operator_verified_no_open_positions": false,
+    "rationale": "Operator checked Orders view only; Positions / View All NOT explicitly verified. No inference about position state.",
+    "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+    "details_report": "docs/AMD_CLOSE_SOURCE_INVESTIGATION.md"
+  },
   "amd_ui_verification_2026_06_08_eod": {
     "status_tokens": [
       "AMD_ORDER_ROW_VISIBLE_IN_ALPACA_UI",
