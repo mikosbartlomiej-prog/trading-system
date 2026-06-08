@@ -1,48 +1,86 @@
 {
-  "version": "v3.22.0",
-  "generated_at_iso": "2026-06-08T11:00:00+00:00",
-  "status": "POSITION_RECONCILIATION_UNAVAILABLE_NO_CREDENTIALS",
-  "reconciliation_source": "local-state-only",
+  "version": "v3.22.5",
+  "generated_at_iso": "2026-06-08T11:15:00+00:00",
+  "status": "DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE",
+  "previous_report_status": "STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED",
+  "reconciliation_source": "operator-dashboard + local-state + audit-jsonl",
   "alpaca_api_called": false,
+  "operator_dashboard_verified": true,
   "credentials": {
     "alpaca_api_key_present": false,
     "alpaca_secret_key_present": false,
+    "alpaca_api_status": "ALPACA_API_UNAVAILABLE_BUT_OPERATOR_DASHBOARD_VERIFIED_POSITIONS_PROVIDED",
     "paper_endpoint_verified": true,
     "live_endpoint_blocked": true
   },
   "equity": {
     "today_2026_06_08": 90119.76,
-    "baseline_2026_06_04_open": 93700.09,
-    "drop_usd": -5741.0,
-    "cumulative_roi_pct": -3.82
+    "baseline_from_state": 93700.09,
+    "peak_from_state": 98446.36,
+    "baseline_static_since_reset": true,
+    "drop_usd_vs_baseline": -5741.0,
+    "drop_usd_vs_peak": -8326.0,
+    "cumulative_roi_pct_vs_baseline": -3.82,
+    "cumulative_roi_pct_vs_peak": -8.46
   },
-  "inferred_open_positions": [
-    {"symbol": "AMD",  "qty": 34,  "entry_price": 498.51, "cost_basis": 16949.34, "source": "2026-06-04.execution.json"},
-    {"symbol": "CRWD", "qty": 19,  "entry_price": 690.50, "cost_basis": 13119.50, "source": "2026-06-04.execution.json"},
-    {"symbol": "ORCL", "qty": 58,  "entry_price": 225.57, "cost_basis": 13083.06, "source": "2026-06-04.execution.json"},
-    {"symbol": "PANW", "qty": 48,  "entry_price": 273.65, "cost_basis": 13135.20, "source": "2026-06-04.execution.json"},
-    {"symbol": "NOW",  "qty": 107, "entry_price": 122.11, "cost_basis": 13065.77, "source": "2026-06-04.execution.json"},
-    {"symbol": "SPY",  "qty": 12,  "entry_price": 751.72, "cost_basis":  9020.64, "source": "2026-06-04.execution.json"},
-    {"symbol": "QQQ",  "qty": 13,  "entry_price": 733.73, "cost_basis":  9538.49, "source": "2026-06-04.execution.json"},
-    {"symbol": "GLD",  "qty": 16,  "entry_price": 414.10, "cost_basis":  6625.60, "source": "2026-06-04.execution.json"}
+  "dashboard_verified_open_positions": [
+    {"symbol": "ETHUSD",  "market_value_usd":  8514.0, "unrealized_pl_usd":  523.0, "lifecycle_local": "TIME_EXPIRED", "notes": "exit-monitor failing to close via safe_close (Alpaca 403 precision rounding); position is at peak +$764 / trough -$326"},
+    {"symbol": "AVAXUSD", "market_value_usd":  2451.0, "unrealized_pl_usd":  -45.0, "lifecycle_local": "CLOSED",       "notes": "STALE local state — new position opened recently"},
+    {"symbol": "SOLUSD",  "market_value_usd":  null,   "unrealized_pl_usd": null,   "lifecycle_local": "CLOSED",       "notes": "dust qty; STALE local state"},
+    {"symbol": "LTCUSD",  "market_value_usd":  null,   "unrealized_pl_usd": null,   "lifecycle_local": "CLOSED",       "notes": "dust qty; STALE local state"}
   ],
-  "total_cost_basis": 94537.60,
+  "total_dashboard_market_value_usd": 10965.0,
+  "total_dashboard_unrealized_pl_usd": 478.0,
+  "previously_inferred_equity_positions_rejected": [
+    {"symbol": "AMD",  "inferred_cost_basis": 16949.34, "audit_safe_close_events_06_04": 0, "actual_dashboard_state": "NOT_OPEN", "anomaly_note": "Zero close events in audit JSONL but dashboard says NOT open — likely bracket SL/TP filled at broker, position-manager runtime state stale"},
+    {"symbol": "CRWD", "inferred_cost_basis": 13119.50, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "ORCL", "inferred_cost_basis": 13083.06, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "PANW", "inferred_cost_basis": 13135.20, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "NOW",  "inferred_cost_basis": 13065.77, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "SPY",  "inferred_cost_basis":  9020.64, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "QQQ",  "inferred_cost_basis":  9538.49, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"},
+    {"symbol": "GLD",  "inferred_cost_basis":  6625.60, "audit_safe_close_events_06_04": 1, "actual_dashboard_state": "CLOSED"}
+  ],
+  "drawdown_diagnosis": {
+    "dashboard_open_positions_explain_drawdown": false,
+    "actual_cause": "REALIZED_LOSSES_FROM_RAPID_CLOSE_CYCLE_2026_06_04",
+    "evidence": "journal/autonomy/2026-06-04.jsonl shows 7 safe_close events for CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL within 35 minutes of 13:45 UTC open",
+    "amd_anomaly": "AMD has 0 safe_close events in audit JSONL but is NOT on dashboard — bracket SL/TP likely fired at broker without analyzer attribution",
+    "analyzer_wiring_bug": {
+      "symptom": "state.json::cumulative.total_trades = 0 despite confirmed closes in audit JSONL",
+      "root_cause_hypothesis": "reconstruct_trades in learning-loop/analyzer.py cannot FIFO-pair allocator-rebalance opens with safe_close exits",
+      "operator_impact": "LLM Senior PM persona sees strategies as SILENT 64 days, blocking deterministic adapter from acting on real RSI signals"
+    },
+    "baseline_staleness": {
+      "starting_equity_static": true,
+      "starting_equity_value": 93700.09,
+      "peak_equity_tracked_correctly": true,
+      "operator_decision_required": "Should starting_equity reset to current equity to anchor drawdown to a fresh baseline? Operator-level call, not automated."
+    }
+  },
   "drawdown_guard": {
     "threshold_pct": -3.0,
     "current_drawdown_pct": -3.82,
     "halt_active": true,
     "halt_correctly_blocks_new_entries": true,
+    "should_be_disabled": false,
     "evidence": "learning-loop/opportunity_ledger/2026-06-08.jsonl (86 entries today, all HALTED_BY_DRAWDOWN_GUARD)"
   },
-  "buying_power_status": {
-    "verified_via_api": false,
-    "indirect_evidence": "2026-06-05.execution.json shows 8 BUYs all rejected — likely BP exhaustion from 06-04 positions"
+  "ethusd_status": {
+    "lifecycle_local": "TIME_EXPIRED",
+    "exit_monitor_attempts": "every 5 min, failing with Alpaca 403 insufficient_balance precision-rounding",
+    "current_pl_pct_local": 6.25,
+    "peak_pl_pct_local": 8.76,
+    "trough_pl_pct_local": -3.83,
+    "manual_close_needed": false,
+    "note": "Position is on profit; exit-monitor will eventually flatten once Alpaca precision settles. v3.11.3 cancel_brackets_first was supposed to prevent the bracket interlock."
   },
   "safety_findings": {
-    "orphan_positions": [],
-    "missing_stop_loss_verified": "unknown_without_api",
-    "audit_gaps": [],
-    "buying_power_issue_inferred": true
+    "orphan_position_ETHUSD": "exit-monitor recurring 403, but position at +$523 → operator review recommended not urgent",
+    "position_manager_widely_stale": ["AVAXUSD", "SOLUSD", "LTCUSD", "AMD"],
+    "analyzer_trade_attribution_broken": true,
+    "amd_lifecycle_gap": true,
+    "buying_power_issue_inferred_06_05": true
   },
   "invariants": {
     "live_trading_disabled": true,
@@ -50,18 +88,29 @@
     "allow_broker_paper": false,
     "read_only": true,
     "does_not_close_positions": true,
-    "does_not_place_orders": true
+    "does_not_place_orders": true,
+    "does_not_mutate_state_json": true,
+    "does_not_mutate_runtime_state": true,
+    "does_not_lower_drawdown_guard_threshold": true
   },
-  "recommendation": "REVIEW_OPEN_POSITIONS_MANUALLY",
+  "recommendation": "INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY",
   "secondary_recommendation": "KEEP_DRAWDOWN_GUARD_ACTIVE",
   "operator_action_items": [
-    "Log into Alpaca paper dashboard (account PA3KNZV29BP5)",
-    "Verify which of the 8 positions are still open",
-    "Verify all have GTC bracket SL/TP children (per v3.9.6)",
-    "Identify any single position >30% of drawdown",
-    "DO NOT close positions automatically",
+    "Verify Alpaca paper Order History 06-04 14:00-15:00 UTC: 7 equity closes should be visible",
+    "Verify AMD trade history: did SL/TP bracket child fire?",
+    "DO NOT manually close ETHUSD (at +$523 profit)",
+    "DO NOT manually close AVAXUSD (small loss, normal)",
+    "DO NOT lower drawdown_guard threshold",
     "DO NOT enable ALLOW_BROKER_PAPER=true",
     "DO NOT flip EDGE_GATE_ENABLED=true",
-    "DO NOT lower drawdown guard threshold"
-  ]
+    "Consider resetting state.json::cumulative.starting_equity to a fresh baseline (operator-level decision, not automated)",
+    "File a backlog item: fix analyzer.py reconstruct_trades to FIFO-pair allocator-rebalance opens with safe_close exits"
+  ],
+  "answers_to_spec_questions": {
+    "dashboard_confirms_8_equity_positions": "NO",
+    "current_dashboard_positions_explain_drawdown": "NO",
+    "eth_avax_need_manual_close": "NO",
+    "drawdown_guard_should_be_disabled": "NO",
+    "next_action": "INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY + check Alpaca order history for 2026-06-04"
+  }
 }

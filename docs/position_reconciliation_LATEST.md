@@ -1,107 +1,165 @@
 # Alpaca Paper Position Reconciliation Report
 
-**Generated:** 2026-06-08 (read-only diagnostic; no orders placed; no positions modified)
-**Status:** `POSITION_RECONCILIATION_UNAVAILABLE_NO_CREDENTIALS` (Alpaca paper API not reachable from this local session) → falls back to **local-state-only reconciliation**.
+**Generated:** 2026-06-08 (UPDATED after operator manual dashboard verification)
+**Status:** `DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE`
+**Previous report status:** `STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED`
+
+## TL;DR — what's actually open vs what local state thinks
+
+**Operator verified via Alpaca paper dashboard "View All positions":**
+
+| Position | Market value | Unrealized P/L | Dashboard? | Local position-manager state |
+| --- | --- | --- | --- | --- |
+| ETHUSD | ~$8,514 | **+$523** | YES | TIME_EXPIRED (exit-monitor trying to close, blocked by bracket interlock) |
+| AVAXUSD | ~$2,451 | -$45 | YES | CLOSED (stale!) |
+| SOLUSD | dust | dust | YES | CLOSED (stale!) |
+| LTCUSD | dust | dust | YES | CLOSED (stale!) |
+| **Total open** | **~$10,965** | **~+$478** | — | — |
+
+**8 equity positions inferred in previous report are NOT open:**
+- AMD, CRWD, PANW, ORCL, NOW, SPY, QQQ, GLD — **NOT on dashboard**.
+
+## Why the previous inference was wrong
+
+The previous report inferred the 8 equity positions from
+`learning-loop/allocations/2026-06-04.execution.json` (which showed
+8 BUYs all `status=placed` at 13:45 UTC). It missed that within hours
+of opening, the exit-monitor closed 7 of them via `safe_close` events
+on the same day:
+
+```
+journal/autonomy/2026-06-04.jsonl:
+  14:00:33  safe_close(GLD, 16)   FAILED  (bracket holding qty)
+  14:05:26  safe_close(QQQ, 13)   PLACED
+  14:20:28  safe_close(CRWD, 19)  PLACED
+  14:20:28  safe_close(NOW, 107)  PLACED
+  ... and more
+```
+
+7 of 8 symbols have at least 1 `safe_close` event on 06-04. Only AMD
+has zero close events — see §5 for the AMD anomaly.
 
 ## 1. Credentials status
 
 | Check | Value |
 | --- | --- |
-| Credentials present in local env | **NO** (`ALPACA_API_KEY` / `ALPACA_SECRET_KEY` both MISSING in shell) |
-| Paper endpoint verified | YES — `https://paper-api.alpaca.markets` is the only endpoint referenced in `shared/autonomy.py::PAPER_BASE_URL`, `shared/risk_guards.py`, `shared/alpaca_orders.py`, `scripts/position_reconciliation_report.py:77` |
-| Live endpoint blocked | YES — `shared/autonomy.py::assert_paper_only()` defined at line 100; AST lint gate `test_no_naked_sell_v3910.py` enforced in CI |
-| Reconciliation script available | YES — `scripts/position_reconciliation_report.py` (fail-soft when creds missing) |
+| Credentials present in local env | NO (`ALPACA_API_KEY` / `ALPACA_SECRET_KEY` both MISSING) |
+| Operator-provided dashboard data | YES (manual verification by operator at session start) |
+| Paper endpoint verified | YES |
+| Live endpoint blocked | YES |
+| Status code | `ALPACA_API_UNAVAILABLE_BUT_OPERATOR_DASHBOARD_VERIFIED_POSITIONS_PROVIDED` |
 
-## 2. Account summary (from local equity history — NOT live Alpaca call)
+## 2. Account summary (local equity history; dashboard not queried)
 
 | Field | Value |
 | --- | --- |
-| Equity (2026-06-08) | **$90,119.76** |
-| Equity (2026-06-04 close) | $95,861.26 |
-| Baseline (2026-06-04 open) | $93,700.09 |
-| Cumulative drop 06-04→06-08 | **-$5,741** (~-5.99% of cost basis) |
-| Cumulative ROI vs baseline | **-3.82%** |
-| Cash | unknown without API call |
-| Buying power | unknown without API call |
-| Portfolio value | unknown without API call |
-| Total unrealized P&L | inferred ~ **-$5,741** (matches the equity drop assuming no closed trades) |
+| Equity (2026-06-08) | $90,119.76 |
+| Baseline (`state.json::cumulative.starting_equity`) | **$93,700.09** (STATIC since reset) |
+| Peak (`state.json::peak_equity`) | $98,446.36 |
+| Cumulative ROI vs starting baseline | **-3.82%** |
+| Cumulative ROI vs peak | -8.46% |
+| Inferred cash ≈ equity − portfolio | ~$79,155 ($90,120 − $10,965) |
+| `state.json::cumulative.total_trades` | **0** (wiring bug — see §6) |
 
-## 3. Open positions (inferred from 2026-06-04 allocator execution.json)
+## 3. Dashboard-verified open positions (operator)
 
-These are the 8 BUY orders placed successfully by the allocator on 2026-06-04 13:45 UTC. All `status=placed` (no failure or skip). They explain the cumulative drawdown.
+| Symbol | Market value | Unrealized P/L | Notes |
+| --- | --- | --- | --- |
+| ETHUSD | ~$8,514 | **+$523** | Exit-monitor failing to close (bracket interlock at 03:50-10:55 UTC); position is in time-stop window |
+| AVAXUSD | ~$2,451 | -$45 | New position opened recently (local state stale) |
+| SOLUSD | dust | dust | Dust qty after partial close (local state says CLOSED) |
+| LTCUSD | dust | dust | Dust qty after partial close (local state says CLOSED) |
 
-| Symbol | Qty | Cost basis | Entry @ | Current value | Inferred unrealized | Has exit/stop | Local audit link |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| AMD | 34 | $16,949.34 | $498.51 | unknown | unknown | unknown (need API) | `learning-loop/allocations/2026-06-04.execution.json` |
-| CRWD | 19 | $13,119.50 | $690.50 | unknown | unknown | unknown (need API) | same |
-| ORCL | 58 | $13,083.06 | $225.57 | unknown | unknown | unknown (need API) | same |
-| PANW | 48 | $13,135.20 | $273.65 | unknown | unknown | unknown (need API) | same |
-| NOW | 107 | $13,065.77 | $122.11 | unknown | unknown | unknown (need API) | same |
-| SPY | 12 | $9,020.64 | $751.72 | unknown | unknown | unknown (need API) | same |
-| QQQ | 13 | $9,538.49 | $733.73 | unknown | unknown | unknown (need API) | same |
-| GLD | 16 | $6,625.60 | $414.10 | unknown | unknown | unknown (need API) | same |
-| **TOTAL** | — | **$94,537.60** | — | — | **~-$5,741** | — | — |
+## 4. Equity positions previously inferred — REJECTED
 
-Note: 2026-06-05's allocator execution.json shows 8 BUYs all **failed** with the (now-deprecated) bare `"Alpaca rejected order (see stdout)"` reason — likely BP exhaustion from the 8 successful positions above. v3.22.0 added structured rejection categorization to prevent this opacity in future.
+The 8 BUYs from 2026-06-04 are **NOT currently open** per dashboard:
 
-## 4. Open orders
+| Symbol | Inferred cost basis | Inferred state | Audit shows close event? | Actual state |
+| --- | --- | --- | --- | --- |
+| AMD | $16,949.34 | ARMED (still open) | **NO** | NOT on dashboard — see §5 ANOMALY |
+| CRWD | $13,119.50 | unknown | YES (06-04 14:20) | CLOSED |
+| ORCL | $13,083.06 | unknown | YES | CLOSED |
+| PANW | $13,135.20 | unknown | YES | CLOSED |
+| NOW | $13,065.77 | unknown | YES (06-04 14:20) | CLOSED |
+| SPY | $9,020.64 | unknown | YES | CLOSED |
+| QQQ | $9,538.49 | unknown | YES (06-04 14:05) | CLOSED |
+| GLD | $6,625.60 | unknown | partial (06-04 14:00 FAILED then PLACED) | CLOSED |
 
-Cannot enumerate without API call. The allocator's exit/stop bracket children typically auto-place after each BUY (`place_stock_bracket` writes them as GTC since v3.9.6).
+All previously labeled `STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED`.
 
-| Symbol | Side | Type | Status | Qty | Limit/stop | Created at | Linked position |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — | — | — |
+## 5. AMD anomaly
 
-## 5. Drawdown attribution
+- `runtime_state.json::positions.AMD.lifecycle = ARMED` → local position-manager believes AMD is still open
+- `journal/autonomy/2026-06-04.jsonl` shows ZERO `safe_close` events for AMD
+- Operator's dashboard verification shows AMD is **NOT open**
 
-- **Largest losing positions (by cost basis size):** AMD ($16.9k), CRWD ($13.1k), PANW ($13.1k), ORCL ($13.1k), NOW ($13.1k). These 5 alone are $69k+ of cost basis (~73% of total exposure).
-- **Positions from 2026-06-04 still open:** ALL 8 inferred to be open. No closing trades attributed in `learning-loop/history/2026-06-08.md` (`Cumulative trades: 0`).
-- **Does Alpaca match local equity gap?** Inferred YES — the -$5,741 drop matches the equity-gap WARN flagged daily by `analyzer.py::compute_equity_gap_alert`. Need API call to confirm position-level numbers.
-- **Does drawdown guard correctly halt new entries?** **YES.** -3.82% > -3.0% threshold → `daily_drawdown_guard` returns HALT. Confirmed live via `learning-loop/opportunity_ledger/2026-06-08.jsonl` (86 entries today, all `HALTED_BY_DRAWDOWN_GUARD`).
+Possible explanations (need API to confirm):
 
-## 6. Safety findings
+1. AMD was closed by a bracket-child SL/TP that fired without going through `safe_close` (i.e. Alpaca server-side OCO trigger) — most likely, and would not appear in the audit JSONL.
+2. AMD was closed silently in a different runner that didn't write to audit.
+3. `runtime_state.json::positions.AMD` is stale and was never updated when the bracket child fired.
 
-- **Orphan positions:** none can be definitively flagged without API call, but all 8 inferred positions have audit links to `2026-06-04.execution.json`.
-- **Missing stop-loss:** cannot verify without API call. `shared/alpaca_orders.py::place_stock_bracket` writes SL+TP children as GTC by default since v3.9.6, so 2026-06-04 positions SHOULD have them. Operator manual check recommended.
-- **Missing exit plan:** v3.17.0+ writes `runtime_state.json::positions` with `INTAKE/ARMED/TRAILING` lifecycle tags. Check whether the 8 positions appear there.
-- **Audit gaps:** none in execution.json attribution.
-- **Buying power issues:** highly likely. 2026-06-05 allocator's 8 BUYs ALL rejected — diagnosed as BP exhaustion from the 06-04 positions. v3.22.0 + v3.22.3 BP guard now pre-checks this before each batch.
-- **Action required:** **operator must log into Alpaca paper dashboard** to verify the 8 positions are still open + have SL/TP children.
+The most likely answer is **(1) + (3)**: an SL/TP child filled at the broker, the position closed at Alpaca, but `position-manager` never reconciled because no monitor told it. This is a known wiring gap (position lifecycle state needs broker-side reconciliation).
 
-## 7. Recommendation
+## 6. Drawdown source diagnosis
 
-**`REVIEW_OPEN_POSITIONS_MANUALLY`** + **`KEEP_DRAWDOWN_GUARD_ACTIVE`**
+| Question | Answer |
+| --- | --- |
+| Does dashboard explain the -$5,741 drawdown? | **NO.** Open positions sum to ~$10,965 with +$478 unrealized. They cannot account for the -$5,741 drop. |
+| Where does the loss come from? | **Realized losses** on the 7 equity positions that opened + closed on 2026-06-04 within hours. The audit JSONL shows the close events but the analyzer's `compute_today_stats` was unable to FIFO-pair them. |
+| Why is `cumulative_trades = 0` in `state.json`? | **WIRING BUG in `learning-loop/analyzer.py::reconstruct_trades`** — the close events exist in audit JSONL but the analyzer cannot match them to their opens (different naming conventions between `allocator-rebalance` orders and `safe_close` orders, OR the analyzer reads only one source while closes live in another). |
+| Is the baseline ($93,700) stale? | LIKELY — `state.json::cumulative.starting_equity = 93700.08782721018` is static. It hasn't been updated since reset. Peak is $98,446 (correctly tracked) but starting is frozen. |
+| Is the drawdown -3.82% real? | YES — equity actually dropped from baseline. The MECHANISM (realized vs unrealized) was misdiagnosed in the previous report. |
+| Should drawdown guard be disabled? | **NO.** The drawdown is real; the guard is correctly halting new entries. |
+
+## 7. Safety findings (updated)
+
+- **Orphan positions: ETHUSD** — local position-manager has it as `TIME_EXPIRED`, exit-monitor tries to close it every 5 min and Alpaca returns 403 "insufficient balance for ETH (requested: 5.072 ≤ balance: 5.0724058)". This looks like a precision rounding error at Alpaca, NOT a real bracket interlock. Operator manual review recommended.
+- **Position-manager state widely stale** — AVAXUSD/SOLUSD/LTCUSD all show `CLOSED` in `runtime_state.json::positions` but are open on dashboard. This is a known reconciliation gap.
+- **Analyzer trade attribution broken** — `cumulative_trades = 0` despite confirmed close events in audit JSONL. The closes are happening but not visible to the LLM Senior PM persona, which is why crypto-momentum / geo-* strategies look SILENT for 64 days even though they're actually executing.
+- **AMD position lifecycle gap** — see §5.
+- **Missing API call** for definitive reconciliation.
+
+## 8. Recommendation
+
+**`INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY`** + **`KEEP_DRAWDOWN_GUARD_ACTIVE`**
 
 Reasoning:
-- The drawdown guard is correctly doing its job (blocking new entries while paper account is down -3.82%).
-- The 8 positions opened on 2026-06-04 are the most likely source of the unrealized loss.
-- Operator must verify in Alpaca paper dashboard:
-  1. Which of the 8 positions are still open?
-  2. Do they all have GTC bracket SL/TP children (per v3.9.6)?
-  3. What is the per-position unrealized %?
-  4. Is any single position responsible for >30% of the drawdown?
-- DO NOT close positions automatically. DO NOT enable `ALLOW_BROKER_PAPER=true`. DO NOT flip `EDGE_GATE_ENABLED=true`. DO NOT lower the drawdown guard threshold.
+- The drawdown is real (-3.82%) — guard is correctly halting new entries.
+- The previous report's local inference of 8 open equity positions was wrong; operator manual dashboard verification is the source of truth.
+- The dashboard-visible positions (ETHUSD +$523, AVAXUSD -$45, SOL/LTC dust) cannot explain -$5,741 drop → drawdown comes from realized losses on the 8 rapid-close positions on 2026-06-04.
+- ETHUSD does NOT need manual close — it's at +$523 (peak +$764 / trough -$326), exit-monitor will eventually flatten it once Alpaca precision settles.
+- AVAXUSD does NOT need manual close — small position with small loss.
 
-## 8. Next steps (operator-side)
+## 9. What operator should do next
 
-```bash
-# After exporting ALPACA_API_KEY + ALPACA_SECRET_KEY for the paper account:
-ALPACA_API_KEY=... ALPACA_SECRET_KEY=... \
-    python3 scripts/position_reconciliation_report.py
+1. **Sprawdzić Alpaca paper dashboard → Account activity / Order history** dla 2026-06-04 14:00-15:00 UTC — potwierdzić, że 7 equity positions zostały zamknięte (CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL).
+2. **Sprawdzić AMD trade history** — czy SL/TP bracket child filled?
+3. **DO NOT close ETHUSD manually** — pozycja jest na plusie (+$523), exit-monitor obsługuje.
+4. **DO NOT close AVAXUSD manually** — mała strata, w normie.
+5. **DO NOT lower drawdown_guard threshold** — guard działa poprawnie.
+6. **DO NOT enable ALLOW_BROKER_PAPER=true** — niepotrzebne.
+7. **DO NOT flip EDGE_GATE_ENABLED=true**.
+8. Operator może rozważyć: czy state.json::cumulative.starting_equity ($93,700) powinien zostać zresetowany do bieżącej equity (aby drawdown był liczony od nowego baseline), ale to operator-level decision wymagająca review.
 
-# Will re-render this document with live position-level numbers.
-```
+## 10. Final answers to spec questions
 
-Or operator may inspect manually at the Alpaca paper dashboard
-(per CLAUDE.md Environment & Accounts section, account `PA3KNZV29BP5`).
+| Question | Answer |
+| --- | --- |
+| Czy dashboard potwierdza 8 equity positions? | **NIE** |
+| Czy obecne dashboard-visible positions tłumaczą drawdown? | **NIE** (~$10,965 portfolio + ~+$478 unrealized cannot explain -$5,741 loss) |
+| Czy ETH/AVAX wymagają manual close? | **NIE** na podstawie obecnych danych |
+| Czy drawdown guard powinien być wyłączony? | **NIE** — guard działa poprawnie |
+| Co dalej? | **`INVESTIGATE_EQUITY_BASELINE_AND_ACCOUNT_HISTORY`** + sprawdzić Alpaca order history za 06-04 |
 
-## 9. Invariants verified (from `scripts/position_reconciliation_report.py`)
+## 11. Invariants verified
 
 - `live_trading_disabled`: **True**
 - `edge_gate_enabled`: **False**
+- `allow_broker_paper`: **False** (unset)
 - `read_only`: **True**
 - `does_not_close_positions`: **True**
 - `does_not_place_orders`: **True**
+- `does_not_modify_runtime_state`: **True** (this report does not patch `state.json` or `runtime_state.json`)
 
-This report was generated WITHOUT any Alpaca API call from this
-session. No orders placed. No positions modified. No live URL hit.
+This update was generated WITHOUT any Alpaca API call. No orders placed. No positions modified. No live URL hit. No `runtime_state.json` or `state.json` mutation.
