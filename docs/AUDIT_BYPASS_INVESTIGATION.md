@@ -224,3 +224,31 @@ Impact:
   next action still `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
 - Audit-bypass invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT`
   remains True (quarantine intact).
+
+---
+
+## v3.23.3.3 follow-up — operator Positions / View All verification
+
+Operator explicitly verified the Alpaca paper dashboard Positions /
+View All panel. Findings:
+
+- Open equity positions visible: **NONE**.
+- Open crypto positions visible: **YES** — ETHUSD + AVAXUSD
+  meaningful, SOLUSD + LTCUSD dust.
+
+Status tokens added:
+- `OPERATOR_VERIFIED_NO_OPEN_EQUITY_POSITIONS`
+- `OPERATOR_VERIFIED_OPEN_CRYPTO_POSITIONS_PRESENT`
+- `OPERATOR_VERIFIED_CRYPTO_POSITIONS_ETH_AVAX_SOL_LTC`
+
+Status token intentionally **NOT** added:
+- `OPERATOR_VERIFIED_NO_OPEN_POSITIONS` — positions are NOT
+  globally flat because 4 crypto positions are open.
+
+Audit-bypass impact: NONE. The audit invariant
+`NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` is unchanged (True). The
+AMD close source remains unresolved
+(`AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`).
+
+Full evidence + verbatim position values:
+[`docs/AMD_CLOSE_SOURCE_INVESTIGATION.md`](AMD_CLOSE_SOURCE_INVESTIGATION.md).

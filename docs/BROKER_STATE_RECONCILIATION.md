@@ -137,3 +137,30 @@ v3.23.3 does NOT auto-allow-list either quarantined file (that
 would silently legitimise the bypass). Operator may, as a future
 decision, delete the quarantined files entirely once the AMD source
 is confirmed — until then they remain as evidence.
+
+---
+
+## v3.23.3.3 addendum — operator Positions / View All verification (2026-06-08)
+
+Operator explicitly checked the Alpaca paper Positions / View All
+panel. The 2026-06-04 equity batch (AMD, CRWD, NOW, QQQ, SPY, GLD,
+PANW, ORCL) is **not open** on the dashboard. The 4 crypto
+positions remain open: ETHUSD + AVAXUSD as meaningful holdings,
+SOLUSD + LTCUSD as dust.
+
+This **confirms** the v3.23.1 inference that the 8 equity
+positions are no longer open (they appeared as "previously inferred
+equity positions rejected" in the v3.23.1 reconciliation). It does
+**not** resolve which submitter closed AMD — the v3.23.3.1 finding
+`AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`
+stands.
+
+Verbatim transcribed values + risk-impact narrative:
+[`docs/AMD_CLOSE_SOURCE_INVESTIGATION.md`](AMD_CLOSE_SOURCE_INVESTIGATION.md).
+
+Updated machine-readable snapshot:
+[`learning-loop/position_reconciliation/operator_dashboard_snapshot.json`](../learning-loop/position_reconciliation/operator_dashboard_snapshot.json)
+gained a `v3233_3_positions_view_verification_2026_06_08` block
+with exact qty / market value / avg entry / cost basis values
+(source: `OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL`). The original
+v3.23.1 session-start block is preserved for history.

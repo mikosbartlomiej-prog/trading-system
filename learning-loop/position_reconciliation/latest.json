@@ -1,6 +1,37 @@
 {
-  "version": "v3.23.3.2",
-  "generated_at_iso": "2026-06-08T19:00:00+00:00",
+  "version": "v3.23.3.3",
+  "generated_at_iso": "2026-06-08T20:00:00+00:00",
+  "v3233_3_followups": {
+    "operator_positions_view_verification_scope": "ALPACA_PAPER_DASHBOARD_POSITIONS_VIEW_ALL",
+    "source": "OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL",
+    "open_equity_positions_visible_count": 0,
+    "open_crypto_positions_visible_count": 4,
+    "open_crypto_meaningful": ["ETHUSD", "AVAXUSD"],
+    "open_crypto_dust": ["SOLUSD", "LTCUSD"],
+    "status_tokens_added": [
+      "OPERATOR_VERIFIED_NO_OPEN_EQUITY_POSITIONS",
+      "OPERATOR_VERIFIED_OPEN_CRYPTO_POSITIONS_PRESENT",
+      "OPERATOR_VERIFIED_CRYPTO_POSITIONS_ETH_AVAX_SOL_LTC"
+    ],
+    "status_tokens_intentionally_withheld": [
+      "OPERATOR_VERIFIED_NO_OPEN_POSITIONS"
+    ],
+    "withheld_rationale": "Crypto positions are open; system is NOT globally flat.",
+    "amd_realized_pnl_usd_unchanged": -437.07,
+    "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+    "client_order_id_status_unchanged": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+    "risk_impact": {
+      "equity_2026_06_04_batch_not_open_per_dashboard": true,
+      "crypto_positions_open_meaningful": true,
+      "crypto_positions_dust_not_auto_closed": true,
+      "amd_close_submitter_source_resolved": false,
+      "remaining_7_symbols_reconstructed": false,
+      "do_not_infer_realized_pnl_for_crypto_from_market_value": true
+    },
+    "snapshot_file": "learning-loop/position_reconciliation/operator_dashboard_snapshot.json",
+    "details_md": "docs/AMD_CLOSE_SOURCE_INVESTIGATION.md",
+    "details_json": "learning-loop/position_reconciliation/amd_close_source_gh_actions_investigation_latest.json"
+  },
   "v3233_2_followups": {
     "operator_order_state_verification_scope": "ALPACA_PAPER_DASHBOARD_ORDERS_VIEW_ONLY",
     "no_hanging_or_open_orders_visible": true,

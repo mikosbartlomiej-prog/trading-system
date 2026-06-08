@@ -1,7 +1,7 @@
 {
-  "version": "v3.23.3.2",
-  "generated_at_iso": "2026-06-08T19:00:00+00:00",
-  "investigation_type": "GH_ACTIONS_FORENSICS_PLUS_OPERATOR_UI_VERIFICATION_PLUS_ORDER_STATE_CHECK",
+  "version": "v3.23.3.3",
+  "generated_at_iso": "2026-06-08T20:00:00+00:00",
+  "investigation_type": "GH_ACTIONS_FORENSICS_PLUS_OPERATOR_UI_VERIFICATION_PLUS_ORDER_STATE_PLUS_POSITIONS_VIEW",
   "target": {
     "symbol": "AMD",
     "order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
@@ -136,6 +136,76 @@
       "amd_close_submitter_source_resolved": false,
       "remaining_7_symbols_reconstructed": false,
       "position_flatness_confirmed": false
+    },
+    "amd_close_status_unchanged": "AMD_CLOSE_MANUALLY_VERIFIED_FROM_ALPACA_UI_OPERATOR_TRANSCRIPTION",
+    "amd_realized_pnl_usd_unchanged": -437.07,
+    "client_order_id_status_unchanged": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+    "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+  },
+  "operator_positions_view_verification_2026_06_08_v3233_3": {
+    "checked_at_iso_utc": "2026-06-08T20:00:00+00:00",
+    "scope": "ALPACA_PAPER_DASHBOARD_POSITIONS_VIEW_ALL",
+    "source": "OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL",
+    "open_equity_positions_visible_count": 0,
+    "open_equity_positions_visible": [],
+    "open_crypto_positions_visible": [
+      {
+        "symbol": "ETHUSD",
+        "side": "long",
+        "qty": 5.0724058,
+        "price_usd": 1710.23,
+        "market_value_usd": 8674.97,
+        "avg_entry_price_usd": 1575.2766,
+        "cost_basis_usd": 7990.4422,
+        "dust": false,
+        "meaningful": true
+      },
+      {
+        "symbol": "AVAXUSD",
+        "side": "long",
+        "qty": 365.968010756,
+        "price_usd": 6.87,
+        "market_value_usd": 2514.57,
+        "avg_entry_price_usd": 6.82,
+        "cost_basis_usd": 2495.9018,
+        "dust": false,
+        "meaningful": true
+      },
+      {
+        "symbol": "LTCUSD",
+        "side": "long",
+        "qty": 0.000000183,
+        "market_value_usd": 0.000008,
+        "avg_entry_price_usd": 44.3795,
+        "dust": true,
+        "meaningful": false
+      },
+      {
+        "symbol": "SOLUSD",
+        "side": "long",
+        "qty": 0.00000021,
+        "market_value_usd": 0.000014,
+        "avg_entry_price_usd": 66.3843,
+        "dust": true,
+        "meaningful": false
+      }
+    ],
+    "status_tokens_added": [
+      "OPERATOR_VERIFIED_NO_OPEN_EQUITY_POSITIONS",
+      "OPERATOR_VERIFIED_OPEN_CRYPTO_POSITIONS_PRESENT",
+      "OPERATOR_VERIFIED_CRYPTO_POSITIONS_ETH_AVAX_SOL_LTC"
+    ],
+    "status_tokens_intentionally_withheld": [
+      "OPERATOR_VERIFIED_NO_OPEN_POSITIONS"
+    ],
+    "withheld_rationale": "Crypto positions are open; system is NOT globally flat.",
+    "risk_impact": {
+      "equity_2026_06_04_batch_not_open_per_dashboard": true,
+      "crypto_positions_open_meaningful_eth_avax": true,
+      "crypto_positions_dust_sol_ltc_not_auto_closed": true,
+      "amd_close_submitter_source_resolved": false,
+      "remaining_7_symbols_reconstructed": false,
+      "do_not_infer_realized_pnl_for_crypto_from_market_value": true
     },
     "amd_close_status_unchanged": "AMD_CLOSE_MANUALLY_VERIFIED_FROM_ALPACA_UI_OPERATOR_TRANSCRIPTION",
     "amd_realized_pnl_usd_unchanged": -437.07,

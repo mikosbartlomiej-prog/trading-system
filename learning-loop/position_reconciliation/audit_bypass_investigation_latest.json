@@ -1,6 +1,6 @@
 {
-  "version": "v3.23.3.2",
-  "generated_at_iso": "2026-06-08T19:00:00+00:00",
+  "version": "v3.23.3.3",
+  "generated_at_iso": "2026-06-08T20:00:00+00:00",
   "audit_gap_kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
   "incident_symbol": "AMD",
   "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
@@ -26,6 +26,22 @@
     ],
     "operator_verified_no_open_positions": false,
     "rationale": "Operator checked Orders view only; Positions / View All NOT explicitly verified. No inference about position state.",
+    "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+    "details_report": "docs/AMD_CLOSE_SOURCE_INVESTIGATION.md"
+  },
+  "operator_positions_view_verification_2026_06_08_v3233_3": {
+    "scope": "ALPACA_PAPER_DASHBOARD_POSITIONS_VIEW_ALL",
+    "source": "OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL",
+    "status_tokens": [
+      "OPERATOR_VERIFIED_NO_OPEN_EQUITY_POSITIONS",
+      "OPERATOR_VERIFIED_OPEN_CRYPTO_POSITIONS_PRESENT",
+      "OPERATOR_VERIFIED_CRYPTO_POSITIONS_ETH_AVAX_SOL_LTC"
+    ],
+    "no_open_positions_token_intentionally_withheld": "OPERATOR_VERIFIED_NO_OPEN_POSITIONS",
+    "withheld_rationale": "4 crypto positions are open; positions are NOT globally flat.",
+    "open_crypto_meaningful": ["ETHUSD", "AVAXUSD"],
+    "open_crypto_dust": ["SOLUSD", "LTCUSD"],
+    "open_equity_count": 0,
     "amd_close_source_status_unchanged": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
     "details_report": "docs/AMD_CLOSE_SOURCE_INVESTIGATION.md"
   },

@@ -287,3 +287,89 @@ require a separate explicit confirmation against the Positions view.
 - Does NOT change AMD realized P/L.
 - Does NOT reset the equity baseline.
 - Does NOT lower the drawdown guard.
+
+---
+
+## Operator Positions / View All verification — v3.23.3.3
+
+Following the v3.23.3.2 Orders-view check, the operator performed an
+explicit **Positions / View All** check on the Alpaca paper
+dashboard. Findings:
+
+- **Open equity positions visible: NONE.** The 2026-06-04 equity
+  batch (AMD, CRWD, NOW, QQQ, SPY, GLD, PANW, ORCL) is not open on
+  the dashboard.
+- **Open crypto positions visible: YES** — 2 meaningful, 2 dust.
+
+### Verbatim positions transcribed from dashboard
+
+| Symbol | Long/Short | Qty | Price | Market value | Avg entry | Cost basis | Note |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| ETHUSD | Long | 5.0724058 | 1,710.23 | 8,674.97 | 1,575.2766 | 7,990.4422 | meaningful |
+| AVAXUSD | Long | 365.968010756 | 6.87 | 2,514.57 | 6.82 | 2,495.9018 | meaningful |
+| LTCUSD | Long | 0.000000183 | — | 0.000008 | 44.3795 | — | dust |
+| SOLUSD | Long | 0.00000021 | — | 0.000014 | 66.3843 | — | dust |
+
+Source label for this evidence: `OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL`.
+
+### Status tokens added
+
+- `OPERATOR_VERIFIED_NO_OPEN_EQUITY_POSITIONS`
+- `OPERATOR_VERIFIED_OPEN_CRYPTO_POSITIONS_PRESENT`
+- `OPERATOR_VERIFIED_CRYPTO_POSITIONS_ETH_AVAX_SOL_LTC`
+
+### Status token **NOT** added
+
+- `OPERATOR_VERIFIED_NO_OPEN_POSITIONS` — positions are NOT globally
+  flat because the 4 crypto positions above are open. Any future
+  agent reading this evidence must NOT promote the equity-only flat
+  state to a global flat claim.
+
+### Risk-impact clarification
+
+- No open orders (per v3.23.3.2) means **no known pending TP/SL or
+  order-trigger risk** surface remains.
+- No open equity positions visible means the 2026-06-04 equity batch
+  is **not open**. The realized P/L from that batch is already
+  baked into the equity baseline; the residual `~-$5,304` unknown
+  remains pending operator Order History extraction per
+  [`docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md`](OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md).
+- **Crypto positions remain reconciled as open.** ETHUSD and
+  AVAXUSD are meaningful. SOLUSD and LTCUSD are dust and should
+  **NOT** be auto-closed — the operator decides.
+- Current unrealized P/L (computed locally from operator-supplied
+  values, NOT pulled from broker):
+  - ETHUSD: market_value 8,674.97 − cost_basis 7,990.4422 = **+$684.53**
+  - AVAXUSD: market_value 2,514.57 − cost_basis 2,495.9018 = **+$18.67**
+  - SOLUSD / LTCUSD: dust, P/L not computed (would be noise).
+- These are **unrealized** numbers based on the dashboard snapshot
+  at this moment. They are NOT realized P/L and they are NOT
+  attributed to any strategy.
+
+### What this verification preserves
+
+- AMD realized P/L: **-$437.07** (unchanged)
+- AMD close order ID: `7f3ac850-49aa-4ccb-b075-c0ecb56c5871`
+- AMD close source status: still
+  `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`
+- client_order_id: still `CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE`
+- Drawdown guard: active at -3.0% (unchanged)
+- Equity baseline: $93,700.09 (unchanged, NOT reset)
+- Quarantine of legacy emergency-close `.py.disabled` scripts:
+  intact
+- Audit-bypass invariant
+  `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT`: True (unchanged)
+
+### What this verification does NOT do
+
+- Does NOT place orders.
+- Does NOT close any position (including SOLUSD / LTCUSD dust).
+- Does NOT modify any position.
+- Does NOT enable live trading or broker_paper.
+- Does NOT reset the equity baseline.
+- Does NOT lower the drawdown guard.
+- Does NOT infer a `client_order_id`.
+- Does NOT change AMD's realized P/L.
+- Does NOT infer realized P/L for crypto from current market value.
+- Does NOT resolve the AMD close submitter source.
+- Does NOT reconstruct the 7 remaining 2026-06-04 equity trades.

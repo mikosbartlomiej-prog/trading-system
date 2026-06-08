@@ -222,14 +222,24 @@ class TestSafetyFlagsUnchanged(unittest.TestCase):
 
 
 class TestVersionBumped(unittest.TestCase):
+    """v3.23.3.x updates preserve all earlier facts; accept any
+    version in the v3.23.3 family. The presence of the v3.23.3.2
+    followup block (asserted separately) is what pins this batch."""
+
     def test_gh_actions_version(self):
-        self.assertEqual(_load(GH_ACTIONS_JSON)["version"], "v3.23.3.2")
+        self.assertTrue(
+            _load(GH_ACTIONS_JSON)["version"].startswith("v3.23.3."),
+        )
 
     def test_audit_bypass_version(self):
-        self.assertEqual(_load(AUDIT_BYPASS_JSON)["version"], "v3.23.3.2")
+        self.assertTrue(
+            _load(AUDIT_BYPASS_JSON)["version"].startswith("v3.23.3."),
+        )
 
     def test_latest_version(self):
-        self.assertEqual(_load(LATEST_JSON)["version"], "v3.23.3.2")
+        self.assertTrue(
+            _load(LATEST_JSON)["version"].startswith("v3.23.3."),
+        )
 
     def test_previous_followup_blocks_preserved(self):
         data = _load(LATEST_JSON)
