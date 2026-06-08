@@ -86,33 +86,3 @@ from shared.trading_unlock_readiness import (
 report = evaluate_from_current_repo_state()
 # Expected verdict in v3.25: SIGNAL_SHADOW_UNLOCK_READY
 ```
-
----
-
-## v3.26 update — signal/shadow evidence collection scaffolding
-
-v3.26 ships the operator scaffolding for the
-`SIGNAL_SHADOW_UNLOCK_READY` tier:
-
-- `shared/signal_shadow_preflight.py` — single-call preflight
-  validator. Returns `SIGNAL_SHADOW_PREFLIGHT_PASS` or
-  `SIGNAL_SHADOW_PREFLIGHT_BLOCKED` plus 14 named confirmation
-  tokens (when satisfied).
-- `shared/shadow_evidence_counters.py` — monotonic counter
-  module persisting under
-  `learning-loop/shadow_evidence/evidence_counters_latest.json`.
-- `learning-loop/shadow_evidence/schema.json` — JSON Schema for
-  shadow decision records. `broker_order_submitted` and
-  `broker_execution_enabled` are pinned to `enum: [false]`.
-- `scripts/run_signal_shadow_evidence_collection.py` — dry-run
-  collector. Refuses to proceed if any broker-execution env flag
-  is truthy.
-- `docs/SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK.md` — operator
-  runbook.
-- `docs/SHADOW_EVIDENCE_PROGRESS.md` — progress report.
-
-After v3.26 ships, the verdict ladder is unchanged. The maximum
-permissible verdict remains `SIGNAL_SHADOW_UNLOCK_READY`. Broker
-paper remains `BROKER_PAPER_CANARY_NOT_READY` until ALL of the
-v3.25 evidence thresholds are met AND the operator gives explicit
-approval.
