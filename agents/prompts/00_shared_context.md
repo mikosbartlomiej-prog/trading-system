@@ -367,4 +367,63 @@ PAPER_TRADING_* verdicts.
 
 ---
 
+## v3.23 coverage (added 2026-06-08)
+
+v3.23 repairs broker-state reconciliation + trade reconstruction
+after the 2026-06-08 incident where state.json::cumulative.total_trades
+was 0 despite 7 confirmed safe_close events for the 2026-06-04
+equity positions and dashboard showed ETH/AVAX/SOL/LTC open while
+local state was widely stale.
+
+When reviewing, also check:
+
+- `shared/position_reconciliation_status.py` — formal 16-status enum
+  classifier. READ-ONLY. Distinguishes VERIFIED_OPEN vs STALE_LOCAL
+  vs DASHBOARD_VERIFIED vs BROKER_SIDE_CLOSED.
+- `shared/trade_reconstruction.py` — FIFO lot matcher with explicit
+  TRADE_CLOSED_WITH_PNL / TRADE_CLOSED_PRICE_MISSING /
+  TRADE_BROKER_SIDE_CLOSE_INFERRED / TRADE_PARTIAL_CLOSE /
+  TRADE_UNMATCHED_OPEN / TRADE_UNMATCHED_CLOSE statuses.
+  CRITICAL: NEVER_INVENTS_PRICES; missing fill prices yield
+  TRADE_CLOSED_PRICE_MISSING, not fake P&L.
+- `shared/crypto_precision.py` — classifies Alpaca 403 responses
+  into CLOSE_BLOCKED_BY_PRECISION_ROUNDING etc. `round_qty_down()`
+  NEVER rounds up. Repeated-failure deduper caps retries at 3.
+- `shared/drawdown_attribution.py` — disambiguates drawdown source
+  (REALIZED / UNREALIZED / BASELINE_STALE / UNKNOWN). NEVER resets
+  baseline automatically. NEVER lowers drawdown threshold.
+- `shared/silent_strategy_classification.py` — funnel-based status
+  (NO_SIGNALS / SIGNALS_BUT_NO_ORDERS / ORDERS_BUT_NO_FILLS /
+  FILLS_BUT_NO_RECONSTRUCTED_TRADES / RECONSTRUCTION_FAILED /
+  ACTIVE_BUT_ANALYZER_STALE / TRULY_SILENT). CRITICAL:
+  RECONSTRUCTION_FAILURE_BLOCKS_AUTO_DISABLE — a strategy with
+  fills + closes but reconstruction = 0 must NOT be auto-disabled.
+- `learning-loop/position_reconciliation/operator_dashboard_snapshot.json`
+  is sanitized manual input from the operator; reviewers must
+  treat it as `source=OPERATOR_DASHBOARD_MANUAL` and NOT as full
+  Alpaca API truth.
+
+### Final Arbiter v3.23 escalation triggers (P0)
+
+The Final Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- analyzer still reports `cumulative_trades = 0` despite safe_close
+  events present in audit JSONL
+- local state conflicts with dashboard and no v3.23 reconciliation
+  status is emitted
+- AMD-style positions (no safe_close + dashboard NOT_open) are
+  treated as VERIFIED_OPEN
+- ETHUSD close loop emits 403 precision errors without classification
+  via `crypto_precision.classify_precision_error`
+- a strategy is marked auto-disabled despite `block_auto_disable=True`
+  from `silent_strategy_classification`
+- drawdown_guard threshold is lowered automatically
+- starting_equity baseline is reset automatically (operator-only
+  action)
+- trade reconstruction returns fake P&L when fill prices are missing
+  (must be `TRADE_CLOSED_PRICE_MISSING`, not invented number)
+
+---
+
 ## End of shared context.

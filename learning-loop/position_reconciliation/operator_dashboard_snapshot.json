@@ -1,0 +1,64 @@
+{
+  "source": "OPERATOR_DASHBOARD_MANUAL",
+  "timestamp_iso": "2026-06-08T11:00:00+00:00",
+  "account_label": "Alpaca Paper (per CLAUDE.md reference)",
+  "caveats": [
+    "manual dashboard snapshot — NOT a full Alpaca API account history call",
+    "no secrets included",
+    "no orders placed",
+    "no position modifications",
+    "operator verified View All positions section of paper dashboard at session start",
+    "P/L approximations rounded to nearest dollar"
+  ],
+  "positions_visible_open": [
+    {
+      "symbol": "ETHUSD",
+      "market_value_usd_approx": 8514,
+      "unrealized_pl_usd_approx": 523,
+      "dust": false
+    },
+    {
+      "symbol": "AVAXUSD",
+      "market_value_usd_approx": 2451,
+      "unrealized_pl_usd_approx": -45,
+      "dust": false
+    },
+    {
+      "symbol": "SOLUSD",
+      "market_value_usd_approx": null,
+      "unrealized_pl_usd_approx": null,
+      "dust": true,
+      "notes": "qty marked as dust by operator"
+    },
+    {
+      "symbol": "LTCUSD",
+      "market_value_usd_approx": null,
+      "unrealized_pl_usd_approx": null,
+      "dust": true,
+      "notes": "qty marked as dust by operator"
+    }
+  ],
+  "positions_explicitly_not_visible": [
+    "AMD",
+    "CRWD",
+    "PANW",
+    "ORCL",
+    "NOW",
+    "SPY",
+    "QQQ",
+    "GLD"
+  ],
+  "total_dashboard_market_value_usd_approx": 10965,
+  "total_dashboard_unrealized_pl_usd_approx": 478,
+  "what_this_snapshot_is_not": [
+    "NOT a substitute for an Alpaca API account history query",
+    "NOT a verified position lifecycle source — broker reconciliation still requires API call",
+    "NOT authoritative for cash / buying power / day-trade count",
+    "NOT a substitute for order history (operator must check Alpaca dashboard order history for close events)"
+  ],
+  "follow_up_required": [
+    "VERIFY_AMD_ORDER_HISTORY_IN_ALPACA",
+    "VERIFY_CRYPTO_DUST_POSITIONS",
+    "REVIEW_EQUITY_BASELINE_RESET_POLICY"
+  ]
+}
