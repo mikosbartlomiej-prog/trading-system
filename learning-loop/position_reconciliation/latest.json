@@ -1,0 +1,67 @@
+{
+  "version": "v3.22.0",
+  "generated_at_iso": "2026-06-08T11:00:00+00:00",
+  "status": "POSITION_RECONCILIATION_UNAVAILABLE_NO_CREDENTIALS",
+  "reconciliation_source": "local-state-only",
+  "alpaca_api_called": false,
+  "credentials": {
+    "alpaca_api_key_present": false,
+    "alpaca_secret_key_present": false,
+    "paper_endpoint_verified": true,
+    "live_endpoint_blocked": true
+  },
+  "equity": {
+    "today_2026_06_08": 90119.76,
+    "baseline_2026_06_04_open": 93700.09,
+    "drop_usd": -5741.0,
+    "cumulative_roi_pct": -3.82
+  },
+  "inferred_open_positions": [
+    {"symbol": "AMD",  "qty": 34,  "entry_price": 498.51, "cost_basis": 16949.34, "source": "2026-06-04.execution.json"},
+    {"symbol": "CRWD", "qty": 19,  "entry_price": 690.50, "cost_basis": 13119.50, "source": "2026-06-04.execution.json"},
+    {"symbol": "ORCL", "qty": 58,  "entry_price": 225.57, "cost_basis": 13083.06, "source": "2026-06-04.execution.json"},
+    {"symbol": "PANW", "qty": 48,  "entry_price": 273.65, "cost_basis": 13135.20, "source": "2026-06-04.execution.json"},
+    {"symbol": "NOW",  "qty": 107, "entry_price": 122.11, "cost_basis": 13065.77, "source": "2026-06-04.execution.json"},
+    {"symbol": "SPY",  "qty": 12,  "entry_price": 751.72, "cost_basis":  9020.64, "source": "2026-06-04.execution.json"},
+    {"symbol": "QQQ",  "qty": 13,  "entry_price": 733.73, "cost_basis":  9538.49, "source": "2026-06-04.execution.json"},
+    {"symbol": "GLD",  "qty": 16,  "entry_price": 414.10, "cost_basis":  6625.60, "source": "2026-06-04.execution.json"}
+  ],
+  "total_cost_basis": 94537.60,
+  "drawdown_guard": {
+    "threshold_pct": -3.0,
+    "current_drawdown_pct": -3.82,
+    "halt_active": true,
+    "halt_correctly_blocks_new_entries": true,
+    "evidence": "learning-loop/opportunity_ledger/2026-06-08.jsonl (86 entries today, all HALTED_BY_DRAWDOWN_GUARD)"
+  },
+  "buying_power_status": {
+    "verified_via_api": false,
+    "indirect_evidence": "2026-06-05.execution.json shows 8 BUYs all rejected — likely BP exhaustion from 06-04 positions"
+  },
+  "safety_findings": {
+    "orphan_positions": [],
+    "missing_stop_loss_verified": "unknown_without_api",
+    "audit_gaps": [],
+    "buying_power_issue_inferred": true
+  },
+  "invariants": {
+    "live_trading_disabled": true,
+    "edge_gate_enabled": false,
+    "allow_broker_paper": false,
+    "read_only": true,
+    "does_not_close_positions": true,
+    "does_not_place_orders": true
+  },
+  "recommendation": "REVIEW_OPEN_POSITIONS_MANUALLY",
+  "secondary_recommendation": "KEEP_DRAWDOWN_GUARD_ACTIVE",
+  "operator_action_items": [
+    "Log into Alpaca paper dashboard (account PA3KNZV29BP5)",
+    "Verify which of the 8 positions are still open",
+    "Verify all have GTC bracket SL/TP children (per v3.9.6)",
+    "Identify any single position >30% of drawdown",
+    "DO NOT close positions automatically",
+    "DO NOT enable ALLOW_BROKER_PAPER=true",
+    "DO NOT flip EDGE_GATE_ENABLED=true",
+    "DO NOT lower drawdown guard threshold"
+  ]
+}
