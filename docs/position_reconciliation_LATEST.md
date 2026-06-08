@@ -1,8 +1,54 @@
 # Alpaca Paper Position Reconciliation Report
 
-**Generated:** 2026-06-08 (v3.23.1 — refined AMD after operator pulled Order History)
+**Generated:** 2026-06-08 (v3.23.2 — placeholder for 7 remaining symbols + audit-bypass investigation)
 **Status:** `DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE`
 **Previous report status:** `STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED`
+
+## v3.23.2 update — 7-symbol placeholder + safe-close bypass investigation
+
+This refresh DOES NOT invent fill prices for CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL.
+Instead, v3.23.2 adds:
+
+- `learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+  — placeholder with `data_quality=REQUIRES_OPERATOR_EXTRACTION` per symbol
+  and every fill price `null`. Reconstruction stays blocked until the
+  operator transcribes the dashboard Order History per
+  `docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md`.
+- `shared/audit_bypass_detector.py` — static classifier that ran against
+  the real repo and flagged 2 LEGACY_DANGEROUS scripts
+  (`scripts/emergency_close_20260602.py`, `scripts/emergency_close_20260603.py`)
+  — both contain `requests.post(/v2/orders, side="sell", type="market")`
+  without `safe_close` or audit-event emission. The pre-existing AMD
+  audit gap (`MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`)
+  has these scripts as the most likely (but unconfirmed) source.
+- `shared/amd_close_source_search.py` — static, READ-ONLY search of
+  `journal/`, `learning-loop/`, `scripts/`, `shared/`, `exit-monitor/`,
+  `options-exit-monitor/`, `.github/`, `docs/` for evidence of AMD's
+  `7f3ac850-…` close order. After self-reference filtering of v3.23.1
+  reports, the search returned **0 STRONG matches**. Classification:
+  `AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY`.
+  Confirmed close source is still **unknown** locally — operator must
+  inspect GH Actions logs OR pull Alpaca order-history API.
+- `shared/drawdown_attribution.py` extended with 4 new statuses
+  (`DRAWDOWN_ATTRIBUTION_COMPLETE` / `PARTIAL` / `REQUIRES_ORDER_HISTORY`
+  / `CONFLICT`) and `compute_partial_attribution()` helper. The current
+  state is `DRAWDOWN_ATTRIBUTION_PARTIAL`: known AMD -$437.07, 7 unknown
+  symbols, residual ~-$5,304 awaiting operator extraction. Baseline
+  is NOT reset.
+
+Machine-readable outputs committed alongside this report:
+- `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+- `learning-loop/position_reconciliation/amd_close_source_search_latest.json`
+- `learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+
+What this refresh **does NOT** do:
+- does not invent fill prices for the 7 remaining symbols
+- does not auto-delete the 2 legacy scripts
+- does not auto-allow-list them
+- does not reset starting_equity baseline
+- does not close ETH/AVAX/SOL/LTC
+- does not enable broker_paper or live trading
+- does not lower drawdown_guard threshold
 
 ## v3.23.1 update — AMD now reconciled
 

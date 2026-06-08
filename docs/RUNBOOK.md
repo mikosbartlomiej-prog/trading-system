@@ -907,3 +907,55 @@ in a reasonable window.
   `learning-loop/shadow_ledger/` — only the runner writes to them.
 - Do NOT trigger the workflow with `mode=broker` unless paper-only
   credentials are configured.
+
+---
+
+## Scenario X — Audit gap (`MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`)
+
+Symptoms:
+
+- Position is closed at Alpaca but no matching `safe_close` event in
+  `journal/autonomy/<date>.jsonl` exists for that symbol.
+- Order History shows `submitter_source=access_key` for the close.
+- Static scan
+  (`shared/audit_bypass_detector.py::detect_bypasses()`) returns
+  `invariant_satisfied=False`.
+
+What to check:
+
+1. `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+   — `flagged_files` lists every Python file outside `ALLOW_LIST`
+   that submits a sell/close order without `safe_close`. As of
+   v3.23.2 the 2 flagged scripts are
+   `scripts/emergency_close_20260602.py` and
+   `scripts/emergency_close_20260603.py`.
+2. `learning-loop/position_reconciliation/amd_close_source_search_latest.json`
+   — `classification` and `confirmed_path` indicate whether local
+   logs identified the close source. As of v3.23.2 the answer is
+   `AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY`.
+3. GitHub Actions run logs for the day in question — search for
+   invocations of any `scripts/emergency_close_*.py`.
+4. Alpaca paper API order history — `client_order_id` prefix tells
+   you which script submitted (e.g. `exit-profit-lock-amd-…`,
+   `exit-emergency-…`).
+
+What the operator does NOT do:
+
+- Do NOT auto-allow-list a flagged script — that silently hides
+  the bypass.
+- Do NOT delete the audit JSONL files — they are the evidence.
+- Do NOT reset `state.json::cumulative.starting_equity` to absorb
+  the residual drawdown.
+- Do NOT lower the drawdown guard threshold to bypass the alert.
+
+What the operator MAY do (decision-level, not automated):
+
+- Delete the 2 legacy scripts if they are no longer needed.
+- Rewrite the 2 legacy scripts to call
+  `shared/alpaca_orders.py::safe_close()` only.
+- Provide Order History values per
+  `docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md` to close
+  the drawdown attribution gap for the 7 unknown symbols.
+
+`EDGE_GATE_ENABLED` stays `false`. Live trading stays blocked.
+

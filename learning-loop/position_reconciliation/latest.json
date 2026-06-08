@@ -1,6 +1,22 @@
 {
-  "version": "v3.23.1",
-  "generated_at_iso": "2026-06-08T12:00:00+00:00",
+  "version": "v3.23.2",
+  "generated_at_iso": "2026-06-08T14:35:00+00:00",
+  "v3232_followups": {
+    "remaining_symbols_placeholder": "learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json",
+    "audit_bypass_investigation": "learning-loop/position_reconciliation/audit_bypass_investigation_latest.json",
+    "amd_close_source_search": "learning-loop/position_reconciliation/amd_close_source_search_latest.json",
+    "operator_extraction_checklist": "docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md",
+    "drawdown_attribution_status": "DRAWDOWN_ATTRIBUTION_PARTIAL",
+    "known_realized_pnl_usd": -437.07,
+    "unknown_symbols_count": 7,
+    "residual_pending_operator_extraction_usd_approx": -5304.0,
+    "amd_close_source_classification": "AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY",
+    "audit_bypass_invariant_satisfied": false,
+    "legacy_dangerous_flagged": [
+      "scripts/emergency_close_20260602.py",
+      "scripts/emergency_close_20260603.py"
+    ]
+  },
   "status": "DASHBOARD_VERIFIED_POSITIONS_CONFLICT_WITH_LOCAL_INFERENCE",
   "previous_report_status": "STALE_INFERRED_POSITIONS_NOT_DASHBOARD_VERIFIED",
   "reconciliation_source": "operator-dashboard + operator-order-history + local-state + audit-jsonl",

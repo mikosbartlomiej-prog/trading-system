@@ -1,0 +1,52 @@
+{
+  "action_items": [
+    "INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS",
+    "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05",
+    "DISABLE_OR_WRAP_DIRECT_ORDER_SCRIPT: scripts/emergency_close_20260602.py",
+    "DISABLE_OR_WRAP_DIRECT_ORDER_SCRIPT: scripts/emergency_close_20260603.py",
+    "KEEP_DRAWDOWN_GUARD_ACTIVE",
+    "KEEP_EDGE_GATE_DISABLED",
+    "DO_NOT_ENABLE_BROKER_PAPER"
+  ],
+  "amd_close_source_search": {
+    "classification": "AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY",
+    "confirmed_path": null,
+    "followup_required": [
+      "INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS",
+      "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05"
+    ],
+    "matches_count": 0,
+    "suspected_paths": []
+  },
+  "audit_gap_kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
+  "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+  "close_source": "access_key (per dashboard) \u2014 exact local submitter unknown",
+  "close_time": "2026-06-05T17:35:45-04:00 (21:35:45 UTC)",
+  "confirmed_path": null,
+  "generated_at_iso": "2026-06-08T14:30:00+00:00",
+  "incident_symbol": "AMD",
+  "risk_level": "HIGH",
+  "safe_close_event_present": false,
+  "static_scan_summary": {
+    "by_classification": {
+      "AUDIT_EQUIVALENT_WRAPPED": 0,
+      "LEGACY_DANGEROUS": 2,
+      "ORDER_SUBMITTER_BYPASS": 0,
+      "READ_ONLY": 31,
+      "SAFE_CLOSE_WRAPPED": 1,
+      "UNKNOWN_REQUIRES_REVIEW": 127
+    },
+    "flagged_count": 2,
+    "flagged_files": [
+      "scripts/emergency_close_20260602.py",
+      "scripts/emergency_close_20260603.py"
+    ],
+    "invariant_satisfied": false,
+    "total_scanned": 161
+  },
+  "suspected_paths": [
+    "scripts/emergency_close_20260602.py",
+    "scripts/emergency_close_20260603.py"
+  ],
+  "version": "v3.23.2"
+}

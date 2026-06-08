@@ -68,3 +68,35 @@ incomplete.
 - close_price missing → `TRADE_CLOSED_PRICE_MISSING` (no fake P&L)
 - 2026-06-04 scenario: 7 paired + 1 inferred = 8 reconstructed
   trades (cumulative MUST NOT be 0)
+
+---
+
+## v3.23.2 addendum — 7-symbol placeholder reconstruction (2026-06-08)
+
+The 7 equity positions opened by allocator-rebalance on 2026-06-04
+(CRWD / NOW / QQQ / SPY / GLD / PANW / ORCL) are still pending
+operator extraction. v3.23.2 adds:
+
+- `learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+  — placeholder JSON with `data_quality=REQUIRES_OPERATOR_EXTRACTION`
+  per symbol and every `open_avg_fill_price` / `close_avg_fill_price`
+  set to `null`. Reconstruction explicitly stays blocked until
+  operator transcribes Order History values; the helper
+  `trade_from_manual_order_history()` returns
+  `TRADE_CLOSED_PRICE_MISSING` when invoked with `None` price, so
+  invented P&L cannot leak through.
+- `docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md` documents
+  exactly which fields the operator must transcribe per symbol from
+  the dashboard's Order History view. No credentials are requested.
+- `shared/drawdown_attribution.py` adds four new statuses
+  (`DRAWDOWN_ATTRIBUTION_COMPLETE` / `PARTIAL` /
+  `REQUIRES_ORDER_HISTORY` / `CONFLICT`) plus a
+  `compute_partial_attribution()` helper. Current state is
+  `PARTIAL`: AMD's -$437.07 is known, the 7 remaining symbols are
+  unknown, residual ~-$5,304 is pending operator extraction.
+- `tests/test_remaining_trade_reconstruction_v3232.py` enforces:
+  placeholder file is valid JSON with 7 entries; all
+  `data_quality=REQUIRES_OPERATOR_EXTRACTION`; checklist contains
+  every symbol AND disclaims credential collection; canceled TP/SL
+  orders never enter the P&L computation.
+

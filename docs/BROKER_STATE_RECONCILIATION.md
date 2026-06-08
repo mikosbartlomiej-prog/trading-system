@@ -45,3 +45,56 @@ treats it as a full Alpaca API response.
 exercises every status branch including the 2026-06-08 scenarios
 (AMD anomaly, ETHUSD stale-time-expired, AVAXUSD/SOLUSD/LTCUSD
 stale-closed conflicts).
+
+---
+
+## v3.23.2 addendum — audit bypass investigation (2026-06-08)
+
+After v3.23.1 surfaced `MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`
+for AMD, v3.23.2 adds tooling to investigate (without auto-fixing
+or auto-deleting anything):
+
+- `shared/audit_bypass_detector.py` — static classifier for every
+  Python file that can submit a sell/close order. Six
+  classifications: `SAFE_CLOSE_WRAPPED`, `AUDIT_EQUIVALENT_WRAPPED`,
+  `READ_ONLY`, `ORDER_SUBMITTER_BYPASS`, `LEGACY_DANGEROUS`,
+  `UNKNOWN_REQUIRES_REVIEW`. ALLOW_LIST contains the three
+  legitimate sell submitters (`shared/alpaca_orders.py`,
+  `options-monitor/monitor.py`, `shared/broker_paper_adapter.py`).
+  Three test-asserted invariants: `NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT`,
+  `NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT`,
+  `ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT`.
+- `shared/amd_close_source_search.py` — static, READ-ONLY search
+  for evidence of the AMD `7f3ac850-…` close order across
+  `journal/`, `learning-loop/`, `scripts/`, `shared/`, `exit-monitor/`,
+  `options-exit-monitor/`, `.github/`, `docs/`. Self-reference filter
+  excludes v3.23.1 reconciliation reports.
+- `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+  — real-repo scan: 161 files scanned, **2 flagged**
+  (`scripts/emergency_close_20260602.py`,
+  `scripts/emergency_close_20260603.py`),
+  `invariant_satisfied=False`, `risk_level=HIGH`.
+- `learning-loop/position_reconciliation/amd_close_source_search_latest.json`
+  — search result: 0 STRONG matches after self-reference filter.
+  Classification: `AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY`.
+  Confirmed close source remains unknown locally.
+- `docs/AUDIT_BYPASS_INVESTIGATION.md` — operator-facing report
+  documenting the AMD close evidence, suspected paths, confirmed
+  path = None, and required follow-ups.
+
+Operator action items (none auto-applied):
+
+1. `INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS` — check GH
+   Actions run logs on 2026-06-05 around 21:30 UTC for invocation
+   of either suspected script.
+2. `PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05` — fetch the
+   actual close order's `client_order_id` from the Alpaca paper API
+   to identify which script (if any) submitted.
+3. `DISABLE_OR_WRAP_DIRECT_ORDER_SCRIPT` — operator must either
+   delete the 2 flagged legacy scripts OR rewrite them to call
+   `safe_close()` only.
+
+v3.23.2 does NOT auto-allow-list either script (that would silently
+hide the bypass). The audit invariant stays `False` until operator
+chooses one of the above remediation paths.
+

@@ -36,12 +36,22 @@ DRAWDOWN_BASELINE_STALE_REQUIRES_OPERATOR_REVIEW = "DRAWDOWN_BASELINE_STALE_REQU
 DRAWDOWN_SOURCE_UNKNOWN_REQUIRES_API_HISTORY  = "DRAWDOWN_SOURCE_UNKNOWN_REQUIRES_API_HISTORY"
 DRAWDOWN_MIXED_SOURCES                        = "DRAWDOWN_MIXED_SOURCES"
 
+# v3.23.2 — attribution-completeness statuses (orthogonal to source).
+DRAWDOWN_ATTRIBUTION_COMPLETE                  = "DRAWDOWN_ATTRIBUTION_COMPLETE"
+DRAWDOWN_ATTRIBUTION_PARTIAL                   = "DRAWDOWN_ATTRIBUTION_PARTIAL"
+DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY    = "DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY"
+DRAWDOWN_ATTRIBUTION_CONFLICT                  = "DRAWDOWN_ATTRIBUTION_CONFLICT"
+
 ALL_DRAWDOWN_SOURCES: frozenset[str] = frozenset({
     DRAWDOWN_REALIZED_FROM_CLOSED_EQUITY_TRADES,
     DRAWDOWN_UNREALIZED_FROM_OPEN_POSITIONS,
     DRAWDOWN_BASELINE_STALE_REQUIRES_OPERATOR_REVIEW,
     DRAWDOWN_SOURCE_UNKNOWN_REQUIRES_API_HISTORY,
     DRAWDOWN_MIXED_SOURCES,
+    DRAWDOWN_ATTRIBUTION_COMPLETE,
+    DRAWDOWN_ATTRIBUTION_PARTIAL,
+    DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY,
+    DRAWDOWN_ATTRIBUTION_CONFLICT,
 })
 
 # Invariants — test-asserted.
@@ -179,16 +189,122 @@ def attribute_drawdown(
     )
 
 
+def compute_partial_attribution(
+    *,
+    known_realized_pnl_usd: float | None,
+    known_symbols: list[str] | None = None,
+    unknown_symbols: list[str] | None = None,
+    reported_drawdown_usd: float | None,
+    baseline_static: bool = False,
+) -> dict:
+    """Return a partial attribution dict matching the v3.23.2 status enum.
+
+    Pure function — no I/O. Does NOT reset baseline. Does NOT lower
+    drawdown threshold. Does NOT mutate state.json.
+    """
+    known = list(known_symbols or [])
+    unknown = list(unknown_symbols or [])
+    known_pnl = _safe_float(known_realized_pnl_usd, default=None)
+    drop = _safe_float(reported_drawdown_usd, default=None)
+
+    if not known and not unknown:
+        return {
+            "status": DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY,
+            "known_realized_pnl_usd": known_pnl,
+            "known_symbols": known,
+            "unknown_symbols_count": 0,
+            "unknown_symbols": unknown,
+            "residual_pending_operator_extraction": True,
+            "explained_amount_usd": None,
+            "reported_drawdown_usd": drop,
+            "baseline_static": baseline_static,
+            "rationale": "No known and no unknown symbols — nothing to attribute.",
+        }
+
+    # Complete: everything known and no unknown.
+    if known and not unknown and known_pnl is not None and drop is not None:
+        # Conflict if the known PnL has the opposite sign or wildly different magnitude.
+        if abs(abs(known_pnl) - abs(drop)) > max(0.30 * abs(drop), 100.0):
+            return {
+                "status": DRAWDOWN_ATTRIBUTION_CONFLICT,
+                "known_realized_pnl_usd": known_pnl,
+                "known_symbols": known,
+                "unknown_symbols_count": 0,
+                "unknown_symbols": unknown,
+                "residual_pending_operator_extraction": False,
+                "explained_amount_usd": known_pnl,
+                "reported_drawdown_usd": drop,
+                "baseline_static": baseline_static,
+                "rationale": (
+                    f"All symbols known but realized P/L {known_pnl:.2f} "
+                    f"differs from reported drawdown {drop:.2f} by more than 30% — "
+                    f"likely baseline-stale or off-window trades."
+                ),
+            }
+        return {
+            "status": DRAWDOWN_ATTRIBUTION_COMPLETE,
+            "known_realized_pnl_usd": known_pnl,
+            "known_symbols": known,
+            "unknown_symbols_count": 0,
+            "unknown_symbols": unknown,
+            "residual_pending_operator_extraction": False,
+            "explained_amount_usd": known_pnl,
+            "reported_drawdown_usd": drop,
+            "baseline_static": baseline_static,
+            "rationale": "All symbols known; realized P/L matches reported drawdown within 30%.",
+        }
+
+    # Nothing known, unknowns exist → REQUIRES_ORDER_HISTORY.
+    if not known and unknown:
+        return {
+            "status": DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY,
+            "known_realized_pnl_usd": known_pnl,
+            "known_symbols": known,
+            "unknown_symbols_count": len(unknown),
+            "unknown_symbols": unknown,
+            "residual_pending_operator_extraction": True,
+            "explained_amount_usd": None,
+            "reported_drawdown_usd": drop,
+            "baseline_static": baseline_static,
+            "rationale": (
+                f"{len(unknown)} symbol(s) pending operator order-history extraction."
+            ),
+        }
+
+    # Mixed: some known, some unknown → PARTIAL.
+    return {
+        "status": DRAWDOWN_ATTRIBUTION_PARTIAL,
+        "known_realized_pnl_usd": known_pnl,
+        "known_symbols": known,
+        "unknown_symbols_count": len(unknown),
+        "unknown_symbols": unknown,
+        "residual_pending_operator_extraction": True,
+        "explained_amount_usd": known_pnl,
+        "reported_drawdown_usd": drop,
+        "baseline_static": baseline_static,
+        "rationale": (
+            f"{len(known)} symbol(s) known with realized P/L "
+            f"{(known_pnl if known_pnl is not None else 0.0):.2f}; "
+            f"{len(unknown)} symbol(s) pending operator order-history extraction."
+        ),
+    }
+
+
 __all__ = [
     "DRAWDOWN_REALIZED_FROM_CLOSED_EQUITY_TRADES",
     "DRAWDOWN_UNREALIZED_FROM_OPEN_POSITIONS",
     "DRAWDOWN_BASELINE_STALE_REQUIRES_OPERATOR_REVIEW",
     "DRAWDOWN_SOURCE_UNKNOWN_REQUIRES_API_HISTORY",
     "DRAWDOWN_MIXED_SOURCES",
+    "DRAWDOWN_ATTRIBUTION_COMPLETE",
+    "DRAWDOWN_ATTRIBUTION_PARTIAL",
+    "DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY",
+    "DRAWDOWN_ATTRIBUTION_CONFLICT",
     "ALL_DRAWDOWN_SOURCES",
     "NEVER_RESETS_BASELINE_AUTOMATICALLY",
     "NEVER_LOWERS_DRAWDOWN_THRESHOLD",
     "NEVER_HIDES_REALIZED_LOSS",
     "DrawdownAttribution",
     "attribute_drawdown",
+    "compute_partial_attribution",
 ]

@@ -426,4 +426,89 @@ NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
 
 ---
 
+## v3.23.2 coverage (added 2026-06-08)
+
+v3.23.2 extends v3.23.1 by reconstructing the 7 remaining
+2026-06-04 equity trades (CRWD / NOW / QQQ / SPY / GLD / PANW / ORCL)
+from operator-provided Order History, AND investigates the
+safe-close audit gap exposed by v3.23.1's AMD reconciliation
+(market sell_to_close via Alpaca `access_key` with NO matching
+`safe_close` event in local audit JSONL).
+
+When reviewing, also check:
+
+- `learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+  — placeholder structure for 7 symbols. Every entry uses
+  `data_quality = REQUIRES_OPERATOR_EXTRACTION` and every fill
+  price is `null` until the operator transcribes the Order History
+  rows. NEVER invents prices. The reconstruction helper
+  `shared/trade_reconstruction.py::trade_from_manual_order_history`
+  returns `TRADE_CLOSED_PRICE_MISSING` on missing fields — fake
+  P&L is forbidden.
+- `docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md` — what the
+  operator must transcribe per symbol. Does NOT ask for credentials,
+  screenshots, or raw API dumps. Sanitized table values only.
+- `shared/drawdown_attribution.py` extended with four new statuses:
+  `DRAWDOWN_ATTRIBUTION_COMPLETE`, `DRAWDOWN_ATTRIBUTION_PARTIAL`,
+  `DRAWDOWN_ATTRIBUTION_REQUIRES_ORDER_HISTORY`,
+  `DRAWDOWN_ATTRIBUTION_CONFLICT`. The helper
+  `compute_partial_attribution()` returns `PARTIAL` while AMD is
+  known and 7 symbols are unknown, `CONFLICT` when known realized
+  P/L diverges from the observed drawdown by >30% or >$100. Baseline
+  is NEVER reset automatically.
+- `shared/audit_bypass_detector.py` — static classifier for every
+  Python file that could submit sell/close orders. Six
+  classifications: `SAFE_CLOSE_WRAPPED`, `AUDIT_EQUIVALENT_WRAPPED`,
+  `READ_ONLY`, `ORDER_SUBMITTER_BYPASS`, `LEGACY_DANGEROUS`,
+  `UNKNOWN_REQUIRES_REVIEW`. Three test-asserted invariants:
+  `NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT`,
+  `NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT`,
+  `ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT`. Allow-list contains the
+  three legitimate sell submitters: `shared/alpaca_orders.py`,
+  `options-monitor/monitor.py`, `shared/broker_paper_adapter.py`.
+  v3.23.2 scan flags `scripts/emergency_close_20260602.py` and
+  `scripts/emergency_close_20260603.py` as `LEGACY_DANGEROUS`.
+- `shared/amd_close_source_search.py` — static, READ-ONLY search for
+  evidence of the AMD close source in local logs. Self-reference
+  filter excludes `learning-loop/position_reconciliation/`, `docs/`,
+  and the search module itself (those mention the order_id but are
+  not evidence). Two classifications: `AMD_CLOSE_SOURCE_IDENTIFIED`,
+  `AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY`.
+  v3.23.2 result is the latter — no local STRONG matches; followup
+  requires GitHub Actions run logs OR Alpaca order-history API.
+- `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+  — committed real-repo scan output. `risk_level=HIGH`,
+  `invariant_satisfied=False`, flagged 2 legacy scripts.
+- `learning-loop/position_reconciliation/amd_close_source_search_latest.json`
+  — committed search output. `classification` is the unknown enum,
+  `confirmed_path = null`.
+
+### Final Arbiter v3.23.2 escalation triggers (P0)
+
+In addition to all v3.23 triggers, the Final Arbiter MUST block
+escalation and set primary verdict to NEEDS_FIXES with secondary
+NOT_SAFE_FOR_LIVE_TRADING when:
+
+- a `MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT`
+  finding remains unresolved (audit gap not closed)
+- placeholder JSON entries are silently mutated to `COMPLETE` with
+  invented fill prices (data_quality enum is not honored)
+- a file outside `ALLOW_LIST` is classified `ORDER_SUBMITTER_BYPASS`
+  or `LEGACY_DANGEROUS` and is left active in cron/workflow paths
+- `compute_partial_attribution` is misused to fabricate
+  `DRAWDOWN_ATTRIBUTION_COMPLETE` when ≥1 symbol is unknown
+- the AMD close source is set to a `STRONG` confirmed path
+  without an actual STRONG match in the real-repo scan
+- baseline `state.json::cumulative.starting_equity` is reset
+  silently to absorb the unattributed -$5,304 residual
+- placeholder data flips `data_quality` to a non-placeholder enum
+  without operator-supplied values
+- legacy `emergency_close_*` scripts are re-introduced without
+  being rewritten to call `safe_close()` or write an audit event
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.

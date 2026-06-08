@@ -1,0 +1,15 @@
+{
+  "classification": "AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY",
+  "confirmed_path": null,
+  "followup_required": [
+    "INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS",
+    "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05"
+  ],
+  "matches": [],
+  "suspected_paths": [],
+  "target_fill_price_usd": 485.02,
+  "target_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+  "target_symbol": "AMD",
+  "target_timestamp_local": "2026-06-05T17:35:45-04:00",
+  "target_timestamp_utc": "2026-06-05T21:35:45Z"
+}
