@@ -511,4 +511,76 @@ PAPER_TRADING_* verdicts.
 
 ---
 
+## v3.23.3 coverage (added 2026-06-08)
+
+v3.23.3 quarantines the 2 legacy direct-order scripts surfaced by
+v3.23.2's static scan and adds a forensic GitHub Actions
+investigation report for the AMD 2026-06-05 close audit gap.
+
+When reviewing, also check:
+
+- `scripts/quarantined_legacy_order_scripts/` — the dedicated
+  quarantine directory. Holds `emergency_close_20260602.py.disabled`
+  and `emergency_close_20260603.py.disabled` plus a README that
+  documents the rules (DO NOT RUN, DO NOT RESTORE, only call
+  `safe_close()`). The `.py.disabled` extension makes the files inert
+  to Python's runner and import system.
+- `shared/audit_bypass_detector.py` — extended with a new
+  classification `QUARANTINED_LEGACY_DANGEROUS` (now in
+  `ALL_CLASSIFICATIONS`), a new module-level boolean invariant
+  `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT = True`, a
+  `QUARANTINE_DIR_MARKER` constant, and an extended
+  `detect_bypasses()` that scans `.py.disabled` files, tracks them
+  under a new `quarantined_files` key, and excludes them from
+  `flagged_files`. Real-repo scan now returns
+  `invariant_satisfied = True`, `flagged_files = []`,
+  `quarantined_files = [2 paths]`.
+- `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+  refreshed: `version=v3.23.3`, `risk_level` downgraded
+  `HIGH → MEDIUM`, `flagged_count=0`, `quarantined_count=2`,
+  invariant satisfied. Quarantine metadata recorded.
+- `docs/AMD_CLOSE_SOURCE_INVESTIGATION.md` +
+  `learning-loop/position_reconciliation/amd_close_source_gh_actions_investigation_latest.json`
+  — read-only GitHub Actions forensic report. Investigated 200
+  workflow runs in 2026-06-05T20-23Z window via `gh CLI`.
+  **Decisive finding:** at 2026-06-05T21:35:45Z (the exact AMD
+  order submission moment) ZERO workflows were active. Previous
+  cron wave ended 21:31:29Z; next wave started 21:35:52Z — leaving
+  a 4m16s gap. The order arrived 7 seconds before any next-wave
+  workflow began. Classification: `AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS`.
+  Confirmed source still **None** — operator must pull the
+  Alpaca order's `client_order_id` via the API.
+
+### Final Arbiter v3.23.3 escalation triggers (P0)
+
+In addition to all v3.23 + v3.23.2 triggers, the Final Arbiter MUST
+block escalation and set primary verdict to NEEDS_FIXES with
+secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- any `scripts/*.py` (NOT under
+  `scripts/quarantined_legacy_order_scripts/`) contains
+  `requests.post(/v2/orders)` AND a sell-side literal AND is NOT in
+  `audit_bypass_detector.ALLOW_LIST`
+- either quarantined `.py.disabled` file is reverted back to `.py`,
+  moved out of `scripts/quarantined_legacy_order_scripts/`, or
+  imported from any active code path
+- `scripts/quarantined_legacy_order_scripts/` or either
+  `.py.disabled` file is added to the audit-bypass `ALLOW_LIST`
+  (silently legitimising the bypass)
+- the AMD close source is set to a confirmed value without an
+  Alpaca order-history `client_order_id` retrieval (no GitHub
+  Actions evidence is now decisive against any of the GH-Actions
+  candidate classifications)
+- `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` flips to False in a
+  later sprint without an accompanying remediation plan
+- `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`
+  shows `flagged_count > 0` after a future scan run
+- the README in `scripts/quarantined_legacy_order_scripts/` is
+  deleted or rewritten to remove the rules
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.

@@ -1,52 +1,75 @@
 {
+  "version": "v3.23.3",
+  "generated_at_iso": "2026-06-08T17:00:00+00:00",
+  "audit_gap_kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
+  "incident_symbol": "AMD",
+  "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+  "close_source": "access_key (per dashboard) — exact local submitter unknown",
+  "close_time": "2026-06-05T17:35:45-04:00 (21:35:45 UTC)",
+  "risk_level": "MEDIUM",
+  "risk_level_change_from_v3232": "HIGH -> MEDIUM (legacy direct-order scripts quarantined; no active bypass remains)",
+  "safe_close_event_present": false,
+  "confirmed_path": null,
   "action_items": [
-    "INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS",
-    "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05",
-    "DISABLE_OR_WRAP_DIRECT_ORDER_SCRIPT: scripts/emergency_close_20260602.py",
-    "DISABLE_OR_WRAP_DIRECT_ORDER_SCRIPT: scripts/emergency_close_20260603.py",
+    "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID",
     "KEEP_DRAWDOWN_GUARD_ACTIVE",
     "KEEP_EDGE_GATE_DISABLED",
-    "DO_NOT_ENABLE_BROKER_PAPER"
+    "DO_NOT_ENABLE_BROKER_PAPER",
+    "DO_NOT_RESTORE_QUARANTINED_LEGACY_ORDER_SCRIPTS"
   ],
   "amd_close_source_search": {
-    "classification": "AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY",
+    "classification_local_files": "AMD_CLOSE_SOURCE_NOT_FOUND_LOCAL_LOGS_REQUIRE_GH_ACTIONS_OR_API_HISTORY",
+    "classification_gh_actions": "AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS",
     "confirmed_path": null,
     "followup_required": [
-      "INVESTIGATE_AMD_CLOSE_SOURCE_IN_GITHUB_ACTIONS",
-      "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05"
+      "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID"
     ],
-    "matches_count": 0,
-    "suspected_paths": []
+    "matches_count_local": 0,
+    "matches_count_gh_actions_strong": 0,
+    "matches_count_gh_actions_weak_false_positives": 2,
+    "suspected_paths": [
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260602.py.disabled",
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260603.py.disabled"
+    ]
   },
-  "audit_gap_kind": "MARKET_SELL_CLOSE_VIA_ACCESS_KEY_WITHOUT_SAFE_CLOSE_AUDIT",
-  "close_order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
-  "close_source": "access_key (per dashboard) \u2014 exact local submitter unknown",
-  "close_time": "2026-06-05T17:35:45-04:00 (21:35:45 UTC)",
-  "confirmed_path": null,
-  "generated_at_iso": "2026-06-08T14:30:00+00:00",
-  "incident_symbol": "AMD",
-  "risk_level": "HIGH",
-  "safe_close_event_present": false,
   "static_scan_summary": {
     "by_classification": {
       "AUDIT_EQUIVALENT_WRAPPED": 0,
-      "LEGACY_DANGEROUS": 2,
+      "LEGACY_DANGEROUS": 0,
       "ORDER_SUBMITTER_BYPASS": 0,
+      "QUARANTINED_LEGACY_DANGEROUS": 2,
       "READ_ONLY": 31,
       "SAFE_CLOSE_WRAPPED": 1,
       "UNKNOWN_REQUIRES_REVIEW": 127
     },
-    "flagged_count": 2,
-    "flagged_files": [
+    "flagged_count": 0,
+    "flagged_files": [],
+    "quarantined_count": 2,
+    "quarantined_files": [
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260602.py.disabled",
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260603.py.disabled"
+    ],
+    "invariant_satisfied": true,
+    "total_scanned": 161,
+    "invariants_test_asserted": [
+      "NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT",
+      "NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT",
+      "ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT",
+      "NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT"
+    ]
+  },
+  "quarantine_metadata": {
+    "moved_at_iso": "2026-06-08T17:00:00+00:00",
+    "moved_by": "v3.23.3 sprint",
+    "from_paths": [
       "scripts/emergency_close_20260602.py",
       "scripts/emergency_close_20260603.py"
     ],
-    "invariant_satisfied": false,
-    "total_scanned": 161
-  },
-  "suspected_paths": [
-    "scripts/emergency_close_20260602.py",
-    "scripts/emergency_close_20260603.py"
-  ],
-  "version": "v3.23.2"
+    "to_paths": [
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260602.py.disabled",
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260603.py.disabled"
+    ],
+    "readme_path": "scripts/quarantined_legacy_order_scripts/README.md",
+    "rationale": "Both scripts contained direct requests.post(/v2/orders, side=\"sell\", type=\"market\") without safe_close() or audit-event emission. Quarantined as evidence; not deleted."
+  }
 }

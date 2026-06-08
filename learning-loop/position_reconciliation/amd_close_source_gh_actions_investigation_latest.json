@@ -1,0 +1,106 @@
+{
+  "version": "v3.23.3",
+  "generated_at_iso": "2026-06-08T17:00:00+00:00",
+  "investigation_type": "GH_ACTIONS_FORENSICS",
+  "target": {
+    "symbol": "AMD",
+    "order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+    "side": "sell_to_close",
+    "type": "market",
+    "qty": 34,
+    "avg_fill_price_usd": 485.02,
+    "filled_at_iso_utc": "2026-06-05T21:35:45Z",
+    "filled_at_iso_local": "2026-06-05T17:35:45-04:00",
+    "submitter_source": "access_key"
+  },
+  "search_window_iso_utc": [
+    "2026-06-05T20:00:00Z",
+    "2026-06-05T23:00:00Z"
+  ],
+  "method": [
+    "gh run list --limit 200 with createdAt window filter",
+    "Computed temporal overlap: which runs had createdAt <= 21:35:45Z <= updatedAt",
+    "gh run view <id> --log for candidate runs",
+    "grep -Ei 'AMD|7f3ac850|emergency_close_2026060|sell_to_close|access_key|safe_close|485.02|21:35:45|17:35:45'",
+    "Match strength: STRONG (order_id OR exact $485.02 within 80 chars of AMD OR explicit script invocation) vs WEAK (AMD + sell-related token same line)"
+  ],
+  "runs_listed_count": 200,
+  "runs_scanned_count": 19,
+  "runs_active_at_submission_moment_count": 0,
+  "scanned_workflows": [
+    "Exit Monitor",
+    "Options Exit Monitor",
+    "Autonomous Remediation",
+    "Emergency Close",
+    "Morning Allocator",
+    "Price Monitor",
+    "Defense Monitor"
+  ],
+  "strong_matches": [],
+  "weak_matches": [
+    {
+      "run_id": 27040363147,
+      "name": "Price Monitor — Momentum Breakout",
+      "created_at_iso_utc": "2026-06-05T21:11:48Z",
+      "match_reason": "AMD appears in LONG TICKERS scan list — informational only, NOT an order. Monitor only generates BUY signals.",
+      "strength": "false_positive"
+    },
+    {
+      "run_id": 27041804005,
+      "name": "Emergency Close — autonomous position closer",
+      "created_at_iso_utc": "2026-06-05T21:46:45Z",
+      "match_reason": "Matched script was scripts/emergency_close_20260603.py (already processed and skipped), NOT AMD. Run started 11min AFTER the order.",
+      "strength": "false_positive"
+    }
+  ],
+  "temporal_window_evidence": {
+    "previous_wave_end_iso_utc": "2026-06-05T21:31:29Z",
+    "previous_wave_workflow": "Defense Monitor (run 27041158283)",
+    "amd_order_submission_iso_utc": "2026-06-05T21:35:45Z",
+    "next_wave_start_iso_utc": "2026-06-05T21:35:52Z",
+    "next_wave_workflows": [
+      "Exit Monitor",
+      "Options Exit Monitor",
+      "Crypto Monitor",
+      "Defense Monitor",
+      "Twitter Monitor",
+      "Reddit Monitor"
+    ],
+    "gap_seconds": 256,
+    "order_arrived_seconds_before_next_wave": 7,
+    "interpretation": "AMD order arrived in a 4m16s gap between scheduled cron waves; ZERO workflows were active at submission."
+  },
+  "post_submission_corroboration": {
+    "exit_monitor_21_48_05_iso_utc": {
+      "HOLD": 4,
+      "placed": 0,
+      "skipped_closed": 0,
+      "interpretation": "AMD already absent from positions list at 21:48Z, consistent with close happening externally."
+    },
+    "morning_allocator_runs_same_day": {
+      "13:00Z": "0 placed",
+      "16:15Z": "8 failed BUYs, 0 SELLs, no AMD"
+    }
+  },
+  "confirmed_source": null,
+  "classification": "AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS",
+  "candidate_non_workflow_sources": [
+    "DIRECT_ALPACA_MCP_CALL_FROM_INTERACTIVE_CLAUDE_SESSION",
+    "CLOUDFLARE_WORKER_OR_ROUTINE_TRIGGERED_OUTSIDE_GH_ACTIONS",
+    "MANUAL_OPERATOR_ACTION_VIA_ALPACA_DASHBOARD_OR_API"
+  ],
+  "next_required_action": "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID",
+  "rationale_for_next_action": "The submitter_source field 'access_key' applies to ANY REST call using the Alpaca API key (MCP, Cloudflare Worker, manual curl). The client_order_id prefix is the only deterministic discriminator we have without GitHub Actions runner logs (none of which match).",
+  "invariants_verified": {
+    "no_orders_placed_by_investigation": true,
+    "no_positions_modified": true,
+    "no_live_endpoint_called": true,
+    "no_baseline_reset": true,
+    "no_drawdown_guard_lowered": true,
+    "no_edge_gate_enabled": true,
+    "no_broker_paper_enabled": true,
+    "no_audit_log_deleted": true,
+    "no_logs_hidden": true,
+    "no_fake_p_l_invented": true
+  }
+}

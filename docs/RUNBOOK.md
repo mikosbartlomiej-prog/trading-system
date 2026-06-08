@@ -959,3 +959,46 @@ What the operator MAY do (decision-level, not automated):
 
 `EDGE_GATE_ENABLED` stays `false`. Live trading stays blocked.
 
+
+---
+
+## Scenario Y — Adding or restoring an emergency-close script (v3.23.3)
+
+**Background:** as of v3.23.3, the 2 historical emergency-close
+scripts are quarantined under
+`scripts/quarantined_legacy_order_scripts/` as `.py.disabled`. They
+must NOT be restored, copied, or used as a template for new active
+scripts.
+
+If you genuinely need a new emergency-close path:
+
+1. **Do NOT write a fresh `requests.post(/v2/orders, side="sell",
+   type="market")` call** anywhere in `scripts/`. The static
+   detector (`shared/audit_bypass_detector.py`) will flag it
+   immediately, the test suite
+   (`tests/test_legacy_direct_order_quarantine_v3233.py`) will fail
+   in CI, and the Final Arbiter will block escalation.
+2. **Call `shared/alpaca_orders.py::safe_close()`** instead. It:
+   - cancels open OCO brackets first,
+   - validates side/qty,
+   - emits a `safe_close` audit event to
+     `journal/autonomy/<date>.jsonl` with a `decision_id`,
+   - skips silently if the position is already gone (404) — no
+     surprise side effects.
+3. **For a one-shot operational script**, write it under
+   `scripts/` and have it import `safe_close`. The detector treats
+   the file as `SAFE_CLOSE_WRAPPED` and the invariant stays True.
+
+If the operator absolutely must invoke a quarantined `.py.disabled`
+for forensic re-run on a personal machine (NOT production):
+
+- Copy it OUT of the repo first to a scratch directory.
+- Rename to `.py` only on the scratch copy.
+- Audit-log the action manually.
+- DO NOT commit the renamed copy back.
+- DO NOT re-add the file path to `audit_bypass_detector.ALLOW_LIST`.
+
+The audit invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` is
+**True** by contract. The Final Arbiter checks it. CI checks it.
+Operator must keep it True.
+

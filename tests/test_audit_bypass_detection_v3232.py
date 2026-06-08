@@ -159,12 +159,23 @@ class TestInvariantConstantsExposed(unittest.TestCase):
         self.assertIsInstance(abd.ALL_CLASSIFICATIONS, frozenset)
         for c in (abd.SAFE_CLOSE_WRAPPED, abd.AUDIT_EQUIVALENT_WRAPPED,
                    abd.READ_ONLY, abd.ORDER_SUBMITTER_BYPASS,
-                   abd.LEGACY_DANGEROUS, abd.UNKNOWN_REQUIRES_REVIEW):
+                   abd.LEGACY_DANGEROUS,
+                   abd.QUARANTINED_LEGACY_DANGEROUS,
+                   abd.UNKNOWN_REQUIRES_REVIEW):
             self.assertIn(c, abd.ALL_CLASSIFICATIONS)
+
+    def test_no_active_legacy_dangerous_invariant_present(self):
+        self.assertTrue(abd.NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT)
 
 
 class TestRealRepoScanProducedReport(unittest.TestCase):
-    """The shipped JSON report itself encodes the real-repo result."""
+    """The shipped JSON report itself encodes the real-repo result.
+
+    v3.23.3: after quarantine landed, the 2 legacy scripts moved
+    from ``flagged_files`` to ``quarantined_files``, the active
+    bypass invariant flipped back to ``True``, and the JSON gained
+    a ``quarantined_files`` key.
+    """
 
     def test_report_exists_and_has_expected_keys(self):
         path = (REPO_ROOT / "learning-loop"
@@ -176,10 +187,11 @@ class TestRealRepoScanProducedReport(unittest.TestCase):
         # The detector output is nested under static_scan_summary.
         scan = data["static_scan_summary"]
         for key in ("total_scanned", "by_classification",
-                     "flagged_files", "invariant_satisfied"):
+                     "flagged_files", "quarantined_files",
+                     "invariant_satisfied"):
             self.assertIn(key, scan)
 
-    def test_legacy_emergency_close_scripts_flagged(self):
+    def test_legacy_scripts_quarantined_not_flagged(self):
         path = (REPO_ROOT / "learning-loop"
                 / "position_reconciliation"
                 / "audit_bypass_investigation_latest.json")
@@ -187,10 +199,23 @@ class TestRealRepoScanProducedReport(unittest.TestCase):
             data = json.load(f)
         scan = data["static_scan_summary"]
         flagged = set(scan["flagged_files"])
-        # Both legacy scripts MUST be flagged.
-        self.assertIn("scripts/emergency_close_20260602.py", flagged)
-        self.assertIn("scripts/emergency_close_20260603.py", flagged)
-        self.assertFalse(scan["invariant_satisfied"])
+        quarantined = set(scan["quarantined_files"])
+        # No active legacy script should remain flagged.
+        self.assertNotIn("scripts/emergency_close_20260602.py", flagged)
+        self.assertNotIn("scripts/emergency_close_20260603.py", flagged)
+        # Both quarantined .py.disabled paths MUST be present.
+        self.assertIn(
+            "scripts/quarantined_legacy_order_scripts/"
+            "emergency_close_20260602.py.disabled",
+            quarantined,
+        )
+        self.assertIn(
+            "scripts/quarantined_legacy_order_scripts/"
+            "emergency_close_20260603.py.disabled",
+            quarantined,
+        )
+        # Active-bypass invariant restored.
+        self.assertTrue(scan["invariant_satisfied"])
 
 
 if __name__ == "__main__":

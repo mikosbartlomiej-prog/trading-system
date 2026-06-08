@@ -271,3 +271,35 @@ Reasoning:
 - `does_not_modify_runtime_state`: **True** (this report does not patch `state.json` or `runtime_state.json`)
 
 This update was generated WITHOUT any Alpaca API call. No orders placed. No positions modified. No live URL hit. No `runtime_state.json` or `state.json` mutation.
+
+---
+
+## v3.23.3 follow-up (2026-06-08)
+
+The 2 LEGACY_DANGEROUS scripts surfaced by v3.23.2 have been
+quarantined to `scripts/quarantined_legacy_order_scripts/` as
+`.py.disabled`. Real-repo audit-bypass scan now returns
+`invariant_satisfied = True`, `flagged_files = []`,
+`quarantined_files = [2 paths]`. Risk level downgraded
+**HIGH → MEDIUM**.
+
+The AMD close source remains formally unknown. v3.23.3 GitHub
+Actions investigation (`docs/AMD_CLOSE_SOURCE_INVESTIGATION.md`)
+confirmed no workflow run was active at 2026-06-05T21:35:45Z (4m16s
+gap between cron waves). Next operator action:
+`PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID`.
+
+The 7-symbol residual (CRWD/NOW/QQQ/SPY/GLD/PANW/ORCL) is unchanged
+from v3.23.2 — placeholder JSON with
+`data_quality=REQUIRES_OPERATOR_EXTRACTION` still awaits the
+operator's Order History transcription per
+`docs/OPERATOR_ORDER_HISTORY_EXTRACTION_CHECKLIST.md`. No fill
+prices were invented.
+
+What this refresh does NOT do (same as v3.23.2):
+- does not invent fill prices for the 7 remaining symbols
+- does not auto-delete or auto-allow-list the quarantined scripts
+- does not reset starting_equity baseline
+- does not close ETH/AVAX/SOL/LTC
+- does not enable broker_paper or live trading
+- does not lower drawdown_guard threshold

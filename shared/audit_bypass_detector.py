@@ -39,12 +39,18 @@ from pathlib import Path
 
 # ─── Classification enum ─────────────────────────────────────────────────────
 
-SAFE_CLOSE_WRAPPED        = "SAFE_CLOSE_WRAPPED"
-AUDIT_EQUIVALENT_WRAPPED  = "AUDIT_EQUIVALENT_WRAPPED"
-READ_ONLY                 = "READ_ONLY"
-ORDER_SUBMITTER_BYPASS    = "ORDER_SUBMITTER_BYPASS"
-LEGACY_DANGEROUS          = "LEGACY_DANGEROUS"
-UNKNOWN_REQUIRES_REVIEW   = "UNKNOWN_REQUIRES_REVIEW"
+SAFE_CLOSE_WRAPPED         = "SAFE_CLOSE_WRAPPED"
+AUDIT_EQUIVALENT_WRAPPED   = "AUDIT_EQUIVALENT_WRAPPED"
+READ_ONLY                  = "READ_ONLY"
+ORDER_SUBMITTER_BYPASS     = "ORDER_SUBMITTER_BYPASS"
+LEGACY_DANGEROUS           = "LEGACY_DANGEROUS"
+# v3.23.3: legacy script that has been quarantined under
+# scripts/quarantined_legacy_order_scripts/ as ``.py.disabled``.
+# Cannot be invoked, cannot be imported, but kept on disk as
+# audit evidence. Quarantined files do NOT count toward
+# ``flagged_files`` or flip ``invariant_satisfied``.
+QUARANTINED_LEGACY_DANGEROUS = "QUARANTINED_LEGACY_DANGEROUS"
+UNKNOWN_REQUIRES_REVIEW    = "UNKNOWN_REQUIRES_REVIEW"
 
 ALL_CLASSIFICATIONS: frozenset[str] = frozenset({
     SAFE_CLOSE_WRAPPED,
@@ -52,6 +58,7 @@ ALL_CLASSIFICATIONS: frozenset[str] = frozenset({
     READ_ONLY,
     ORDER_SUBMITTER_BYPASS,
     LEGACY_DANGEROUS,
+    QUARANTINED_LEGACY_DANGEROUS,
     UNKNOWN_REQUIRES_REVIEW,
 })
 
@@ -59,6 +66,15 @@ ALL_CLASSIFICATIONS: frozenset[str] = frozenset({
 NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT                       = True
 NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT   = True
 ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT                     = True
+# v3.23.3: no active ``.py`` direct-order-submitting legacy script
+# is allowed outside the ALLOW_LIST. Quarantined ``.py.disabled``
+# copies under ``scripts/quarantined_legacy_order_scripts/`` are
+# exempt because they cannot be executed.
+NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT                   = True
+
+# Quarantine path marker — files under this directory are inert
+# evidence, never counted as active bypasses.
+QUARANTINE_DIR_MARKER = "scripts/quarantined_legacy_order_scripts/"
 
 # Mirror of tests/architecture_vnext/test_no_naked_sell_v3910.py ALLOWED_FILES.
 ALLOW_LIST: frozenset[str] = frozenset({
@@ -119,6 +135,13 @@ def classify_path(file_path: Path, source_code: str) -> str:
         rel = str(file_path.as_posix())
     except AttributeError:
         rel = str(file_path)
+    # v3.23.3: quarantined / disabled files are routed BEFORE pattern
+    # analysis. Their content may still contain a raw sell path
+    # (that is the whole point of preserving them as evidence), but
+    # they cannot execute, so they are NEVER counted as active
+    # bypasses.
+    if rel.endswith(".py.disabled") or QUARANTINE_DIR_MARKER in rel:
+        return QUARANTINED_LEGACY_DANGEROUS
     for allow in ALL_LIST_HINTS():
         if rel.endswith(allow) or allow in rel:
             # Even allow-listed files are classified by their actual content,
@@ -175,12 +198,19 @@ def _looks_legacy(rel_path: str) -> bool:
 def detect_bypasses(repo_root: Path) -> dict:
     """Walk SCAN_DIRS and classify every Python file. READ-ONLY.
 
+    v3.23.3: also walks ``*.py.disabled`` files. Quarantined paths
+    (under ``scripts/quarantined_legacy_order_scripts/`` or any
+    ``.py.disabled``) are recorded under ``quarantined_files`` and
+    do NOT count toward ``flagged_files``. ``invariant_satisfied``
+    reflects ACTIVE files only.
+
     Returns:
         {
             "total_scanned":            int,
             "by_classification":        {classification: count},
-            "flagged_files":            [str list of bypass-flagged file rels],
-            "allow_list_files":         [str list of allow-listed file rels],
+            "flagged_files":            [active bypass-flagged file rels],
+            "quarantined_files":        [quarantined / .py.disabled rels],
+            "allow_list_files":         [allow-listed file rels],
             "invariant_satisfied":      bool,
             "details":                  {file_rel: classification},
         }
@@ -189,6 +219,7 @@ def detect_bypasses(repo_root: Path) -> dict:
     by_class: dict[str, int] = {c: 0 for c in ALL_CLASSIFICATIONS}
     details: dict[str, str] = {}
     flagged: list[str] = []
+    quarantined: list[str] = []
     allowed: list[str] = []
     total = 0
 
@@ -196,7 +227,9 @@ def detect_bypasses(repo_root: Path) -> dict:
         sd = repo_root / d
         if not sd.is_dir():
             continue
-        for py in sd.rglob("*.py"):
+        # v3.23.3: scan both .py and .py.disabled so quarantined
+        # legacy files remain visible to the auditor as evidence.
+        for py in list(sd.rglob("*.py")) + list(sd.rglob("*.py.disabled")):
             try:
                 rel = py.relative_to(repo_root).as_posix()
             except ValueError:
@@ -213,6 +246,10 @@ def detect_bypasses(repo_root: Path) -> dict:
             details[rel] = cls
             by_class[cls] = by_class.get(cls, 0) + 1
             total += 1
+            if cls == QUARANTINED_LEGACY_DANGEROUS:
+                quarantined.append(rel)
+                # Quarantined files NEVER count as active bypasses.
+                continue
             if cls in (ORDER_SUBMITTER_BYPASS, LEGACY_DANGEROUS):
                 if rel in ALLOW_LIST:
                     allowed.append(rel)
@@ -225,6 +262,7 @@ def detect_bypasses(repo_root: Path) -> dict:
         "total_scanned":        total,
         "by_classification":    dict(by_class),
         "flagged_files":        sorted(flagged),
+        "quarantined_files":    sorted(quarantined),
         "allow_list_files":     sorted(allowed),
         "invariant_satisfied":  invariant_satisfied,
         "details":              details,
@@ -238,14 +276,17 @@ __all__ = [
     "READ_ONLY",
     "ORDER_SUBMITTER_BYPASS",
     "LEGACY_DANGEROUS",
+    "QUARANTINED_LEGACY_DANGEROUS",
     "UNKNOWN_REQUIRES_REVIEW",
     "ALL_CLASSIFICATIONS",
     # Invariants
     "NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT",
     "NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT",
     "ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT",
+    "NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT",
     "ALLOW_LIST",
     "SCAN_DIRS",
+    "QUARANTINE_DIR_MARKER",
     # API
     "classify_path",
     "detect_bypasses",

@@ -1,6 +1,23 @@
 {
-  "version": "v3.23.2",
-  "generated_at_iso": "2026-06-08T14:35:00+00:00",
+  "version": "v3.23.3",
+  "generated_at_iso": "2026-06-08T17:00:00+00:00",
+  "v3233_followups": {
+    "legacy_scripts_quarantined": true,
+    "quarantine_dir": "scripts/quarantined_legacy_order_scripts/",
+    "quarantined_files": [
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260602.py.disabled",
+      "scripts/quarantined_legacy_order_scripts/emergency_close_20260603.py.disabled"
+    ],
+    "quarantine_readme": "scripts/quarantined_legacy_order_scripts/README.md",
+    "audit_bypass_invariant_satisfied": true,
+    "audit_bypass_risk_level": "MEDIUM",
+    "no_active_legacy_dangerous_order_script": true,
+    "gh_actions_investigation_classification": "AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS",
+    "gh_actions_investigation_report_md": "docs/AMD_CLOSE_SOURCE_INVESTIGATION.md",
+    "gh_actions_investigation_report_json": "learning-loop/position_reconciliation/amd_close_source_gh_actions_investigation_latest.json",
+    "amd_close_source_confirmed_path": null,
+    "next_operator_action": "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID"
+  },
   "v3232_followups": {
     "remaining_symbols_placeholder": "learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json",
     "audit_bypass_investigation": "learning-loop/position_reconciliation/audit_bypass_investigation_latest.json",

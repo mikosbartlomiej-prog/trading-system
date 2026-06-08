@@ -98,3 +98,42 @@ v3.23.2 does NOT auto-allow-list either script (that would silently
 hide the bypass). The audit invariant stays `False` until operator
 chooses one of the above remediation paths.
 
+
+---
+
+## v3.23.3 addendum — quarantine + GH Actions investigation (2026-06-08)
+
+The 2 LEGACY_DANGEROUS scripts from v3.23.2
+(`scripts/emergency_close_20260602.py`,
+`scripts/emergency_close_20260603.py`) have been quarantined to
+`scripts/quarantined_legacy_order_scripts/` as `.py.disabled`. They
+cannot be invoked, imported, or used as a sell-submit path. A
+README in that directory pins the rules.
+
+`shared/audit_bypass_detector.py` was extended with:
+- new classification `QUARANTINED_LEGACY_DANGEROUS`,
+- new invariant `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT = True`,
+- `detect_bypasses()` now scans `.py.disabled` files, tracks them
+  under a new `quarantined_files` key, and excludes them from
+  `flagged_files`.
+
+Post-quarantine real-repo scan returns
+`invariant_satisfied = True`, `flagged_files = []`,
+`quarantined_files = [2 paths]`. Risk level downgraded
+**HIGH → MEDIUM** in
+`learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`.
+
+The remaining MEDIUM is the still-unknown AMD close source. The
+v3.23.3 GitHub Actions investigation
+(`docs/AMD_CLOSE_SOURCE_INVESTIGATION.md`) examined 200 runs in the
+2026-06-05T20-23Z window and confirmed ZERO workflow runs were
+active at the exact submission moment (4m16s gap between cron
+waves). Classification:
+`AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS`. Confirmed source
+still **None**. Operator follow-up:
+**`PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID`**.
+
+v3.23.3 does NOT auto-allow-list either quarantined file (that
+would silently legitimise the bypass). Operator may, as a future
+decision, delete the quarantined files entirely once the AMD source
+is confirmed — until then they remain as evidence.

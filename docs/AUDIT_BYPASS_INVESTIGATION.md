@@ -147,3 +147,57 @@ the 2 legacy scripts are still present and not allow-listed.
 
 Machine-readable output:
 `learning-loop/position_reconciliation/audit_bypass_investigation_latest.json`.
+
+---
+
+## v3.23.3 update — 2026-06-08
+
+**Quarantine action completed.** Both flagged scripts have been
+moved out of the active `scripts/` directory:
+
+| Original path | Quarantined to |
+| --- | --- |
+| `scripts/emergency_close_20260602.py` | `scripts/quarantined_legacy_order_scripts/emergency_close_20260602.py.disabled` |
+| `scripts/emergency_close_20260603.py` | `scripts/quarantined_legacy_order_scripts/emergency_close_20260603.py.disabled` |
+
+The new directory `scripts/quarantined_legacy_order_scripts/`
+carries a README that explicitly forbids restoring either file as
+`.py`, copying their content into a new active script, or
+allow-listing the directory.
+
+**Static-detector status** (after re-scan):
+
+| Metric | Before (v3.23.2) | After (v3.23.3) |
+| --- | --- | --- |
+| `flagged_files` count | 2 | **0** |
+| `quarantined_files` count | n/a | 2 |
+| `invariant_satisfied` | False | **True** |
+| `risk_level` | HIGH | MEDIUM |
+
+`shared/audit_bypass_detector.py` gained:
+- new classification `QUARANTINED_LEGACY_DANGEROUS`,
+- new module-level invariant
+  `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT = True`,
+- a `QUARANTINE_DIR_MARKER` constant,
+- `detect_bypasses()` now scans `.py.disabled` and reports them
+  separately under `quarantined_files`.
+
+**GH Actions investigation result** (see
+`docs/AMD_CLOSE_SOURCE_INVESTIGATION.md`): no workflow run was
+active at 2026-06-05T21:35:45Z (4m16s gap between cron waves). The
+AMD close cannot have come from a GitHub Actions runner.
+Classification: `AMD_CLOSE_SOURCE_NOT_FOUND_IN_GITHUB_ACTIONS`.
+
+**Remaining unknowns:**
+- The AMD close source is still formally unknown. Operator must
+  pull the `client_order_id` via the Alpaca paper API to discriminate
+  among: direct MCP call from an interactive Claude session, a
+  Cloudflare Worker / Routine, or a manual operator action via the
+  dashboard.
+
+**What changed in invariant set:**
+- `NO_DIRECT_MARKET_SELL_WITHOUT_AUDIT` — still True (test-asserted).
+- `NO_SELL_TO_CLOSE_WITHOUT_SAFE_CLOSE_OR_EQUIVALENT_AUDIT` — still True.
+- `ACCESS_KEY_ORDER_PATH_MUST_EMIT_AUDIT` — still True.
+- `NO_ACTIVE_LEGACY_DANGEROUS_ORDER_SCRIPT` — **new in v3.23.3,
+  test-asserted**, currently True.
