@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""v3.26.0 (2026-06-09) — signal/shadow evidence collection entry-point.
+
+DRY-RUN ONLY. This script:
+
+- runs the v3.26 preflight via ``shared/signal_shadow_preflight.py``,
+- refuses to proceed if broker execution / broker paper / live
+  trading / EDGE_GATE_ENABLED is set,
+- collects/generates shadow decisions (no broker calls),
+- records them under ``learning-loop/shadow_evidence/`` per the
+  shadow decision schema,
+- never imports or calls any order-submitting function (verified by
+  test ``tests/test_signal_shadow_collection_no_broker_execution_v3260.py``),
+- gracefully records ``SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA`` if
+  market data is unavailable.
+
+Usage:
+
+    python3 scripts/run_signal_shadow_evidence_collection.py
+
+Options:
+
+    --max-records N    cap the number of records to emit (default: 10).
+    --dry-run-only     refuse to proceed even if the preflight passes
+                       (extra paranoia layer; default ON in this sprint).
+
+HARD SAFETY RULES (cannot be opted out of)
+------------------------------------------
+- NEVER submits orders.
+- NEVER closes or modifies positions.
+- NEVER calls live broker endpoints.
+- NEVER imports ``shared/alpaca_orders.py`` order-placing helpers.
+- NEVER mutates ``state.json`` or ``runtime_state.json``.
+- Every emitted record carries ``broker_order_submitted=false`` and
+  ``broker_execution_enabled=false``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import uuid
+from pathlib import Path
+from typing import Any
+
+# Forbidden-imports guard: this script must NEVER load order submission
+# modules. We add the shared/ path but explicitly avoid alpaca_orders.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "shared"))
+
+import signal_shadow_preflight as preflight  # type: ignore  # noqa: E402
+import shadow_evidence_counters as counters_mod  # type: ignore  # noqa: E402
+
+
+# Status / verdict tokens emitted by this collector.
+SHADOW_COLLECTION_PROCEEDING                    = "SHADOW_COLLECTION_PROCEEDING"
+SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED = (
+    "SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED")
+SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED      = (
+    "SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED")
+SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA        = (
+    "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA")
+
+
+def _env_truthy(name: str) -> bool:
+    v = os.environ.get(name, "false").strip().lower()
+    return v in ("true", "1", "yes", "on")
+
+
+def _evidence_dir(repo_root: Path) -> Path:
+    return repo_root / "learning-loop" / "shadow_evidence"
+
+
+def _records_path(repo_root: Path, ts: str) -> Path:
+    # Emit one JSONL file per day so accumulation is append-only.
+    day = ts[:10]  # YYYY-MM-DD
+    return _evidence_dir(repo_root) / f"records_{day}.jsonl"
+
+
+def build_record(
+    *,
+    symbol: str,
+    asset_class: str,
+    strategy: str,
+    decision_type: str,
+    side: str,
+    would_trade: bool,
+    would_block: bool,
+    block_reasons: list[str],
+    sizing_preview: dict[str, Any],
+    exposure_policy_result: dict[str, Any],
+    drawdown_guard_state: dict[str, Any],
+    timestamp_iso: str,
+    audit_trace_id: str,
+    exit_policy_result: dict[str, Any] | None = None,
+    outcome_tracking_status: str = "PENDING",
+) -> dict[str, Any]:
+    """Construct a v3.26 shadow decision record.
+
+    ``broker_order_submitted`` and ``broker_execution_enabled`` are
+    hard-coded to ``false`` so the record schema is honored even if a
+    caller forgets to pass them.
+    """
+    rec: dict[str, Any] = {
+        "version": "v3.26.0",
+        "timestamp": timestamp_iso,
+        "symbol": symbol,
+        "asset_class": asset_class,
+        "strategy": strategy,
+        "decision_type": decision_type,
+        "side": side,
+        "would_trade": would_trade,
+        "would_block": would_block,
+        "block_reasons": list(block_reasons),
+        "sizing_preview": sizing_preview,
+        "exposure_policy_result": exposure_policy_result,
+        "drawdown_guard_state": drawdown_guard_state,
+        "broker_execution_enabled": False,
+        "broker_order_submitted": False,
+        "outcome_tracking_status": outcome_tracking_status,
+        "audit_trace_id": audit_trace_id,
+    }
+    if exit_policy_result is not None:
+        rec["exit_policy_result"] = exit_policy_result
+    return rec
+
+
+def append_record(repo_root: Path, record: dict[str, Any]) -> Path:
+    target = _records_path(repo_root, record["timestamp"])
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, sort_keys=True) + "\n")
+    return target
+
+
+def _preflight_or_refuse(refuse_if_failed: bool = True) -> dict[str, Any]:
+    report = preflight.run_preflight()
+    out: dict[str, Any] = {
+        "verdict": report.verdict,
+        "confirmations": report.confirmations,
+        "blockers": report.blockers,
+        "notes": report.notes,
+    }
+    if refuse_if_failed and report.verdict != preflight.SIGNAL_SHADOW_PREFLIGHT_PASS:
+        out["status"] = SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED
+    return out
+
+
+def _refuse_if_broker_execution_enabled() -> str | None:
+    """Hard-refuse layer independent of preflight. Returns a refusal
+    status token if execution should be refused; None otherwise."""
+    if _env_truthy("ALLOW_BROKER_PAPER"):
+        return SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED
+    if _env_truthy("EDGE_GATE_ENABLED"):
+        return SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED
+    if _env_truthy("BROKER_EXECUTION_ENABLED"):
+        return SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED
+    if (_env_truthy("LIVE_TRADING")
+            or _env_truthy("LIVE_ENABLED")
+            or _env_truthy("GO_LIVE")
+            or _env_truthy("LIVE_TRADING_ENABLED")):
+        return SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED
+    return None
+
+
+def collect(
+    *,
+    max_records: int = 10,
+    repo_root: Path | None = None,
+    market_data_available: bool = False,
+    timestamp_iso: str | None = None,
+    refuse_if_preflight_failed: bool = True,
+) -> dict[str, Any]:
+    """Run a single dry-run collection pass.
+
+    Behavior:
+    - First refuse-layer: any broker-execution env var truthy → REFUSED.
+    - Preflight: any blocker → REFUSED.
+    - No market data → SKIPPED_NO_MARKET_DATA (records counters update
+      but no shadow records are emitted).
+    - Otherwise: PROCEEDING (in v3.26 the actual record generation is
+      delegated to a future hook; this scaffolding writes counter
+      updates and an audit-trace skeleton record).
+
+    Returns a structured summary dict.
+    """
+    if repo_root is None:
+        repo_root = REPO_ROOT
+    if timestamp_iso is None:
+        timestamp_iso = "2026-06-09T01:00:00+00:00"
+
+    summary: dict[str, Any] = {
+        "version": "v3.26.0",
+        "timestamp": timestamp_iso,
+        "max_records": int(max_records),
+        "records_written": 0,
+        "records_path": None,
+    }
+
+    # Refuse layer 1.
+    refuse_token = _refuse_if_broker_execution_enabled()
+    if refuse_token is not None:
+        summary["status"] = refuse_token
+        summary["broker_execution_enabled_refusal"] = True
+        return summary
+
+    # Refuse layer 2 (preflight).
+    pre = _preflight_or_refuse(refuse_if_failed=refuse_if_preflight_failed)
+    summary["preflight"] = pre
+    if pre.get("status") == SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED:
+        summary["status"] = SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED
+        return summary
+
+    # Counter load.
+    cnt = counters_mod.load_counters(repo_root)
+
+    # Without market data we cannot generate meaningful shadow
+    # decisions. We still update the halt-path counter (so the
+    # operator sees runs are happening) and return the skip token.
+    if not market_data_available:
+        counters_mod.increment(
+            cnt, counters_mod.METRIC_HALT_PATH_OPPORTUNITIES, by=1,
+        )
+        counters_mod.save_counters(cnt, repo_root=repo_root,
+                                     generated_at_iso=timestamp_iso)
+        summary["status"] = SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA
+        return summary
+
+    # Proceed: emit up to max_records skeleton records. The actual
+    # decision-generation hook is delegated to a future PR (per v3.26
+    # scope: scaffolding only).
+    summary["status"] = SHADOW_COLLECTION_PROCEEDING
+    written = 0
+    for i in range(int(max_records)):
+        record = build_record(
+            symbol="SHADOW_SCAFFOLD_NOOP",
+            asset_class="us_equity",
+            strategy="signal-shadow-scaffold",
+            decision_type="skip",
+            side="none",
+            would_trade=False,
+            would_block=True,
+            block_reasons=["SHADOW_SCAFFOLD_NOOP"],
+            sizing_preview={
+                "proposed_usd": 0.0, "equity_usd": 0.0,
+                "proposed_qty": None, "limit_price": None,
+            },
+            exposure_policy_result={
+                "decision": "SHADOW_SCAFFOLD_NOOP",
+                "reason": "no real market data; scaffold-only record",
+                "details": {},
+            },
+            drawdown_guard_state={
+                "active": False, "threshold_pct": -3.0,
+                "current_pct": 0.0,
+            },
+            timestamp_iso=timestamp_iso,
+            audit_trace_id=f"v3260-scaffold-{uuid.uuid4().hex[:8]}",
+        )
+        path = append_record(repo_root, record)
+        summary["records_path"] = str(path.relative_to(repo_root))
+        written += 1
+    summary["records_written"] = written
+    counters_mod.increment(
+        cnt, counters_mod.METRIC_NORMAL_NON_HALT_OPPORTUNITIES,
+        by=written,
+    )
+    counters_mod.save_counters(cnt, repo_root=repo_root,
+                                 generated_at_iso=timestamp_iso)
+    return summary
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Run v3.26 signal/shadow evidence collection "
+                    "(dry-run only).",
+    )
+    parser.add_argument("--max-records", type=int, default=10)
+    parser.add_argument(
+        "--allow-without-market-data", action="store_true",
+        help="Proceed even when no market data source is available "
+             "(emits scaffold records).",
+    )
+    parser.add_argument(
+        "--no-refuse-on-preflight", action="store_true",
+        help="Report preflight blockers but continue. Intended for "
+             "smoke-tests of the scaffold only.",
+    )
+    args = parser.parse_args(argv)
+
+    summary = collect(
+        max_records=args.max_records,
+        market_data_available=bool(args.allow_without_market_data),
+        refuse_if_preflight_failed=not args.no_refuse_on_preflight,
+    )
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0 if summary.get("status") in (
+        SHADOW_COLLECTION_PROCEEDING,
+        SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA,
+    ) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

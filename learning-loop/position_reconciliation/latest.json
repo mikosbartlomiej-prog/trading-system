@@ -1,6 +1,98 @@
 {
-  "version": "v3.25.0",
-  "generated_at_iso": "2026-06-09T00:30:00+00:00",
+  "version": "v3.26.0",
+  "generated_at_iso": "2026-06-09T01:30:00+00:00",
+  "v326_followups": {
+    "title": "SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK",
+    "trigger": "v3_25_unlock_verdict_signal_shadow_unlock_ready",
+    "generated_at_iso": "2026-06-09T01:30:00+00:00",
+    "new_modules": {
+      "shared/signal_shadow_preflight.py": {
+        "purpose": "preflight validator for any v3.26 collector",
+        "verdicts": [
+          "SIGNAL_SHADOW_PREFLIGHT_PASS",
+          "SIGNAL_SHADOW_PREFLIGHT_BLOCKED"
+        ]
+      },
+      "shared/shadow_evidence_counters.py": {
+        "purpose": "monotonic counters persisted to learning-loop/shadow_evidence/evidence_counters_latest.json",
+        "thresholds": {
+          "normal_opportunities": 50,
+          "completed_shadow_outcomes": 20
+        }
+      }
+    },
+    "new_scripts": [
+      "scripts/run_signal_shadow_evidence_collection.py"
+    ],
+    "new_evidence_layout": {
+      "schema": "learning-loop/shadow_evidence/schema.json",
+      "counters_latest": "learning-loop/shadow_evidence/evidence_counters_latest.json",
+      "records_pattern": "learning-loop/shadow_evidence/records_YYYY-MM-DD.jsonl"
+    },
+    "new_docs": [
+      "docs/SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK.md",
+      "docs/SHADOW_EVIDENCE_PROGRESS.md"
+    ],
+    "new_tests": [
+      "tests/test_signal_shadow_preflight_v3260.py",
+      "tests/test_shadow_evidence_counters_v3260.py",
+      "tests/test_signal_shadow_collection_no_broker_execution_v3260.py"
+    ],
+    "status_tokens_added": [
+      "SIGNAL_SHADOW_PREFLIGHT_PASS",
+      "SIGNAL_SHADOW_PREFLIGHT_BLOCKED",
+      "BROKER_EXECUTION_DISABLED_CONFIRMED",
+      "BROKER_PAPER_DISABLED_CONFIRMED",
+      "LIVE_TRADING_UNSUPPORTED_CONFIRMED",
+      "EDGE_GATE_DISABLED_CONFIRMED",
+      "CRYPTO_GUARDS_PRESENT_CONFIRMED",
+      "AUDIT_BYPASS_INVARIANT_CONFIRMED",
+      "QUARANTINED_SCRIPTS_STILL_DISABLED_CONFIRMED",
+      "UNLOCK_READINESS_VERDICT_CONFIRMED",
+      "BROKER_PAPER_NOT_READY_CONFIRMED",
+      "BASELINE_UNCHANGED_CONFIRMED",
+      "DRAWDOWN_GUARD_NOT_LOWERED_CONFIRMED",
+      "OPEN_ORDERS_ZERO_CONFIRMED",
+      "OPEN_EQUITY_POSITIONS_ZERO_CONFIRMED",
+      "CRYPTO_POSITIONS_RECONCILED_CONFIRMED",
+      "SHADOW_COLLECTION_PROCEEDING",
+      "SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED",
+      "SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED",
+      "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA"
+    ],
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "operator_verified_no_open_orders": true,
+      "operator_verified_no_open_equity_positions": true,
+      "open_crypto_positions_meaningful": ["ETHUSD", "AVAXUSD"],
+      "open_crypto_positions_dust": ["SOLUSD", "LTCUSD"],
+      "broker_execution_enabled": false,
+      "live_trading_supported": false
+    },
+    "expected_progress": {
+      "normal_non_halt_opportunities_count": 0,
+      "completed_shadow_outcomes_count": 0,
+      "broker_paper_canary_ready": false,
+      "live_trading_supported": false
+    },
+    "next_action_items_v326": [
+      "RUN_SIGNAL_SHADOW_ONLY_EVIDENCE_COLLECTION",
+      "COLLECT_50_NORMAL_OPPORTUNITIES",
+      "COLLECT_20_COMPLETED_SHADOW_OUTCOMES",
+      "KEEP_BROKER_PAPER_DISABLED",
+      "KEEP_EDGE_GATE_DISABLED",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "REVIEW_ETH_AVAX_OPEN_CRYPTO_POSITIONS",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
   "v325_followups": {
     "title": "CRYPTO_POSITION_SIZING_LADDERING_EXIT_POLICY_AND_UNLOCK_READINESS",
     "trigger": "V3_24_REATTRIBUTED_DRAWDOWN_TO_SOL_LTC_CLOSE_CYCLE",

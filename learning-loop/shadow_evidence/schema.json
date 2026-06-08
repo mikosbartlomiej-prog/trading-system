@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trading-system/shadow_evidence/schema.json",
+  "title": "ShadowDecisionRecord",
+  "description": "v3.26.0 (2026-06-09) — shadow-only decision record. broker_order_submitted MUST always be false in v3.26. Records are append-only evidence; never used to mutate broker state.",
+  "type": "object",
+  "required": [
+    "version",
+    "timestamp",
+    "symbol",
+    "asset_class",
+    "strategy",
+    "decision_type",
+    "side",
+    "would_trade",
+    "would_block",
+    "block_reasons",
+    "sizing_preview",
+    "exposure_policy_result",
+    "drawdown_guard_state",
+    "broker_execution_enabled",
+    "broker_order_submitted",
+    "outcome_tracking_status",
+    "audit_trace_id"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^v3\\.26(\\.[0-9]+)?(\\.[0-9]+)?$"
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO-8601 UTC timestamp of the decision"
+    },
+    "symbol": {"type": "string"},
+    "asset_class": {
+      "type": "string",
+      "enum": ["us_equity", "us_etf", "us_option", "crypto"]
+    },
+    "strategy": {"type": "string"},
+    "decision_type": {
+      "type": "string",
+      "enum": ["entry", "exit", "rebalance", "hold", "skip"]
+    },
+    "side": {
+      "type": "string",
+      "enum": ["buy", "sell", "buy_to_open", "sell_to_close",
+                "sell_short", "buy_to_close", "none"]
+    },
+    "would_trade": {"type": "boolean"},
+    "would_block": {"type": "boolean"},
+    "block_reasons": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "sizing_preview": {
+      "type": "object",
+      "required": ["proposed_usd", "equity_usd"],
+      "properties": {
+        "proposed_usd": {"type": "number"},
+        "equity_usd":   {"type": "number"},
+        "proposed_qty": {"type": ["number", "null"]},
+        "limit_price":  {"type": ["number", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "exposure_policy_result": {
+      "type": "object",
+      "required": ["decision"],
+      "properties": {
+        "decision": {"type": "string"},
+        "reason":   {"type": "string"},
+        "details":  {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "exit_policy_result": {
+      "type": "object",
+      "properties": {
+        "decision": {"type": "string"},
+        "reason":   {"type": "string"},
+        "details":  {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "drawdown_guard_state": {
+      "type": "object",
+      "required": ["active"],
+      "properties": {
+        "active":         {"type": "boolean"},
+        "threshold_pct":  {"type": "number"},
+        "current_pct":    {"type": "number"}
+      },
+      "additionalProperties": true
+    },
+    "broker_execution_enabled": {
+      "type": "boolean",
+      "enum": [false]
+    },
+    "broker_order_submitted": {
+      "type": "boolean",
+      "enum": [false]
+    },
+    "outcome_tracking_status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "TRACKING",
+        "COMPLETED",
+        "ABANDONED_INSUFFICIENT_DATA",
+        "ABANDONED_PREFLIGHT_REGRESSION"
+      ]
+    },
+    "audit_trace_id": {"type": "string"}
+  },
+  "additionalProperties": false,
+  "x-hard-safety-rules": {
+    "broker_order_submitted_must_be_false": true,
+    "broker_execution_enabled_must_be_false": true,
+    "may_not_mutate_state_json": true,
+    "may_not_mutate_runtime_state_json": true,
+    "may_not_call_safe_close_or_place_order": true,
+    "intended_use": "evidence-collection only; broker-paper canary readiness is gated on counters reaching THRESHOLD_NORMAL_OPPORTUNITIES and THRESHOLD_SHADOW_OUTCOMES per shared/shadow_evidence_counters.py"
+  }
+}
