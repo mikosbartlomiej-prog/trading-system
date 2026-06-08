@@ -61,6 +61,28 @@
     "VERIFY_CRYPTO_DUST_POSITIONS",
     "REVIEW_EQUITY_BASELINE_RESET_POLICY"
   ],
+  "v324_full_order_history_drawdown_reattribution_2026_06_08": {
+    "source": "OPERATOR_ORDER_HISTORY_MANUAL",
+    "captured_at_iso": "2026-06-08T21:00:00+00:00",
+    "scope": "ALPACA_PAPER_FULL_ORDER_HISTORY_EXPORT",
+    "trigger": "operator provided broader Alpaca paper Order History export",
+    "old_hypothesis_disproved": "remaining 7 equity trades likely explain ~-$5,304 of drawdown",
+    "new_finding": {
+      "equity_batch_full_8_symbol_total_usd": -236.74,
+      "crypto_sol_ltc_close_cycle_total_usd_approx": -5594.06,
+      "drawdown_attribution_status": "DRAWDOWN_ATTRIBUTION_NEAR_COMPLETE_WITH_SMALL_RESIDUAL"
+    },
+    "details_file": "learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json",
+    "details_in_latest": "learning-loop/position_reconciliation/latest.json::v324_followups",
+    "what_this_does_not_do": [
+      "does not reset starting_equity baseline",
+      "does not close open ETHUSD or AVAXUSD positions",
+      "does not close SOLUSD or LTCUSD dust",
+      "does not enable broker_paper or live trading",
+      "does not infer client_order_id",
+      "does not invent crypto realized P/L beyond the approximations supplied by operator export"
+    ]
+  },
   "v3233_3_positions_view_verification_2026_06_08": {
     "source": "OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL",
     "timestamp_iso": "2026-06-08T20:00:00+00:00",

@@ -303,3 +303,39 @@ What this refresh does NOT do (same as v3.23.2):
 - does not close ETH/AVAX/SOL/LTC
 - does not enable broker_paper or live trading
 - does not lower drawdown_guard threshold
+
+---
+
+## v3.24.0 follow-up — drawdown REATTRIBUTED (2026-06-08)
+
+Operator provided the broader Alpaca paper Order History export.
+The v3.23.x interim hypothesis ("remaining 7 equity trades likely
+explain ~-$5,304") is **OBSOLETE**. New facts:
+
+- **Full 8-symbol equity batch realized P/L: -$236.74** (close to flat).
+- **SOLUSD + LTCUSD realized close cycle on 2026-06-06: approx -$5,594.06.**
+- Combined explained: approx -$5,830.80 of the -$5,741 drawdown.
+- Residual: ~-$147 over- or under-explained depending on baseline
+  anchor; requires account-equity-timing reconciliation to close out.
+
+Status tokens added:
+`EQUITY_BATCH_RECONSTRUCTED_FROM_ORDER_HISTORY`,
+`EQUITY_BATCH_NOT_PRIMARY_DRAWDOWN_SOURCE`,
+`CRYPTO_SOL_LTC_REALIZED_LOSS_CONFIRMED`,
+`DRAWDOWN_REATTRIBUTED_TO_CRYPTO_CLOSE_CYCLE`,
+`DRAWDOWN_ATTRIBUTION_NEAR_COMPLETE_WITH_SMALL_RESIDUAL`,
+`RESIDUAL_DRAWDOWN_REQUIRES_ACCOUNT_EQUITY_TIMING_RECONCILIATION`.
+
+New primary operator action item:
+`INVESTIGATE_CRYPTO_POSITION_SIZING_AND_EXIT_POLICY_SOL_LTC_2026_06_06`.
+
+AMD facts unchanged: P/L -$437.07; source still
+`AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.
+Open positions unchanged: 0 equity, 4 crypto (ETH/AVAX meaningful,
+SOL/LTC dust). Drawdown guard active. Baseline NOT reset.
+
+Full details:
+- `docs/INCIDENT_2026_06_07.md` (v3.24 follow-up section)
+- `learning-loop/position_reconciliation/latest.json::v324_followups`
+- `learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+  (every entry now `data_quality=COMPLETE_FROM_OPERATOR_EXPORT`)

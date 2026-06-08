@@ -164,3 +164,47 @@ gained a `v3233_3_positions_view_verification_2026_06_08` block
 with exact qty / market value / avg entry / cost basis values
 (source: `OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL`). The original
 v3.23.1 session-start block is preserved for history.
+
+---
+
+## v3.24.0 addendum — full order-history drawdown reattribution (2026-06-08)
+
+Operator provided the broader Alpaca paper Order History export.
+This **invalidates** the v3.23.x interim hypothesis that the
+remaining 7 equity trades carried ~-$5,304 of the drawdown.
+
+Reattribution facts (from
+`learning-loop/position_reconciliation/latest.json::v324_followups`):
+
+- Full 8-symbol equity batch realized P/L: **-$236.74**
+  (close to flat; not the primary drawdown source).
+- SOLUSD sell_to_close on 2026-06-06: 451.353798 units @ $60.07,
+  sell amount $27,112.92, reconstructed cost basis of sold lots
+  ~$29,964.07, realized P/L approx **-$2,851.15**.
+- LTCUSD sell_to_close on 2026-06-06: 675.170322 units @ $40.32,
+  sell amount $27,221.13, reconstructed cost basis ~$29,964.03,
+  realized P/L approx **-$2,742.90**.
+- Combined SOLUSD + LTCUSD realized loss: approx **-$5,594.06**.
+- Reported drawdown: -$5,741. Explained ~-$5,830.80
+  (equity -$236.74 + crypto -$5,594.06). Small residual
+  ~-$147 (or +$89 over-explained depending on baseline anchor).
+
+Status tokens added:
+- `EQUITY_BATCH_RECONSTRUCTED_FROM_ORDER_HISTORY`
+- `EQUITY_BATCH_NOT_PRIMARY_DRAWDOWN_SOURCE`
+- `CRYPTO_SOL_LTC_REALIZED_LOSS_CONFIRMED`
+- `DRAWDOWN_REATTRIBUTED_TO_CRYPTO_CLOSE_CYCLE`
+- `DRAWDOWN_ATTRIBUTION_NEAR_COMPLETE_WITH_SMALL_RESIDUAL`
+- `RESIDUAL_DRAWDOWN_REQUIRES_ACCOUNT_EQUITY_TIMING_RECONCILIATION`
+
+Primary new operator action item:
+`INVESTIGATE_CRYPTO_POSITION_SIZING_AND_EXIT_POLICY_SOL_LTC_2026_06_06`
+— each of SOL and LTC carried ~$29,964 cost basis at the closed-lot
+batch, ~30% of $100k paper equity each (~60% combined), well above
+the v2.0 per-ticker cap (40%). This points to repeated buy-side
+laddering without a hard aggregate-crypto-exposure cap. Full
+question list lives in
+`learning-loop/position_reconciliation/latest.json::v324_followups.risk_findings`.
+
+AMD reconciliation is unchanged: P/L -$437.07, source still
+`AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT`.

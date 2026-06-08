@@ -100,3 +100,37 @@ operator extraction. v3.23.2 adds:
   every symbol AND disclaims credential collection; canceled TP/SL
   orders never enter the P&L computation.
 
+
+---
+
+## v3.24.0 addendum — full order-history reattribution (2026-06-08)
+
+Operator provided the broader Alpaca paper Order History export. The
+7 placeholder symbols in
+`learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json`
+are now fully reconstructed:
+
+| Symbol | Open qty @ price | Close qty @ price | Realized P/L |
+|---|---|---|---:|
+| CRWD | 19 @ 685.598421 | 19 @ 678.41 | -$136.58 |
+| NOW | 107 @ 121.966168 | 107 @ 121.682243 | -$30.38 |
+| QQQ | 13 @ 733.676923 | 13 @ 733.142308 | -$6.95 |
+| SPY | 12 @ 751.68 | 12 @ 753.245 | +$18.78 |
+| GLD | 16 @ 414.091875 | 16 @ 412.515625 | -$25.22 |
+| PANW | 48 @ 273.19 | 48 @ 272.126667 | -$51.04 |
+| ORCL | 58 @ 225.323104 | 58 @ 232.766552 | +$431.72 |
+| **7 non-AMD subtotal** | | | **+$200.33** |
+| AMD | 34 @ 497.875 | 34 @ 485.02 | -$437.07 |
+| **Full 8-symbol equity batch** | | | **-$236.74** |
+
+All entries flipped from `data_quality=REQUIRES_OPERATOR_EXTRACTION`
+to `data_quality=COMPLETE_FROM_OPERATOR_EXPORT`. No prices were
+invented; helper `trade_from_manual_order_history()` was not needed
+because operator-supplied avg-fill values are authoritative.
+
+**Old hypothesis obsolete:** the v3.23.1 / v3.23.2 placeholder note
+that the remaining 7 equity trades would explain ~-$5,304 of the
+drawdown is now **disproved**. The full 8-symbol equity batch is
+close to flat (-$236.74). Drawdown reattribution lives in
+`learning-loop/position_reconciliation/latest.json::v324_followups`
+and in `docs/INCIDENT_2026_06_07.md`.

@@ -38,12 +38,17 @@ class TestGHActionsInvestigationJSONHasOperatorUIBlock(unittest.TestCase):
         with open(cls.path, encoding="utf-8") as f:
             cls.data = json.load(f)
 
-    def test_version_bumped(self):
-        # v3.23.3.x updates preserve all earlier facts; accept any
-        # version in the v3.23.3 family.
+    def test_version_at_least_v3233_1(self):
+        # v3.23.3.x and later (v3.24.x, ...) preserve all earlier
+        # v3.23.3.1 facts. The real invariant is that the v3233_1
+        # followup block is still readable (asserted separately).
+        v = self.data["version"]
         self.assertTrue(
-            self.data["version"].startswith("v3.23.3."),
-            f"unexpected version: {self.data['version']}",
+            (v.startswith("v3.23.3.") and v != "v3.23.3.0")
+            or v.startswith("v3.24")
+            or v.startswith("v3.25")
+            or v.startswith("v3.26"),
+            f"unexpected version family: {v}",
         )
 
     def test_operator_ui_verification_block_present(self):
@@ -111,12 +116,17 @@ class TestAuditBypassJSONReferencesUIVerification(unittest.TestCase):
         with open(cls.path, encoding="utf-8") as f:
             cls.data = json.load(f)
 
-    def test_version_bumped(self):
-        # v3.23.3.x updates preserve all earlier facts; accept any
-        # version in the v3.23.3 family.
+    def test_version_at_least_v3233_1(self):
+        # v3.23.3.x and later (v3.24.x, ...) preserve all earlier
+        # v3.23.3.1 facts. The real invariant is that the v3233_1
+        # followup block is still readable (asserted separately).
+        v = self.data["version"]
         self.assertTrue(
-            self.data["version"].startswith("v3.23.3."),
-            f"unexpected version: {self.data['version']}",
+            (v.startswith("v3.23.3.") and v != "v3.23.3.0")
+            or v.startswith("v3.24")
+            or v.startswith("v3.25")
+            or v.startswith("v3.26"),
+            f"unexpected version family: {v}",
         )
 
     def test_action_items_use_narrowed_next_action(self):
@@ -152,12 +162,17 @@ class TestLatestJSONHasV3233_1Followup(unittest.TestCase):
         with open(cls.path, encoding="utf-8") as f:
             cls.data = json.load(f)
 
-    def test_version_bumped(self):
-        # v3.23.3.x updates preserve all earlier facts; accept any
-        # version in the v3.23.3 family.
+    def test_version_at_least_v3233_1(self):
+        # v3.23.3.x and later (v3.24.x, ...) preserve all earlier
+        # v3.23.3.1 facts. The real invariant is that the v3233_1
+        # followup block is still readable (asserted separately).
+        v = self.data["version"]
         self.assertTrue(
-            self.data["version"].startswith("v3.23.3."),
-            f"unexpected version: {self.data['version']}",
+            (v.startswith("v3.23.3.") and v != "v3.23.3.0")
+            or v.startswith("v3.24")
+            or v.startswith("v3.25")
+            or v.startswith("v3.26"),
+            f"unexpected version family: {v}",
         )
 
     def test_v3233_1_followups_present(self):

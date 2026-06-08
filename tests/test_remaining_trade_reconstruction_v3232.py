@@ -28,24 +28,51 @@ class TestPlaceholderFile(unittest.TestCase):
             self.data = json.load(f)
         self.assertEqual(self.data["source"], "OPERATOR_ORDER_HISTORY_MANUAL")
 
-    def test_has_seven_entries(self):
+    def test_has_at_least_seven_entries(self):
+        # v3.23.2 shipped exactly 7 placeholder symbols. v3.24
+        # added AMD as the 8th for completeness (already reconciled
+        # in v3.23.1). At minimum the 7 v3.23.2 symbols must be
+        # present.
         with open(self.path, encoding="utf-8") as f:
             data = json.load(f)
         symbols_in_file = [e["symbol"] for e in data["symbols"]]
         for s in SEVEN_SYMBOLS:
             self.assertIn(s, symbols_in_file)
-        self.assertEqual(len(data["symbols"]), 7)
+        self.assertGreaterEqual(len(data["symbols"]), 7)
 
-    def test_all_placeholders_require_extraction(self):
+    def test_no_invented_prices_either_placeholder_or_export(self):
+        # v3.23.2 contract: every fill price was null
+        # (REQUIRES_OPERATOR_EXTRACTION). v3.24 contract: every
+        # fill price comes from the operator's Order History export
+        # (COMPLETE_FROM_OPERATOR_EXPORT). NEITHER allows invented
+        # prices: a price either is null (placeholder) OR was
+        # transcribed verbatim by the operator (export). The
+        # forbidden middle ground — null fields silently replaced
+        # by guessed numbers — must never happen.
         with open(self.path, encoding="utf-8") as f:
             data = json.load(f)
+        ALLOWED = {
+            "REQUIRES_OPERATOR_EXTRACTION",
+            "COMPLETE_FROM_OPERATOR_EXPORT",
+            "PARTIAL",
+            "MISSING_CLOSE_PRICE",
+            "MISSING_OPEN_PRICE",
+        }
         for entry in data["symbols"]:
-            self.assertEqual(entry["data_quality"],
-                              "REQUIRES_OPERATOR_EXTRACTION",
-                              f"{entry['symbol']} should be placeholder")
-            # No invented prices.
-            self.assertIsNone(entry["open_avg_fill_price"])
-            self.assertIsNone(entry["close_avg_fill_price"])
+            self.assertIn(
+                entry["data_quality"], ALLOWED,
+                f"{entry['symbol']} has unrecognized data_quality "
+                f"{entry['data_quality']!r}",
+            )
+            if entry["data_quality"] == "REQUIRES_OPERATOR_EXTRACTION":
+                self.assertIsNone(entry["open_avg_fill_price"])
+                self.assertIsNone(entry["close_avg_fill_price"])
+            elif entry["data_quality"] == "COMPLETE_FROM_OPERATOR_EXPORT":
+                # Values present and numeric.
+                self.assertIsInstance(entry["open_avg_fill_price"],
+                                       (int, float))
+                self.assertIsInstance(entry["close_avg_fill_price"],
+                                       (int, float))
 
 
 class TestOperatorChecklist(unittest.TestCase):

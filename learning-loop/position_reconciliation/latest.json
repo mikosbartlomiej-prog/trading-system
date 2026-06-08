@@ -1,6 +1,112 @@
 {
-  "version": "v3.23.3.3",
-  "generated_at_iso": "2026-06-08T20:00:00+00:00",
+  "version": "v3.24.0",
+  "generated_at_iso": "2026-06-08T21:00:00+00:00",
+  "v324_followups": {
+    "title": "FULL_ORDER_HISTORY_DRAWDOWN_REATTRIBUTION",
+    "trigger": "OPERATOR_PROVIDED_BROADER_ALPACA_PAPER_ORDER_HISTORY_EXPORT",
+    "captured_at_iso": "2026-06-08T21:00:00+00:00",
+    "old_hypothesis_obsolete": {
+      "claim": "remaining 7 equity trades likely explain ~-$5,304 of the drawdown",
+      "status": "OBSOLETE_DISPROVED_BY_OPERATOR_EXPORT",
+      "introduced_in": "v3.23.1 / v3.23.2 placeholder reconstruction guess",
+      "removed_in": "v3.24.0"
+    },
+    "equity_batch_reconstruction": {
+      "source": "OPERATOR_ORDER_HISTORY_MANUAL",
+      "details_file": "learning-loop/position_reconciliation/manual_order_history_remaining_2026-06-04.json",
+      "per_symbol_realized_pnl_usd": {
+        "CRWD": -136.58,
+        "NOW":  -30.38,
+        "QQQ":  -6.95,
+        "SPY":  18.78,
+        "GLD":  -25.22,
+        "PANW": -51.04,
+        "ORCL": 431.72,
+        "AMD":  -437.07
+      },
+      "non_amd_7_symbols_total_usd": 200.33,
+      "full_8_symbol_batch_total_usd": -236.74,
+      "interpretation": "the equity batch is close to flat; it is NOT the primary drawdown source"
+    },
+    "crypto_close_cycle_reattribution_2026_06_06": {
+      "source": "OPERATOR_ORDER_HISTORY_MANUAL",
+      "scope": "SOLUSD + LTCUSD sell_to_close events",
+      "SOLUSD": {
+        "side": "sell_to_close",
+        "qty_closed": 451.353798,
+        "avg_fill_price_usd": 60.070217093,
+        "sell_amount_usd": 27112.92063161,
+        "reconstructed_cost_basis_of_sold_lots_usd": 29964.073425576,
+        "realized_pnl_usd_approx": -2851.15
+      },
+      "LTCUSD": {
+        "side": "sell_to_close",
+        "qty_closed": 675.170322,
+        "avg_fill_price_usd": 40.317423304,
+        "sell_amount_usd": 27221.127674372,
+        "reconstructed_cost_basis_of_sold_lots_usd": 29964.030112620,
+        "realized_pnl_usd_approx": -2742.90
+      },
+      "combined_realized_pnl_usd_approx": -5594.06,
+      "interpretation": "SOL + LTC realized close cycle accounts for the bulk of the drawdown"
+    },
+    "drawdown_attribution": {
+      "reported_drawdown_usd": -5741.0,
+      "equity_batch_contribution_usd": -236.74,
+      "crypto_sol_ltc_close_cycle_contribution_usd_approx": -5594.06,
+      "explained_usd_approx": -5830.80,
+      "residual_usd_approx": 89.80,
+      "residual_sign_interpretation": "explained slightly exceeds reported (~$89); after rounding the residual is small (~$147 unexplained or ~$89 over-explained depending on which baseline anchor)",
+      "status": "DRAWDOWN_ATTRIBUTION_NEAR_COMPLETE_WITH_SMALL_RESIDUAL"
+    },
+    "status_tokens_added": [
+      "EQUITY_BATCH_RECONSTRUCTED_FROM_ORDER_HISTORY",
+      "EQUITY_BATCH_NOT_PRIMARY_DRAWDOWN_SOURCE",
+      "CRYPTO_SOL_LTC_REALIZED_LOSS_CONFIRMED",
+      "DRAWDOWN_REATTRIBUTED_TO_CRYPTO_CLOSE_CYCLE",
+      "DRAWDOWN_ATTRIBUTION_NEAR_COMPLETE_WITH_SMALL_RESIDUAL",
+      "RESIDUAL_DRAWDOWN_REQUIRES_ACCOUNT_EQUITY_TIMING_RECONCILIATION"
+    ],
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "operator_verified_no_open_orders": true,
+      "operator_verified_no_open_equity_positions": true,
+      "open_crypto_positions_meaningful": ["ETHUSD", "AVAXUSD"],
+      "open_crypto_positions_dust": ["SOLUSD", "LTCUSD"]
+    },
+    "risk_findings": {
+      "primary": "CRYPTO_POSITION_SIZING_FOR_SOL_LTC_EXCEEDED_PRUDENT_LIMITS",
+      "evidence": "each of SOL and LTC had a cost basis of approximately $29,964 in the closed lot batch (~30% of $100k paper equity each, ~60% combined). This is well above the strategy v2.0 risk-on per-ticker cap (40%) and indicates repeated buy-side laddering without a hard aggregate-crypto-exposure cap.",
+      "action_item": "INVESTIGATE_CRYPTO_POSITION_SIZING_AND_EXIT_POLICY_SOL_LTC_2026_06_06",
+      "questions_to_answer": [
+        "Why were repeated SOL/LTC buy orders submitted every ~5 minutes?",
+        "Was this intended laddering/DCA or a runaway loop?",
+        "Was there a max-notional-per-symbol cap?",
+        "Was there a max-aggregate-crypto-exposure cap?",
+        "Did the drawdown guard trigger too late?",
+        "Did the exit policy close everything at market and why?",
+        "Were these orders audited through the correct safe_close wrapper?",
+        "Does the crypto monitor/allocator need a hard budget cap?"
+      ]
+    },
+    "next_action_items_v324": [
+      "INVESTIGATE_CRYPTO_POSITION_SIZING_AND_EXIT_POLICY_SOL_LTC_2026_06_06",
+      "RESIDUAL_DRAWDOWN_REQUIRES_ACCOUNT_EQUITY_TIMING_RECONCILIATION",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "KEEP_EDGE_GATE_DISABLED",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_RESET_BASELINE_AUTOMATICALLY",
+      "DO_NOT_RESTORE_QUARANTINED_LEGACY_ORDER_SCRIPTS",
+      "DO_NOT_INFER_CLIENT_ORDER_ID",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
   "v3233_3_followups": {
     "operator_positions_view_verification_scope": "ALPACA_PAPER_DASHBOARD_POSITIONS_VIEW_ALL",
     "source": "OPERATOR_DASHBOARD_POSITIONS_VIEW_MANUAL",

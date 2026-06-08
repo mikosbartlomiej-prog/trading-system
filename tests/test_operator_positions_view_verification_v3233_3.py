@@ -335,18 +335,27 @@ class TestSafetyFlagsUnchanged(unittest.TestCase):
 
 class TestVersionAndPriorBlocksPreserved(unittest.TestCase):
     def test_gh_actions_version_in_3233_family(self):
+        v = _load(GH_ACTIONS_JSON)["version"]
         self.assertTrue(
-            _load(GH_ACTIONS_JSON)["version"].startswith("v3.23.3."),
+            v.startswith("v3.23.3.") or v.startswith("v3.24")
+            or v.startswith("v3.25") or v.startswith("v3.26"),
+            f"unexpected version: {v}",
         )
 
     def test_audit_bypass_version_in_3233_family(self):
+        v = _load(AUDIT_BYPASS_JSON)["version"]
         self.assertTrue(
-            _load(AUDIT_BYPASS_JSON)["version"].startswith("v3.23.3."),
+            v.startswith("v3.23.3.") or v.startswith("v3.24")
+            or v.startswith("v3.25") or v.startswith("v3.26"),
+            f"unexpected version: {v}",
         )
 
     def test_latest_version_in_3233_family(self):
+        v = _load(LATEST_JSON)["version"]
         self.assertTrue(
-            _load(LATEST_JSON)["version"].startswith("v3.23.3."),
+            v.startswith("v3.23.3.") or v.startswith("v3.24")
+            or v.startswith("v3.25") or v.startswith("v3.26"),
+            f"unexpected version: {v}",
         )
 
     def test_all_prior_followup_blocks_preserved(self):
