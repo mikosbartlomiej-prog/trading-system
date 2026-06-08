@@ -44,3 +44,18 @@
 [01:51:19 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
 [01:51:19 INFO] ── Step 8: plan complete ──
 [01:51:19 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[16:57:11 INFO] ============================================================
+[16:57:11 INFO] execute_orders() — auto-execute path
+[16:57:11 INFO] ============================================================
+[16:57:11 INFO]   market_status: open=True reason=open
+[16:57:11 INFO]   bp_guard: requested $43274 available $316638 open_exposure $11041 | all BUYs fit available BP + exposure cap
+[16:57:12 INFO]     PANW BUY: derived qty=61 from target=$16,228 @ $264.23 (no prior position)
+[16:57:14 ERR ]     PANW BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[16:57:14 INFO]     SPY BUY: derived qty=12 from target=$9,016 @ $742.38 (no prior position)
+[16:57:16 ERR ]     SPY BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[16:57:16 INFO]     QQQ BUY: derived qty=12 from target=$9,016 @ $719.77 (no prior position)
+[16:57:18 ERR ]     QQQ BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[16:57:18 INFO]     GLD BUY: derived qty=22 from target=$9,016 @ $398.53 (no prior position)
+[16:57:21 ERR ]     GLD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[16:57:21 INFO]   execution complete: 0 placed, 0 skipped, 4 failed, 0 deferred_bp
