@@ -139,3 +139,84 @@ with the existing `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY` env vars.
 
 Machine-readable output:
 `learning-loop/position_reconciliation/amd_close_source_gh_actions_investigation_latest.json`.
+
+---
+
+## Operator UI verification — 2026-06-08 EOD (v3.23.3.1)
+
+Operator re-opened the Alpaca paper dashboard Order History view and
+confirmed the AMD close order row is **still visible** (NOT deleted).
+The row was transcribed verbatim from the UI table:
+
+| Field | Value |
+| --- | --- |
+| ID | `7f3ac850-49aa-4ccb-b075-c0ecb56c5871` |
+| Asset | AMD |
+| Order Type | Market |
+| Type | market |
+| Side | sell |
+| Position Intent | sell_to_close |
+| Qty | 34.00 |
+| Filled Qty | 34.00 |
+| Currency | USD |
+| Avg Fill Price | 485.02 |
+| Total Amount | 16,490.68 |
+| Status | filled |
+| Source | `access_key` |
+| Submitted At | Jun 05, 2026, 05:35:44 PM (local 17:35:44-04:00) |
+| Filled At | Jun 05, 2026, 05:35:45 PM (local 17:35:45-04:00) |
+| Expires At | Jun 05, 2026, 10:00:00 PM (local 22:00:00-04:00) |
+
+**Critical:** the UI table does **NOT** expose `client_order_id`.
+The operator confirmed visually that the column is absent from the
+dashboard's default Order History view.
+
+### Status tokens (added 2026-06-08 EOD)
+
+- `AMD_ORDER_ROW_VISIBLE_IN_ALPACA_UI` — the close row remains on
+  the Alpaca paper dashboard, evidence is NOT lost.
+- `CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE` — the discriminating
+  field is absent from the dashboard's default columns.
+- `AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT` —
+  the source remains unresolved; the gap can only be closed by
+  one of the two paths below.
+
+### Conclusion (refined)
+
+The AMD close remains **confirmed** as `market sell_to_close` via
+`access_key`. Realized P/L is unchanged at **-$437.07** (buy
+$16,927.75 − sell $16,490.68 = -$437.07). The submitter remains
+**unknown** because the field that would discriminate among the
+candidate sources (`client_order_id`) is not visible in the UI
+table.
+
+### Narrowed next-required action
+
+The previous broad action
+`PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID`
+is now narrowed to ONE of:
+
+1. **Alpaca read-only API order-details lookup** for the exact
+   order_id:
+   `GET https://paper-api.alpaca.markets/v2/orders/7f3ac850-49aa-4ccb-b075-c0ecb56c5871`
+   using existing paper `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`.
+   The JSON response includes `client_order_id`.
+2. **Alpaca CSV / activity export** that includes the
+   `client_order_id` column (some export views expose more columns
+   than the live table).
+
+Either path resolves the source. Both are READ-ONLY operations
+against the paper endpoint.
+
+### What this verification does NOT do
+
+- Does NOT change AMD's realized P/L (still -$437.07).
+- Does NOT mark AMD evidence as lost (row is preserved on the
+  dashboard).
+- Does NOT infer or invent a `client_order_id`.
+- Does NOT alter AMD's status as "manually verified from Alpaca UI /
+  operator transcription".
+- Does NOT place, modify, or close any position.
+- Does NOT enable live trading or broker_paper.
+- Does NOT reset the equity baseline.
+- Does NOT lower the drawdown guard.

@@ -1,7 +1,7 @@
 {
-  "version": "v3.23.3",
-  "generated_at_iso": "2026-06-08T17:00:00+00:00",
-  "investigation_type": "GH_ACTIONS_FORENSICS",
+  "version": "v3.23.3.1",
+  "generated_at_iso": "2026-06-08T18:00:00+00:00",
+  "investigation_type": "GH_ACTIONS_FORENSICS_PLUS_OPERATOR_UI_VERIFICATION",
   "target": {
     "symbol": "AMD",
     "order_id": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
@@ -89,8 +89,55 @@
     "CLOUDFLARE_WORKER_OR_ROUTINE_TRIGGERED_OUTSIDE_GH_ACTIONS",
     "MANUAL_OPERATOR_ACTION_VIA_ALPACA_DASHBOARD_OR_API"
   ],
-  "next_required_action": "PULL_ALPACA_API_ORDER_HISTORY_FOR_AMD_2026_06_05_CLIENT_ORDER_ID",
-  "rationale_for_next_action": "The submitter_source field 'access_key' applies to ANY REST call using the Alpaca API key (MCP, Cloudflare Worker, manual curl). The client_order_id prefix is the only deterministic discriminator we have without GitHub Actions runner logs (none of which match).",
+  "operator_ui_verification_2026_06_08_eod": {
+    "row_still_visible_in_alpaca_paper_ui": true,
+    "transcribed_at_iso_utc": "2026-06-08T18:00:00+00:00",
+    "transcribed_row": {
+      "ID": "7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+      "Asset": "AMD",
+      "Order Type": "Market",
+      "Type": "market",
+      "Side": "sell",
+      "Position Intent": "sell_to_close",
+      "Qty": 34.0,
+      "Filled Qty": 34.0,
+      "Currency": "USD",
+      "Avg Fill Price": 485.02,
+      "Total Amount": 16490.68,
+      "Status": "filled",
+      "Source": "access_key",
+      "Submitted At": "Jun 05, 2026, 05:35:44 PM",
+      "Filled At": "Jun 05, 2026, 05:35:45 PM",
+      "Expires At": "Jun 05, 2026, 10:00:00 PM"
+    },
+    "client_order_id_visible_in_ui_table": false,
+    "evidence_lost": false,
+    "amd_close_status_unchanged": "AMD_CLOSE_MANUALLY_VERIFIED_FROM_ALPACA_UI_OPERATOR_TRANSCRIPTION",
+    "amd_realized_pnl_usd_unchanged": -437.07,
+    "status_tokens_added": [
+      "AMD_ORDER_ROW_VISIBLE_IN_ALPACA_UI",
+      "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
+  "next_required_action": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+  "next_required_action_options": [
+    {
+      "id": "ALPACA_API_ORDER_DETAILS_GET",
+      "method": "GET",
+      "endpoint": "https://paper-api.alpaca.markets/v2/orders/7f3ac850-49aa-4ccb-b075-c0ecb56c5871",
+      "auth": "existing paper APCA_API_KEY_ID + APCA_API_SECRET_KEY",
+      "expected_field": "client_order_id",
+      "side_effects": "none (read-only)"
+    },
+    {
+      "id": "ALPACA_CSV_ACTIVITY_EXPORT",
+      "method": "dashboard export",
+      "expected_field": "client_order_id column (when present in export view)",
+      "side_effects": "none (read-only download)"
+    }
+  ],
+  "rationale_for_next_action": "Operator confirmed 2026-06-08 EOD that the AMD close order row is still visible in the Alpaca paper Order History UI (NOT deleted), but the UI table does not expose client_order_id. The submitter_source 'access_key' applies to ANY REST call using the Alpaca API key; client_order_id is the only deterministic discriminator. It is reachable READ-ONLY via the paper API order-details endpoint or via an Alpaca activity export view.",
   "invariants_verified": {
     "no_orders_placed_by_investigation": true,
     "no_positions_modified": true,
