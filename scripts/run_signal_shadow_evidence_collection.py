@@ -273,10 +273,22 @@ def collect(
         # MARKET_DATA_PROVIDER_ERROR distinctly.
         bars_by_symbol: dict[str, list] = {}
         bars_token_by_symbol: dict[str, str] = {}
+        # v3.27.2 — operator-tunable lookback. Default 40 (well above
+        # the 22-bar ATR floor). Cannot be reduced below 22 — that
+        # safety floor is enforced server-side by
+        # ``shared/market_data_provider.py::fetch_daily_bars_diagnostic``
+        # which returns INSUFFICIENT_BARS_FOR_SIGNAL when bars<22.
+        try:
+            lookback_days = max(
+                22,
+                int(os.environ.get(
+                    "SHADOW_MARKET_DATA_LOOKBACK_DAYS", "40") or 40))
+        except (TypeError, ValueError):
+            lookback_days = 40
         for snap in snapshots:
             if snap.asset_class == "us_equity":
                 bars, bars_token = mdp.fetch_daily_bars_diagnostic(
-                    snap.symbol, days=40,
+                    snap.symbol, days=lookback_days,
                 )
                 bars_token_by_symbol[snap.symbol] = bars_token
                 if bars and len(bars) >= 22:

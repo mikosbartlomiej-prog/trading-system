@@ -157,6 +157,10 @@ jobs:
             --resolver-status  "${{ steps.resolver.outputs.status }}" \
             --secrets-status   SECRETS_AVAILABLE
 
+      - name: Monitor multi-run automated evidence progress (v3.27.2)
+        run: |
+          python3 scripts/monitor_automated_shadow_progress.py
+
       - name: Enforce commit-path allow-list
         id: pathcheck
         run: |

@@ -175,6 +175,96 @@ real-data hook is wired. Until then, the collector correctly
 returns `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` and no records
 accumulate toward the canary gate.
 
+## v3.27.2 — automated multi-run progress monitor (2026-06-09)
+
+v3.27.1 told the operator whether THIS tick was healthy. v3.27.2
+answers a different question:
+
+> Is the automated pipeline making PROGRESS across many ticks, or
+> is it silently stuck on a single failure mode?
+
+**No manual runs are required.** Every scheduled `signal-shadow-evidence`
+workflow tick now runs an additional step
+(`scripts/monitor_automated_shadow_progress.py`) that:
+
+1. Appends the latest `workflow_health_latest.json` snapshot to
+   `learning-loop/shadow_evidence/workflow_health_history.jsonl`
+   (append-only, idempotent on
+   `(workflow_run_id, generated_at_iso)`).
+2. Applies a deterministic rule matrix to the rolling history and
+   emits ONE progress status per tick:
+   - `AUTOMATED_EVIDENCE_PROGRESSING` — real-market opportunities
+     are accumulating OR the latest tick emitted a real signal
+     record.
+   - `AUTOMATED_EVIDENCE_HEALTHY_BUT_NO_SIGNALS_YET` — successful
+     runs are quiet but no token meets a stuck-threshold.
+   - `AUTOMATED_EVIDENCE_STUCK_AUTH` — `MARKET_DATA_AUTH_FAILED`
+     in the last 2 successful runs.
+   - `AUTOMATED_EVIDENCE_STUCK_PROVIDER_ERROR` —
+     `MARKET_DATA_PROVIDER_ERROR` in the last 2 successful runs.
+   - `AUTOMATED_EVIDENCE_STUCK_INSUFFICIENT_BARS` — bar floor not
+     met for 2 successful runs.
+   - `AUTOMATED_EVIDENCE_STUCK_NO_MARKET_DATA` — market closed
+     during US session for 2 successful runs.
+   - `AUTOMATED_EVIDENCE_STUCK_GENERATOR_TOO_RESTRICTIVE` —
+     `REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL` dominates the last
+     3 successful runs (operator may need to tune the generator;
+     the automation will NOT fabricate trades).
+   - `AUTOMATED_EVIDENCE_REQUIRES_MORE_RUNS` — fewer than 2
+     successful runs available; no trend conclusion possible yet.
+3. Refreshes `learning-loop/shadow_evidence/first_real_market_record_status.json`
+   — the operator's single source of truth for "has any real-market
+   shadow record landed yet?" The flag stays `false` until a
+   record with `evidence_quality == REAL_MARKET_DATA` exists on
+   disk; scaffold / halt-path records do NOT flip the flag.
+
+**No-signal is not automatically failure.** The monitor requires
+multiple successful runs of the same failure mode before flagging
+"stuck"; a single quiet tick is healthy. After 3 successful runs
+of `REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL` dominance, the
+status flips to `STUCK_GENERATOR_TOO_RESTRICTIVE` to surface that
+the strategies may be too narrow — but the automation NEVER
+relaxes ATR/window thresholds to manufacture signals.
+
+**Lookback override (v3.27.2):** the collector reads
+`SHADOW_MARKET_DATA_LOOKBACK_DAYS` (default `40`) when fetching
+daily bars. A hard floor of `max(22, ...)` guarantees the
+ATR-window safety floor cannot be weakened by env override; a
+test (`tests/test_shadow_lookback_v3272.py::test_collector_clamp_uses_max_22`)
+pins the floor in source.
+
+**OBSERVATION_RECORD deferred to v3.28:** the v3.27.2 spec
+offered an optional second record type
+(`OBSERVATION_RECORD` / `NO_TRADE_OBSERVATION`) to capture
+`REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL` outcomes. v3.27.2
+deliberately defers this change: introducing a new
+`evidence_quality` enum value touches the v3.27.0/v3.27.1 record
+contracts and the readiness gate semantics. The conservative
+path — wait until repeated `STUCK_GENERATOR_TOO_RESTRICTIVE`
+verdicts demonstrate concrete demand — keeps v3.27.2 a
+zero-schema-risk delivery.
+
+**Hard safety preserved.** The monitor:
+
+- NEVER submits orders.
+- NEVER imports the broker-orders module
+  (asserted by `TestNoBrokerImports`).
+- NEVER counts no-signal diagnostics as opportunities.
+- NEVER counts scaffold or halt-path records as real-market data.
+- NEVER advances the broker-paper canary readiness gate.
+- Refuses (exit 1) if any of the 7 broker-execution env flags is
+  truthy (asserted by
+  `TestMonitorRefusesOnBrokerFlag::test_refuses_when_allow_broker_paper_truthy`).
+
+Standing markers `BROKER_PAPER_CANARY_STILL_BLOCKED` and
+`LIVE_TRADING_UNSUPPORTED` are returned with EVERY progress
+status and are pinned to `True` in
+`first_real_market_record_status.json::safety`.
+
+**Operator next step:** none. The system is autonomous. Inspect
+`learning-loop/shadow_evidence/first_real_market_record_status.json`
+between cron ticks to see the current waiting reason.
+
 <!-- v3.27 auto-progress-start -->
 
 ## Automated progress snapshot (v3.27)

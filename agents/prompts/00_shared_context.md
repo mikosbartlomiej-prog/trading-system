@@ -918,4 +918,122 @@ unblock the canary — the canary remains gated on the v3.25
 
 ---
 
-## End of shared context.
+## v3.27.2 coverage (added 2026-06-09)
+
+v3.27.1 answered *"is this tick healthy?"* — v3.27.2 answers
+*"are we making PROGRESS across multiple ticks, or is the
+pipeline silently stuck?"* by stacking a multi-run progress
+monitor on top of the per-tick evaluator.
+
+When reviewing, also check:
+
+- `scripts/monitor_automated_shadow_progress.py` — **NEW**
+  multi-run progress monitor. Appends the latest
+  `workflow_health_latest.json` to
+  `learning-loop/shadow_evidence/workflow_health_history.jsonl`
+  (append-only, idempotent on
+  `(workflow_run_id, generated_at_iso)`); reads the rolling
+  history; applies an 8-status rule matrix
+  (`ALL_PROGRESS_STATUSES`): `AUTOMATED_EVIDENCE_PROGRESSING`,
+  `AUTOMATED_EVIDENCE_HEALTHY_BUT_NO_SIGNALS_YET`,
+  `AUTOMATED_EVIDENCE_STUCK_NO_MARKET_DATA`,
+  `AUTOMATED_EVIDENCE_STUCK_INSUFFICIENT_BARS`,
+  `AUTOMATED_EVIDENCE_STUCK_AUTH`,
+  `AUTOMATED_EVIDENCE_STUCK_PROVIDER_ERROR`,
+  `AUTOMATED_EVIDENCE_STUCK_GENERATOR_TOO_RESTRICTIVE`,
+  `AUTOMATED_EVIDENCE_REQUIRES_MORE_RUNS`. Standing markers
+  `BROKER_PAPER_CANARY_STILL_BLOCKED` and
+  `LIVE_TRADING_UNSUPPORTED` are returned with every status —
+  no status unblocks broker paper or live trading. Refuses
+  (exit 1) on any truthy broker-execution env flag. NEVER
+  imports the broker-orders module.
+- `learning-loop/shadow_evidence/workflow_health_history.jsonl` —
+  **NEW** rolling append-only history of every workflow health
+  snapshot. Records `{appended_at_iso, workflow_run_id,
+  workflow_conclusion, collector_status, resolver_status,
+  verdict, diagnostic_token_counts, counters_snapshot,
+  standing_markers, safety}`. Idempotent on
+  `(workflow_run_id, generated_at_iso)`. The monitor never
+  rewrites this file — only appends.
+- `learning-loop/shadow_evidence/first_real_market_record_status.json` —
+  **NEW** operator-visible flag artifact. Tells the operator
+  whether ANY shadow record with
+  `evidence_quality == REAL_MARKET_DATA` exists on disk. Stays
+  `false` until a real-market record actually lands; scaffold
+  / halt-path records do NOT flip it. Includes
+  `current_waiting_reason` (the progress status),
+  `diagnostic_dominant_token`, `runs_observed`,
+  `successful_runs_observed`, and `next_expected_automation_window`
+  for at-a-glance debug.
+- `scripts/run_signal_shadow_evidence_collection.py` — extended
+  with `SHADOW_MARKET_DATA_LOOKBACK_DAYS` env override (default
+  `40`). The collector pins a `max(22, ...)` floor in source so
+  the env override CANNOT weaken the 22-bar ATR safety floor.
+  A test (`tests/test_shadow_lookback_v3272.py::test_collector_clamp_uses_max_22`)
+  fails CI if the floor is removed.
+- `.github/workflows/signal-shadow-evidence.yml` — extended with
+  a `Monitor multi-run automated evidence progress (v3.27.2)`
+  step that runs after the evaluator. The commit allow-list
+  (existing umbrella `learning-loop/shadow_evidence/*` pattern)
+  already covers the new history JSONL and status JSON; no
+  allow-list widening is needed.
+
+### v3.27.2 status tokens (added)
+
+- 8 progress statuses of the new monitor (see list above).
+
+### v3.27.2 deferred (deliberate non-change)
+
+- `OBSERVATION_RECORD` / `NO_TRADE_OBSERVATION` second record
+  type is **deferred to v3.28**. Introducing a new
+  `evidence_quality` enum value touches the v3.27.0/v3.27.1
+  record contracts + the readiness gate semantics. The
+  conservative path — wait until repeated
+  `STUCK_GENERATOR_TOO_RESTRICTIVE` verdicts demonstrate
+  concrete demand — keeps v3.27.2 a zero-schema-risk delivery.
+
+### Final Arbiter v3.27.2 escalation triggers (P0)
+
+In addition to all v3.23.x / v3.24 / v3.25 / v3.26 / v3.27.0 /
+v3.27.1 triggers, the Final Arbiter MUST block escalation and set
+primary verdict to NEEDS_FIXES with secondary
+NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the v3.27.2 monitor drops the
+  `BROKER_PAPER_CANARY_STILL_BLOCKED` or
+  `LIVE_TRADING_UNSUPPORTED` standing markers
+- the v3.27.2 monitor acquires an import of the broker-orders
+  module
+- the monitor returns a progress status outside
+  `ALL_PROGRESS_STATUSES`, or returns ANY status while a
+  broker-execution env flag is truthy (the monitor must refuse
+  first with exit 1)
+- `workflow_health_history.jsonl` is rewritten in place (the
+  contract is append-only) — verified by stat / size monotonicity
+- `first_real_market_record_status.json::first_real_market_record_seen`
+  flips `true` without a matching shadow record carrying
+  `evidence_quality == REAL_MARKET_DATA` on disk
+- `first_real_market_record_status.json::safety.broker_paper_canary_still_blocked`
+  is ever serialised as `false`
+- the workflow drops the
+  `Monitor multi-run automated evidence progress (v3.27.2)` step
+- the `SHADOW_MARKET_DATA_LOOKBACK_DAYS` clamp's 22-bar floor is
+  removed from the collector source
+- the monitor's refusal list shrinks (any of the 7 env flags
+  removed from the truthy-refusal check)
+- the spec calls a no-signal verdict a failure with fewer than
+  3 consecutive `REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL`-dominant
+  runs (the 3-run threshold is part of the conservative
+  contract — weakening it would amount to opportunistic
+  signal-fabrication pressure on the operator)
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. The v3.27.2 status
+`AUTOMATED_EVIDENCE_PROGRESSING` does NOT unblock the canary —
+the canary remains gated on the v3.25 50 real opportunities /
+20 outcomes / explicit operator approval, AND the v3.27.1 standing
+markers MUST be present in every monitor invocation.
+
+---
+
+## End of shared context

@@ -191,6 +191,36 @@ The workflow stages and commits ONLY:
 
 Any other path in the staged diff aborts the workflow.
 
+### v3.27.2 update — multi-run progress monitor
+
+After v3.27.1's per-tick `Evaluate automated pipeline health` step,
+the workflow now runs:
+
+```bash
+python3 scripts/monitor_automated_shadow_progress.py
+```
+
+This step:
+
+- Appends the latest `workflow_health_latest.json` to
+  `learning-loop/shadow_evidence/workflow_health_history.jsonl`
+  (append-only, idempotent on `(workflow_run_id, generated_at_iso)`).
+- Re-evaluates the rolling history and emits one of 8 progress
+  statuses (`AUTOMATED_EVIDENCE_*`).
+- Refreshes `learning-loop/shadow_evidence/first_real_market_record_status.json`
+  — the operator's single visible answer to *"has any real-market
+  shadow record landed yet?"*
+
+**No manual runs required.** Operator inspects
+`first_real_market_record_status.json` between cron ticks.
+
+### v3.27.2 update — lookback override
+
+The collector reads `SHADOW_MARKET_DATA_LOOKBACK_DAYS`
+(default `40`) when fetching daily bars. A hard
+`max(22, ...)` floor in source guarantees the 22-bar ATR-window
+safety floor cannot be weakened by env override.
+
 ### Forbidden in v3.27
 
 - Manual collector runs (the workflow is the source of truth).

@@ -97,6 +97,84 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v3272_followups": {
+    "title": "AUTOMATED_EVIDENCE_PROGRESS_MONITOR_AND_NO_SIGNAL_REMEDIATION",
+    "trigger": "v3271_evaluator_answered_per_tick_health_but_could_not_distinguish_progressing_pipeline_from_silently_stuck_pipeline_across_many_ticks",
+    "generated_at_iso": "2026-06-09T20:00:00+00:00",
+    "problem": "After v3.27.1 shipped, the operator could see WHY one tick produced no signals, but had no deterministic answer to: 'is the pipeline making progress toward 50 real opportunities / 20 outcomes, or is it stuck on the same failure mode tick after tick?' Without a multi-run trend monitor, even a healthy pipeline that quietly never emits a real-market record would look indistinguishable from a stuck pipeline.",
+    "fix": {
+      "multi_run_monitor_added": "scripts/monitor_automated_shadow_progress.py runs after the v3.27.1 evaluator each cron tick. It appends the latest workflow_health_latest.json snapshot to a rolling history (workflow_health_history.jsonl) and applies a deterministic 8-status rule matrix.",
+      "history_jsonl_added": "learning-loop/shadow_evidence/workflow_health_history.jsonl is APPEND-ONLY, idempotent on (workflow_run_id, generated_at_iso). The monitor never rewrites or truncates this file.",
+      "first_record_artifact_added": "learning-loop/shadow_evidence/first_real_market_record_status.json gives the operator a single visible answer to 'has any REAL_MARKET_DATA record landed yet?' Stays false until a record carrying evidence_quality==REAL_MARKET_DATA exists on disk; scaffold and halt-path records do NOT flip the flag.",
+      "lookback_override_added": "scripts/run_signal_shadow_evidence_collection.py reads SHADOW_MARKET_DATA_LOOKBACK_DAYS (default 40) wrapped in max(22, ...). The 22-bar ATR safety floor CANNOT be weakened by env override; tests/test_shadow_lookback_v3272.py::test_collector_clamp_uses_max_22 pins this in source.",
+      "workflow_wire_in": ".github/workflows/signal-shadow-evidence.yml adds a 'Monitor multi-run automated evidence progress (v3.27.2)' step after the v3.27.1 evaluator. The existing umbrella allow-list (learning-loop/shadow_evidence/*) covers the two new artifacts; no allow-list widening is needed."
+    },
+    "progress_statuses_enum": [
+      "AUTOMATED_EVIDENCE_PROGRESSING",
+      "AUTOMATED_EVIDENCE_HEALTHY_BUT_NO_SIGNALS_YET",
+      "AUTOMATED_EVIDENCE_STUCK_NO_MARKET_DATA",
+      "AUTOMATED_EVIDENCE_STUCK_INSUFFICIENT_BARS",
+      "AUTOMATED_EVIDENCE_STUCK_AUTH",
+      "AUTOMATED_EVIDENCE_STUCK_PROVIDER_ERROR",
+      "AUTOMATED_EVIDENCE_STUCK_GENERATOR_TOO_RESTRICTIVE",
+      "AUTOMATED_EVIDENCE_REQUIRES_MORE_RUNS"
+    ],
+    "new_modules": {
+      "scripts/monitor_automated_shadow_progress.py": {
+        "purpose": "multi-run automated evidence progress monitor (rule-matrix + first-record artifact + append-only history)",
+        "never_submits_orders": true,
+        "never_imports_broker_orders_module": true,
+        "never_stores_secret_values": true,
+        "never_counts_no_signal_as_opportunity": true,
+        "never_counts_scaffold_as_real_market_data": true,
+        "never_advances_broker_paper_canary": true,
+        "refuses_on_truthy_broker_flag": true
+      }
+    },
+    "new_artifacts": [
+      "learning-loop/shadow_evidence/workflow_health_history.jsonl",
+      "learning-loop/shadow_evidence/first_real_market_record_status.json"
+    ],
+    "new_tests": [
+      "tests/test_workflow_health_history_v3272.py",
+      "tests/test_automated_shadow_progress_monitor_v3272.py",
+      "tests/test_first_real_market_record_status_v3272.py",
+      "tests/test_shadow_lookback_v3272.py"
+    ],
+    "deferred_to_v328": {
+      "OBSERVATION_RECORD_or_NO_TRADE_OBSERVATION": "Adding a second evidence_quality value (or a NO_TRADE_OBSERVATION decision_type) was scoped in v3.27.2's spec but deferred. Reason: introducing it touches the v3.27.0+v3.27.1 record contracts and the v3.25 readiness gate semantics. The conservative path is to wait until repeated AUTOMATED_EVIDENCE_STUCK_GENERATOR_TOO_RESTRICTIVE verdicts demonstrate concrete demand. v3.27.2 keeps zero schema risk."
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "monitor_never_imports_broker_orders_module": true,
+      "monitor_refuses_on_truthy_broker_flag": true,
+      "history_jsonl_is_append_only": true,
+      "first_real_record_flag_only_true_when_evidence_quality_real_market_data_on_disk": true,
+      "lookback_override_cannot_weaken_22_bar_floor": true
+    },
+    "current_progress_status_after_smoke_run": "AUTOMATED_EVIDENCE_REQUIRES_MORE_RUNS",
+    "interpretation_of_current_status": "Only one health snapshot exists in the history so far (the v3.27.1 smoke run). The monitor correctly requires at least 2 successful runs before applying any trend rule. After 2 successful cron ticks during US market session, the monitor will produce either AUTOMATED_EVIDENCE_HEALTHY_BUT_NO_SIGNALS_YET (quiet but healthy) or a STUCK_* status. No operator action is required.",
+    "next_action_items_v3272": [
+      "WAIT_FOR_NEXT_TWO_CRON_TICKS_DURING_US_MARKET_SESSION",
+      "INSPECT_FIRST_REAL_MARKET_RECORD_STATUS_JSON_AFTER_EACH_TICK",
+      "ESCALATE_IF_AUTOMATED_EVIDENCE_STUCK_AUTH_OR_PROVIDER_ERROR_SURFACES_FOR_3_OR_MORE_CONSECUTIVE_RUNS",
+      "DO_NOT_RUN_MANUAL_COLLECTOR_INVOCATIONS",
+      "DO_NOT_FABRICATE_SHADOW_RECORDS",
+      "DO_NOT_LOWER_22_BAR_ATR_FLOOR",
+      "DO_NOT_COUNT_NO_SIGNAL_DIAGNOSTICS_AS_OPPORTUNITIES",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE"
+    ]
+  },
   "v3271_followups": {
     "title": "AUTOMATED_SHADOW_WORKFLOW_HEALTHCHECK_AND_DIAGNOSTIC_SPLIT",
     "trigger": "v3270_automation_returned_halt_path_only_for_first_real_market_workflow_dispatch_collapsing_nine_distinct_failure_modes_into_one_token",
