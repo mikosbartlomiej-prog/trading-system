@@ -1,9 +1,9 @@
 # LLM Advisory Mesh — latest run (v3.28)
 
-- **Run ID:** `mesh-18304898cb9f`
-- **Status:** `LLM_ADVISORY_MESH_SKIPPED_DISABLED`
-- **Agents evaluated:** 0
-- **Rows written:** 0
+- **Run ID:** `v3282-gemini-activation-20260609T194951`
+- **Status:** `LLM_ADVISORY_MESH_RAN`
+- **Agents evaluated:** 5
+- **Rows written:** 5
 - **Standing markers:** `BROKER_PAPER_CANARY_STILL_BLOCKED`, `LIVE_TRADING_UNSUPPORTED`
 
 ## Safety invariants (asserted on every run)
