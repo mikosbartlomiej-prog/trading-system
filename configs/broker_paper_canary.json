@@ -1,0 +1,21 @@
+{
+  "$schema_version": "v3.29",
+  "description": "Conservative broker-paper canary scope and limits. Read by shared/broker_paper_canary_unlock.py. NEVER modified at runtime by any LLM agent.",
+  "max_orders_per_day":                   1,
+  "max_notional_per_order_usd":           25,
+  "allowed_asset_classes":                ["us_equity"],
+  "crypto_enabled":                       false,
+  "options_enabled":                      false,
+  "max_daily_loss_usd":                   25,
+  "auto_disable_on_first_error":          true,
+  "auto_disable_on_drawdown_guard_touch": true,
+  "auto_disable_on_llm_quality_regression": true,
+  "auto_disable_on_reconciliation_mismatch": true,
+  "require_safe_order_wrapper":           true,
+  "require_audit_record":                 true,
+  "require_post_trade_reconciliation":    true,
+  "live_trading_supported":               false,
+  "broad_paper_trading_enabled":          false,
+  "canary_execution_flag_present":        false,
+  "v3_29_note": "v3.29 ships the unlock evaluator only. No order is placed even when UNLOCK_READY. A separate audited PR is required to introduce the safe canary executor + its feature flag."
+}

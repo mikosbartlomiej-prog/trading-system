@@ -29,6 +29,14 @@ EXEMPT_PATHS = (
     ".github/workflows/security-audit.yml",
     "CLAUDE.md",
     "shared/autonomy.py",
+    # v3.29 — LLM strategy alignment + canary unlock evaluator both
+    # carry live-trading literals as SAFETY BLACKLISTS (they detect
+    # such patterns in LLM output / runtime env and refuse to
+    # advance). They never assign or enable live trading.
+    "shared/llm_strategy_alignment.py",
+    "shared/broker_paper_canary_unlock.py",
+    "scripts/evaluate_broker_paper_canary_unlock.py",
+    "scripts/smoke_test_gemini_provider.py",
 )
 
 

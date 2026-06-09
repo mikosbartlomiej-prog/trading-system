@@ -97,6 +97,86 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v329_followups": {
+    "title": "GEMINI_RECOVERY_PLUS_BROKER_PAPER_CANARY_UNLOCK_ORCHESTRATOR",
+    "trigger": "v3283_first_gemini_run_yielded_11_PROVIDER_FAILED_rows_likely_because_default_model_name_was_not_available_on_free_tier_AND_operator_wants_automated_path_toward_broker_paper_canary_without_enabling_live_trading_or_bypassing_evidence_gates",
+    "generated_at_iso": "2026-06-09T20:45:00+00:00",
+    "problem": "v3.28.3 wired per-agent prompts but every Gemini call returned LLM_PROVIDER_CALL_FAILED. Operator wanted a deterministic, evidence-gated path toward broker-paper canary unlock without enabling live trading, without bypassing evidence thresholds, and without letting LLM agents directly execute orders.",
+    "fix": {
+      "part_a_gemini_recovery": "shared/gemini_model_selector.py adds discover_models + select_model + classify_http_status (7 failure categories). shared/llm_provider_client.py: Gemini branch consults selector, ProviderResponse gains 5 diagnostic fields. scripts/smoke_test_gemini_provider.py: NEW one-call smoke test, 8 statuses. Workflow: model_override input + smoke step + default switched to gemini-flash-latest.",
+      "part_b_strategy_alignment": "shared/llm_strategy_alignment.py is a NEW pure gate. 7 statuses. Scans every advisory row for unsafe phrase patterns + safety-critical bools. Requires quality status ACCEPTABLE + at least one row carries PROVIDER_USED for PASS.",
+      "part_c_canary_unlock_orchestrator": "docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md (6 stages, 21 hard gates). shared/broker_paper_canary_unlock.py: NEW read-only evaluator with 11 statuses. scripts/evaluate_broker_paper_canary_unlock.py: default --evaluate-only. configs/broker_paper_canary.json: conservative limits + canary_execution_flag_present=false. .github/workflows/broker-paper-canary-unlock-evaluator.yml: daily read-only workflow."
+    },
+    "added_status_tokens_summary": {
+      "gemini_smoke_statuses_count": 8,
+      "gemini_discovery_statuses_count": 10,
+      "gemini_failure_categories_count": 7,
+      "alignment_statuses_count": 7,
+      "unlock_statuses_count": 11,
+      "unlock_stages_count": 6,
+      "provider_diagnostic_fields_count": 5
+    },
+    "new_modules": {
+      "shared/gemini_model_selector.py": {"never_imports_broker_orders_module": true, "never_logs_key_or_full_url": true, "redacts_secret_shape_tokens": true},
+      "shared/llm_strategy_alignment.py":  {"never_imports_broker_orders_module": true, "scans_for_unsafe_phrases_as_blacklists": true},
+      "shared/broker_paper_canary_unlock.py": {"never_imports_broker_orders_module": true, "never_flips_broker_flags": true, "read_only_only": true},
+      "scripts/smoke_test_gemini_provider.py": {"never_imports_broker_orders_module": true, "never_logs_key": true, "fail_soft": true},
+      "scripts/evaluate_broker_paper_canary_unlock.py": {"never_imports_broker_orders_module": true, "never_flips_broker_flags": true, "refuses_on_truthy_broker_or_live_env_flag": true}
+    },
+    "new_workflows": [".github/workflows/broker-paper-canary-unlock-evaluator.yml"],
+    "new_tests": [
+      "tests/test_llm_strategy_alignment_v3290.py",
+      "tests/test_broker_paper_canary_unlock_contract_v3290.py",
+      "tests/test_broker_paper_canary_unlock_evaluator_v3290.py",
+      "tests/test_broker_paper_canary_unlock_workflow_v3290.py",
+      "tests/test_broker_paper_canary_no_live_v3290.py",
+      "tests/test_broker_paper_canary_apply_refusal_v3290.py",
+      "tests/test_gemini_model_selector_v3290.py"
+    ],
+    "test_summary": {"v329_new_tests": 70, "combined_regression": 393},
+    "default_policy_unchanged": {
+      "LLM_FREE_ONLY":               true,
+      "LLM_PROVIDER_workflow_default": "offline_mock",
+      "GEMINI_MODEL_workflow_default": "gemini-flash-latest",
+      "LLM_AGENTS_ENABLED":           false,
+      "LLM_AGENTS_SCHEDULED":         false,
+      "LLM_PRE_ORDER_VETO_HONORED":   false,
+      "OPERATOR_APPROVED_BROKER_PAPER_CANARY": false,
+      "canary_execution_flag_present": false
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "v329_modules_never_import_broker_orders_module": true,
+      "canary_unlock_evaluator_is_read_only": true,
+      "canary_apply_enable_in_v3_29_always_emits_no_safe_enable_switch": true,
+      "v3_29_introduces_no_safe_canary_executor": true,
+      "v3_29_introduces_no_canary_kill_switch": true,
+      "operator_approval_required_for_unlock_ready": true,
+      "schedule_remains_disabled_pending_acceptable_quality": true,
+      "llm_pre_order_veto_honored_remains_false": true,
+      "this_sprint_introduces_no_trading_behavior_change": true,
+      "live_trading_unconditionally_refused_on_any_truthy_live_flag": true
+    },
+    "next_action_items_v329": [
+      "TRIGGER_workflow_dispatch_AFTER_v3.29_lands_with_model_override_to_force_first_PROVIDER_USED_rows",
+      "AFTER_FIRST_ACCEPTABLE_QUALITY_RUN_TRIGGER_canary_unlock_evaluator_to_observe_status_progression",
+      "DO_NOT_SET_OPERATOR_APPROVED_BROKER_PAPER_CANARY_TRUE_UNTIL_FIRST_REAL_MARKET_RECORD_SEEN_AND_50_REAL_OPPS_AND_20_OUTCOMES",
+      "DO_NOT_INTRODUCE_canary_execution_flag_present_TRUE_OUTSIDE_AN_AUDITED_PR_THAT_ALSO_INTRODUCES_THE_SAFE_CANARY_EXECUTOR",
+      "DO_NOT_FLIP_LLM_FREE_ONLY_FALSE",
+      "DO_NOT_FLIP_LLM_PRE_ORDER_VETO_HONORED_TRUE",
+      "DO_NOT_ENABLE_BROKER_PAPER_WITHOUT_UNLOCK_READY",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD"
+    ]
+  },
   "v3283_followups": {
     "title": "GEMINI_ADVISORY_QUALITY_CALIBRATION",
     "trigger": "v3282_first_gemini_run_produced_5_schema_valid_but_generic_placeholder_rows_because_v3.28_runner_never_actually_invoked_call_provider_per_agent_and_used_a_hardcoded_recommendation_string",

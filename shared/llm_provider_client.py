@@ -61,6 +61,12 @@ class ProviderResponse:
     text:          str
     cost_usd:      float
     raw:           dict | None = None
+    # v3.29 — safe diagnostic fields (never carry secret values).
+    provider_http_status:        int | None = None
+    provider_error_category:     str | None = None
+    provider_endpoint_family:    str | None = None
+    provider_retryable:          bool = False
+    provider_suggested_next_model: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -69,6 +75,12 @@ class ProviderResponse:
             "model":    self.model,
             "text":     self.text,
             "cost_usd": self.cost_usd,
+            "provider_http_status":         self.provider_http_status,
+            "provider_error_category":      self.provider_error_category,
+            "provider_endpoint_family":     self.provider_endpoint_family,
+            "provider_retryable":           self.provider_retryable,
+            "provider_suggested_next_model": (
+                self.provider_suggested_next_model),
         }
 
 
@@ -212,12 +224,32 @@ def call_provider(
                 "messages":   msgs,
             }
         elif prov == "gemini":
-            # v3.28.2 — Gemini free-tier provider via Google AI Studio
-            # REST endpoint. Key is passed as ``?key=`` query param per
-            # Google's reference; we never put it in headers or logs.
-            mdl = model or os.environ.get(
-                "GEMINI_MODEL", "gemini-2.5-flash-lite").strip() \
-                or "gemini-2.5-flash-lite"
+            # v3.28.2 + v3.29 — Gemini free-tier via Google AI Studio.
+            # Key passed as ``?key=`` query param per Google's
+            # reference; never put it in headers or logs.
+            # v3.29 — when the operator hasn't pinned a model, run
+            # discovery so we don't crash on a stale default like
+            # "gemini-2.5-flash-lite" not being available.
+            configured = (model
+                            or os.environ.get("GEMINI_MODEL", "").strip())
+            mdl = configured or "gemini-flash-latest"
+            # Try discovery + selection (fail-soft).
+            try:
+                try:
+                    import gemini_model_selector as _sel  # type: ignore
+                except ImportError:
+                    from shared import gemini_model_selector as _sel  # type: ignore
+                disc = _sel.select_model(
+                    configured_model=configured or None,
+                    api_key=key,
+                    timeout_seconds=min(
+                        timeout_seconds or _timeout_seconds(), 10.0),
+                )
+                if disc.selected_model:
+                    mdl = disc.selected_model
+            except Exception:
+                # Selector itself failed → keep mdl as-is.
+                pass
             url = (
                 f"https://generativelanguage.googleapis.com/v1beta/"
                 f"models/{mdl}:generateContent?key={key}")
@@ -264,11 +296,38 @@ def call_provider(
             status_tok = LLM_PROVIDER_CALL_FAILED
             if prov == "gemini" and r.status_code in (400, 404):
                 status_tok = LLM_PROVIDER_MODEL_ERROR
+            # v3.29 — enrich the response with safe diagnostics so the
+            # caller (mesh runner / quality guard) can classify the
+            # failure deterministically.
+            category = None
+            suggested_next = None
+            if prov == "gemini":
+                try:
+                    try:
+                        import gemini_model_selector as _sel  # type: ignore
+                    except ImportError:
+                        from shared import gemini_model_selector as _sel  # type: ignore
+                    category = _sel.classify_http_status(r.status_code)
+                    # Suggest a different candidate to try next.
+                    for c in _sel.DEFAULT_CANDIDATE_MODELS:
+                        if c != mdl:
+                            suggested_next = c
+                            break
+                except Exception:
+                    pass
             return ProviderResponse(
                 status=status_tok,
                 provider=prov, model=mdl,
                 text=_redact(f"HTTP {r.status_code}"),
                 cost_usd=0.0,
+                provider_http_status=r.status_code,
+                provider_error_category=category,
+                provider_endpoint_family=(
+                    "generativelanguage.googleapis.com/v1beta"
+                    if prov == "gemini" else None),
+                provider_retryable=(500 <= r.status_code < 600
+                                      or r.status_code == 429),
+                provider_suggested_next_model=suggested_next,
             )
         body = r.json() or {}
         # Anthropic: body["content"][0]["text"]

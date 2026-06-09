@@ -1443,4 +1443,150 @@ runs; `LLM_PRE_ORDER_VETO_HONORED` remains `false`.
 
 ---
 
+## v3.29 coverage (added 2026-06-09)
+
+Three independent deliveries in one sprint: Gemini provider recovery
+(Part A), LLM strategy alignment gate (Part B), broker-paper canary
+unlock orchestrator (Part C).
+
+When reviewing, also check:
+
+### Part A — Gemini provider recovery
+
+- `shared/gemini_model_selector.py` — **NEW**. `discover_models()`
+  calls the Gemini `/v1beta/models` endpoint and returns text-capable
+  models in score-sorted order; `select_model()` picks the
+  configured-or-candidate-or-discovered winner; `classify_http_status()`
+  maps HTTP codes to one of 7 failure categories
+  (`GEMINI_MODEL_UNAVAILABLE`, `GEMINI_AUTH_FAILED`,
+  `GEMINI_QUOTA_OR_RATE_LIMIT`, `GEMINI_PERMISSION_DENIED`,
+  `GEMINI_ENDPOINT_ERROR`, `GEMINI_TIMEOUT`,
+  `GEMINI_UNKNOWN_PROVIDER_FAILURE`). Discovery + selection statuses
+  in `ALL_DISCOVERY_STATUSES`. Redacts secrets. NEVER imports the
+  broker-orders module.
+- `shared/llm_provider_client.py` — Gemini branch now calls the
+  selector before constructing the URL; `ProviderResponse` gained 5
+  safe diagnostic fields (`provider_http_status`,
+  `provider_error_category`, `provider_endpoint_family`,
+  `provider_retryable`, `provider_suggested_next_model`); 4xx/5xx
+  failures populate them.
+- `scripts/smoke_test_gemini_provider.py` — **NEW** one-call smoke
+  test. 8 statuses (`GEMINI_SMOKE_OK`, plus 7 failure modes). Writes
+  `learning-loop/llm_advisory/gemini_smoke_latest.json` +
+  `docs/GEMINI_PROVIDER_STATUS.md`. NEVER logs the key. NEVER logs
+  the full URL.
+- `.github/workflows/llm-advisory-mesh.yml` — gained
+  `workflow_dispatch` input `model_override` (threaded through env
+  as the highest-priority `GEMINI_MODEL` source); default
+  `GEMINI_MODEL` switched to `gemini-flash-latest` (alias is more
+  durable than a dated name); new `Gemini smoke test (v3.29)` step
+  short-circuits the full 11-agent mesh when the provider is
+  unhealthy.
+
+### Part B — LLM strategy alignment
+
+- `shared/llm_strategy_alignment.py` — **NEW** gate. 7 statuses
+  (`ALL_ALIGNMENT_STATUSES`):
+  `LLM_STRATEGY_ALIGNMENT_PASS`,
+  `..._FAIL_EXECUTION_AUTHORITY`,
+  `..._FAIL_RISK_MUTATION`,
+  `..._FAIL_READINESS_BYPASS`,
+  `..._FAIL_FAKE_EVIDENCE`,
+  `..._FAIL_UNSUPPORTED_LIVE`,
+  `..._INSUFFICIENT_PROVIDER_QUALITY`.
+  Scans every advisory row's `recommendation` /
+  `rationale` / `risks_identified` / `proposed_next_actions` for
+  unsafe phrase patterns + checks `may_execute` /
+  `may_modify_risk` / `may_unlock_broker_paper` /
+  `broker_order_submitted` / `broker_execution_enabled` /
+  `affects_readiness_gate` are all false +
+  `advisory_only=true`. Requires quality status =
+  `LLM_ADVISORY_QUALITY_ACCEPTABLE` and at least one row carries
+  `PROVIDER_USED` for PASS.
+
+### Part C — Broker-paper canary unlock orchestrator
+
+- `docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md` — **NEW** canonical
+  contract. 6 stages (`STAGE_0_SHADOW_ONLY` through
+  `STAGE_5_LIVE_UNSUPPORTED` — the last permanently unreachable).
+  21 hard gates listed for `STAGE_2_BROKER_PAPER_CANARY_READY`.
+- `shared/broker_paper_canary_unlock.py` — **NEW** read-only
+  evaluator. 11 unlock statuses (`ALL_UNLOCK_STATUSES`). Aggregates
+  evidence counters, workflow health, first-real-record,
+  quality_review, strategy_alignment. Returns
+  `BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH` even
+  when every gate green (v3.29 ships no safe enable switch). NEVER
+  flips a broker flag. NEVER imports the broker-orders module.
+- `scripts/evaluate_broker_paper_canary_unlock.py` — **NEW**
+  orchestrator. Default `--evaluate-only`. `--apply-enable` exists
+  but in v3.29 always emits
+  `BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH`
+  because `configs/broker_paper_canary.json::canary_execution_flag_present`
+  is `false`. Refuses (exit 1) on any truthy broker-execution env
+  flag.
+- `configs/broker_paper_canary.json` — **NEW** conservative limits
+  (`max_orders_per_day: 1`, `max_notional_per_order_usd: 25`,
+  `allowed_asset_classes: ["us_equity"]`, `crypto_enabled: false`,
+  `options_enabled: false`, `live_trading_supported: false`,
+  `canary_execution_flag_present: false`).
+- `.github/workflows/broker-paper-canary-unlock-evaluator.yml` —
+  **NEW** daily read-only evaluator workflow.
+  `workflow_dispatch` + schedule `30 21 * * 1-5` (after US market
+  close). Hard-pins all 7 broker-execution env flags `false`.
+  Commit allow-list tight: `learning-loop/broker_paper_canary/**` +
+  `docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md` +
+  `docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md` +
+  `docs/LLM_STRATEGY_ALIGNMENT.md` +
+  `learning-loop/llm_advisory/strategy_alignment_latest.json` +
+  `learning-loop/position_reconciliation/latest.json`. NEVER
+  includes broker secrets.
+
+### v3.29 status tokens (added)
+
+- 8 Gemini smoke statuses, 10 Gemini discovery statuses, 7 Gemini
+  failure categories, 7 alignment statuses, 11 unlock statuses, 6
+  unlock stages, 5 provider diagnostic fields.
+
+### Final Arbiter v3.29 escalation triggers (P0)
+
+In addition to all v3.23.x through v3.28.3 triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- any v3.29 module acquires an import of the broker-orders module
+- the canary unlock evaluator flips any of
+  `ALLOW_BROKER_PAPER` / `EDGE_GATE_ENABLED` /
+  `BROKER_EXECUTION_ENABLED` / `LIVE_TRADING*` flags
+- the canary unlock evaluator advances past
+  `BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH`
+  while
+  `configs/broker_paper_canary.json::canary_execution_flag_present`
+  is `false`
+- the canary unlock evaluator returns `READY` without
+  `OPERATOR_APPROVED_BROKER_PAPER_CANARY=true`
+- the canary unlock evaluator returns `READY` while
+  `LLM_STRATEGY_ALIGNMENT_PASS` is not present
+- the canary unlock evaluator returns `READY` while
+  `LLM_ADVISORY_QUALITY_ACCEPTABLE` is not present
+- the canary config's `max_orders_per_day` exceeds 1,
+  `max_notional_per_order_usd` exceeds 25,
+  `crypto_enabled` flips true, `options_enabled` flips true, or
+  any `auto_disable_on_*` flag is removed
+- the smoke test acquires an import of the broker-orders module
+- the smoke test logs the key, the full URL, or any secret-shape
+  token
+- the Gemini model selector silently picks an image / video / embed
+  model
+- the strategy alignment gate weakens its phrase blacklists (the
+  test enumerates the expected categories)
+- any live-trading env flag becomes assignable from a v3.29 file
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.29 introduces the canary readiness
+proposal path — no order is placed, no broker flag is flipped, no
+trading behaviour changes. Live trading remains permanently
+unsupported.
+
+---
+
 ## End of shared context

@@ -19,10 +19,17 @@ class TestGeminiEnvPresent(unittest.TestCase):
         self.assertIn("secrets.GEMINI_API_KEY", text)
 
     def test_gemini_model_default_set(self):
+        # v3.29 switched the default to ``gemini-flash-latest`` (a
+        # durable alias) and added a workflow_dispatch
+        # ``model_override`` input that wins when set. Both shapes
+        # must be present.
         text = WF_PATH.read_text(encoding="utf-8")
+        self.assertIn("model_override", text)
         self.assertRegex(
             text,
-            r"GEMINI_MODEL:\s*\$\{\{\s*vars\.GEMINI_MODEL\s*\|\|\s*'gemini-2\.5-flash-lite'\s*\}\}",
+            r"GEMINI_MODEL:\s*\$\{\{[^}]*"
+            r"vars\.GEMINI_MODEL[^}]*"
+            r"'gemini-flash-latest'[^}]*\}\}",
         )
 
 

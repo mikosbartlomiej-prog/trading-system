@@ -31,6 +31,11 @@ on:
         required: false
         default: ""
         type: string
+      model_override:
+        description: "v3.29 — override GEMINI_MODEL for this single run (empty = repo var default)."
+        required: false
+        default: ""
+        type: string
   schedule:
     # Fires once a day at 22:00 UTC — only effective when the
     # `LLM_AGENTS_SCHEDULED` repo variable is "true".
@@ -71,9 +76,12 @@ env:
   # (anthropic / openai) are blocked at the call_provider gate unless
   # the operator explicitly sets the repo variable to "false".
   LLM_FREE_ONLY:                       ${{ vars.LLM_FREE_ONLY || 'true' }}
-  # v3.28.2 — Gemini model selection. Free-tier "gemini-2.5-flash-lite"
-  # by default; operator may override via repo variable.
-  GEMINI_MODEL:                        ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash-lite' }}
+  # v3.28.2 — Gemini model selection.
+  # v3.29 — default switched to ``gemini-flash-latest`` (alias is
+  # more durable than a fixed dated name) and the workflow_dispatch
+  # ``model_override`` input wins over the repo variable for a single
+  # validation run.
+  GEMINI_MODEL: ${{ github.event.inputs.model_override || vars.GEMINI_MODEL || 'gemini-flash-latest' }}
   # Provider keys — passed via secrets when present. The runner is
   # safe when these are empty (returns LLM_PROVIDER_KEY_MISSING).
   GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
@@ -127,8 +135,28 @@ jobs:
             tests.test_llm_authority_model_v3280 \
             tests.test_llm_advisory_schema_v3280
 
+      - name: Gemini smoke test (v3.29) — skip full mesh if provider unhealthy
+        id: smoke
+        if: env.LLM_PROVIDER == 'gemini'
+        run: |
+          set -e
+          OUT=$(python3 scripts/smoke_test_gemini_provider.py \
+                  --write-artifacts)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['smoke_status'])" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
       - name: Run LLM advisory mesh
         id: mesh
+        # v3.29 — skip the full 11-agent run if Gemini smoke fails.
+        # Mock / Anthropic / OpenAI paths bypass the gate via the
+        # ``smoke.status`` empty-or-OK clause.
+        if: |
+          steps.smoke.outputs.status == 'GEMINI_SMOKE_OK' ||
+          steps.smoke.outputs.status == '' ||
+          env.LLM_PROVIDER != 'gemini'
         run: |
           set -e
           OUT=$(python3 scripts/run_llm_advisory_mesh.py \
@@ -148,6 +176,7 @@ jobs:
           git add learning-loop/llm_advisory/ \
                   docs/LLM_ADVISORY_MESH_LATEST.md \
                   docs/LLM_ADVISORY_QUALITY_REVIEW.md \
+                  docs/GEMINI_PROVIDER_STATUS.md \
                   learning-loop/position_reconciliation/latest.json \
                   || true
           CHANGED=$(git diff --cached --name-only)
@@ -159,6 +188,7 @@ jobs:
               learning-loop/llm_advisory/*) ;;
               docs/LLM_ADVISORY_MESH_LATEST.md) ;;
               docs/LLM_ADVISORY_QUALITY_REVIEW.md) ;;
+              docs/GEMINI_PROVIDER_STATUS.md) ;;
               learning-loop/position_reconciliation/latest.json) ;;
               *) BAD="$BAD $f" ;;
             esac

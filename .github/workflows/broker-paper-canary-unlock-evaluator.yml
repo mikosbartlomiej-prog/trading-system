@@ -1,0 +1,161 @@
+name: Broker-Paper Canary Unlock Evaluator (v3.29)
+
+# v3.29 (2026-06-09) — read-only evaluator for the broker-paper canary
+# unlock path. Aggregates evidence / LLM quality / alignment artefacts
+# and writes a deterministic verdict. NEVER flips a broker flag.
+# NEVER places an order. NEVER mutates readiness counters.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Once a day, after US market close (21:30 UTC = ~17:30 ET).
+    # Workflow is read-only so daily cadence is safe.
+    - cron: "30 21 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: broker-paper-canary-unlock-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # Hard-pin every broker-execution flag false. The evaluator refuses
+  # to run if any of these are truthy.
+  ALLOW_BROKER_PAPER:        "false"
+  EDGE_GATE_ENABLED:         "false"
+  BROKER_EXECUTION_ENABLED:  "false"
+  LIVE_TRADING:              "false"
+  LIVE_ENABLED:              "false"
+  GO_LIVE:                   "false"
+  LIVE_TRADING_ENABLED:      "false"
+  # v3.29 — operator approval gate. Default false. Setting this to
+  # true does NOT unlock the canary — it allows the evaluator to
+  # advance to UNLOCK_READY status.
+  OPERATOR_APPROVED_BROKER_PAPER_CANARY: ${{ vars.OPERATOR_APPROVED_BROKER_PAPER_CANARY || 'false' }}
+
+jobs:
+  evaluate:
+    name: Evaluate canary unlock readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution flags pinned false ✓"
+
+      - name: Run v3.29 safety tests subset
+        run: |
+          python3 -m unittest \
+            tests.test_llm_strategy_alignment_v3290 \
+            tests.test_broker_paper_canary_no_live_v3290 \
+            tests.test_broker_paper_canary_unlock_contract_v3290
+
+      - name: Run LLM strategy alignment (reads latest advisory rows)
+        run: |
+          python3 -c "
+          import sys; sys.path.insert(0, 'shared')
+          import llm_strategy_alignment as al
+          rows, qs = al.load_latest_advisory_rows()
+          rep = al.evaluate_alignment(rows=rows, quality_status=qs)
+          al.write_alignment_artifacts(report=rep, quality_status=qs)
+          print('alignment_status:', rep.status)
+          "
+
+      - name: Run broker-paper canary unlock evaluator (read-only)
+        id: unlock
+        run: |
+          set -e
+          OUT=$(python3 scripts/evaluate_broker_paper_canary_unlock.py \
+                  --evaluate-only)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['unlock_status'])" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-canary-eval"
+          git config user.email "canary-eval@trading-system.local"
+          git add learning-loop/broker_paper_canary/ \
+                  learning-loop/llm_advisory/strategy_alignment_latest.json \
+                  docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md \
+                  docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md \
+                  docs/LLM_STRATEGY_ALIGNMENT.md \
+                  learning-loop/position_reconciliation/latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/broker_paper_canary/*) ;;
+              learning-loop/llm_advisory/strategy_alignment_latest.json) ;;
+              docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md) ;;
+              docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md) ;;
+              docs/LLM_STRATEGY_ALIGNMENT.md) ;;
+              learning-loop/position_reconciliation/latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "Update broker-paper canary unlock status [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

@@ -43,6 +43,15 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # Default trigger: workflow_dispatch (schedule gated on
     # LLM_AGENTS_SCHEDULED repo variable).
     "llm-advisory-mesh.yml",
+    # v3.29 (2026-06-09) — broker-paper canary unlock evaluator runs
+    # daily (read-only) and commits only
+    # learning-loop/broker_paper_canary/** +
+    # docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md +
+    # learning-loop/llm_advisory/strategy_alignment_latest.json. All
+    # 7 broker-execution env flags hard-pinned false; no broker
+    # secrets. NEVER imports the broker-orders module. NEVER
+    # places an order. NEVER flips a broker flag.
+    "broker-paper-canary-unlock-evaluator.yml",
     "auto-merge.yml",
     "daily-learning.yml",
     "daily-learning-watchdog.yml",
