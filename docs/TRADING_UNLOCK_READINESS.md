@@ -116,3 +116,30 @@ permissible verdict remains `SIGNAL_SHADOW_UNLOCK_READY`. Broker
 paper remains `BROKER_PAPER_CANARY_NOT_READY` until ALL of the
 v3.25 evidence thresholds are met AND the operator gives explicit
 approval.
+
+---
+
+## v3.27.0 update — readiness gate consumes real-market counter
+
+The v3.25 `BROKER_PAPER_MIN_NORMAL_OPPORTUNITIES = 50` threshold now
+reads `real_market_opportunities_count` (added in v3.26.1) instead of
+the legacy `normal_non_halt_opportunities_count`. v3.27 also:
+
+- adds `real_market_opportunities_count: int = 0` to
+  `UnlockReadinessInputs`,
+- keeps `normal_non_halt_opportunities_count` as a deprecated alias
+  (preserved for callers that still inspect it),
+- extends `evaluate_from_current_repo_state()` to load live
+  `shared/shadow_evidence_counters.py` values from disk so the
+  preflight + ad-hoc inspections see actual evidence progress.
+
+The verdict ladder is unchanged. Maximum verdict in v3.27 remains
+`SIGNAL_SHADOW_UNLOCK_READY` because:
+
+1. `real_market_opportunities_count = 0` (no real data has flowed yet),
+2. `completed_shadow_outcomes_count = 0`,
+3. `daily_learning_stable` and `trade_reconstruction_stable` default to
+   `False`,
+4. `explicit_operator_approval_for_broker_paper` defaults to `False`.
+
+Tests pinning this: `tests/test_trading_unlock_readiness_real_counters_v3270.py`.

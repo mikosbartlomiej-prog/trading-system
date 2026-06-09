@@ -174,3 +174,62 @@ invocation during US market session (13:30-20:00 UTC) once the
 real-data hook is wired. Until then, the collector correctly
 returns `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` and no records
 accumulate toward the canary gate.
+
+<!-- v3.27 auto-progress-start -->
+
+## Automated progress snapshot (v3.27)
+
+**Last auto-update:** `2026-06-09T15:13:40.448594+00:00`
+**Source:** `learning-loop/shadow_evidence/evidence_counters_latest.json`
+**Generator:** `scripts/update_shadow_evidence_progress.py`
+
+### Canary-gate counters
+
+| Metric | Current | Target |
+|---|---:|---:|
+| `real_market_opportunities_count` | **0** | 50 |
+| `completed_shadow_outcomes_count` | **0** | 20 |
+| `audit_bypass_findings_count` | 0 | 0 |
+| `exposure_cap_breach_count` | 0 | 0 |
+| `repeated_buy_violation_count` | 0 | 0 |
+| `unexplained_broker_state_conflicts_count` | 0 | 0 |
+
+### Observational counters
+
+| Metric | Current |
+|---|---:|
+| `scaffold_no_market_data_records_count` | 5 |
+| `halt_path_records_count` | 3 |
+| `halt_path_opportunities_count` | 3 |
+| `normal_non_halt_opportunities_count` (legacy) | 0 |
+| `would_block_by_crypto_exposure_count` | 0 |
+| `would_block_by_drawdown_guard_count` | 0 |
+| `would_block_by_recent_loss_cooldown_count` | 0 |
+
+### Readiness verdicts
+
+| Tier | Verdict |
+|---|---|
+| Signal/shadow unlock | `SIGNAL_SHADOW_UNLOCK_READY` |
+| Broker paper canary | **`BROKER_PAPER_CANARY_NOT_READY`** |
+| Live trading | `LIVE_TRADING_NOT_SUPPORTED` |
+
+### Automated run telemetry
+
+| Field | Value |
+|---|---|
+| Last collector status | `n/a` |
+| Last outcome resolver status | `RESOLVED` |
+| `daily_learning_stable` | `false` |
+| `trade_reconstruction_stable` | `false` |
+
+### Safety invariants from counters file
+
+- `broker_order_submitted_ever`: `false`
+- `live_trading_enabled`: `false`
+- `broker_paper_enabled`: `false`
+- `edge_gate_enabled`: `false`
+- `baseline_reset`: `false`
+- `drawdown_guard_lowered`: `false`
+
+<!-- v3.27 auto-progress-end -->

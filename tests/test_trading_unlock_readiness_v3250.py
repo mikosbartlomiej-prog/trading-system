@@ -135,7 +135,10 @@ class TestBrokerPaperRequiresEvidence(unittest.TestCase):
         self.assertIn("20", missing_text)
 
     def test_broker_paper_ready_only_when_all_conditions_met(self):
+        # v3.27.0: the gate consumes real_market_opportunities_count
+        # (not the legacy normal_non_halt_opportunities_count).
         i = _clean_inputs(
+            real_market_opportunities_count=100,
             normal_non_halt_opportunities_count=100,
             completed_shadow_outcomes_count=25,
             audit_bypass_findings_count=0,

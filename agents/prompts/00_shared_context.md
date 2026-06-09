@@ -725,4 +725,89 @@ PAPER_TRADING_* verdicts.
 
 ---
 
+## v3.27.0 coverage (added 2026-06-09)
+
+v3.27 automates the v3.26 signal/shadow evidence pipeline. The
+verdict ladder is unchanged; v3.27 adds the missing real-market
+data path so the v3.25 `trading_unlock_readiness` gate can
+eventually advance toward `BROKER_PAPER_CANARY_READY` purely from
+automated evidence — no manual collector runs.
+
+When reviewing, also check:
+
+- `shared/market_data_provider.py` — read-only Alpaca-data fetcher
+  (`data.alpaca.markets`). Never imports `shared/alpaca_orders.py`.
+  Returns `MarketSnapshot` with the 4-value `data_quality` enum
+  (`REAL_MARKET_DATA` / `NO_MARKET_DATA` / `STALE_MARKET_DATA` /
+  `PROVIDER_ERROR`). Fail-soft on missing creds / network errors —
+  never fabricates price.
+- `shared/shadow_opportunity_generator.py` — wraps the pure
+  `backtest/strategies.py::*_signal_at` functions. Emits a record
+  ONLY when the snapshot is `REAL_MARKET_DATA` AND daily bars are
+  present. Applies the v3.25 crypto exposure policy + drawdown
+  guard as `would_block` reasons (never blocks the broker — it
+  just records that an order WOULD be blocked).
+- `shared/shadow_outcome_resolver.py` + `scripts/resolve_shadow_outcomes.py`
+  — sidecar outcome writer. Records are append-only to
+  `learning-loop/shadow_evidence/outcomes_YYYY-MM-DD.jsonl`. Marks
+  every outcome `SHADOW_OUTCOME` with
+  `is_broker_realized_pnl=false`. Skips scaffold + halt-path
+  records by `evidence_quality` filter.
+- `scripts/update_shadow_evidence_progress.py` — rewrites the
+  auto-progress section of `docs/SHADOW_EVIDENCE_PROGRESS.md`
+  between markers `<!-- v3.27 auto-progress-start -->` and
+  `<!-- v3.27 auto-progress-end -->` from live counters.
+- `.github/workflows/signal-shadow-evidence.yml` — automation
+  driver. Cron `35 13-19 * * 1-5`. Hard-pins all 7 broker-execution
+  env flags `false` at workflow `env` level. Path allow-list at
+  commit time enforces only
+  `learning-loop/shadow_evidence/**`, `docs/SHADOW_EVIDENCE_PROGRESS.md`,
+  `learning-loop/position_reconciliation/latest.json`.
+- `scripts/audit_workflows.py::CONTENTS_WRITE_ALLOWLIST` — extended
+  to include `signal-shadow-evidence.yml`.
+- `shared/trading_unlock_readiness.py` — `UnlockReadinessInputs`
+  gained `real_market_opportunities_count`; `_broker_paper_blockers`
+  now reads it; `evaluate_from_current_repo_state` loads live
+  counters from disk.
+
+### v3.27 status tokens (added)
+
+- `AUTOMATED_SHADOW_EVIDENCE_PIPELINE_READY`
+- `REAL_MARKET_DATA_COLLECTION_AUTOMATED`
+- `OUTCOME_RESOLUTION_AUTOMATED`
+
+### Final Arbiter v3.27.0 escalation triggers (P0)
+
+In addition to all v3.23.x / v3.24 / v3.25 / v3.26 triggers, the
+Final Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the v3.27 collector or resolver acquires an import of
+  `shared/alpaca_orders.py`
+- any record in `learning-loop/shadow_evidence/records_YYYY-MM-DD.jsonl`
+  carries `broker_order_submitted=true` or `broker_execution_enabled=true`
+- the `signal-shadow-evidence.yml` workflow drops an env hard-pin
+  for ALLOW_BROKER_PAPER / EDGE_GATE_ENABLED / BROKER_EXECUTION_ENABLED
+  / LIVE_TRADING / LIVE_ENABLED / GO_LIVE / LIVE_TRADING_ENABLED
+- the workflow path allow-list is widened beyond
+  `learning-loop/shadow_evidence/**`, `docs/SHADOW_EVIDENCE_PROGRESS.md`,
+  and `learning-loop/position_reconciliation/latest.json`
+- `signal-shadow-evidence.yml` is removed from
+  `scripts/audit_workflows.py::CONTENTS_WRITE_ALLOWLIST`
+- `real_market_opportunities_count` is incremented from a code path
+  that does NOT also write a `REAL_MARKET_DATA` record to the day's
+  JSONL
+- a SHADOW outcome record is misrepresented as `is_broker_realized_pnl=true`
+- the v3.25 thresholds (50 real opportunities / 20 outcomes / 0
+  audit-bypass / 0 exposure breach) are weakened
+- `EDGE_GATE_ENABLED` is flipped True
+- `ALLOW_BROKER_PAPER` is enabled
+- baseline `state.json::cumulative.starting_equity` is silently reset
+- live trading is enabled in any form
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.

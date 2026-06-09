@@ -1,6 +1,102 @@
 {
-  "version": "v3.26.1",
-  "generated_at_iso": "2026-06-09T15:30:00+00:00",
+  "version": "v3.27.0",
+  "generated_at_iso": "2026-06-09T18:00:00+00:00",
+  "v327_followups": {
+    "title": "AUTOMATED_REAL_MARKET_SHADOW_EVIDENCE_PIPELINE",
+    "trigger": "v3261_signal_shadow_unlock_ready_required_automation_to_begin_real_evidence_collection",
+    "generated_at_iso": "2026-06-09T18:00:00+00:00",
+    "new_modules": {
+      "shared/market_data_provider.py": {
+        "purpose": "read-only Alpaca-data fetcher decoupled from broker module",
+        "data_qualities": [
+          "REAL_MARKET_DATA", "NO_MARKET_DATA",
+          "STALE_MARKET_DATA", "PROVIDER_ERROR"
+        ],
+        "host": "data.alpaca.markets",
+        "forbidden_host": "paper-api.alpaca.markets"
+      },
+      "shared/shadow_opportunity_generator.py": {
+        "purpose": "wraps backtest/strategies.py pure signal functions to produce REAL_MARKET_DATA records",
+        "registered_strategies": ["momentum-long", "crypto-momentum"]
+      },
+      "shared/shadow_outcome_resolver.py": {
+        "purpose": "resolves PENDING records via fresh snapshots after 1h horizon; SHADOW_OUTCOME only",
+        "default_horizon_seconds": 3600,
+        "outcomes_file_pattern": "learning-loop/shadow_evidence/outcomes_YYYY-MM-DD.jsonl"
+      }
+    },
+    "new_scripts": [
+      "scripts/resolve_shadow_outcomes.py",
+      "scripts/update_shadow_evidence_progress.py"
+    ],
+    "new_workflow": {
+      "path": ".github/workflows/signal-shadow-evidence.yml",
+      "schedule_cron": "35 13-19 * * 1-5",
+      "broker_execution_flags_pinned_false": [
+        "ALLOW_BROKER_PAPER", "EDGE_GATE_ENABLED",
+        "BROKER_EXECUTION_ENABLED",
+        "LIVE_TRADING", "LIVE_ENABLED", "GO_LIVE",
+        "LIVE_TRADING_ENABLED"
+      ],
+      "commit_path_allowlist": [
+        "learning-loop/shadow_evidence/**",
+        "docs/SHADOW_EVIDENCE_PROGRESS.md",
+        "learning-loop/position_reconciliation/latest.json"
+      ],
+      "added_to_audit_workflows_allowlist": true
+    },
+    "readiness_gate_change": {
+      "module": "shared/trading_unlock_readiness.py",
+      "field_added": "UnlockReadinessInputs.real_market_opportunities_count",
+      "broker_paper_threshold_now_reads": "real_market_opportunities_count",
+      "legacy_field_preserved_as_alias": "normal_non_halt_opportunities_count"
+    },
+    "new_tests": [
+      "tests/test_market_data_provider_v3270.py",
+      "tests/test_shadow_opportunity_generator_v3270.py",
+      "tests/test_shadow_outcome_resolver_v3270.py",
+      "tests/test_automated_shadow_evidence_workflow_v3270.py",
+      "tests/test_trading_unlock_readiness_real_counters_v3270.py"
+    ],
+    "status_tokens_added": [
+      "AUTOMATED_SHADOW_EVIDENCE_PIPELINE_READY",
+      "REAL_MARKET_DATA_COLLECTION_AUTOMATED",
+      "OUTCOME_RESOLUTION_AUTOMATED",
+      "BROKER_PAPER_CANARY_STILL_BLOCKED"
+    ],
+    "counters_after_v327_migration": {
+      "real_market_opportunities_count": 0,
+      "completed_shadow_outcomes_count": 0,
+      "scaffold_no_market_data_records_count": 5,
+      "halt_path_records_count": 4,
+      "halt_path_opportunities_count": 5,
+      "normal_non_halt_opportunities_count_legacy": 0
+    },
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "broker_execution_enabled": false,
+      "live_trading_supported": false
+    },
+    "next_action_items_v327": [
+      "ALLOW_SCHEDULED_WORKFLOW_TO_RUN_DURING_US_MARKET_SESSION",
+      "MONITOR_AUTOMATED_EVIDENCE_PROGRESS",
+      "COLLECT_50_REAL_MARKET_OPPORTUNITIES",
+      "COLLECT_20_COMPLETED_SHADOW_OUTCOMES",
+      "KEEP_BROKER_PAPER_DISABLED",
+      "KEEP_EDGE_GATE_DISABLED",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "NO_MANUAL_COLLECTOR_RUNS_REQUIRED",
+      "REVIEW_ETH_AVAX_OPEN_CRYPTO_POSITIONS",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
   "v3261_followups": {
     "title": "DAILY_SIGNAL_SHADOW_RUN_CHECK_AND_EVIDENCE_QUALITY_DISTINCTION",
     "trigger": "v3260_smoke_run_inflated_normal_non_halt_count_with_scaffold_records",

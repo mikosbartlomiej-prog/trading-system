@@ -2,9 +2,9 @@
   "audit_bypass_findings_count": 0,
   "completed_shadow_outcomes_count": 0,
   "exposure_cap_breach_count": 0,
-  "generated_at_iso": "2026-06-09T01:00:00+00:00",
-  "halt_path_opportunities_count": 3,
-  "halt_path_records_count": 3,
+  "generated_at_iso": "2026-06-09T18:00:00+00:00",
+  "halt_path_opportunities_count": 5,
+  "halt_path_records_count": 4,
   "normal_non_halt_opportunities_count": 0,
   "real_market_opportunities_count": 0,
   "repeated_buy_violation_count": 0,
@@ -23,7 +23,7 @@
     "real_market_opportunities": 50
   },
   "unexplained_broker_state_conflicts_count": 0,
-  "version": "v3.26.1",
+  "version": "v3.27.0",
   "would_block_by_crypto_exposure_count": 0,
   "would_block_by_drawdown_guard_count": 0,
   "would_block_by_recent_loss_cooldown_count": 0

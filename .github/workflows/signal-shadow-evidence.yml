@@ -1,0 +1,201 @@
+name: Signal Shadow Evidence (v3.27)
+
+# v3.27.0 (2026-06-09) — automated real-market shadow evidence pipeline.
+#
+# Runs the v3.26.1 signal/shadow preflight + v3.27 collector +
+# outcome resolver + progress updater during the US market session.
+#
+# HARD SAFETY:
+# - Does NOT enable broker paper.
+# - Does NOT enable live trading.
+# - Refuses to proceed if ALLOW_BROKER_PAPER / EDGE_GATE_ENABLED /
+#   BROKER_EXECUTION_ENABLED / LIVE_TRADING / LIVE_ENABLED /
+#   GO_LIVE / LIVE_TRADING_ENABLED are truthy.
+# - Commits ONLY paths inside
+#   learning-loop/shadow_evidence/ + docs/SHADOW_EVIDENCE_PROGRESS.md +
+#   learning-loop/position_reconciliation/latest.json.
+# - Fails if any unauthorized file appears in the staged diff.
+
+on:
+  schedule:
+    # Operator suggested: 35 13-19 * * 1-5 — fires at :35 each hour
+    # 13-19 UTC weekdays (covers 13:35-19:35 = 7 ticks per US session).
+    - cron: "35 13-19 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      max_records:
+        description: "Max records to emit per run"
+        required: false
+        default: "10"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: signal-shadow-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.27 hard-pin: every broker-execution flag is locked OFF at
+  # workflow level so a re-paste cannot enable broker mode mid-run.
+  ALLOW_BROKER_PAPER: "false"
+  EDGE_GATE_ENABLED: "false"
+  BROKER_EXECUTION_ENABLED: "false"
+  LIVE_TRADING: "false"
+  LIVE_ENABLED: "false"
+  GO_LIVE: "false"
+  LIVE_TRADING_ENABLED: "false"
+  # Read-only data API credentials (same paper key, separate host).
+  ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+  ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+
+jobs:
+  collect:
+    name: Collect real-market shadow evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution flags pinned false ✓"
+
+      - name: Run safety-critical regression tests (subset)
+        run: |
+          python3 -m unittest \
+            tests.test_signal_shadow_preflight_v3260 \
+            tests.test_shadow_evidence_counters_v3260 \
+            tests.test_signal_shadow_collection_no_broker_execution_v3260 \
+            tests.test_signal_shadow_daily_run_v3261
+
+      - name: Run signal/shadow preflight
+        run: |
+          python3 -c "
+          from shared.signal_shadow_preflight import (
+              run_preflight, PreflightInputs,
+              SIGNAL_SHADOW_PREFLIGHT_PASS,
+          )
+          r = run_preflight(PreflightInputs(
+              open_orders_count=0,
+              open_equity_positions_count=0,
+              crypto_positions_reconciled=True,
+          ))
+          print('preflight verdict:', r.verdict)
+          print('blockers:', r.blockers)
+          if r.verdict != SIGNAL_SHADOW_PREFLIGHT_PASS:
+              raise SystemExit('preflight blocked')
+          "
+
+      - name: Run collector (real-market path; no scaffold flag)
+        id: collector
+        run: |
+          set -e
+          MAX_RECORDS="${{ github.event.inputs.max_records || '10' }}"
+          OUT=$(python3 scripts/run_signal_shadow_evidence_collection.py \
+                  --max-records "$MAX_RECORDS" \
+                  --with-market-data)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['status'])" <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Run outcome resolver
+        id: resolver
+        run: |
+          set -e
+          OUT=$(python3 scripts/resolve_shadow_outcomes.py \
+                  --max-records 50)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read()).get('status','UNKNOWN'))" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Update progress doc
+        run: |
+          python3 scripts/update_shadow_evidence_progress.py \
+            --collector-status "${{ steps.collector.outputs.status }}" \
+            --resolver-status  "${{ steps.resolver.outputs.status }}"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-shadow"
+          git config user.email "shadow@trading-system.local"
+          # Stage allowed paths only.
+          git add learning-loop/shadow_evidence/ \
+                  docs/SHADOW_EVIDENCE_PROGRESS.md \
+                  learning-loop/position_reconciliation/latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          # Reject any changed file outside the allow-list.
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/shadow_evidence/*) ;;
+              docs/SHADOW_EVIDENCE_PROGRESS.md) ;;
+              learning-loop/position_reconciliation/latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "Update automated shadow evidence [automerge]"
+          # Retry rebase+push up to 5 times to ride concurrent automerges.
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

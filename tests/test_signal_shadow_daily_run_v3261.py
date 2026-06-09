@@ -165,7 +165,12 @@ class TestCollectorEmitsEvidenceQuality(unittest.TestCase):
                     out["evidence_quality"], "HALT_PATH_ONLY",
                 )
 
-    def test_collect_scaffold_path_marks_scaffold(self):
+    def test_market_data_available_routes_to_real_or_halt_not_scaffold(self):
+        # v3.27.0 contract: market_data_available=True attempts to
+        # fetch REAL_MARKET_DATA via the v3.27 provider+generator.
+        # If real data is unavailable in the sandbox, the collector
+        # falls through to halt-path — it does NOT silently emit
+        # SCAFFOLD records.
         with mock.patch.dict(os.environ, _clean_env(), clear=False):
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
@@ -178,21 +183,20 @@ class TestCollectorEmitsEvidenceQuality(unittest.TestCase):
                     market_data_available=True,
                     max_records=3,
                 )
-                self.assertEqual(
-                    out["status"],
-                    self.collector.SHADOW_COLLECTION_PROCEEDING,
-                )
-                self.assertEqual(
-                    out["evidence_quality"], "SCAFFOLD_NO_MARKET_DATA",
+                # Either real records flowed or halt-path fired.
+                self.assertIn(out.get("evidence_quality"),
+                                ("REAL_MARKET_DATA", "HALT_PATH_ONLY"))
+                self.assertNotEqual(
+                    out.get("evidence_quality"),
+                    "SCAFFOLD_NO_MARKET_DATA",
                 )
 
 
 class TestCountersRoutedByEvidenceQuality(unittest.TestCase):
-    def test_scaffold_increments_scaffold_counter_only(self):
-        # The collector's scaffold path increments
-        # scaffold_no_market_data_records_count but NOT
-        # real_market_opportunities_count nor the legacy
-        # normal_non_halt_opportunities_count.
+    def test_market_data_available_no_real_does_not_inflate_scaffold(self):
+        # v3.27.0: when market_data_available=True is asserted but
+        # real data cannot be fetched, the collector falls through
+        # to halt-path. Scaffold counter MUST NOT advance.
         self.collector = _load_collector()
         with mock.patch.dict(os.environ, _clean_env(), clear=False):
             with tempfile.TemporaryDirectory() as tmp:
@@ -210,8 +214,10 @@ class TestCountersRoutedByEvidenceQuality(unittest.TestCase):
                     root / "learning-loop" / "shadow_evidence"
                     / "evidence_counters_latest.json")
                 data = json.loads(counters_path.read_text())
+                # Scaffold counter NEVER advances in v3.27 when
+                # market_data_available=True is claimed.
                 self.assertEqual(
-                    data["scaffold_no_market_data_records_count"], 4)
+                    data["scaffold_no_market_data_records_count"], 0)
                 self.assertEqual(
                     data["real_market_opportunities_count"], 0)
                 self.assertEqual(

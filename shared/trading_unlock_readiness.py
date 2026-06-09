@@ -92,6 +92,14 @@ class UnlockReadinessInputs:
     unresolved_runaway_loop_finding: bool = False
     v3_25_tests_pass: bool = True
     # Broker-paper-canary evidence.
+    # v3.27.0 — added real_market_opportunities_count. The v3.27
+    # automated pipeline feeds this counter when generating
+    # REAL_MARKET_DATA shadow records. The legacy
+    # normal_non_halt_opportunities_count is kept as a deprecated
+    # alias for backward compatibility, but the broker-paper gate
+    # now reads ``real_market_opportunities_count`` per v3.26.1
+    # evidence-quality contract.
+    real_market_opportunities_count: int = 0
     normal_non_halt_opportunities_count: int = 0
     completed_shadow_outcomes_count: int = 0
     audit_bypass_findings_count: int = 0
@@ -157,10 +165,14 @@ def _broker_paper_blockers(i: UnlockReadinessInputs) -> list[str]:
     exist in v3.25.
     """
     missing: list[str] = []
-    if i.normal_non_halt_opportunities_count < BROKER_PAPER_MIN_NORMAL_OPPORTUNITIES:
+    # v3.27.0 — consume real_market_opportunities_count as the canary
+    # gate. The legacy normal_non_halt_opportunities_count is kept on
+    # the input dataclass as a deprecated alias but no longer drives
+    # the broker-paper threshold.
+    if i.real_market_opportunities_count < BROKER_PAPER_MIN_NORMAL_OPPORTUNITIES:
         missing.append(
-            f"normal_non_halt_opportunities_count="
-            f"{i.normal_non_halt_opportunities_count} < "
+            f"real_market_opportunities_count="
+            f"{i.real_market_opportunities_count} < "
             f"{BROKER_PAPER_MIN_NORMAL_OPPORTUNITIES}",
         )
     if i.completed_shadow_outcomes_count < BROKER_PAPER_MIN_SHADOW_OUTCOMES:
@@ -298,6 +310,25 @@ def evaluate_from_current_repo_state(
         edge_gate_enabled=edge_gate,
         allow_broker_paper=allow_broker_paper,
     )
+    # v3.27.0 — load live evidence counters so the broker-paper gate
+    # sees actual progress. Fail-soft: if the counters file is missing
+    # or unreadable, inputs stay at safe zero defaults.
+    try:
+        try:
+            import shadow_evidence_counters as sec
+        except ImportError:
+            from shared import shadow_evidence_counters as sec
+        from pathlib import Path as _Path
+        c = sec.load_counters(_Path(__file__).resolve().parent.parent)
+        inputs.real_market_opportunities_count = (
+            c.real_market_opportunities_count)
+        inputs.completed_shadow_outcomes_count = (
+            c.completed_shadow_outcomes_count)
+        # Legacy alias for callers that still inspect it.
+        inputs.normal_non_halt_opportunities_count = (
+            c.normal_non_halt_opportunities_count)
+    except Exception:
+        pass
     if extra:
         for k, v in extra.items():
             if hasattr(inputs, k):

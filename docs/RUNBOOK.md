@@ -1141,3 +1141,38 @@ python3 scripts/run_signal_shadow_evidence_collection.py \
 
 `EDGE_GATE_ENABLED` stays `false`. `ALLOW_BROKER_PAPER` stays unset.
 Live trading stays blocked.
+
+---
+
+## Scenario CC — Automated shadow evidence pipeline (v3.27)
+
+The pipeline runs without operator action via
+`.github/workflows/signal-shadow-evidence.yml`
+(cron `35 13-19 * * 1-5`).
+
+To trigger a manual run via the GitHub UI:
+
+1. Go to **Actions → Signal Shadow Evidence (v3.27)** → **Run workflow**.
+2. Optional input: `max_records` (default `10`).
+3. The workflow checks broker-execution env flags, runs the
+   v3.26.1 preflight, runs the collector with `--with-market-data`,
+   runs the outcome resolver, updates the progress doc, and commits
+   only the allow-listed paths.
+
+To inspect progress without running anything:
+
+```sh
+cat learning-loop/shadow_evidence/evidence_counters_latest.json
+grep -A2 "auto-progress" docs/SHADOW_EVIDENCE_PROGRESS.md | head -30
+```
+
+**Forbidden during evidence collection** (carries over from v3.26):
+
+- Setting `ALLOW_BROKER_PAPER=true` (the workflow refuses).
+- Setting `EDGE_GATE_ENABLED=true` (the workflow refuses).
+- Modifying `learning-loop/shadow_evidence/evidence_counters_latest.json` by hand to inflate progress.
+- Deleting `records_YYYY-MM-DD.jsonl` or `outcomes_YYYY-MM-DD.jsonl` files.
+- Adding paths outside the allow-list to the staged diff (the workflow refuses).
+
+`EDGE_GATE_ENABLED` stays `false`. `ALLOW_BROKER_PAPER` stays unset.
+Live trading stays blocked.

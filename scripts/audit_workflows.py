@@ -123,6 +123,16 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # learning-loop/shadow_ledger/ + learning-loop/opportunity_ledger/
     # + docs/shadow_evidence_cycle_LATEST.md.
     "shadow-evidence-cycle.yml",
+    # v3.27.0 — automated REAL_MARKET_DATA shadow evidence pipeline
+    # for the v3.25 trading_unlock_readiness gate. Runs preflight +
+    # v3.26.1 collector + v3.27 outcome resolver + progress updater
+    # during the US session (cron 35 13-19 * * 1-5). Every broker-
+    # execution flag is hard-pinned false at workflow level. The
+    # workflow enforces a path-allowlist before staging — only
+    # learning-loop/shadow_evidence/ + docs/SHADOW_EVIDENCE_PROGRESS.md
+    # + learning-loop/position_reconciliation/latest.json may be
+    # committed. NEVER imports shared/alpaca_orders.py.
+    "signal-shadow-evidence.yml",
 }
 
 # Workflows allowed to create PRs.

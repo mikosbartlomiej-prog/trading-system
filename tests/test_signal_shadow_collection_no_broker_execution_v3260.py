@@ -120,12 +120,17 @@ class TestCollectorPreflightHardWiring(unittest.TestCase):
                     self.collector.SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA,
                 )
 
-    def test_preflight_pass_records_emitted_under_scaffold(self):
+    def test_market_data_available_no_real_data_falls_through_to_halt(self):
+        # v3.27.0: when market_data_available=True is asserted but
+        # no real market data can be fetched (no creds in tmp env),
+        # the collector returns SKIPPED instead of fabricating
+        # SCAFFOLD records. v3.27 removes the silent SCAFFOLD
+        # fallback that v3.26.0 used. This preserves the v3.26.1
+        # invariant: scaffold records do not inflate canary-gate
+        # counters.
         with mock.patch.dict(os.environ, _clean_env(), clear=False):
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                # Copy shared dir + counters to tmp so we don't
-                # mutate the real repo state during the test.
                 (root / "shared").symlink_to(REPO_ROOT / "shared")
                 (root / "scripts").symlink_to(REPO_ROOT / "scripts")
                 (root / "learning-loop").mkdir()
@@ -135,21 +140,23 @@ class TestCollectorPreflightHardWiring(unittest.TestCase):
                     market_data_available=True,
                     timestamp_iso="2026-06-09T02:00:00+00:00",
                 )
-                self.assertEqual(
+                # v3.27: with no Alpaca creds in the sandbox, real
+                # data fetch fails and we fall through to halt-path.
+                self.assertIn(
                     out["status"],
-                    self.collector.SHADOW_COLLECTION_PROCEEDING,
+                    (self.collector.SHADOW_COLLECTION_PROCEEDING,
+                      self.collector.SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA),
                 )
-                self.assertEqual(out["records_written"], 3)
-
-                # Verify records file present and broker flags false.
-                records_path = (root / out["records_path"])
-                lines = records_path.read_text().strip().split("\n")
-                self.assertEqual(len(lines), 3)
-                for line in lines:
-                    rec = json.loads(line)
-                    self.assertFalse(rec["broker_order_submitted"])
-                    self.assertFalse(rec["broker_execution_enabled"])
-                    self.assertTrue(rec["version"].startswith("v3.26"))
+                # No SCAFFOLD records may be written when real data
+                # is unavailable.
+                self.assertEqual(out.get("scaffold_records_written", 0),
+                                  0)
+                # If any record was written, it must be REAL_MARKET_DATA.
+                if out["records_written"] > 0:
+                    self.assertEqual(
+                        out["evidence_quality"],
+                        "REAL_MARKET_DATA",
+                    )
                     # v3.26.1: collector-emitted records carry an
                     # evidence_quality marker even when market data
                     # was supposedly available — the v3.26 scaffold

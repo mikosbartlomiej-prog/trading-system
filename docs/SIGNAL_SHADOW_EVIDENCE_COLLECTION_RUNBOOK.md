@@ -156,3 +156,51 @@ Until ALL of these are true, the verdict stays
   quarantine
 - Adding `scripts/quarantined_legacy_order_scripts/` to
   `shared/audit_bypass_detector.py::ALLOW_LIST`
+
+---
+
+## v3.27.0 update — automated pipeline (2026-06-09)
+
+The operator no longer runs collectors manually. The full pipeline
+runs automatically on a GitHub Actions schedule:
+
+| File | Purpose |
+|---|---|
+| `.github/workflows/signal-shadow-evidence.yml` | cron `35 13-19 * * 1-5` (US session, weekdays). Runs preflight → collector → resolver → progress updater. Hard-pins all 7 broker-execution flags to `false` at the workflow `env` block. |
+| `shared/market_data_provider.py` | read-only data fetcher (Alpaca IEX data host). Never imports `shared/alpaca_orders.py`. Returns `MarketSnapshot` with `data_quality` enum (`REAL_MARKET_DATA` / `NO_MARKET_DATA` / `STALE_MARKET_DATA` / `PROVIDER_ERROR`). |
+| `shared/shadow_opportunity_generator.py` | wraps `backtest/strategies.py` pure signal functions. Emits records only when `data_quality == REAL_MARKET_DATA` and bars are present. Never fabricates. |
+| `scripts/resolve_shadow_outcomes.py` + `shared/shadow_outcome_resolver.py` | resolves PENDING records ≥ 1 h old via fresh snapshots; writes outcomes to `learning-loop/shadow_evidence/outcomes_YYYY-MM-DD.jsonl` (sidecar, append-only); bumps `completed_shadow_outcomes_count`. SHADOW_OUTCOME only — never broker-realized P/L. Skips scaffold and halt-path records. |
+| `scripts/update_shadow_evidence_progress.py` | rewrites the auto-progress section of this doc's sibling `SHADOW_EVIDENCE_PROGRESS.md` between `<!-- v3.27 auto-progress-start -->` / `<!-- ... auto-progress-end -->` markers. |
+
+### Counter routing (v3.27)
+
+| Scenario | Counter bumped | Effect on broker-paper gate |
+|---|---|---|
+| Real opportunity generated | `real_market_opportunities_count` (+1) + legacy `normal_non_halt_opportunities_count` (+1) | counts toward 50-threshold |
+| Outcome resolved at 1 h+ | `completed_shadow_outcomes_count` (+1) | counts toward 20-threshold |
+| Halt-path (no real data) | `halt_path_records_count` (+1) + `halt_path_opportunities_count` (+1) | observational only |
+| `--allow-without-market-data` legacy flag (or `--with-market-data` with no creds) | falls through to halt-path | observational only — v3.27 no longer silently emits SCAFFOLD when real fetch fails |
+
+### Workflow path allow-list
+
+The workflow stages and commits ONLY:
+
+- `learning-loop/shadow_evidence/**`
+- `docs/SHADOW_EVIDENCE_PROGRESS.md`
+- `learning-loop/position_reconciliation/latest.json`
+
+Any other path in the staged diff aborts the workflow.
+
+### Forbidden in v3.27
+
+- Manual collector runs (the workflow is the source of truth).
+- Adding new write paths to the workflow without updating
+  `scripts/audit_workflows.py::CONTENTS_WRITE_ALLOWLIST`.
+- Importing `shared/alpaca_orders.py` from any v3.27 module.
+- Flipping `EDGE_GATE_ENABLED`, `ALLOW_BROKER_PAPER`,
+  `BROKER_EXECUTION_ENABLED`, `LIVE_TRADING`, `LIVE_ENABLED`,
+  `GO_LIVE`, or `LIVE_TRADING_ENABLED`.
+- Lowering the drawdown guard threshold.
+- Resetting the equity baseline.
+- Restoring `scripts/quarantined_legacy_order_scripts/*.py.disabled`
+  files to `.py`.

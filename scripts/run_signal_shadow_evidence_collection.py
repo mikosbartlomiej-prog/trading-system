@@ -247,58 +247,73 @@ def collect(
             counters_mod.EVIDENCE_QUALITY_HALT_PATH_ONLY)
         return summary
 
-    # Proceed: emit up to max_records skeleton records.
-    #
-    # v3.26.1 scope contract: ``market_data_available=True`` is the
-    # operator's assertion that the calling environment WILL emit
-    # REAL_MARKET_DATA records. The v3.26 scaffold delegates real
-    # decision generation to a future PR, so the current scaffold
-    # still emits SCAFFOLD_NO_MARKET_DATA records. The bookkeeping
-    # respects that — scaffold records go to
-    # ``scaffold_no_market_data_records_count`` only and do NOT
-    # affect the broker-paper readiness gate.
+    # v3.27.0 — when market data is available, fetch real snapshots,
+    # run pure strategy functions via shared/shadow_opportunity_generator.py,
+    # and emit REAL_MARKET_DATA records. If no real records can be
+    # generated (no signals fired, no bars), the run is treated as a
+    # halt-path so scaffolded SCAFFOLD records do NOT inflate counters.
     summary["status"] = SHADOW_COLLECTION_PROCEEDING
-    summary["evidence_quality"] = (
-        counters_mod.EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA)
     written = 0
-    for i in range(int(max_records)):
-        record = build_record(
-            symbol="SHADOW_SCAFFOLD_NOOP",
-            asset_class="us_equity",
-            strategy="signal-shadow-scaffold",
-            decision_type="skip",
-            side="none",
-            would_trade=False,
-            would_block=True,
-            block_reasons=["SHADOW_SCAFFOLD_NOOP"],
-            sizing_preview={
-                "proposed_usd": 0.0, "equity_usd": 0.0,
-                "proposed_qty": None, "limit_price": None,
-            },
-            exposure_policy_result={
-                "decision": "SHADOW_SCAFFOLD_NOOP",
-                "reason": "no real market data; scaffold-only record",
-                "details": {},
-            },
-            drawdown_guard_state={
-                "active": False, "threshold_pct": -3.0,
-                "current_pct": 0.0,
-            },
-            timestamp_iso=timestamp_iso,
-            audit_trace_id=f"v3261-scaffold-{uuid.uuid4().hex[:8]}",
-            evidence_quality=(
-                counters_mod.EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA),
+    real_written = 0
+    scaffold_written = 0
+    try:
+        import market_data_provider as mdp  # type: ignore
+        import shadow_opportunity_generator as sog  # type: ignore
+    except ImportError:
+        mdp = None
+        sog = None
+    if mdp is not None and sog is not None:
+        snapshots = mdp.fetch_universe_snapshots()
+        # Pre-fetch daily bars per equity symbol (strategy needs bars).
+        bars_by_symbol: dict[str, list] = {}
+        for snap in snapshots:
+            if snap.asset_class == "us_equity":
+                try:
+                    bars = mdp.fetch_daily_bars(snap.symbol, days=40)
+                    if bars:
+                        bars_by_symbol[snap.symbol] = bars
+                except Exception:
+                    pass
+        opps = sog.generate_for_universe(
+            snapshots, bars_by_symbol=bars_by_symbol,
         )
-        path = append_record(repo_root, record)
-        summary["records_path"] = str(path.relative_to(repo_root))
-        written += 1
+        for opp in opps[:int(max_records)]:
+            record = sog.to_shadow_record(
+                opp, timestamp_iso=timestamp_iso,
+            )
+            path = append_record(repo_root, record)
+            summary["records_path"] = str(path.relative_to(repo_root))
+            real_written += 1
+            written += 1
+    if real_written > 0:
+        summary["evidence_quality"] = (
+            counters_mod.EVIDENCE_QUALITY_REAL_MARKET_DATA)
+        counters_mod.increment(
+            cnt, counters_mod.METRIC_REAL_MARKET_OPPORTUNITIES,
+            by=real_written,
+        )
+        # Keep the legacy counter advancing 1:1 for back-compat readers.
+        counters_mod.increment(
+            cnt, counters_mod.METRIC_NORMAL_NON_HALT_OPPORTUNITIES,
+            by=real_written,
+        )
+    else:
+        # No real opportunities generated. The v3.27 contract: do NOT
+        # silently fall back to SCAFFOLD when market_data_available
+        # was claimed but no real signals materialised. Treat as a
+        # halt-path entry instead.
+        summary["evidence_quality"] = (
+            counters_mod.EVIDENCE_QUALITY_HALT_PATH_ONLY)
+        counters_mod.increment(
+            cnt, counters_mod.METRIC_HALT_PATH_OPPORTUNITIES, by=1,
+        )
+        counters_mod.increment(
+            cnt, counters_mod.METRIC_HALT_PATH_RECORDS, by=1,
+        )
+        summary["status"] = SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA
     summary["records_written"] = written
-    # v3.26.1 — scaffold records DO NOT count toward broker-paper
-    # canary readiness. Only ``real_market_opportunities_count`` does.
-    counters_mod.increment(
-        cnt, counters_mod.METRIC_SCAFFOLD_NO_MARKET_DATA_RECORDS,
-        by=written,
-    )
+    summary["real_records_written"] = real_written
+    summary["scaffold_records_written"] = scaffold_written
     counters_mod.save_counters(cnt, repo_root=repo_root,
                                  generated_at_iso=timestamp_iso)
     return summary
@@ -312,8 +327,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-records", type=int, default=10)
     parser.add_argument(
         "--allow-without-market-data", action="store_true",
-        help="Proceed even when no market data source is available "
-             "(emits scaffold records).",
+        help="v3.26 legacy flag. v3.27+ semantics: claim that the "
+             "calling environment HAS market data and attempt to "
+             "fetch real REAL_MARKET_DATA records via "
+             "shared/shadow_opportunity_generator.py. Falls through "
+             "to halt-path if real data cannot be fetched.",
+    )
+    parser.add_argument(
+        "--with-market-data", action="store_true",
+        help="v3.27 alias for --allow-without-market-data with "
+             "clearer semantic: request a real-market-data "
+             "collection pass.",
     )
     parser.add_argument(
         "--no-refuse-on-preflight", action="store_true",
@@ -324,7 +348,8 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = collect(
         max_records=args.max_records,
-        market_data_available=bool(args.allow_without_market_data),
+        market_data_available=bool(args.allow_without_market_data
+                                     or args.with_market_data),
         refuse_if_preflight_failed=not args.no_refuse_on_preflight,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
