@@ -1,16 +1,16 @@
 {
   "current_waiting_rationale": [
-    "only 1 successful runs in history; need \u22652 for trend evaluation"
+    "successful runs are healthy; no signals emitted yet"
   ],
-  "current_waiting_reason": "AUTOMATED_EVIDENCE_REQUIRES_MORE_RUNS",
+  "current_waiting_reason": "AUTOMATED_EVIDENCE_HEALTHY_BUT_NO_SIGNALS_YET",
   "diagnostic_dominant_token": null,
   "first_real_market_record_at": null,
   "first_real_market_record_seen": false,
   "first_real_market_strategy": null,
   "first_real_market_symbol": null,
-  "generated_at_iso": "2026-06-09T16:07:27.169146+00:00",
+  "generated_at_iso": "2026-06-09T17:34:45.507208+00:00",
   "next_expected_automation_window": "next scheduled cron tick at :35 each hour during US market session (cron `35 13-19 * * 1-5` UTC)",
-  "runs_observed": 1,
+  "runs_observed": 2,
   "safety": {
     "broker_paper_canary_still_blocked": true,
     "live_trading_unsupported": true
@@ -19,6 +19,6 @@
     "BROKER_PAPER_CANARY_STILL_BLOCKED",
     "LIVE_TRADING_UNSUPPORTED"
   ],
-  "successful_runs_observed": 1,
+  "successful_runs_observed": 2,
   "version": "v3.27.2"
 }
