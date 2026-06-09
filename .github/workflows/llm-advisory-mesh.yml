@@ -58,8 +58,16 @@ env:
   LLM_AGENT_DAILY_CALL_BUDGET:         ${{ vars.LLM_AGENT_DAILY_CALL_BUDGET || '20' }}
   LLM_AGENT_PER_RUN_BUDGET:            ${{ vars.LLM_AGENT_PER_RUN_BUDGET || '5' }}
   LLM_AGENT_MAX_COST_USD_PER_DAY:      ${{ vars.LLM_AGENT_MAX_COST_USD_PER_DAY || '1.00' }}
+  # v3.28.2 — free-only policy. Defaults to "true" so paid providers
+  # (anthropic / openai) are blocked at the call_provider gate unless
+  # the operator explicitly sets the repo variable to "false".
+  LLM_FREE_ONLY:                       ${{ vars.LLM_FREE_ONLY || 'true' }}
+  # v3.28.2 — Gemini model selection. Free-tier "gemini-2.5-flash-lite"
+  # by default; operator may override via repo variable.
+  GEMINI_MODEL:                        ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash-lite' }}
   # Provider keys — passed via secrets when present. The runner is
   # safe when these are empty (returns LLM_PROVIDER_KEY_MISSING).
+  GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
 

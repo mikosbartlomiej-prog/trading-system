@@ -1,0 +1,43 @@
+{
+  "advisory_rows_emitted": 0,
+  "agents_attempted": 0,
+  "agents_completed": 0,
+  "blockers": [
+    "set-vars requires gh CLI authentication",
+    "gh CLI not authenticated"
+  ],
+  "gemini_secret_present": false,
+  "generated_at_iso": "2026-06-09T19:44:51.054190+00:00",
+  "gh_cli_authenticated": false,
+  "gh_cli_available": true,
+  "latest_run_conclusion": null,
+  "latest_run_id": null,
+  "llm_free_only": true,
+  "mesh_runner_status": null,
+  "next_recommended_action": "Run `gh auth login` and re-run this helper.",
+  "safety": {
+    "allow_broker_paper": false,
+    "broker_execution_enabled": false,
+    "broker_paper_canary_still_blocked": true,
+    "deterministic_gates_remain_final": true,
+    "edge_gate_enabled": false,
+    "live_trading_unsupported": true
+  },
+  "schedule_enabled": false,
+  "secret_names_seen": [],
+  "selected_provider": "gemini",
+  "standing_markers": [
+    "BROKER_PAPER_CANARY_STILL_BLOCKED",
+    "LIVE_TRADING_UNSUPPORTED",
+    "DETERMINISTIC_GATES_REMAIN_FINAL",
+    "FREE_ONLY_POLICY_ENABLED",
+    "PAID_PROVIDERS_BLOCKED_WHEN_FREE_ONLY",
+    "OFFLINE_MOCK_STILL_DEFAULT",
+    "API_KEYS_NOT_EXPOSED",
+    "SCHEDULE_LEFT_DISABLED_BY_DEFAULT",
+    "LLM_ACTIVATION_SCHEDULE_LEFT_DISABLED"
+  ],
+  "variables_status": "LLM_ACTIVATION_VARIABLES_FAILED",
+  "version": "v3.28.2",
+  "workflow_dispatch_status": ""
+}

@@ -35,22 +35,26 @@ class TestOfflineMockNeverHitsNetwork(unittest.TestCase):
 
 class TestProviderKeyMissing(unittest.TestCase):
     def test_anthropic_missing_key_returns_status(self):
+        # v3.28.2 — paid providers are now blocked under default
+        # LLM_FREE_ONLY=true. Operator must explicitly opt out to
+        # reach the legacy KEY_MISSING path.
         import llm_provider_client as p
         with mock.patch.dict(os.environ, {
             "LLM_PROVIDER": "anthropic",
             "ANTHROPIC_API_KEY": "",
+            "LLM_FREE_ONLY": "false",
         }, clear=False):
             resp = p.call_provider(prompt="hi")
             self.assertEqual(resp.status, p.LLM_PROVIDER_KEY_MISSING)
-            # The status field carries the env name; the raw key
-            # value must NEVER appear.
             self.assertIn("ANTHROPIC_API_KEY", resp.text)
 
     def test_openai_missing_key_returns_status(self):
+        # v3.28.2 — paid provider opt-in required.
         import llm_provider_client as p
         with mock.patch.dict(os.environ, {
             "LLM_PROVIDER": "openai",
             "OPENAI_API_KEY": "",
+            "LLM_FREE_ONLY": "false",
         }, clear=False):
             resp = p.call_provider(prompt="hi")
             self.assertEqual(resp.status, p.LLM_PROVIDER_KEY_MISSING)
@@ -58,10 +62,12 @@ class TestProviderKeyMissing(unittest.TestCase):
 
 class TestProviderFailSoft(unittest.TestCase):
     def test_network_exception_returns_failed_status(self):
+        # v3.28.2 — paid provider opt-in required.
         import llm_provider_client as p
         with mock.patch.dict(os.environ, {
             "LLM_PROVIDER": "anthropic",
             "ANTHROPIC_API_KEY": "x" * 24,
+            "LLM_FREE_ONLY": "false",
         }, clear=False):
             import requests
             with mock.patch.object(

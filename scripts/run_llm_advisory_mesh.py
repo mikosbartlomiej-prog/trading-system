@@ -49,6 +49,10 @@ LLM_ADVISORY_MESH_RAN                       = "LLM_ADVISORY_MESH_RAN"
 LLM_ADVISORY_MESH_SKIPPED_DISABLED          = "LLM_ADVISORY_MESH_SKIPPED_DISABLED"
 LLM_ADVISORY_MESH_SKIPPED_NO_PROVIDER_KEY   = "LLM_ADVISORY_MESH_SKIPPED_NO_PROVIDER_KEY"
 LLM_ADVISORY_MESH_SKIPPED_BUDGET            = "LLM_ADVISORY_MESH_SKIPPED_BUDGET"
+# v3.28.2 — free-only policy block (paid provider attempted while
+# LLM_FREE_ONLY=true).
+LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY = (
+    "LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY")
 
 # Standing markers — always returned.
 BROKER_PAPER_CANARY_STILL_BLOCKED = "BROKER_PAPER_CANARY_STILL_BLOCKED"
@@ -207,12 +211,20 @@ def run_mesh(run_id: str) -> dict[str, Any]:
     import llm_agent_budget as budget   # type: ignore
     import llm_advisory_registry as reg  # type: ignore
 
+    # v3.28.2 — surface selected_provider + llm_free_only in every
+    # summary so the activation helper can render rich status.
+    selected_provider = os.environ.get(
+        "LLM_PROVIDER", "offline_mock").strip().lower() or "offline_mock"
+    llm_free_only = (os.environ.get("LLM_FREE_ONLY", "true")
+                       .strip().lower() in ("true", "1", "yes", "on"))
     summary: dict[str, Any] = {
-        "version":          "v3.28",
+        "version":          "v3.28.2",
         "run_id":           run_id,
         "status":           LLM_ADVISORY_MESH_RAN,
         "agents_evaluated": 0,
         "rows_written":     0,
+        "selected_provider": selected_provider,
+        "llm_free_only":     llm_free_only,
         "standing_markers": [
             BROKER_PAPER_CANARY_STILL_BLOCKED,
             LIVE_TRADING_UNSUPPORTED,
@@ -229,7 +241,25 @@ def run_mesh(run_id: str) -> dict[str, Any]:
     if not budget.llm_agents_enabled():
         summary["status"] = LLM_ADVISORY_MESH_SKIPPED_DISABLED
         return summary
-    # Gate 2: provider key.
+    # Gate 2 (v3.28.2): free-only policy. If the operator selected a
+    # paid provider while LLM_FREE_ONLY is true (the default), refuse
+    # to proceed and route the skip status through the mesh-level
+    # enum so the workflow can record it.
+    try:
+        import llm_provider_client as _p  # type: ignore
+    except ImportError:
+        _p = None  # type: ignore
+    if _p is not None:
+        prov = budget.provider()
+        free_only = (os.environ.get("LLM_FREE_ONLY", "true")
+                       .strip().lower() in ("true", "1", "yes", "on"))
+        if free_only and prov in _p.PAID_PROVIDERS:
+            summary["status"] = (
+                LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY)
+            summary["selected_provider"] = prov
+            summary["llm_free_only"]     = True
+            return summary
+    # Gate 3: provider key.
     if not budget.provider_key_present():
         summary["status"] = LLM_ADVISORY_MESH_SKIPPED_NO_PROVIDER_KEY
         return summary

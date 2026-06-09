@@ -1250,4 +1250,96 @@ real-market-evidence counters are touched.
 
 ---
 
+## v3.28.2 coverage (added 2026-06-09)
+
+v3.28 shipped the cloud LLM advisory mesh disabled-by-default with
+provider support for Anthropic / OpenAI / offline_mock. v3.28.2 adds
+a **free-first activation path via Gemini** so the operator can
+enable the mesh without paying for an LLM API. The operator's
+computer does not need to stay open — activation, set-vars, trigger,
+and validation all happen via `gh` CLI / GitHub Actions.
+
+When reviewing, also check:
+
+- `shared/llm_provider_client.py` — extended with `FREE_PROVIDERS`
+  / `PAID_PROVIDERS` sets, **`LLM_FREE_ONLY=true` policy gate**
+  (default), and a **Gemini provider branch** (default model
+  `gemini-2.5-flash-lite`). Gemini 400/404 routed to new
+  `LLM_PROVIDER_MODEL_ERROR`. Response parser handles Gemini's
+  `candidates[0].content.parts[0].text` shape.
+- `scripts/run_llm_advisory_mesh.py` — gained a free-only gate
+  AFTER master-enable but BEFORE the key check. Paid provider +
+  `LLM_FREE_ONLY=true` returns
+  `LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY`.
+  Summary always carries `selected_provider` + `llm_free_only`.
+- `.github/workflows/llm-advisory-mesh.yml` — gained
+  `GEMINI_API_KEY` secret env, `GEMINI_MODEL` repo var (default
+  `gemini-2.5-flash-lite`), `LLM_FREE_ONLY` repo var (default
+  `'true'`). All 7 broker-execution env flags remain hard-pinned
+  `false`. No broker secrets added.
+- `scripts/activate_llm_advisory_mesh.py` — **NEW** activation
+  helper. Modes: `--check-only` (default), `--set-vars`,
+  `--trigger`. Uses `gh secret list --json name` to detect secret
+  NAMES only — NEVER reads or prints values. NEVER imports the
+  broker-orders module. Exits 0 when blocked.
+- `learning-loop/llm_advisory/activation_status_latest.json` +
+  `docs/LLM_ADVISORY_ACTIVATION_STATUS.md` — **NEW** auto-generated
+  artefacts. Contain `secret_names_seen` (NAMES only — no values),
+  `selected_provider`, `llm_free_only`, `schedule_enabled`,
+  status fields, blockers, next-action.
+
+### v3.28.2 status tokens (added)
+
+- 2 provider statuses: `LLM_PROVIDER_BLOCKED_BY_FREE_ONLY`,
+  `LLM_PROVIDER_MODEL_ERROR`.
+- 1 runner status:
+  `LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY`.
+- 9 activation statuses (`LLM_ACTIVATION_*`).
+- 8 cross-cutting markers: `FREE_ONLY_POLICY_ENABLED`,
+  `PAID_PROVIDER_BLOCKED_BY_FREE_ONLY`, `FREE_PROVIDER_ALLOWED`,
+  `OFFLINE_MOCK_STILL_DEFAULT`, `GEMINI_PROVIDER_AVAILABLE`,
+  `API_KEYS_NOT_EXPOSED`, `SCHEDULE_LEFT_DISABLED_BY_DEFAULT`,
+  `DETERMINISTIC_GATES_REMAIN_FINAL`.
+
+### Operator opt-in (v3.28.2 flow)
+
+1. Add `GEMINI_API_KEY` as GitHub Secret (operator does this).
+2. `python3 scripts/activate_llm_advisory_mesh.py --check-only`
+   → verifies readiness.
+3. `python3 scripts/activate_llm_advisory_mesh.py --set-vars
+   --provider gemini --enable-schedule false` → sets four repo
+   variables.
+4. `python3 scripts/activate_llm_advisory_mesh.py --trigger` →
+   fires workflow_dispatch.
+
+### Final Arbiter v3.28.2 escalation triggers (P0)
+
+In addition to all v3.23.x through v3.28 triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- `LLM_FREE_ONLY` default flips from `true` to `false` in source
+  or in the workflow YAML
+- the v3.28.2 free-only policy gate is bypassed (paid provider
+  reaches network with `LLM_FREE_ONLY=true`)
+- `GEMINI_API_KEY` (or any other provider key) is printed or
+  persisted in any committed artifact
+- the activation helper sets a GitHub Secret (it must only set
+  non-secret variables)
+- the activation helper imports the broker-orders module
+- the v3.28.2 workflow YAML adds broker secrets / broker host /
+  Alpaca order paths
+- the workflow's `LLM_AGENTS_SCHEDULED` gate is removed
+- the workflow's commit path allow-list widens beyond the three
+  approved paths
+- an advisory row produced via Gemini violates any of the seven
+  pinned safety enums
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.28.2 adds a free LLM provider plus
+activation helper — no trading behaviour, broker state, readiness
+gate, or real-market-evidence counters are touched.
+
+---
+
 ## End of shared context

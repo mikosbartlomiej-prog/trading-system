@@ -25,18 +25,30 @@ from typing import Any
 
 # ─── Status enum ────────────────────────────────────────────────────────────
 
-LLM_PROVIDER_DISABLED      = "LLM_PROVIDER_DISABLED"
-LLM_PROVIDER_KEY_MISSING   = "LLM_PROVIDER_KEY_MISSING"
-LLM_PROVIDER_CALL_OK       = "LLM_PROVIDER_CALL_OK"
-LLM_PROVIDER_CALL_FAILED   = "LLM_PROVIDER_CALL_FAILED"
-LLM_PROVIDER_TIMEOUT       = "LLM_PROVIDER_TIMEOUT"
-LLM_PROVIDER_OFFLINE_MOCK  = "LLM_PROVIDER_OFFLINE_MOCK"
+LLM_PROVIDER_DISABLED              = "LLM_PROVIDER_DISABLED"
+LLM_PROVIDER_KEY_MISSING           = "LLM_PROVIDER_KEY_MISSING"
+LLM_PROVIDER_CALL_OK               = "LLM_PROVIDER_CALL_OK"
+LLM_PROVIDER_CALL_FAILED           = "LLM_PROVIDER_CALL_FAILED"
+LLM_PROVIDER_TIMEOUT               = "LLM_PROVIDER_TIMEOUT"
+LLM_PROVIDER_OFFLINE_MOCK          = "LLM_PROVIDER_OFFLINE_MOCK"
+# v3.28.2 — free-only policy gate.
+LLM_PROVIDER_BLOCKED_BY_FREE_ONLY  = "LLM_PROVIDER_BLOCKED_BY_FREE_ONLY"
+# v3.28.2 — Gemini model error (provider 4xx/5xx for unsupported model).
+LLM_PROVIDER_MODEL_ERROR           = "LLM_PROVIDER_MODEL_ERROR"
 
 ALL_PROVIDER_STATUSES: frozenset[str] = frozenset({
     LLM_PROVIDER_DISABLED, LLM_PROVIDER_KEY_MISSING,
     LLM_PROVIDER_CALL_OK,  LLM_PROVIDER_CALL_FAILED,
     LLM_PROVIDER_TIMEOUT,  LLM_PROVIDER_OFFLINE_MOCK,
+    LLM_PROVIDER_BLOCKED_BY_FREE_ONLY,
+    LLM_PROVIDER_MODEL_ERROR,
 })
+
+# v3.28.2 — provider policy. ``LLM_FREE_ONLY`` defaults to ``true`` —
+# paid providers (anthropic, openai) require explicit opt-out.
+FREE_PROVIDERS:  frozenset[str] = frozenset({"gemini", "offline_mock"})
+PAID_PROVIDERS:  frozenset[str] = frozenset({"anthropic", "openai"})
+KNOWN_PROVIDERS: frozenset[str] = FREE_PROVIDERS | PAID_PROVIDERS
 
 
 # ─── Response dataclass ─────────────────────────────────────────────────────
@@ -85,7 +97,20 @@ def _provider_key_env(prov: str) -> str | None:
         return "ANTHROPIC_API_KEY"
     if prov == "openai":
         return "OPENAI_API_KEY"
+    if prov == "gemini":
+        return "GEMINI_API_KEY"
     return None
+
+
+def _free_only_enabled() -> bool:
+    """v3.28.2 — read ``LLM_FREE_ONLY`` env. Defaults to True.
+
+    When True, paid providers (anthropic, openai) are blocked at the
+    call_provider gate. Set ``LLM_FREE_ONLY=false`` to opt-in to paid
+    providers.
+    """
+    raw = os.environ.get("LLM_FREE_ONLY", "true").strip().lower()
+    return raw in ("true", "1", "yes", "on")
 
 
 def _timeout_seconds() -> float:
@@ -112,6 +137,17 @@ def call_provider(
     of secret-shaped tokens before return.
     """
     prov = _provider()
+
+    # v3.28.2 — free-only policy gate. Paid providers blocked unless
+    # operator explicitly sets LLM_FREE_ONLY=false.
+    if _free_only_enabled() and prov in PAID_PROVIDERS:
+        return ProviderResponse(
+            status=LLM_PROVIDER_BLOCKED_BY_FREE_ONLY,
+            provider=prov, model=None,
+            text=(f"provider '{prov}' is paid; LLM_FREE_ONLY=true "
+                   f"(default). Set LLM_FREE_ONLY=false to opt in."),
+            cost_usd=0.0,
+        )
 
     if prov == "offline_mock":
         # Pure deterministic mock — no network call.
@@ -175,6 +211,40 @@ def call_provider(
                 "max_tokens": int(max_tokens),
                 "messages":   msgs,
             }
+        elif prov == "gemini":
+            # v3.28.2 — Gemini free-tier provider via Google AI Studio
+            # REST endpoint. Key is passed as ``?key=`` query param per
+            # Google's reference; we never put it in headers or logs.
+            mdl = model or os.environ.get(
+                "GEMINI_MODEL", "gemini-2.5-flash-lite").strip() \
+                or "gemini-2.5-flash-lite"
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/"
+                f"models/{mdl}:generateContent?key={key}")
+            headers = {"Content-Type": "application/json"}
+            contents: list[dict[str, Any]] = []
+            if system:
+                # Gemini accepts a "system_instruction" sibling of
+                # "contents" in v1beta. Use it directly.
+                contents = [{"role": "user",
+                              "parts": [{"text": prompt}]}]
+                payload = {
+                    "system_instruction": {
+                        "parts": [{"text": system}]},
+                    "contents": contents,
+                    "generationConfig": {
+                        "maxOutputTokens": int(max_tokens),
+                    },
+                }
+            else:
+                contents = [{"role": "user",
+                              "parts": [{"text": prompt}]}]
+                payload = {
+                    "contents": contents,
+                    "generationConfig": {
+                        "maxOutputTokens": int(max_tokens),
+                    },
+                }
         else:
             return ProviderResponse(
                 status=LLM_PROVIDER_DISABLED,
@@ -187,8 +257,15 @@ def call_provider(
             timeout=(timeout_seconds or _timeout_seconds()),
         )
         if r.status_code != 200:
+            # v3.28.2 — Gemini 4xx on the model path most commonly
+            # means the model name is unsupported. Route to a
+            # distinct status so the operator can distinguish a
+            # bad model from a generic outage.
+            status_tok = LLM_PROVIDER_CALL_FAILED
+            if prov == "gemini" and r.status_code in (400, 404):
+                status_tok = LLM_PROVIDER_MODEL_ERROR
             return ProviderResponse(
-                status=LLM_PROVIDER_CALL_FAILED,
+                status=status_tok,
                 provider=prov, model=mdl,
                 text=_redact(f"HTTP {r.status_code}"),
                 cost_usd=0.0,
@@ -196,10 +273,16 @@ def call_provider(
         body = r.json() or {}
         # Anthropic: body["content"][0]["text"]
         # OpenAI:    body["choices"][0]["message"]["content"]
+        # Gemini:    body["candidates"][0]["content"]["parts"][0]["text"]
         text = ""
         if prov == "anthropic":
             try:
                 text = body["content"][0]["text"]
+            except (KeyError, IndexError, TypeError):
+                text = ""
+        elif prov == "gemini":
+            try:
+                text = body["candidates"][0]["content"]["parts"][0]["text"]
             except (KeyError, IndexError, TypeError):
                 text = ""
         else:
@@ -229,7 +312,10 @@ __all__ = [
     "LLM_PROVIDER_DISABLED", "LLM_PROVIDER_KEY_MISSING",
     "LLM_PROVIDER_CALL_OK", "LLM_PROVIDER_CALL_FAILED",
     "LLM_PROVIDER_TIMEOUT", "LLM_PROVIDER_OFFLINE_MOCK",
+    "LLM_PROVIDER_BLOCKED_BY_FREE_ONLY",
+    "LLM_PROVIDER_MODEL_ERROR",
     "ALL_PROVIDER_STATUSES",
+    "FREE_PROVIDERS", "PAID_PROVIDERS", "KNOWN_PROVIDERS",
     "ProviderResponse",
     "call_provider",
 ]
