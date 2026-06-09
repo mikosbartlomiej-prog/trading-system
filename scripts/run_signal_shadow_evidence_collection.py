@@ -262,21 +262,29 @@ def collect(
     except ImportError:
         mdp = None
         sog = None
+    # v3.27.1 — per-symbol diagnostic aggregation. Each symbol gets
+    # one status_token explaining why a record was or was not emitted.
+    per_symbol_diag: list[dict] = []
     if mdp is not None and sog is not None:
         snapshots = mdp.fetch_universe_snapshots()
-        # Pre-fetch daily bars per equity symbol (strategy needs bars).
+        # Pre-fetch daily bars per equity symbol; preserve per-symbol
+        # bar-fetch diagnostic so the collector can surface
+        # MARKET_CLOSED_OR_NO_BARS vs INSUFFICIENT_BARS_FOR_SIGNAL vs
+        # MARKET_DATA_PROVIDER_ERROR distinctly.
         bars_by_symbol: dict[str, list] = {}
+        bars_token_by_symbol: dict[str, str] = {}
         for snap in snapshots:
             if snap.asset_class == "us_equity":
-                try:
-                    bars = mdp.fetch_daily_bars(snap.symbol, days=40)
-                    if bars:
-                        bars_by_symbol[snap.symbol] = bars
-                except Exception:
-                    pass
+                bars, bars_token = mdp.fetch_daily_bars_diagnostic(
+                    snap.symbol, days=40,
+                )
+                bars_token_by_symbol[snap.symbol] = bars_token
+                if bars and len(bars) >= 22:
+                    bars_by_symbol[snap.symbol] = bars
         opps = sog.generate_for_universe(
             snapshots, bars_by_symbol=bars_by_symbol,
         )
+        emitted_symbols: set[str] = set()
         for opp in opps[:int(max_records)]:
             record = sog.to_shadow_record(
                 opp, timestamp_iso=timestamp_iso,
@@ -285,6 +293,56 @@ def collect(
             summary["records_path"] = str(path.relative_to(repo_root))
             real_written += 1
             written += 1
+            emitted_symbols.add(opp.symbol)
+        # Aggregate per-symbol diagnostic.
+        for snap in snapshots:
+            sym = snap.symbol
+            if sym in emitted_symbols:
+                token = mdp.REAL_MARKET_SIGNAL_RECORDS_EMITTED
+            elif snap.asset_class == "us_equity":
+                # Use the bar-fetch token if it indicates a problem,
+                # else fall back to the snapshot's own token.
+                bars_token = bars_token_by_symbol.get(sym)
+                if bars_token and bars_token != mdp.REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL:
+                    token = bars_token
+                else:
+                    token = (snap.status_token
+                              or mdp.REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL)
+            else:
+                token = (snap.status_token
+                          or mdp.REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL)
+            per_symbol_diag.append({
+                "symbol":       sym,
+                "asset_class":  snap.asset_class,
+                "data_quality": snap.data_quality,
+                "status_token": token,
+            })
+    summary["per_symbol_diagnostics"] = per_symbol_diag
+    # v3.27.1 — bump granular "would_block_*" counters when a real
+    # signal fired but was blocked by exposure / drawdown.
+    if mdp is not None and sog is not None:
+        for opp in opps[:int(max_records)] if opps else []:
+            if not opp.would_block:
+                continue
+            reasons = " ".join(opp.block_reasons or [])
+            if "DRAWDOWN_GUARD" in reasons:
+                counters_mod.increment(
+                    cnt,
+                    counters_mod.METRIC_WOULD_BLOCK_BY_DRAWDOWN_GUARD,
+                    by=1,
+                )
+            if "SYMBOL_EXPOSURE" in reasons or "AGGREGATE_EXPOSURE" in reasons:
+                counters_mod.increment(
+                    cnt,
+                    counters_mod.METRIC_WOULD_BLOCK_BY_CRYPTO_EXPOSURE,
+                    by=1,
+                )
+            if "RECENT_REALIZED_LOSS" in reasons:
+                counters_mod.increment(
+                    cnt,
+                    counters_mod.METRIC_WOULD_BLOCK_BY_RECENT_LOSS_COOLDOWN,
+                    by=1,
+                )
     if real_written > 0:
         summary["evidence_quality"] = (
             counters_mod.EVIDENCE_QUALITY_REAL_MARKET_DATA)

@@ -97,6 +97,93 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v3271_followups": {
+    "title": "AUTOMATED_SHADOW_WORKFLOW_HEALTHCHECK_AND_DIAGNOSTIC_SPLIT",
+    "trigger": "v3270_automation_returned_halt_path_only_for_first_real_market_workflow_dispatch_collapsing_nine_distinct_failure_modes_into_one_token",
+    "generated_at_iso": "2026-06-09T20:00:00+00:00",
+    "problem": "The v3.27.0 cron driver runs end-to-end (workflow_dispatch run 27217673054 succeeded in 27s, secrets validated, push committed via [automerge]) but emits HALT_PATH_ONLY evidence whenever the collector cannot turn a snapshot into a signal. That single token conflates: missing credentials, 401/403 auth, generic provider error, empty payload, market closed / no bars, stale data, insufficient bars for ATR window, real data but no signal yet, and real data with a signal record emitted. The audit board (and the operator) cannot tell whether the automated pipeline is healthy-but-quiet or silently stuck.",
+    "fix": {
+      "diagnostic_token_split": "shared/market_data_provider.py exposes ALL_STATUS_TOKENS (9 tokens). Every quote return path attaches one token. New helper fetch_daily_bars_diagnostic returns (bars, status_token) distinguishing the four bar-fetch failure modes that v3.27.0's fetch_daily_bars silently coalesced to None. MarketSnapshot.status_token added (optional during the v3.27.0 -> v3.27.1 transition).",
+      "collector_per_symbol_diagnostics": "scripts/run_signal_shadow_evidence_collection.py aggregates per_symbol_diagnostics list. Every symbol considered surfaces with {symbol, status_token, reason} so the operator can see distribution across the universe in a single cron tick.",
+      "evaluator_added": "scripts/evaluate_automated_shadow_progress.py is a pure-function verdict evaluator (6 verdicts: HEALTHY_NO_REAL_DATA_YET / HEALTHY_COLLECTING_REAL_MARKET_DATA / BLOCKED_NO_SECRETS / BLOCKED_PROVIDER_ERROR / BLOCKED_WORKFLOW_FAILURE / BLOCKED_SCHEMA_OR_COUNTER_ERROR). Standing markers BROKER_PAPER_CANARY_STILL_BLOCKED + LIVE_TRADING_UNSUPPORTED returned with every verdict. Refuses (exit 1) if any of 7 broker-execution env flags is truthy.",
+      "health_artifacts": "learning-loop/shadow_evidence/workflow_health_latest.json + docs/AUTOMATED_SHADOW_WORKFLOW_HEALTH.md auto-refreshed each invocation.",
+      "workflow_wire_in": ".github/workflows/signal-shadow-evidence.yml gained an 'Evaluate automated pipeline health' step; commit allow-list extended to include docs/AUTOMATED_SHADOW_WORKFLOW_HEALTH.md."
+    },
+    "status_tokens_added": [
+      "MARKET_DATA_CREDENTIALS_MISSING",
+      "MARKET_DATA_AUTH_FAILED",
+      "MARKET_DATA_PROVIDER_ERROR",
+      "MARKET_DATA_EMPTY_RESPONSE",
+      "MARKET_CLOSED_OR_NO_BARS",
+      "MARKET_DATA_STALE",
+      "INSUFFICIENT_BARS_FOR_SIGNAL",
+      "REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL",
+      "REAL_MARKET_SIGNAL_RECORDS_EMITTED"
+    ],
+    "verdicts_enum": [
+      "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET",
+      "AUTOMATED_PIPELINE_HEALTHY_COLLECTING_REAL_MARKET_DATA",
+      "AUTOMATED_PIPELINE_BLOCKED_NO_SECRETS",
+      "AUTOMATED_PIPELINE_BLOCKED_PROVIDER_ERROR",
+      "AUTOMATED_PIPELINE_BLOCKED_WORKFLOW_FAILURE",
+      "AUTOMATED_PIPELINE_BLOCKED_SCHEMA_OR_COUNTER_ERROR"
+    ],
+    "new_modules": {
+      "scripts/evaluate_automated_shadow_progress.py": {
+        "purpose": "automated shadow workflow healthcheck evaluator (pure verdict function + artifact writers)",
+        "never_submits_orders": true,
+        "never_imports_broker_orders_module": true,
+        "never_stores_secret_values": true,
+        "refuses_on_truthy_broker_flag": true
+      }
+    },
+    "new_health_artifacts": [
+      "learning-loop/shadow_evidence/workflow_health_latest.json",
+      "docs/AUTOMATED_SHADOW_WORKFLOW_HEALTH.md"
+    ],
+    "new_tests": [
+      "tests/test_market_data_diagnostics_v3271.py",
+      "tests/test_automated_shadow_workflow_health_v3271.py",
+      "tests/test_automated_shadow_progress_evaluator_v3271.py"
+    ],
+    "test_summary": {
+      "new_v3271_tests": 32,
+      "v3260_plus_v3270_plus_v3271_combined": 158,
+      "tests_e2e_suite": 65,
+      "tests_architecture_vnext_suite": 290,
+      "audits": {
+        "workflow_audit": "OK (36 workflows clean)",
+        "system_consistency": "PASS 100.0/100",
+        "strategy_coherence": "PASS 100.0/100"
+      }
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "evaluator_never_imports_broker_orders_module": true,
+      "evaluator_refuses_on_truthy_broker_flag": true,
+      "v3271_health_artifact_carries_standing_markers": true
+    },
+    "current_verdict_after_smoke_run": "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET",
+    "interpretation_of_current_verdict": "Workflow runs end-to-end; collector path is healthy; the v3.27.0 first dispatch found no signals because strategies did not fire on today's bars during the partial dispatch window (the strategy modules require ATR-window history that the dispatch was unable to render into a fresh signal during smoke). v3.27.1's diagnostic split will surface, for each future cron tick, exactly which symbols hit each of the 9 modes so the operator can see whether the silence is healthy (REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL on every symbol) or stuck (PROVIDER_ERROR / AUTH_FAILED / CREDENTIALS_MISSING dominating).",
+    "next_action_items_v3271": [
+      "WAIT_FOR_NEXT_CRON_TICK_DURING_US_MARKET_SESSION",
+      "MONITOR_WORKFLOW_HEALTH_JSON_FOR_TOKEN_DISTRIBUTION",
+      "RAISE_VISIBILITY_IF_AUTH_FAILED_TOKEN_APPEARS_FOR_TWO_CONSECUTIVE_RUNS",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD",
+      "DO_NOT_WEAKEN_READINESS_THRESHOLDS"
+    ]
+  },
   "v3261_followups": {
     "title": "DAILY_SIGNAL_SHADOW_RUN_CHECK_AND_EVIDENCE_QUALITY_DISTINCTION",
     "trigger": "v3260_smoke_run_inflated_normal_non_halt_count_with_scaffold_records",

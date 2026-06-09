@@ -53,6 +53,35 @@ ALL_DATA_QUALITIES: frozenset[str] = frozenset({
     STALE_MARKET_DATA, PROVIDER_ERROR,
 })
 
+# ─── v3.27.1 diagnostic status tokens (narrower than data_quality) ───────────
+#
+# These distinguish failure modes the operator must see in the
+# workflow health doc. A single snapshot has ONE data_quality and
+# ONE status_token. Every code path that returns NO_MARKET_DATA /
+# PROVIDER_ERROR / STALE attaches the corresponding token.
+
+MARKET_DATA_CREDENTIALS_MISSING            = "MARKET_DATA_CREDENTIALS_MISSING"
+MARKET_DATA_AUTH_FAILED                    = "MARKET_DATA_AUTH_FAILED"
+MARKET_DATA_PROVIDER_ERROR                 = "MARKET_DATA_PROVIDER_ERROR"
+MARKET_DATA_EMPTY_RESPONSE                 = "MARKET_DATA_EMPTY_RESPONSE"
+MARKET_CLOSED_OR_NO_BARS                   = "MARKET_CLOSED_OR_NO_BARS"
+MARKET_DATA_STALE                          = "MARKET_DATA_STALE"
+INSUFFICIENT_BARS_FOR_SIGNAL               = "INSUFFICIENT_BARS_FOR_SIGNAL"
+REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL   = "REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL"
+REAL_MARKET_SIGNAL_RECORDS_EMITTED         = "REAL_MARKET_SIGNAL_RECORDS_EMITTED"
+
+ALL_STATUS_TOKENS: frozenset[str] = frozenset({
+    MARKET_DATA_CREDENTIALS_MISSING,
+    MARKET_DATA_AUTH_FAILED,
+    MARKET_DATA_PROVIDER_ERROR,
+    MARKET_DATA_EMPTY_RESPONSE,
+    MARKET_CLOSED_OR_NO_BARS,
+    MARKET_DATA_STALE,
+    INSUFFICIENT_BARS_FOR_SIGNAL,
+    REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL,
+    REAL_MARKET_SIGNAL_RECORDS_EMITTED,
+})
+
 # Invariants.
 NEVER_SUBMITS_ORDERS        = True
 NEVER_TOUCHES_BROKER_HOST   = True
@@ -91,6 +120,10 @@ class MarketSnapshot:
     data_quality: str = NO_MARKET_DATA
     stale_seconds: float | None = None
     error: str | None = None
+    # v3.27.1 — granular diagnostic token (one of ALL_STATUS_TOKENS).
+    # Optional during the v3.27.0 → v3.27.1 transition; callers that
+    # leave it as None get a safe NO_SIGNAL default in aggregation.
+    status_token: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -105,6 +138,7 @@ class MarketSnapshot:
             "data_quality": self.data_quality,
             "stale_seconds": self.stale_seconds,
             "error": self.error,
+            "status_token": self.status_token,
         }
 
 
@@ -178,6 +212,7 @@ def fetch_equity_quote(
             timestamp=None, price=None,
             data_quality=NO_MARKET_DATA,
             error="ALPACA_API_KEY / ALPACA_SECRET_KEY not set",
+            status_token=MARKET_DATA_CREDENTIALS_MISSING,
         )
     try:
         import requests
@@ -185,11 +220,16 @@ def fetch_equity_quote(
                 f"?feed=iex")
         r = requests.get(url, headers=headers, timeout=timeout_seconds)
         if r.status_code != 200:
+            # v3.27.1: 401/403 → AUTH_FAILED; anything else → PROVIDER_ERROR
+            token = (MARKET_DATA_AUTH_FAILED
+                      if r.status_code in (401, 403)
+                      else MARKET_DATA_PROVIDER_ERROR)
             return MarketSnapshot(
                 symbol=symbol, asset_class="us_equity",
                 timestamp=None, price=None,
                 data_quality=PROVIDER_ERROR,
                 error=f"HTTP {r.status_code}",
+                status_token=token,
             )
         body = r.json() or {}
         q = body.get("quote") or {}
@@ -202,6 +242,7 @@ def fetch_equity_quote(
                 timestamp=None, price=None,
                 data_quality=NO_MARKET_DATA,
                 error="missing bid/ask in quote payload",
+                status_token=MARKET_DATA_EMPTY_RESPONSE,
             )
         try:
             bid_f = float(bid) if bid is not None else None
@@ -212,6 +253,7 @@ def fetch_equity_quote(
                 timestamp=None, price=None,
                 data_quality=PROVIDER_ERROR,
                 error="non-numeric bid/ask",
+                status_token=MARKET_DATA_PROVIDER_ERROR,
             )
         mid: float | None = None
         if bid_f and ask_f and bid_f > 0 and ask_f > 0:
@@ -220,12 +262,22 @@ def fetch_equity_quote(
             mid = bid_f or ask_f
         stale = _stale_seconds(ts_iso)
         quality = _grade_quality(stale, budget_seconds=stale_budget_seconds)
+        # v3.27.1: token reflects quality at provider layer; the
+        # generator will upgrade to SIGNAL_RECORDS_EMITTED when a
+        # signal fires.
+        if quality == REAL_MARKET_DATA:
+            token = REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL
+        elif quality == STALE_MARKET_DATA:
+            token = MARKET_DATA_STALE
+        else:
+            token = MARKET_DATA_PROVIDER_ERROR
         return MarketSnapshot(
             symbol=symbol, asset_class="us_equity",
             timestamp=_now() - (stale or 0.0),
             price=mid, bid=bid_f, ask=ask_f,
             data_quality=quality,
             stale_seconds=stale,
+            status_token=token,
         )
     except Exception as e:
         return MarketSnapshot(
@@ -233,6 +285,7 @@ def fetch_equity_quote(
             timestamp=None, price=None,
             data_quality=PROVIDER_ERROR,
             error=f"{type(e).__name__}: {e}",
+            status_token=MARKET_DATA_PROVIDER_ERROR,
         )
 
 
@@ -262,11 +315,15 @@ def fetch_crypto_quote(
             kwargs["headers"] = headers
         r = requests.get(url, **kwargs)
         if r.status_code != 200:
+            token = (MARKET_DATA_AUTH_FAILED
+                      if r.status_code in (401, 403)
+                      else MARKET_DATA_PROVIDER_ERROR)
             return MarketSnapshot(
                 symbol=symbol, asset_class="crypto",
                 timestamp=None, price=None,
                 data_quality=PROVIDER_ERROR,
                 error=f"HTTP {r.status_code}",
+                status_token=token,
             )
         body = r.json() or {}
         quotes = body.get("quotes") or {}
@@ -280,6 +337,7 @@ def fetch_crypto_quote(
                 timestamp=None, price=None,
                 data_quality=NO_MARKET_DATA,
                 error="missing bid/ask in crypto quote",
+                status_token=MARKET_DATA_EMPTY_RESPONSE,
             )
         try:
             bid_f = float(bid) if bid is not None else None
@@ -290,6 +348,7 @@ def fetch_crypto_quote(
                 timestamp=None, price=None,
                 data_quality=PROVIDER_ERROR,
                 error="non-numeric bid/ask",
+                status_token=MARKET_DATA_PROVIDER_ERROR,
             )
         mid: float | None = None
         if bid_f and ask_f and bid_f > 0 and ask_f > 0:
@@ -298,12 +357,19 @@ def fetch_crypto_quote(
             mid = bid_f or ask_f
         stale = _stale_seconds(ts_iso)
         quality = _grade_quality(stale, budget_seconds=stale_budget_seconds)
+        if quality == REAL_MARKET_DATA:
+            token = REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL
+        elif quality == STALE_MARKET_DATA:
+            token = MARKET_DATA_STALE
+        else:
+            token = MARKET_DATA_PROVIDER_ERROR
         return MarketSnapshot(
             symbol=symbol, asset_class="crypto",
             timestamp=_now() - (stale or 0.0),
             price=mid, bid=bid_f, ask=ask_f,
             data_quality=quality,
             stale_seconds=stale,
+            status_token=token,
         )
     except Exception as e:
         return MarketSnapshot(
@@ -311,6 +377,7 @@ def fetch_crypto_quote(
             timestamp=None, price=None,
             data_quality=PROVIDER_ERROR,
             error=f"{type(e).__name__}: {e}",
+            status_token=MARKET_DATA_PROVIDER_ERROR,
         )
 
 
@@ -362,31 +429,72 @@ def fetch_universe_snapshots(
     return out
 
 
-def fetch_daily_bars(symbol: str, days: int = 35) -> list[dict] | None:
-    """Thin re-export of ``shared/market_data.py::get_daily_bars``.
+def _resolve_get_daily_bars():
+    """Module-level injectable resolver for the bars-provider function.
 
-    Provided here so v3.27 shadow callers can import ALL market-data
-    helpers from one module and never need ``shared/alpaca_orders.py``.
+    Centralises the dual-path import (``market_data`` vs
+    ``shared.market_data``) so tests can patch a single, stable
+    attribute on this module instead of guessing which module-object
+    Python will resolve at import time.
     """
     try:
         from market_data import get_daily_bars  # type: ignore
     except ImportError:
         from shared.market_data import get_daily_bars  # type: ignore
+    return get_daily_bars
+
+
+def fetch_daily_bars(symbol: str, days: int = 35) -> list[dict] | None:
+    """Thin re-export of ``shared/market_data.py::get_daily_bars``.
+
+    Provided here so v3.27 shadow callers can import ALL market-data
+    helpers from one module and never need the broker-orders module.
+    """
     try:
-        return get_daily_bars(symbol, days=days)
+        return _resolve_get_daily_bars()(symbol, days=days)
     except Exception:
         return None
 
 
+def fetch_daily_bars_diagnostic(
+    symbol: str, days: int = 35,
+) -> tuple[list[dict] | None, str]:
+    """v3.27.1 — fetch daily bars and return (bars, status_token).
+
+    Distinguishes the diagnostic failure modes that
+    ``fetch_daily_bars`` silently coalesced to ``None``:
+    - missing credentials → MARKET_DATA_CREDENTIALS_MISSING
+    - empty payload → MARKET_CLOSED_OR_NO_BARS
+    - exception → MARKET_DATA_PROVIDER_ERROR
+    - too few bars → INSUFFICIENT_BARS_FOR_SIGNAL
+    - happy path → REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL
+    """
+    key = os.environ.get("ALPACA_API_KEY")
+    sec = os.environ.get("ALPACA_SECRET_KEY")
+    if not key or not sec:
+        return None, MARKET_DATA_CREDENTIALS_MISSING
+    try:
+        bars = _resolve_get_daily_bars()(symbol, days=days)
+    except Exception:
+        return None, MARKET_DATA_PROVIDER_ERROR
+    if bars is None or len(bars) == 0:
+        return None, MARKET_CLOSED_OR_NO_BARS
+    if len(bars) < 22:
+        # Provider returned bars but not enough for ATR-window signals.
+        return bars, INSUFFICIENT_BARS_FOR_SIGNAL
+    return bars, REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL
+
+
 def policy_summary() -> dict[str, Any]:
     return {
-        "version": "v3.27.0",
+        "version": "v3.27.1",
         "data_host": ALPACA_DATA_URL,
         "forbidden_broker_host": _FORBIDDEN_BROKER_HOST,
         "default_equity_universe": list(DEFAULT_EQUITY_SYMBOLS),
         "default_crypto_universe": list(DEFAULT_CRYPTO_SYMBOLS),
         "stale_budget_seconds": DEFAULT_STALE_BUDGET_SECONDS,
         "data_qualities": sorted(ALL_DATA_QUALITIES),
+        "status_tokens": sorted(ALL_STATUS_TOKENS),
         "invariants": {
             "NEVER_SUBMITS_ORDERS": NEVER_SUBMITS_ORDERS,
             "NEVER_TOUCHES_BROKER_HOST": NEVER_TOUCHES_BROKER_HOST,
@@ -401,6 +509,17 @@ __all__ = [
     "REAL_MARKET_DATA", "NO_MARKET_DATA",
     "STALE_MARKET_DATA", "PROVIDER_ERROR",
     "ALL_DATA_QUALITIES",
+    # v3.27.1 diagnostic status tokens
+    "MARKET_DATA_CREDENTIALS_MISSING",
+    "MARKET_DATA_AUTH_FAILED",
+    "MARKET_DATA_PROVIDER_ERROR",
+    "MARKET_DATA_EMPTY_RESPONSE",
+    "MARKET_CLOSED_OR_NO_BARS",
+    "MARKET_DATA_STALE",
+    "INSUFFICIENT_BARS_FOR_SIGNAL",
+    "REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL",
+    "REAL_MARKET_SIGNAL_RECORDS_EMITTED",
+    "ALL_STATUS_TOKENS",
     # Invariants
     "NEVER_SUBMITS_ORDERS",
     "NEVER_TOUCHES_BROKER_HOST",
@@ -415,6 +534,6 @@ __all__ = [
     # API
     "fetch_equity_quote", "fetch_crypto_quote",
     "fetch_snapshot", "fetch_universe_snapshots",
-    "fetch_daily_bars",
+    "fetch_daily_bars", "fetch_daily_bars_diagnostic",
     "policy_summary",
 ]

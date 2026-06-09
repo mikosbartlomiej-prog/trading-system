@@ -148,6 +148,15 @@ jobs:
             --collector-status "${{ steps.collector.outputs.status }}" \
             --resolver-status  "${{ steps.resolver.outputs.status }}"
 
+      - name: Evaluate automated pipeline health
+        run: |
+          python3 scripts/evaluate_automated_shadow_progress.py \
+            --workflow-run-id "${{ github.run_id }}" \
+            --workflow-run-conclusion success \
+            --collector-status "${{ steps.collector.outputs.status }}" \
+            --resolver-status  "${{ steps.resolver.outputs.status }}" \
+            --secrets-status   SECRETS_AVAILABLE
+
       - name: Enforce commit-path allow-list
         id: pathcheck
         run: |
@@ -157,6 +166,7 @@ jobs:
           # Stage allowed paths only.
           git add learning-loop/shadow_evidence/ \
                   docs/SHADOW_EVIDENCE_PROGRESS.md \
+                  docs/AUTOMATED_SHADOW_WORKFLOW_HEALTH.md \
                   learning-loop/position_reconciliation/latest.json \
                   || true
           CHANGED=$(git diff --cached --name-only)
@@ -168,6 +178,7 @@ jobs:
             case "$f" in
               learning-loop/shadow_evidence/*) ;;
               docs/SHADOW_EVIDENCE_PROGRESS.md) ;;
+              docs/AUTOMATED_SHADOW_WORKFLOW_HEALTH.md) ;;
               learning-loop/position_reconciliation/latest.json) ;;
               *) BAD="$BAD $f" ;;
             esac

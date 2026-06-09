@@ -154,7 +154,12 @@ class TestPolicySummary(unittest.TestCase):
     def test_summary_carries_invariants(self):
         import market_data_provider as mdp
         s = mdp.policy_summary()
-        self.assertEqual(s["version"], "v3.27.0")
+        # v3.27.0 → v3.27.1: module version bumped; the v3.27.0
+        # invariants still hold (asserted below) but the version
+        # string moves forward with each extension. v3.27.1
+        # diagnostic-token coverage is asserted in
+        # ``test_market_data_diagnostics_v3271.py``.
+        self.assertIn(s["version"], ("v3.27.0", "v3.27.1"))
         inv = s["invariants"]
         self.assertTrue(inv["NEVER_SUBMITS_ORDERS"])
         self.assertTrue(inv["NEVER_TOUCHES_BROKER_HOST"])
