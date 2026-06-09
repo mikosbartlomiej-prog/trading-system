@@ -1084,6 +1084,72 @@ above are true.
 
 ---
 
+## Scenario AA.1 — v3.30 canary pre-executor (preflight only)
+
+v3.30 ships the *pre-executor* — a deterministic gate-evaluation
+skeleton. **No order is placed under any code path in v3.30.**
+
+Default invocation (safest):
+
+```bash
+python3 scripts/run_broker_paper_canary.py --preflight-only --dry-run
+```
+
+Expected verdict: `CANARY_PREFLIGHT_DRY_RUN_OK`. The output JSON
+includes `gates`, `rationale`, `unlock_status`, and the standing
+markers `CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY` +
+`NO_ORDER_PLACEMENT_IN_V330`.
+
+To force the full gate walk (still safe — no order is placed):
+
+```bash
+BROKER_PAPER_CANARY_EXECUTION_ENABLED=true \
+CANARY_DRY_RUN=false \
+OPERATOR_APPROVED_BROKER_PAPER_CANARY=true \
+python3 scripts/run_broker_paper_canary.py \
+    --no-dry-run \
+    --unlock-status BROKER_PAPER_CANARY_UNLOCK_READY
+```
+
+Expected verdict (every gate green in v3.30):
+`CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED`.
+
+If any of the 7 broker-execution / live env flags are truthy at
+runtime, the CLI exits non-zero with
+`REFUSED_<FLAG>_IS_TRUTHY` and no preflight is performed.
+
+---
+
+## Scenario AA.2 — v3.30 observation records (diagnostic only)
+
+When `scripts/run_signal_shadow_evidence_collection.py` runs and a
+symbol has fresh real-market data but no opportunity fires, it
+appends an *observation record* to
+`learning-loop/shadow_evidence/observations/<date>.jsonl`. Each row
+hard-codes:
+
+- `record_type = "NO_TRADE_OBSERVATION"`
+- `evidence_quality = "REAL_MARKET_DATA_OBSERVATION"`
+- `broker_order_submitted = false`
+- `broker_execution_enabled = false`
+- `affects_readiness_gate = false`
+- `counts_toward_unlock_gate = false`
+
+Observation records are **diagnostic only** — they NEVER count
+toward the 50-opportunity unlock gate and NEVER flip
+`first_real_market_record_seen`. They feed the strategy-
+restrictiveness analysis and the real-market evidence accelerator.
+
+To inspect:
+
+```bash
+ls -1 learning-loop/shadow_evidence/observations/*.jsonl
+jq -s '.' learning-loop/shadow_evidence/observations/$(date -u +%Y-%m-%d).jsonl \
+    | head -20
+```
+
+---
+
 ## Scenario BB — Running v3.26 signal/shadow evidence collection
 
 **Pre-flight:**

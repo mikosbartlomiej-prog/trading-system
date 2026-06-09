@@ -1,9 +1,9 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3291-gemini-quality-a-20260609T210119Z`
-- **Quality status:** `LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE`
-- **Rows seen:** 0
-- **Rows with PROVIDER_USED:** **0**
+- **Run ID:** `v3283-mock-3`
+- **Quality status:** `LLM_ADVISORY_QUALITY_ACCEPTABLE`
+- **Rows seen:** 5
+- **Rows with PROVIDER_USED:** **5**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
 - **Rows with PROVIDER_FAILED_FAIL_SOFT:** 0
 - **generic_placeholder_count:** 0
@@ -15,7 +15,7 @@
 
 ## Rationale
 
-- no rows produced
+- acceptable
 
 ## Safety invariants
 

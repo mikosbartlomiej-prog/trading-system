@@ -1,32 +1,14 @@
-# Broker-Paper Canary Unlock Status (v3.29)
+# Broker-Paper Canary Unlock Status (v3.30)
 
-- **Unlock status:** `BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_REAL_MARKET_RECORD`
+- **Unlock status:** `BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`
 - **Stage:** `STAGE_0_SHADOW_ONLY`
 
 ## Gates
 
-- `alignment_status`: **None**
-- `audit_bypass_findings_count`: **0**
-- `baseline_reset`: **False**
-- `broker_paper_enabled`: **False**
-- `completed_shadow_outcomes_count`: **0**
-- `drawdown_guard_lowered`: **False**
-- `edge_gate_enabled`: **False**
-- `exposure_cap_breach_count`: **0**
-- `first_real_market_record_seen`: **False**
-- `live_trading_enabled`: **False**
-- `n_acceptable_quality_runs`: **1**
-- `operator_approved_canary`: **False**
-- `quality_status`: **LLM_ADVISORY_QUALITY_ACCEPTABLE**
-- `real_market_opportunities_count`: **0**
-- `repeated_buy_violation_count`: **0**
-- `safe_enable_switch_present`: **False**
-- `unexplained_broker_state_conflicts_count`: **0**
-- `workflow_verdict`: **AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET**
 
 ## Rationale
 
-- first_real_market_record_seen is false
+- quality_history.jsonl missing run_id=v3283-mock-3; latest snapshot may be stale
 
 ## Safety invariants
 
@@ -49,3 +31,7 @@
 - `LIVE_TRADING_UNSUPPORTED`
 - `SCHEDULE_REMAINS_DISABLED_UNTIL_REPEATED_ACCEPTABLE_QUALITY`
 - `LLM_PRE_ORDER_VETO_REMAINS_DISABLED`
+- `OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES`
+- `REAL_MARKET_EVIDENCE_REMAINS_REQUIRED`
+- `CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY`
+- `NO_ORDER_PLACEMENT_IN_V330`

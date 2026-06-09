@@ -117,6 +117,72 @@ The canary execution path requires a separate, audited PR that
 introduces a safe canary executor and the corresponding feature
 flag. v3.29 stops at `UNLOCK_READY` / `UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH`.
 
+---
+
+## v3.30 addendum (2026-06-09)
+
+v3.30 ships the **canary pre-executor** in *preflight-only* mode and
+flips `canary_execution_flag_present` to `true` in
+[configs/broker_paper_canary.json](../configs/broker_paper_canary.json),
+so the unlock evaluator can advance past
+`UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH`. **But broker-paper trading
+still does NOT happen** — every other safety contract is preserved.
+
+### New terminal status
+
+`BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY` — emitted when:
+
+- All 21 v3.29 hard gates pass, AND
+- `canary_execution_flag_present == true`, AND
+- `canary_executor_mode == "preflight_only"`, AND
+- `canary_order_placement_implemented == false`.
+
+### New config fields
+
+| Field | v3.30 value | Meaning |
+| --- | --- | --- |
+| `canary_execution_flag_present` | `true` | The architecture blocker is removed — a safe enable switch exists. |
+| `canary_executor_mode` | `"preflight_only"` | The shipped executor never places orders; it only inspects gates. |
+| `canary_order_placement_implemented` | `false` | The order-placement code path is deliberately NOT implemented in v3.30. |
+
+### New CLI
+
+[`scripts/run_broker_paper_canary.py`](../scripts/run_broker_paper_canary.py)
+exposes the pre-executor on the command line. Default invocation is
+`--preflight-only --dry-run`:
+
+```bash
+python3 scripts/run_broker_paper_canary.py
+# verdict: CANARY_PREFLIGHT_DRY_RUN_OK — gates inspected, no order possible.
+```
+
+Even when every gate is green and the operator forces `--no-dry-run`,
+the pre-executor's terminal verdict in v3.30 is:
+
+```text
+CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED
+```
+
+— and no order is placed. Flipping that to actual order placement
+requires a follow-up audited PR that:
+
+1. flips `canary_order_placement_implemented` to `true` in
+   `configs/broker_paper_canary.json`,
+2. introduces an order-placement code path constrained by the
+   conservative limits in the same config,
+3. requires post-trade reconciliation + audit record per order, and
+4. uses `shared/alpaca_orders::safe_close` (or equivalent) for the
+   close leg — no naked submit/place/close calls anywhere else.
+
+### What v3.30 does NOT change
+
+- LLM authority — still advisory only, max `L3_VETO_RECOMMEND_ONLY`.
+- Live trading — still unsupported.
+- Evidence thresholds — still 50 real opportunities + 20 outcomes.
+- Observation records — diagnostic only; NEVER count toward the gate.
+- Production LLM advisory schedule — still disabled by default.
+- LLM pre-order veto — still disabled.
+
 ## What's NOT in scope for v3.29
 
 - Flipping `ALLOW_BROKER_PAPER`, `EDGE_GATE_ENABLED`, or

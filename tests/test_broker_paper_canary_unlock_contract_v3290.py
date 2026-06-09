@@ -103,9 +103,20 @@ class TestConservativeCanaryConfig(unittest.TestCase):
         self.assertFalse(self.cfg["live_trading_supported"])
         self.assertFalse(self.cfg["broad_paper_trading_enabled"])
 
-    def test_v329_safe_enable_switch_absent(self):
-        self.assertFalse(
+    def test_v330_safe_enable_switch_present_but_no_order_placement(self):
+        # v3.29 expected the switch to be absent entirely.
+        # v3.30 flips canary_execution_flag_present to true (so the
+        # unlock evaluator can advance past NO_SAFE_ENABLE_SWITCH)
+        # but pins canary_order_placement_implemented=false and
+        # canary_executor_mode="preflight_only" so broker-paper
+        # trading still does not happen. The safety invariant is
+        # PRESERVED — only the architecture blocker is removed.
+        self.assertTrue(
             self.cfg["canary_execution_flag_present"])
+        self.assertFalse(
+            self.cfg["canary_order_placement_implemented"])
+        self.assertEqual(self.cfg["canary_executor_mode"],
+                          "preflight_only")
 
 
 class TestEvaluatorReadOnlyMarkers(unittest.TestCase):

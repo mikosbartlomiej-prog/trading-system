@@ -1,27 +1,8 @@
 {
-  "gates": {
-    "alignment_status": null,
-    "audit_bypass_findings_count": 0,
-    "baseline_reset": false,
-    "broker_paper_enabled": false,
-    "completed_shadow_outcomes_count": 0,
-    "drawdown_guard_lowered": false,
-    "edge_gate_enabled": false,
-    "exposure_cap_breach_count": 0,
-    "first_real_market_record_seen": false,
-    "live_trading_enabled": false,
-    "n_acceptable_quality_runs": 1,
-    "operator_approved_canary": false,
-    "quality_status": "LLM_ADVISORY_QUALITY_ACCEPTABLE",
-    "real_market_opportunities_count": 0,
-    "repeated_buy_violation_count": 0,
-    "safe_enable_switch_present": false,
-    "unexplained_broker_state_conflicts_count": 0,
-    "workflow_verdict": "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET"
-  },
-  "generated_at_iso": "2026-06-09T20:30:05.280579+00:00",
+  "gates": {},
+  "generated_at_iso": "2026-06-09T21:35:48.339240+00:00",
   "rationale": [
-    "first_real_market_record_seen is false"
+    "quality_history.jsonl missing run_id=v3283-mock-3; latest snapshot may be stale"
   ],
   "safety": {
     "allow_broker_paper": false,
@@ -42,8 +23,12 @@
     "BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING",
     "LIVE_TRADING_UNSUPPORTED",
     "SCHEDULE_REMAINS_DISABLED_UNTIL_REPEATED_ACCEPTABLE_QUALITY",
-    "LLM_PRE_ORDER_VETO_REMAINS_DISABLED"
+    "LLM_PRE_ORDER_VETO_REMAINS_DISABLED",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY",
+    "NO_ORDER_PLACEMENT_IN_V330"
   ],
-  "unlock_status": "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_REAL_MARKET_RECORD",
-  "version": "v3.29"
+  "unlock_status": "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH",
+  "version": "v3.30"
 }

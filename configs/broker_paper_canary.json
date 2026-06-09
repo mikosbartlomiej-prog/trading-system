@@ -1,6 +1,6 @@
 {
-  "$schema_version": "v3.29",
-  "description": "Conservative broker-paper canary scope and limits. Read by shared/broker_paper_canary_unlock.py. NEVER modified at runtime by any LLM agent.",
+  "$schema_version": "v3.30",
+  "description": "Conservative broker-paper canary scope and limits. Read by shared/broker_paper_canary_unlock.py + shared/broker_paper_canary_preflight.py. NEVER modified at runtime by any LLM agent.",
   "max_orders_per_day":                   1,
   "max_notional_per_order_usd":           25,
   "allowed_asset_classes":                ["us_equity"],
@@ -16,6 +16,9 @@
   "require_post_trade_reconciliation":    true,
   "live_trading_supported":               false,
   "broad_paper_trading_enabled":          false,
-  "canary_execution_flag_present":        false,
-  "v3_29_note": "v3.29 ships the unlock evaluator only. No order is placed even when UNLOCK_READY. A separate audited PR is required to introduce the safe canary executor + its feature flag."
+  "canary_execution_flag_present":        true,
+  "canary_executor_mode":                 "preflight_only",
+  "canary_order_placement_implemented":   false,
+  "v3_29_note": "v3.29 shipped the unlock evaluator only.",
+  "v3_30_note": "v3.30 ships the pre-executor (shared/broker_paper_canary_preflight.py) in preflight-only mode. canary_execution_flag_present is now true so the unlock evaluator can advance past 'NO_SAFE_ENABLE_SWITCH' — but canary_order_placement_implemented stays false: NO order is placed in v3.30. A future audited PR that introduces the actual safe canary executor flips canary_order_placement_implemented to true."
 }

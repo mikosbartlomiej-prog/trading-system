@@ -675,3 +675,25 @@ python3 scripts/panic_close_options.py
 The two CI agents run automatically every push/PR + daily. Operator
 intervention is OPTIONAL — the system handles its own consistency and
 testing without needing the operator to remember to run anything.
+
+## v3.30 addendum — LLM authority is still advisory only
+
+v3.30 ships the canary pre-executor (preflight-only) and observation
+records. None of this changes the LLM authority model:
+
+- LLM agents remain bounded by L0–L4 with `L5_EXECUTE_FORBIDDEN` as
+  the sentinel.
+- LLM agents cannot place orders, cannot flip broker flags, cannot
+  force the canary unlock, cannot mutate risk gates, cannot count
+  their own output as real-market evidence.
+- LLM output never increments
+  `real_market_opportunities_count`.
+- Observation records (`record_type=NO_TRADE_OBSERVATION`) are
+  diagnostic only and never count toward the unlock gate.
+- The canary pre-executor stops at
+  `CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED` — no
+  order is placed in v3.30.
+
+The audit-board arbiter's regression triggers for these invariants
+are pinned in `agents/prompts/00_shared_context.md` under "v3.30
+coverage."

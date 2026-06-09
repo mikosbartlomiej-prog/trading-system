@@ -329,6 +329,57 @@ def collect(
                 "data_quality": snap.data_quality,
                 "status_token": token,
             })
+            # v3.30 — emit observation record when real market data is
+            # available but no opportunity fired. Observation records
+            # are diagnostic only — they NEVER count toward the
+            # 50-opportunity unlock gate and NEVER flip
+            # first_real_market_record_seen.
+            if (sym not in emitted_symbols
+                    and snap.data_quality == mdp.REAL_MARKET_DATA):
+                try:
+                    try:
+                        import observation_records as _obs  # type: ignore
+                    except ImportError:
+                        from shared import observation_records as _obs  # type: ignore
+                    # Map status_token to observation_reason enum.
+                    reason_map = {
+                        mdp.REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL:
+                            "REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL",
+                        mdp.INSUFFICIENT_BARS_FOR_SIGNAL:
+                            "INSUFFICIENT_BARS_FOR_SIGNAL",
+                        mdp.MARKET_CLOSED_OR_NO_BARS:
+                            "MARKET_CLOSED_OR_NO_BARS",
+                        mdp.MARKET_DATA_STALE:
+                            "MARKET_DATA_STALE",
+                        mdp.MARKET_DATA_PROVIDER_ERROR:
+                            "PROVIDER_ERROR",
+                        mdp.MARKET_DATA_AUTH_FAILED:
+                            "AUTH_FAILED",
+                    }
+                    reason = reason_map.get(
+                        token, "NO_TRADE_SIGNAL_NOT_TRIGGERED")
+                    _obs.emit(
+                        symbol=sym,
+                        asset_class=snap.asset_class,
+                        reason=reason,
+                        strategy_name=None,
+                        diagnostic_token=token,
+                        evidence_values={
+                            "data_quality": snap.data_quality,
+                            "status_token": token,
+                        },
+                    )
+                    counters_mod.increment(
+                        cnt,
+                        counters_mod.METRIC_OBSERVATION_RECORDS, by=1)
+                    if (token == mdp.REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL
+                            and snap.asset_class == "us_equity"):
+                        counters_mod.increment(
+                            cnt,
+                            counters_mod.METRIC_REAL_MARKET_NO_SIGNAL_OBSERVATIONS,
+                            by=1)
+                except Exception:
+                    pass
     summary["per_symbol_diagnostics"] = per_symbol_diag
     # v3.27.1 — bump granular "would_block_*" counters when a real
     # signal fired but was blocked by exposure / drawdown.

@@ -143,3 +143,36 @@ The verdict ladder is unchanged. Maximum verdict in v3.27 remains
 4. `explicit_operator_approval_for_broker_paper` defaults to `False`.
 
 Tests pinning this: `tests/test_trading_unlock_readiness_real_counters_v3270.py`.
+
+## v3.30 update (2026-06-09)
+
+v3.30 introduces a new terminal status in the
+**broker-paper canary unlock evaluator** (a sibling of the v3.25
+trading-unlock-readiness module, not a replacement):
+
+```text
+BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY
+```
+
+This status is emitted by `shared/broker_paper_canary_unlock.py` when
+every v3.29 hard gate passes AND the canary executor has shipped in
+*preflight-only* mode (`canary_executor_mode = "preflight_only"` +
+`canary_order_placement_implemented = false`). It does NOT mean the
+canary trades — it means the architecture blocker has been removed
+and the next audited PR can introduce the actual order-placement
+code path.
+
+The v3.25 trading_unlock_readiness verdict ladder above is
+**unchanged**. Maximum verdict in v3.30 still remains
+`SIGNAL_SHADOW_UNLOCK_READY` because the v3.25 module reads only the
+hard safety conditions — not the canary unlock evaluator's
+terminal.
+
+### Observation records do not affect this gate
+
+v3.30 also ships diagnostic observation records (`record_type =
+"NO_TRADE_OBSERVATION"`, `evidence_quality =
+"REAL_MARKET_DATA_OBSERVATION"`). These are append-only JSONL rows
+under `learning-loop/shadow_evidence/observations/` and they NEVER
+count toward `real_market_opportunities_count`. They are diagnostic
+only.

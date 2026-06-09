@@ -30,15 +30,26 @@ class TestProposalDocExists(unittest.TestCase):
 
 
 class TestNoSchemaChangeYet(unittest.TestCase):
-    def test_evidence_quality_enum_unchanged(self):
-        # shared/shadow_evidence_counters.py constant should only
-        # have the existing 3 values, NOT a new
-        # REAL_MARKET_DATA_OBSERVATION yet.
+    def test_evidence_quality_enum_landed_in_v330_safely(self):
+        # v3.29.1 originally asserted the absence of
+        # REAL_MARKET_DATA_OBSERVATION + NO_TRADE_OBSERVATION because
+        # the schema was deferred to v3.30. v3.30 ships that schema
+        # with the diagnostic-only safety contract (observation
+        # records NEVER count toward the unlock gate). The new
+        # invariant is that:
+        # - REAL_MARKET_DATA_OBSERVATION is distinct from
+        #   REAL_MARKET_DATA,
+        # - the metric ``observation_records_count`` is distinct from
+        #   ``real_market_opportunities_count``.
         src = (REPO_ROOT / "shared"
                 / "shadow_evidence_counters.py").read_text(
             encoding="utf-8")
-        self.assertNotIn("REAL_MARKET_DATA_OBSERVATION", src)
-        self.assertNotIn("NO_TRADE_OBSERVATION", src)
+        self.assertIn("REAL_MARKET_DATA_OBSERVATION", src)
+        self.assertIn("NO_TRADE_OBSERVATION", src)
+        self.assertIn("observation_records_count", src)
+        # Confirm the diagnostic split is preserved.
+        self.assertIn("REAL_MARKET_DATA_OBSERVATION", src)
+        self.assertIn('"REAL_MARKET_DATA"', src)
 
 
 class TestObservationsDoNotCountAsOpportunities(unittest.TestCase):

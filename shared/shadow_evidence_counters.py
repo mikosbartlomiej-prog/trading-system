@@ -53,6 +53,10 @@ METRIC_UNEXPLAINED_BROKER_STATE_CONFLICTS  = (
 METRIC_REAL_MARKET_OPPORTUNITIES           = "real_market_opportunities_count"
 METRIC_SCAFFOLD_NO_MARKET_DATA_RECORDS     = "scaffold_no_market_data_records_count"
 METRIC_HALT_PATH_RECORDS                   = "halt_path_records_count"
+# v3.30 — observation records (diagnostic only; NEVER count toward
+# the v3.25 50-opportunity unlock gate).
+METRIC_OBSERVATION_RECORDS                 = "observation_records_count"
+METRIC_REAL_MARKET_NO_SIGNAL_OBSERVATIONS  = "real_market_no_signal_observations_count"
 
 ALL_METRICS: tuple[str, ...] = (
     METRIC_NORMAL_NON_HALT_OPPORTUNITIES,
@@ -68,17 +72,62 @@ ALL_METRICS: tuple[str, ...] = (
     METRIC_REAL_MARKET_OPPORTUNITIES,
     METRIC_SCAFFOLD_NO_MARKET_DATA_RECORDS,
     METRIC_HALT_PATH_RECORDS,
+    METRIC_OBSERVATION_RECORDS,
+    METRIC_REAL_MARKET_NO_SIGNAL_OBSERVATIONS,
 )
 
 # Evidence quality enum (matches the JSON Schema).
-EVIDENCE_QUALITY_REAL_MARKET_DATA        = "REAL_MARKET_DATA"
-EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA = "SCAFFOLD_NO_MARKET_DATA"
-EVIDENCE_QUALITY_HALT_PATH_ONLY          = "HALT_PATH_ONLY"
+EVIDENCE_QUALITY_REAL_MARKET_DATA            = "REAL_MARKET_DATA"
+EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA     = "SCAFFOLD_NO_MARKET_DATA"
+EVIDENCE_QUALITY_HALT_PATH_ONLY              = "HALT_PATH_ONLY"
+# v3.30 — observation evidence quality (diagnostic only).
+EVIDENCE_QUALITY_REAL_MARKET_DATA_OBSERVATION = (
+    "REAL_MARKET_DATA_OBSERVATION")
 
 ALL_EVIDENCE_QUALITIES: tuple[str, ...] = (
     EVIDENCE_QUALITY_REAL_MARKET_DATA,
     EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA,
     EVIDENCE_QUALITY_HALT_PATH_ONLY,
+    EVIDENCE_QUALITY_REAL_MARKET_DATA_OBSERVATION,
+)
+
+# v3.30 — observation reason enum.
+OBSERVATION_REASON_NO_TRADE_SIGNAL_NOT_TRIGGERED      = (
+    "NO_TRADE_SIGNAL_NOT_TRIGGERED")
+OBSERVATION_REASON_REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL = (
+    "REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL")
+OBSERVATION_REASON_INSUFFICIENT_BARS_FOR_SIGNAL        = (
+    "INSUFFICIENT_BARS_FOR_SIGNAL")
+OBSERVATION_REASON_MARKET_CLOSED_OR_NO_BARS            = (
+    "MARKET_CLOSED_OR_NO_BARS")
+OBSERVATION_REASON_MARKET_DATA_STALE                   = (
+    "MARKET_DATA_STALE")
+OBSERVATION_REASON_PROVIDER_ERROR                      = (
+    "PROVIDER_ERROR")
+OBSERVATION_REASON_AUTH_FAILED                         = (
+    "AUTH_FAILED")
+OBSERVATION_REASON_OTHER_DIAGNOSTIC                    = (
+    "OTHER_DIAGNOSTIC")
+
+ALL_OBSERVATION_REASONS: tuple[str, ...] = (
+    OBSERVATION_REASON_NO_TRADE_SIGNAL_NOT_TRIGGERED,
+    OBSERVATION_REASON_REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL,
+    OBSERVATION_REASON_INSUFFICIENT_BARS_FOR_SIGNAL,
+    OBSERVATION_REASON_MARKET_CLOSED_OR_NO_BARS,
+    OBSERVATION_REASON_MARKET_DATA_STALE,
+    OBSERVATION_REASON_PROVIDER_ERROR,
+    OBSERVATION_REASON_AUTH_FAILED,
+    OBSERVATION_REASON_OTHER_DIAGNOSTIC,
+)
+
+# v3.30 — observation records are RECORD_TYPE_NO_TRADE_OBSERVATION;
+# normal opportunity records implicitly carry RECORD_TYPE_NORMAL.
+RECORD_TYPE_NORMAL               = "NORMAL"
+RECORD_TYPE_NO_TRADE_OBSERVATION = "NO_TRADE_OBSERVATION"
+
+ALL_RECORD_TYPES: tuple[str, ...] = (
+    RECORD_TYPE_NORMAL,
+    RECORD_TYPE_NO_TRADE_OBSERVATION,
 )
 
 # Thresholds for the unlock-readiness handoff. We mirror the v3.25
@@ -117,6 +166,10 @@ class EvidenceCounters:
     real_market_opportunities_count: int = 0
     scaffold_no_market_data_records_count: int = 0
     halt_path_records_count: int = 0
+    # v3.30 — diagnostic observation records (NEVER count toward
+    # the 50-opportunity unlock gate).
+    observation_records_count: int = 0
+    real_market_no_signal_observations_count: int = 0
     thresholds: dict[str, int] = field(default_factory=lambda: {
         "normal_opportunities": THRESHOLD_NORMAL_OPPORTUNITIES,
         "completed_shadow_outcomes": THRESHOLD_SHADOW_OUTCOMES,

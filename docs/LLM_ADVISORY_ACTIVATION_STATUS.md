@@ -1,6 +1,6 @@
 # LLM Advisory Activation Status (v3.28.2)
 
-- **generated_at_iso:** `2026-06-09T19:44:51.054190+00:00`
+- **generated_at_iso:** `2026-06-09T21:35:48.516674+00:00`
 - **gh_cli_available:** `True`
 - **gh_cli_authenticated:** `False`
 - **gemini_secret_present:** `False`

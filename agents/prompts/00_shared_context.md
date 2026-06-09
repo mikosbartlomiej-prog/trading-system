@@ -1715,4 +1715,96 @@ no orders placed, no broker flag flipped, no live trading.
 
 ---
 
+## v3.30 coverage (added 2026-06-09)
+
+### What changed
+
+1. **Real-market observation records.** New module
+   `shared/observation_records.py` plus extensions in
+   `shared/shadow_evidence_counters.py`. Observation records carry
+   `record_type=NO_TRADE_OBSERVATION`,
+   `evidence_quality=REAL_MARKET_DATA_OBSERVATION`,
+   `affects_readiness_gate=false`,
+   `counts_toward_unlock_gate=false`. They are diagnostic only —
+   they NEVER increment `real_market_opportunities_count` and NEVER
+   set `first_real_market_record_seen`.
+
+2. **Shadow universe expansion.** New file
+   `configs/shadow_universe_v330.json` — 17 liquid US equity
+   symbols (ETFs + mega-caps). Crypto, options, penny stocks, and
+   broker execution remain `false`.
+
+3. **Canary pre-executor (preflight only).** New files
+   `shared/broker_paper_canary_preflight.py` +
+   `scripts/run_broker_paper_canary.py`. The pre-executor is a
+   pure read-only gate evaluator: it NEVER imports the
+   broker-orders module, NEVER calls `submit_order` / `place_order`
+   / `safe_close`, and the v3.30 maximum verdict is
+   `CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED`.
+
+4. **Canary config flip.** `configs/broker_paper_canary.json` now
+   sets `canary_execution_flag_present=true`,
+   `canary_executor_mode="preflight_only"`,
+   `canary_order_placement_implemented=false`. This removes the
+   architecture blocker without enabling trading.
+
+5. **New unlock status.**
+   `BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY` — emitted
+   when every v3.29 hard gate passes, the safe enable switch is
+   present, and the executor is in preflight-only mode.
+
+6. **Bounded calibration workflow.**
+   `.github/workflows/llm-quality-calibration.yml` runs daily at
+   00:10 UTC (10 min after the Gemini daily budget resets) gated on
+   the repo variable `LLM_QUALITY_CALIBRATION_ENABLED`. Commit
+   allow-list is restricted to LLM advisory + 4 doc paths. All 7
+   broker-execution / live env flags hard-pinned `"false"`.
+   `scripts/llm_quality_calibration_precheck.py` early-exits when
+   already calibrated or the Gemini budget is exhausted.
+
+### Standing markers (v3.30)
+
+- `LLM_ADVISORY_ONLY_CONFIRMED`
+- `LLM_OUTPUT_DOES_NOT_COUNT_AS_REAL_MARKET_EVIDENCE`
+- `OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES`
+- `REAL_MARKET_EVIDENCE_REMAINS_REQUIRED`
+- `QUALITY_SOURCE_MISMATCH_BLOCKS_UNLOCK`
+- `CALIBRATION_SCHEDULE_BOUNDED`
+- `PRODUCTION_LLM_SCHEDULE_REMAINS_DISABLED`
+- `LLM_PRE_ORDER_VETO_REMAINS_DISABLED`
+- `CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY`
+- `NO_ORDER_PLACEMENT_IN_V330`
+- `BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING`
+- `LIVE_TRADING_UNSUPPORTED`
+- `DETERMINISTIC_GATES_REMAIN_FINAL`
+
+### Arbiter regression triggers (added in v3.30)
+
+The audit-board arbiter should drop to `PAPER_TRADING_NOT_SAFE` if:
+
+- any observation record carries
+  `affects_readiness_gate=true` or
+  `counts_toward_unlock_gate=true`,
+- the collector starts incrementing
+  `real_market_opportunities_count` from an observation row,
+- `shared/broker_paper_canary_preflight.py` acquires any import of
+  the broker-orders module or any call to `submit_order` /
+  `place_order` / `safe_close`,
+- `scripts/run_broker_paper_canary.py` acquires any of the same,
+- `canary_order_placement_implemented` is flipped to `true` without
+  the corresponding executor PR and tests,
+- the calibration workflow's commit allow-list is widened beyond
+  the LLM advisory + 4 doc paths, or
+- any of the 7 broker-execution / live env flags is removed from
+  the hard-pin list in either the calibration workflow or the
+  signal-shadow workflow.
+
+The arbiter STILL never recommends `LIVE_TRADING` — only
+`PAPER_TRADING_*` verdicts. v3.30 removes the architecture blocker
+for the canary pre-executor; v3.30 still does NOT place orders,
+still does NOT flip broker flags, still does NOT enable live
+trading, and still does NOT count observation records as evidence.
+
+---
+
 ## End of shared context

@@ -228,7 +228,7 @@ class TestOperatorApprovalBlocks(_SandboxedRepo):
 
 
 class TestReadyButNoSafeEnableSwitch(_SandboxedRepo):
-    def test_all_gates_plus_approval_yields_no_safe_switch_in_v329(self):
+    def test_all_gates_plus_approval_yields_pre_executor_only_in_v330(self):
         import broker_paper_canary_unlock as bp
         self._write_evidence(real=50, completed=20,
                                 first_real=True)
@@ -239,11 +239,15 @@ class TestReadyButNoSafeEnableSwitch(_SandboxedRepo):
         }, clear=False):
             rep = bp.evaluate_unlock_readiness(
                 require_n_acceptable_runs=1)
-        # v3.29 ships no safe enable switch — even all-green hits
-        # the explicit "READY_BUT_NO_SAFE_ENABLE_SWITCH" stop sign.
+        # v3.29 hit READY_BUT_NO_SAFE_ENABLE_SWITCH because the config
+        # had canary_execution_flag_present=false. v3.30 flips the
+        # flag to true but pins canary_executor_mode="preflight_only"
+        # and canary_order_placement_implemented=false, so the
+        # evaluator now stops at the new PRE_EXECUTOR_ONLY terminal —
+        # broker-paper trading still does not happen.
         self.assertEqual(
             rep.status,
-            bp.BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH)
+            bp.BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY)
 
 
 class TestLiveFlagAlwaysRefuses(_SandboxedRepo):

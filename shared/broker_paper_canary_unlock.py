@@ -50,6 +50,14 @@ BROKER_PAPER_CANARY_UNLOCK_READY                           = (
     "BROKER_PAPER_CANARY_UNLOCK_READY")
 BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH = (
     "BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH")
+# v3.30 — every deterministic gate is green AND a safe enable
+# *switch* exists (canary_execution_flag_present=true) BUT only the
+# pre-executor (preflight-only) has been shipped — actual order
+# placement is still deferred. This status is the v3.30 maximum-
+# readiness terminal state; broker-paper trading still does not
+# happen.
+BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY         = (
+    "BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY")
 BROKER_PAPER_CANARY_ENABLED                                = (
     "BROKER_PAPER_CANARY_ENABLED")
 LIVE_TRADING_UNSUPPORTED                                   = (
@@ -66,6 +74,7 @@ ALL_UNLOCK_STATUSES: frozenset[str] = frozenset({
     BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH,
     BROKER_PAPER_CANARY_UNLOCK_READY,
     BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH,
+    BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY,
     BROKER_PAPER_CANARY_ENABLED,
     LIVE_TRADING_UNSUPPORTED,
 })
@@ -122,13 +131,41 @@ def any_broker_flag_truthy() -> bool:
 
 
 def safe_canary_enable_switch_present() -> bool:
-    """v3.29 ships only the evaluator. No safe enable switch yet."""
+    """v3.29 shipped only the evaluator; v3.30 flips the flag to true
+    once the pre-executor (preflight-only) lands.
+    """
     cfg_path = REPO_ROOT / "configs" / "broker_paper_canary.json"
     if not cfg_path.exists():
         return False
     try:
         d = json.loads(cfg_path.read_text(encoding="utf-8"))
         return bool(d.get("canary_execution_flag_present", False))
+    except Exception:
+        return False
+
+
+def canary_executor_mode() -> str:
+    """v3.30 — return the canary_executor_mode declared in the config.
+    Defaults to ``"unknown"`` when missing.
+    """
+    cfg_path = REPO_ROOT / "configs" / "broker_paper_canary.json"
+    if not cfg_path.exists():
+        return "unknown"
+    try:
+        d = json.loads(cfg_path.read_text(encoding="utf-8"))
+        return str(d.get("canary_executor_mode", "unknown"))
+    except Exception:
+        return "unknown"
+
+
+def canary_order_placement_implemented() -> bool:
+    """v3.30 — declared in the config; stays false in v3.30."""
+    cfg_path = REPO_ROOT / "configs" / "broker_paper_canary.json"
+    if not cfg_path.exists():
+        return False
+    try:
+        d = json.loads(cfg_path.read_text(encoding="utf-8"))
+        return bool(d.get("canary_order_placement_implemented", False))
     except Exception:
         return False
 
@@ -448,6 +485,11 @@ def evaluate_unlock_readiness(*,
             operator_approved_canary(),
         "safe_enable_switch_present":
             safe_canary_enable_switch_present(),
+        # v3.30 — pre-executor flags from configs/broker_paper_canary.json.
+        "canary_executor_mode":
+            canary_executor_mode(),
+        "canary_order_placement_implemented":
+            canary_order_placement_implemented(),
         "n_acceptable_quality_runs":
             _count_acceptable_quality_runs(),
     }
@@ -536,15 +578,29 @@ def evaluate_unlock_readiness(*,
         rep.stage = STAGE_2_BROKER_PAPER_CANARY_READY
         rep.rationale.append(
             "all readiness + alignment + approval gates pass; "
-            "no safe canary execution flag exists in v3.29 — "
+            "no safe canary execution flag exists yet — "
             "operator must open a follow-up PR to introduce it")
+        return rep
+
+    # v3.30 — switch is present but only the pre-executor has shipped.
+    if (gates["canary_executor_mode"] == "preflight_only"
+            or not gates["canary_order_placement_implemented"]):
+        rep.status = (
+            BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY)
+        rep.stage = STAGE_2_BROKER_PAPER_CANARY_READY
+        rep.rationale.append(
+            "all hard gates pass + operator approval present + safe "
+            "enable switch present; canary executor is in "
+            "preflight-only mode and order placement is NOT "
+            "implemented — broker-paper trading still does not "
+            "happen in v3.30")
         return rep
 
     rep.status = BROKER_PAPER_CANARY_UNLOCK_READY
     rep.stage  = STAGE_2_BROKER_PAPER_CANARY_READY
     rep.rationale.append(
         "all hard gates pass + operator approval present + safe "
-        "enable switch present")
+        "enable switch present + order placement implemented")
     return rep
 
 
@@ -562,7 +618,7 @@ def write_unlock_artifacts(report: UnlockReadinessReport,
                      / "BROKER_PAPER_CANARY_UNLOCK_STATUS.md")
     json_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "version":          "v3.29",
+        "version":          "v3.30",
         "generated_at_iso": datetime.now(timezone.utc).isoformat(),
         "unlock_status":    report.status,
         "stage":            report.stage,
@@ -588,6 +644,10 @@ def write_unlock_artifacts(report: UnlockReadinessReport,
             "LIVE_TRADING_UNSUPPORTED",
             "SCHEDULE_REMAINS_DISABLED_UNTIL_REPEATED_ACCEPTABLE_QUALITY",
             "LLM_PRE_ORDER_VETO_REMAINS_DISABLED",
+            "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+            "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+            "CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY",
+            "NO_ORDER_PLACEMENT_IN_V330",
         ],
     }
     json_path.write_text(
@@ -595,7 +655,7 @@ def write_unlock_artifacts(report: UnlockReadinessReport,
         encoding="utf-8")
     doc_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        "# Broker-Paper Canary Unlock Status (v3.29)\n",
+        "# Broker-Paper Canary Unlock Status (v3.30)\n",
         f"- **Unlock status:** `{report.status}`",
         f"- **Stage:** `{report.stage}`",
         "",
@@ -629,6 +689,7 @@ __all__ = [
     "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_OPERATOR_APPROVAL",
     "BROKER_PAPER_CANARY_UNLOCK_READY",
     "BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH",
+    "BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY",
     "BROKER_PAPER_CANARY_ENABLED",
     "LIVE_TRADING_UNSUPPORTED",
     "ALL_UNLOCK_STATUSES",

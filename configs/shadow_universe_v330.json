@@ -1,0 +1,33 @@
+{
+  "$schema_version": "v3.30",
+  "description": "Read-only shadow opportunity universe for the v3.27.x shadow pipeline. Liquid US equity ETFs + mega-cap single names only. NO crypto, NO options, NO penny stocks, NO illiquid instruments.",
+  "us_equity_symbols": [
+    "SPY",
+    "QQQ",
+    "IWM",
+    "DIA",
+    "XLK",
+    "XLF",
+    "XLV",
+    "XLE",
+    "XLY",
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMD",
+    "AMZN",
+    "META",
+    "GOOGL",
+    "TSLA"
+  ],
+  "crypto_enabled":          false,
+  "options_enabled":         false,
+  "penny_stocks_allowed":    false,
+  "broker_execution_allowed": false,
+  "max_symbols_per_run":     17,
+  "v3_30_notes": [
+    "v3.30 universe is read-only — used by shared/shadow_opportunity_generator.py + shared/market_data_provider.py.",
+    "Crypto / options / penny stocks remain forbidden until a separate audited PR introduces them with appropriate safety contracts.",
+    "Expansion beyond this list requires (a) liquidity check, (b) test coverage, (c) explicit docs update, (d) operator approval."
+  ]
+}

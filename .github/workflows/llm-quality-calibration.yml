@@ -1,0 +1,180 @@
+name: LLM Quality Calibration (v3.30)
+
+# v3.30 (2026-06-09) — bounded Gemini quality calibration after the
+# daily budget resets, gated by repo variable. Separate from the
+# production LLM advisory schedule, which remains disabled by default.
+#
+# HARD SAFETY:
+# - Disabled by default; gated on LLM_QUALITY_CALIBRATION_ENABLED=true.
+# - All 7 broker-execution / live env flags hard-pinned false.
+# - No broker secrets.
+# - Commits only LLM advisory + docs paths.
+# - Exits early if quality_history already has >= 2 accepted runs.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Daily at 00:10 UTC — 10 min after the Gemini daily budget rolls over.
+    - cron: "10 0 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: llm-quality-calibration-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.30 broker-execution + live flags hard-pinned false.
+  ALLOW_BROKER_PAPER:                  "false"
+  EDGE_GATE_ENABLED:                   "false"
+  BROKER_EXECUTION_ENABLED:            "false"
+  LIVE_TRADING:                        "false"
+  LIVE_ENABLED:                        "false"
+  GO_LIVE:                             "false"
+  LIVE_TRADING_ENABLED:                "false"
+  # Bounded Gemini calibration knobs.
+  LLM_AGENTS_ENABLED:                  "true"
+  LLM_PROVIDER:                        "gemini"
+  LLM_FREE_ONLY:                       "true"
+  LLM_AGENTS_SCHEDULED:                "false"
+  LLM_AGENT_PER_RUN_BUDGET_OVERRIDE:   "11"
+  GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+jobs:
+  calibrate:
+    name: Bounded Gemini quality calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ github.event_name != 'schedule' || vars.LLM_QUALITY_CALIBRATION_ENABLED == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution / live flags pinned false ✓"
+
+      - name: Run v3.30 safety tests subset
+        run: |
+          python3 -m unittest \
+            tests.test_llm_quality_calibration_workflow_v3300 \
+            tests.test_canary_pre_executor_no_orders_v3300 \
+            tests.test_observation_records_do_not_unlock_v3300
+
+      - name: Early-exit if quality already calibrated
+        id: precheck
+        run: |
+          OUT=$(python3 scripts/llm_quality_calibration_precheck.py \
+                  --write-artifacts)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['precheck_status'])" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Gemini smoke test
+        id: smoke
+        if: steps.precheck.outputs.status == 'CALIBRATION_PROCEEDING'
+        run: |
+          OUT=$(python3 scripts/smoke_test_gemini_provider.py \
+                  --write-artifacts)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['smoke_status'])" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Run LLM advisory mesh (bounded)
+        if: |
+          steps.precheck.outputs.status == 'CALIBRATION_PROCEEDING' &&
+          steps.smoke.outputs.status == 'GEMINI_SMOKE_OK'
+        run: |
+          OUT=$(python3 scripts/run_llm_advisory_mesh.py \
+                  --run-id "v3300-calibration-${{ github.run_id }}" \
+                  --render-doc)
+          echo "$OUT"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-calibration"
+          git config user.email "calibration@trading-system.local"
+          git add learning-loop/llm_advisory/ \
+                  docs/LLM_ADVISORY_MESH_LATEST.md \
+                  docs/LLM_ADVISORY_QUALITY_REVIEW.md \
+                  docs/GEMINI_PROVIDER_STATUS.md \
+                  docs/LLM_QUALITY_CALIBRATION_STATUS.md \
+                  learning-loop/position_reconciliation/latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/llm_advisory/*) ;;
+              docs/LLM_ADVISORY_MESH_LATEST.md) ;;
+              docs/LLM_ADVISORY_QUALITY_REVIEW.md) ;;
+              docs/GEMINI_PROVIDER_STATUS.md) ;;
+              docs/LLM_QUALITY_CALIBRATION_STATUS.md) ;;
+              learning-loop/position_reconciliation/latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "Update LLM quality calibration [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

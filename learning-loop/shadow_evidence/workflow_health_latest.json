@@ -6,11 +6,11 @@
     "scaffold_no_market_data_records_count": 5
   },
   "diagnostic_token_counts": {},
-  "generated_at_iso": "2026-06-09T19:36:17.028652+00:00",
+  "generated_at_iso": "2026-06-09T21:35:48.334134+00:00",
   "last_collector_status": "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA",
   "last_resolver_status": "RESOLVED",
   "last_workflow_run_conclusion": "success",
-  "last_workflow_run_id": "27230894354",
+  "last_workflow_run_id": "3",
   "rationale": [
     "real_market_opportunities_count=0; workflow + data path appear healthy"
   ],

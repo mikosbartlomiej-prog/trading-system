@@ -89,6 +89,52 @@ and the future executor. It does NOT replace
 - Quality truth source + history.
 - Real-market evidence acceleration analyzer.
 
+## v3.30 update (2026-06-09) — pre-executor skeleton landed
+
+v3.30 ships the *pre-executor* in **preflight-only** mode. This is
+NOT the executor described above (no order placement yet). It is a
+deterministic gate-evaluation skeleton that satisfies hard rules #1
+through #6 of this document and exposes the new
+`canary_executor_mode = "preflight_only"` knob.
+
+What landed:
+
+- [shared/broker_paper_canary_preflight.py](../shared/broker_paper_canary_preflight.py) —
+  pure read-only preflight; NEVER imports the broker-orders module;
+  NEVER calls submit_order / place_order / safe_close.
+- [scripts/run_broker_paper_canary.py](../scripts/run_broker_paper_canary.py) —
+  CLI runner. Default `--preflight-only --dry-run`. Maximum verdict
+  in v3.30 is `CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED`.
+- [configs/broker_paper_canary.json](../configs/broker_paper_canary.json)
+  flipped `canary_execution_flag_present` from `false` to `true`,
+  added `canary_executor_mode = "preflight_only"`, kept
+  `canary_order_placement_implemented = false`.
+- [shared/broker_paper_canary_unlock.py](../shared/broker_paper_canary_unlock.py)
+  reads the two new fields and emits a new terminal status —
+  `BROKER_PAPER_CANARY_UNLOCK_READY_PRE_EXECUTOR_ONLY` — when all 21
+  hard gates pass but the executor is still preflight-only.
+
+What is still NOT shipped (this remains the v3.31+ checklist):
+
+- An actual `try_place_canary_order` implementation.
+- The wired call to `place_stock_bracket` (still bounded by limits).
+- Post-trade reconciliation invocation.
+- Auto-disable cascade.
+
+The next audited PR may:
+
+1. Implement `try_place_canary_order` in
+   `shared/broker_paper_canary_executor.py` per items 1–7 above.
+2. Flip `canary_order_placement_implemented` to `true` in the config.
+3. Flip `canary_executor_mode` to `"full_executor"`.
+4. Add tests covering each hard rule.
+
+When all three are done, the unlock evaluator advances to the
+existing `BROKER_PAPER_CANARY_UNLOCK_READY` terminal. Operator
+approval (`OPERATOR_APPROVED_BROKER_PAPER_CANARY=true`) plus
+`BROKER_PAPER_CANARY_EXECUTION_ENABLED=true` plus `CANARY_DRY_RUN=false`
+are still required at runtime for any order to actually fly.
+
 ## Standing markers (apply to this design AND any future executor)
 
 - `LLM_STRATEGY_ALIGNMENT_ENFORCED`
@@ -98,3 +144,5 @@ and the future executor. It does NOT replace
 - `BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING`
 - `LIVE_TRADING_UNSUPPORTED`
 - `DETERMINISTIC_GATES_REMAIN_FINAL`
+- `CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY`
+- `NO_ORDER_PLACEMENT_IN_V330`
