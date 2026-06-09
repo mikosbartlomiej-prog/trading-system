@@ -1,0 +1,20 @@
+{
+  "configured_model": "gemini-flash-latest",
+  "discovered_models_count": 0,
+  "error_redacted": "ModuleNotFoundError: No module named 'requests'",
+  "failure_category": "GEMINI_UNKNOWN_PROVIDER_FAILURE",
+  "failure_http": null,
+  "free_only": true,
+  "generated_at_iso": "2026-06-09T20:34:03.303999+00:00",
+  "safe_to_schedule": false,
+  "secret_values_logged": false,
+  "selected_model": "gemini-flash-latest",
+  "smoke_status": "GEMINI_SMOKE_FAILED",
+  "standing_markers": [
+    "BROKER_PAPER_CANARY_STILL_BLOCKED",
+    "LIVE_TRADING_UNSUPPORTED",
+    "DETERMINISTIC_GATES_REMAIN_FINAL",
+    "SCHEDULE_REMAINS_DISABLED"
+  ],
+  "version": "v3.29"
+}
