@@ -49,6 +49,11 @@ LLM_ADVISORY_MESH_RAN                       = "LLM_ADVISORY_MESH_RAN"
 LLM_ADVISORY_MESH_SKIPPED_DISABLED          = "LLM_ADVISORY_MESH_SKIPPED_DISABLED"
 LLM_ADVISORY_MESH_SKIPPED_NO_PROVIDER_KEY   = "LLM_ADVISORY_MESH_SKIPPED_NO_PROVIDER_KEY"
 LLM_ADVISORY_MESH_SKIPPED_BUDGET            = "LLM_ADVISORY_MESH_SKIPPED_BUDGET"
+# v3.28.3 — per-row provider attribution tokens.
+PROVIDER_USED                  = "PROVIDER_USED"
+PROVIDER_SKIPPED_DISABLED      = "PROVIDER_SKIPPED_DISABLED"
+PROVIDER_FAILED_FAIL_SOFT      = "PROVIDER_FAILED_FAIL_SOFT"
+PROVIDER_OUTPUT_INVALID_SCHEMA = "PROVIDER_OUTPUT_INVALID_SCHEMA"
 # v3.28.2 — free-only policy block (paid provider attempted while
 # LLM_FREE_ONLY=true).
 LLM_ADVISORY_MESH_SKIPPED_PROVIDER_BLOCKED_BY_FREE_ONLY = (
@@ -170,9 +175,247 @@ def _validate_advisory_row(row: dict) -> str | None:
 
 # ─── Row builder ───────────────────────────────────────────────────────────
 
+# ─── v3.28.3 prompt builder ─────────────────────────────────────────────────
+
+# Per-agent prompt templates. Each one requires the model to return a
+# JSON object with concrete, evidence-grounded fields. The template ends
+# with a "Return ONLY one JSON object…" sentinel so a low-temperature
+# free-tier model stays inside the contract.
+_AGENT_PROMPT_TEMPLATES: dict[str, str] = {
+    "MARKET_REGIME_AGENT": (
+        "You are MARKET_REGIME_AGENT (L2_RECOMMEND_ONLY). "
+        "Summarise the current market regime from the evidence; "
+        "say whether the regime is actionable or insufficient; "
+        "identify data gaps."
+    ),
+    "SIGNAL_QUALITY_AGENT": (
+        "You are SIGNAL_QUALITY_AGENT (L2_RECOMMEND_ONLY). "
+        "Review whether real-market opportunities exist; "
+        "explain why the signal count is zero or non-zero; "
+        "say whether the generator looks too restrictive."
+    ),
+    "DATA_QUALITY_AGENT": (
+        "You are DATA_QUALITY_AGENT (L2_RECOMMEND_ONLY). "
+        "Review the market-data diagnostics; name the dominant "
+        "diagnostic tokens; flag stale/missing/auth/provider issues."
+    ),
+    "NO_SIGNAL_DIAGNOSTIC_AGENT": (
+        "You are NO_SIGNAL_DIAGNOSTIC_AGENT (L2_RECOMMEND_ONLY). "
+        "Classify the dominant no-signal reason; separate "
+        "market-closed / no-bars / insufficient-bars / "
+        "strategy-too-restrictive."
+    ),
+    "SHADOW_OUTCOME_REVIEW_AGENT": (
+        "You are SHADOW_OUTCOME_REVIEW_AGENT (L2_RECOMMEND_ONLY). "
+        "Review completed shadow outcomes; if zero outcomes, say "
+        "explicitly that outcomes cannot yet assess edge."
+    ),
+    "PRE_ORDER_ADVISORY_AGENT": (
+        "You are PRE_ORDER_ADVISORY_AGENT (L3_VETO_RECOMMEND_ONLY). "
+        "No draft order is present yet; observe-only. Note any "
+        "signals that would be vetoed if a draft order arrived."
+    ),
+    "RISK_NARRATIVE_AGENT": (
+        "You are RISK_NARRATIVE_AGENT (L2_RECOMMEND_ONLY). "
+        "Narrate the current risk posture from the readiness "
+        "counters."
+    ),
+    "RISK_GATE_CHANGE_PROPOSAL_AGENT": (
+        "You are RISK_GATE_CHANGE_PROPOSAL_AGENT "
+        "(L4_PROPOSE_CONFIG_CHANGE_ONLY). Propose nothing unless "
+        "you can ground it in the readiness counters. auto_apply "
+        "is hard-coded to false."
+    ),
+    "INCIDENT_REVIEW_AGENT": (
+        "You are INCIDENT_REVIEW_AGENT (L3_VETO_RECOMMEND_ONLY). "
+        "Review recent incidents (if any) or report quiet."
+    ),
+    "BROKER_PAPER_CANARY_REVIEW_AGENT": (
+        "You are BROKER_PAPER_CANARY_REVIEW_AGENT "
+        "(L2_RECOMMEND_ONLY). Review readiness toward the v3.25 "
+        "50/20 thresholds; the canary remains BLOCKED unless those "
+        "are met and the operator approves."
+    ),
+    "FINAL_ADVISORY_ARBITER": (
+        "You are FINAL_ADVISORY_ARBITER (L3_VETO_RECOMMEND_ONLY). "
+        "Synthesise the prior agents' findings into one paragraph."
+    ),
+}
+
+_AGENT_PROMPT_FOOTER = (
+    "You CANNOT execute, modify positions, change risk config, "
+    "unlock broker paper, enable live trading, lower the drawdown "
+    "guard, reset the baseline, mutate readiness counters, or "
+    "fabricate market data / P&L. Use 'insufficient evidence' "
+    "explicitly when data is absent; do NOT invent conclusions.\n\n"
+    "Return ONLY one JSON object with these keys (no prose outside):\n"
+    "{\n"
+    "  \"recommendation\":         <one concrete sentence>,\n"
+    "  \"rationale\":              <one short paragraph citing "
+    "evidence values>,\n"
+    "  \"risks_identified\":       [<short string>, ...],\n"
+    "  \"proposed_next_actions\":  [<short string>, ...],\n"
+    "  \"confidence\":             <0.0..1.0 — 0 if insufficient "
+    "evidence>,\n"
+    "  \"veto_recommendation\":    <true/false>\n"
+    "}\n"
+)
+
+
+def _evidence_summary_for_agent(agent_name: str,
+                                  evidence: dict) -> str:
+    """Render a small per-agent evidence snippet (read-only)."""
+    keys_per_agent: dict[str, tuple[str, ...]] = {
+        "MARKET_REGIME_AGENT":          ("counters_latest",
+                                            "workflow_health_latest"),
+        "SIGNAL_QUALITY_AGENT":         ("counters_latest",
+                                            "workflow_health_latest"),
+        "DATA_QUALITY_AGENT":           ("workflow_health_latest",
+                                            "workflow_health_history",
+                                            "first_real_record"),
+        "NO_SIGNAL_DIAGNOSTIC_AGENT":   ("workflow_health_latest",
+                                            "first_real_record"),
+        "SHADOW_OUTCOME_REVIEW_AGENT":  ("counters_latest",),
+        "PRE_ORDER_ADVISORY_AGENT":     ("counters_latest",
+                                            "workflow_health_latest"),
+        "RISK_NARRATIVE_AGENT":         ("counters_latest",),
+        "RISK_GATE_CHANGE_PROPOSAL_AGENT": ("counters_latest",),
+        "INCIDENT_REVIEW_AGENT":        ("workflow_health_history",),
+        "BROKER_PAPER_CANARY_REVIEW_AGENT": ("counters_latest",
+                                                "first_real_record"),
+        "FINAL_ADVISORY_ARBITER":       ("counters_latest",
+                                            "workflow_health_latest",
+                                            "first_real_record"),
+    }
+    keys = keys_per_agent.get(agent_name) or tuple(evidence.keys())
+    snippet: dict[str, Any] = {}
+    for k in keys:
+        v = evidence.get(k)
+        if v is None:
+            snippet[k] = None
+            continue
+        # Truncate large lists/history so the prompt stays compact.
+        if isinstance(v, list):
+            snippet[k] = v[-5:]
+        else:
+            snippet[k] = v
+    try:
+        return json.dumps(snippet, sort_keys=True, default=str)[:3000]
+    except Exception:
+        return "{}"
+
+
+def _build_prompt(agent_name: str, evidence: dict) -> str:
+    base = _AGENT_PROMPT_TEMPLATES.get(
+        agent_name,
+        "You are an L2 advisory agent. Review the evidence.")
+    evi = _evidence_summary_for_agent(agent_name, evidence)
+    return (
+        f"{base}\n\nEvidence (read-only, advisory-only):\n{evi}\n\n"
+        f"{_AGENT_PROMPT_FOOTER}"
+    )
+
+
+# ─── Provider response → row fields ─────────────────────────────────────────
+
+def _try_extract_json(text: str) -> dict | None:
+    if not text:
+        return None
+    # Direct parse.
+    try:
+        v = json.loads(text)
+        if isinstance(v, dict):
+            return v
+    except Exception:
+        pass
+    # Strip ```json fences.
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        # Remove first ``` line and trailing ``` line.
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        try:
+            v = json.loads("\n".join(lines))
+            if isinstance(v, dict):
+                return v
+        except Exception:
+            pass
+    # Locate first { and matching last }.
+    first = stripped.find("{")
+    last  = stripped.rfind("}")
+    if first >= 0 and last > first:
+        try:
+            v = json.loads(stripped[first:last + 1])
+            if isinstance(v, dict):
+                return v
+        except Exception:
+            pass
+    return None
+
+
+def _parse_provider_response_into_row_fields(
+        text: str) -> dict[str, Any]:
+    """Extract recommendation / rationale / risks / next-actions /
+    confidence / veto from the provider response. Returns a dict with
+    sensible defaults when the provider returned prose only.
+    """
+    out = {
+        "recommendation":        "",
+        "rationale":             "",
+        "risks_identified":      [],
+        "proposed_next_actions": [],
+        "confidence":            0.0,
+        "veto_recommendation":   False,
+    }
+    parsed = _try_extract_json(text)
+    if parsed is not None:
+        rec = parsed.get("recommendation") or ""
+        if not isinstance(rec, str):
+            rec = json.dumps(rec)[:280]
+        out["recommendation"] = rec.strip()
+        rat = parsed.get("rationale") or ""
+        if not isinstance(rat, str):
+            rat = json.dumps(rat)[:600]
+        out["rationale"] = rat.strip()
+        risks = parsed.get("risks_identified") or []
+        if isinstance(risks, list):
+            out["risks_identified"] = [str(x).strip()
+                                          for x in risks
+                                          if str(x).strip()][:6]
+        actions = parsed.get("proposed_next_actions") or []
+        if isinstance(actions, list):
+            out["proposed_next_actions"] = [str(x).strip()
+                                              for x in actions
+                                              if str(x).strip()][:6]
+        try:
+            c = float(parsed.get("confidence", 0.0))
+            out["confidence"] = max(0.0, min(1.0, c))
+        except (TypeError, ValueError):
+            out["confidence"] = 0.0
+        veto = parsed.get("veto_recommendation", False)
+        out["veto_recommendation"] = bool(veto) if isinstance(
+            veto, (bool, int, str)) else False
+    else:
+        # Prose-only response — keep first ~280 chars as recommendation
+        # so the operator still sees the provider's words.
+        prose = (text or "").strip().replace("\n", " ")
+        out["recommendation"] = prose[:280] or (
+            "insufficient evidence")
+        out["rationale"] = (
+            "Provider returned prose; structured fields fell back to "
+            "defaults. See recommendation for the provider's "
+            "summary.")
+    return out
+
+
 def _new_row(*, run_id: str, agent_def, evidence: dict,
               recommendation: str, rationale: str,
-              veto: bool = False, confidence: float = 0.0) -> dict:
+              veto: bool = False, confidence: float = 0.0,
+              risks: list[str] | None = None,
+              next_actions: list[str] | None = None) -> dict:
     from llm_advisory_registry import FORBIDDEN_ACTIONS  # type: ignore
     return {
         "timestamp":                  datetime.now(timezone.utc).isoformat(),
@@ -192,8 +435,8 @@ def _new_row(*, run_id: str, agent_def, evidence: dict,
         "veto_recommendation":        bool(veto),
         "confidence":                 float(confidence),
         "rationale":                  rationale,
-        "risks_identified":           [],
-        "proposed_next_actions":      [],
+        "risks_identified":           list(risks or []),
+        "proposed_next_actions":      list(next_actions or []),
         "forbidden_actions_confirmed": list(FORBIDDEN_ACTIONS),
         "broker_order_submitted":     False,
         "broker_execution_enabled":   False,
@@ -218,7 +461,7 @@ def run_mesh(run_id: str) -> dict[str, Any]:
     llm_free_only = (os.environ.get("LLM_FREE_ONLY", "true")
                        .strip().lower() in ("true", "1", "yes", "on"))
     summary: dict[str, Any] = {
-        "version":          "v3.28.2",
+        "version":          "v3.28.3",
         "run_id":           run_id,
         "status":           LLM_ADVISORY_MESH_RAN,
         "agents_evaluated": 0,
@@ -293,29 +536,75 @@ def run_mesh(run_id: str) -> dict[str, Any]:
         if status == budget.LLM_FAIL_SOFT:
             # Fail-soft: don't write a row for this agent; continue.
             continue
-        # Generate an advisory row. The mock-provider path produces a
-        # deterministic recommendation; real providers would replace
-        # the recommendation string + rationale via call_provider.
+        # v3.28.3 — actually call the provider per agent. The mock
+        # provider still produces a deterministic placeholder, but
+        # the gemini / anthropic / openai paths now receive the
+        # per-agent evidence-grounded prompt and write the structured
+        # response into the row.
+        prompt = _build_prompt(agent_def.name, evidence)
+        try:
+            import llm_provider_client as _p  # type: ignore
+        except ImportError:
+            from shared import llm_provider_client as _p  # type: ignore
+        provider_resp = _p.call_provider(
+            prompt=prompt, max_tokens=512)
+        provider_status = PROVIDER_USED
+        if provider_resp.status == _p.LLM_PROVIDER_OFFLINE_MOCK:
+            provider_status = PROVIDER_SKIPPED_DISABLED
+            parsed = {
+                "recommendation": (
+                    "OBSERVATION: offline_mock — no provider "
+                    f"evaluation for {agent_def.name}."),
+                "rationale": (
+                    "v3.28.3 advisory output via offline mock. "
+                    "Deterministic gates remain final."),
+                "risks_identified":      [],
+                "proposed_next_actions": [],
+                "confidence":            0.0,
+                "veto_recommendation":   False,
+            }
+        elif provider_resp.status == _p.LLM_PROVIDER_CALL_OK:
+            parsed = _parse_provider_response_into_row_fields(
+                provider_resp.text)
+        else:
+            # Any non-OK status → fail-soft row that still records the
+            # provider status so the operator can debug.
+            provider_status = PROVIDER_FAILED_FAIL_SOFT
+            parsed = {
+                "recommendation": (
+                    f"INSUFFICIENT_EVIDENCE: provider "
+                    f"{provider_resp.provider or 'unknown'} returned "
+                    f"{provider_resp.status}."),
+                "rationale": (
+                    "Provider call did not complete; this row is "
+                    "the fail-soft placeholder. The deterministic "
+                    "gates remain final."),
+                "risks_identified":      [],
+                "proposed_next_actions": [],
+                "confidence":            0.0,
+                "veto_recommendation":   False,
+            }
         row = _new_row(
             run_id=run_id, agent_def=agent_def, evidence=evidence,
-            recommendation=(
-                "OBSERVATION: advisory mesh ran; no execution; "
-                f"agent={agent_def.name}; "
-                f"authority={agent_def.authority_level}; "
-                f"stage={agent_def.process_stage}."),
-            rationale=(
-                "v3.28 advisory output. Deterministic gates remain "
-                "final; this row is evidence, not authority."),
-            veto=False, confidence=0.0,
+            recommendation=parsed["recommendation"],
+            rationale=parsed["rationale"],
+            veto=parsed["veto_recommendation"],
+            confidence=parsed["confidence"],
+            risks=parsed["risks_identified"],
+            next_actions=parsed["proposed_next_actions"],
         )
+        # v3.28.3 — track per-row provider attribution.
+        row["provider_status"] = provider_status
         err = _validate_advisory_row(row)
         if err is not None:
             # Schema violation = drop the row (never write invalid).
+            provider_status = PROVIDER_OUTPUT_INVALID_SCHEMA
             continue
         with rows_path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, sort_keys=True) + "\n")
         try:
-            budget.record_call(run_id=run_id, cost_usd=0.0)
+            budget.record_call(
+                run_id=run_id, cost_usd=provider_resp.cost_usd)
         except Exception:
             pass
         written_any = True
@@ -329,14 +618,61 @@ def run_mesh(run_id: str) -> dict[str, Any]:
             # LLM_ADVISORY_DIR pointed outside the repo (e.g. tests
             # using /tmp). Record absolute path instead — never raise.
             summary["rows_path"] = str(rows_path)
+
+    # v3.28.3 — run the quality guard over the rows we just emitted.
+    try:
+        import llm_advisory_quality as _q  # type: ignore
+    except ImportError:
+        from shared import llm_advisory_quality as _q  # type: ignore
+    rows_for_quality: list[dict] = []
+    if rows_path.exists():
+        try:
+            with rows_path.open(encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row_obj = json.loads(line)
+                    except Exception:
+                        continue
+                    if row_obj.get("run_id") == run_id:
+                        rows_for_quality.append(row_obj)
+        except Exception:
+            pass
+    quality_report = _q.evaluate_quality(rows_for_quality)
+    summary["quality_status"] = quality_report.status
+    summary["quality_report"] = quality_report.to_dict()
+    if quality_report.status == _q.LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER:
+        summary["next_recommended_action"] = (
+            "Improve per-agent prompts so Gemini emits concrete "
+            "evidence-grounded analysis. Do NOT enable schedule.")
+    elif quality_report.status == _q.LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED:
+        summary["next_recommended_action"] = (
+            "Provider output was not used — verify provider key + "
+            "endpoint. Do NOT enable schedule.")
+    elif quality_report.status == _q.LLM_ADVISORY_QUALITY_ACCEPTABLE:
+        summary["next_recommended_action"] = (
+            "Trigger another workflow_dispatch run; if quality stays "
+            "ACCEPTABLE across N runs, operator may consider enabling "
+            "the schedule.")
     return summary
 
 
 def render_doc(summary: dict[str, Any]) -> str:
     lines: list[str] = []
-    lines.append("# LLM Advisory Mesh — latest run (v3.28)\n")
+    lines.append("# LLM Advisory Mesh — latest run (v3.28.3)\n")
     lines.append(f"- **Run ID:** `{summary.get('run_id')}`")
     lines.append(f"- **Status:** `{summary.get('status')}`")
+    lines.append(
+        f"- **Quality status:** "
+        f"`{summary.get('quality_status', 'n/a')}`")
+    lines.append(
+        f"- **Selected provider:** "
+        f"`{summary.get('selected_provider', 'n/a')}`")
+    lines.append(
+        f"- **LLM_FREE_ONLY:** "
+        f"`{summary.get('llm_free_only', 'n/a')}`")
     lines.append(
         f"- **Agents evaluated:** {summary.get('agents_evaluated', 0)}")
     lines.append(
@@ -346,6 +682,39 @@ def render_doc(summary: dict[str, Any]) -> str:
         "`BROKER_PAPER_CANARY_STILL_BLOCKED`, "
         "`LIVE_TRADING_UNSUPPORTED`")
     lines.append("")
+    qr = summary.get("quality_report") or {}
+    if qr:
+        lines.append("## Quality report (v3.28.3)\n")
+        lines.append(
+            f"- rows_with_provider_used: "
+            f"**{qr.get('rows_with_provider_used', 0)}**")
+        lines.append(
+            f"- rows_with_provider_skipped: "
+            f"{qr.get('rows_with_provider_skipped', 0)}")
+        lines.append(
+            f"- rows_with_provider_failed: "
+            f"{qr.get('rows_with_provider_failed', 0)}")
+        lines.append(
+            f"- generic_placeholder_count: "
+            f"{qr.get('generic_placeholder_count', 0)}")
+        lines.append(
+            f"- empty_risks_count: "
+            f"{qr.get('empty_risks_count', 0)}")
+        lines.append(
+            f"- empty_next_actions_count: "
+            f"{qr.get('empty_next_actions_count', 0)}")
+        lines.append(
+            f"- confidence range: "
+            f"[{qr.get('confidence_min', 0.0)}, "
+            f"{qr.get('confidence_max', 0.0)}]")
+        lines.append(
+            f"- secret_leak_hits: {qr.get('secret_leak_hits', 0)}")
+        lines.append(
+            f"- unsafe_phrase_hits: {qr.get('unsafe_phrase_hits', 0)}")
+        lines.append("")
+        nra = summary.get("next_recommended_action")
+        if nra:
+            lines.append(f"**Next recommended action:** {nra}\n")
     lines.append(
         "## Safety invariants (asserted on every run)\n"
         "- `broker_paper_canary_still_blocked`: **true**\n"
@@ -356,6 +725,78 @@ def render_doc(summary: dict[str, Any]) -> str:
         "- LLM agents NEVER mutate risk config.\n"
         "- Deterministic gates remain final.\n")
     return "\n".join(lines) + "\n"
+
+
+def write_quality_artifact(summary: dict[str, Any]) -> None:
+    """v3.28.3 — write the quality review JSON + markdown alongside
+    the latest-run markdown."""
+    qr_path = (REPO_ROOT / "learning-loop" / "llm_advisory"
+                / "quality_review_latest.json")
+    qr_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version":          "v3.28.3",
+        "run_id":           summary.get("run_id"),
+        "quality_status":   summary.get("quality_status"),
+        "quality_report":   summary.get("quality_report"),
+        "next_recommended_action":
+            summary.get("next_recommended_action"),
+        "standing_markers": [
+            BROKER_PAPER_CANARY_STILL_BLOCKED,
+            LIVE_TRADING_UNSUPPORTED,
+            "FREE_ONLY_POLICY_ENABLED",
+            "OFFLINE_MOCK_STILL_DEFAULT",
+            "DETERMINISTIC_GATES_REMAIN_FINAL",
+            "SCHEDULE_REMAINS_DISABLED",
+            "LLM_PRE_ORDER_VETO_REMAINS_DISABLED",
+        ],
+        "safety": {
+            "broker_paper_canary_still_blocked": True,
+            "live_trading_unsupported":          True,
+            "broker_execution_enabled":          False,
+            "edge_gate_enabled":                 False,
+            "allow_broker_paper":                False,
+            "schedule_enabled":                  False,
+            "llm_pre_order_veto_honored":        False,
+        },
+    }
+    qr_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    doc_path = (REPO_ROOT / "docs"
+                 / "LLM_ADVISORY_QUALITY_REVIEW.md")
+    doc_path.parent.mkdir(parents=True, exist_ok=True)
+    qrep = payload["quality_report"] or {}
+    out = [
+        "# LLM Advisory Quality Review (v3.28.3)\n",
+        f"- **Run ID:** `{payload.get('run_id')}`",
+        f"- **Quality status:** `{payload.get('quality_status')}`",
+        f"- **Rows seen:** {qrep.get('rows_seen', 0)}",
+        f"- **Rows with PROVIDER_USED:** "
+        f"**{qrep.get('rows_with_provider_used', 0)}**",
+        f"- **Rows with PROVIDER_SKIPPED_DISABLED:** "
+        f"{qrep.get('rows_with_provider_skipped', 0)}",
+        f"- **Rows with PROVIDER_FAILED_FAIL_SOFT:** "
+        f"{qrep.get('rows_with_provider_failed', 0)}",
+        f"- **generic_placeholder_count:** "
+        f"{qrep.get('generic_placeholder_count', 0)}",
+        f"- **empty_risks_count:** {qrep.get('empty_risks_count', 0)}",
+        f"- **empty_next_actions_count:** "
+        f"{qrep.get('empty_next_actions_count', 0)}",
+        f"- **zero_confidence_count:** "
+        f"{qrep.get('zero_confidence_count', 0)}",
+        f"- **secret_leak_hits:** "
+        f"{qrep.get('secret_leak_hits', 0)}",
+        f"- **unsafe_phrase_hits:** "
+        f"{qrep.get('unsafe_phrase_hits', 0)}",
+        "",
+        "## Rationale\n",
+    ]
+    for r in qrep.get("rationale") or []:
+        out.append(f"- {r}")
+    out.append("\n## Safety invariants\n")
+    for k, v in sorted((payload.get("safety") or {}).items()):
+        out.append(f"- `{k}`: **{str(v).lower()}**")
+    doc_path.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -377,6 +818,12 @@ def main(argv: list[str] | None = None) -> int:
         doc_path = REPO_ROOT / "docs" / "LLM_ADVISORY_MESH_LATEST.md"
         doc_path.parent.mkdir(parents=True, exist_ok=True)
         doc_path.write_text(render_doc(summary), encoding="utf-8")
+        # v3.28.3 — always write the quality review artefacts when
+        # --render-doc is on.
+        try:
+            write_quality_artifact(summary)
+        except Exception as e:
+            print(f"  [v3.28.3] quality artifact write failed: {e}")
     print(json.dumps(summary, sort_keys=True))
     return 0
 

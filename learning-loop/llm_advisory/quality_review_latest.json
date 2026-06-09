@@ -1,0 +1,41 @@
+{
+  "next_recommended_action": "trigger another run",
+  "quality_report": {
+    "confidence_max": 0.7,
+    "confidence_min": 0.4,
+    "empty_next_actions_count": 0,
+    "empty_risks_count": 0,
+    "generic_placeholder_count": 0,
+    "rationale": [
+      "acceptable"
+    ],
+    "rows_seen": 5,
+    "rows_with_provider_failed": 0,
+    "rows_with_provider_skipped": 0,
+    "rows_with_provider_used": 5,
+    "secret_leak_hits": 0,
+    "unsafe_phrase_hits": 0,
+    "zero_confidence_count": 0
+  },
+  "quality_status": "LLM_ADVISORY_QUALITY_ACCEPTABLE",
+  "run_id": "v3283-mock-3",
+  "safety": {
+    "allow_broker_paper": false,
+    "broker_execution_enabled": false,
+    "broker_paper_canary_still_blocked": true,
+    "edge_gate_enabled": false,
+    "live_trading_unsupported": true,
+    "llm_pre_order_veto_honored": false,
+    "schedule_enabled": false
+  },
+  "standing_markers": [
+    "BROKER_PAPER_CANARY_STILL_BLOCKED",
+    "LIVE_TRADING_UNSUPPORTED",
+    "FREE_ONLY_POLICY_ENABLED",
+    "OFFLINE_MOCK_STILL_DEFAULT",
+    "DETERMINISTIC_GATES_REMAIN_FINAL",
+    "SCHEDULE_REMAINS_DISABLED",
+    "LLM_PRE_ORDER_VETO_REMAINS_DISABLED"
+  ],
+  "version": "v3.28.3"
+}

@@ -89,7 +89,34 @@ def daily_call_budget() -> int:
 
 
 def per_run_budget() -> int:
-    return _env_int("LLM_AGENT_PER_RUN_BUDGET", 5)
+    """v3.28.3 — per-run budget with a guarded override.
+
+    The default is 5. An override env ``LLM_AGENT_PER_RUN_BUDGET_OVERRIDE``
+    is honoured ONLY when:
+    - ``LLM_FREE_ONLY=true`` (default), AND
+    - ``LLM_PROVIDER=gemini``.
+
+    The override is clamped to ``[1, 11]`` regardless of input so a
+    misconfigured value can never amplify cost on a paid provider.
+    """
+    base = _env_int("LLM_AGENT_PER_RUN_BUDGET", 5)
+    raw_override = os.environ.get(
+        "LLM_AGENT_PER_RUN_BUDGET_OVERRIDE", "").strip()
+    if not raw_override:
+        return base
+    try:
+        ovr = int(raw_override)
+    except (TypeError, ValueError):
+        return base
+    free_only = (os.environ.get("LLM_FREE_ONLY", "true")
+                   .strip().lower() in ("true", "1", "yes", "on"))
+    prov = (os.environ.get("LLM_PROVIDER", "offline_mock")
+              .strip().lower() or "offline_mock")
+    if not (free_only and prov == "gemini"):
+        # Override silently ignored on non-free / non-gemini configs.
+        return base
+    # Clamp to [1, 11].
+    return max(1, min(11, ovr))
 
 
 def max_cost_usd_per_day() -> float:

@@ -121,6 +121,16 @@
           "PNL_FABRICATION"
         ]
       }
+    },
+    "provider_status": {
+      "type": "string",
+      "enum": [
+        "PROVIDER_USED",
+        "PROVIDER_SKIPPED_DISABLED",
+        "PROVIDER_FAILED_FAIL_SOFT",
+        "PROVIDER_OUTPUT_INVALID_SCHEMA"
+      ],
+      "description": "v3.28.3 — per-row provider attribution. Optional field; if absent, treat the row as v3.28-era output."
     }
   }
 }

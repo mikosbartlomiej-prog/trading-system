@@ -26,6 +26,11 @@ on:
         required: false
         default: ""
         type: string
+      per_run_budget_override:
+        description: "Override per-run agent budget (free-only Gemini only; clamped to [1, 11]). Empty = default 5."
+        required: false
+        default: ""
+        type: string
   schedule:
     # Fires once a day at 22:00 UTC — only effective when the
     # `LLM_AGENTS_SCHEDULED` repo variable is "true".
@@ -57,6 +62,10 @@ env:
   LLM_PROVIDER:                        ${{ vars.LLM_PROVIDER || 'offline_mock' }}
   LLM_AGENT_DAILY_CALL_BUDGET:         ${{ vars.LLM_AGENT_DAILY_CALL_BUDGET || '20' }}
   LLM_AGENT_PER_RUN_BUDGET:            ${{ vars.LLM_AGENT_PER_RUN_BUDGET || '5' }}
+  # v3.28.3 — workflow-dispatch override for a single validation run.
+  # Honoured only when LLM_FREE_ONLY=true AND LLM_PROVIDER=gemini;
+  # clamped to [1, 11] in shared/llm_agent_budget.py::per_run_budget.
+  LLM_AGENT_PER_RUN_BUDGET_OVERRIDE:   ${{ github.event.inputs.per_run_budget_override || '' }}
   LLM_AGENT_MAX_COST_USD_PER_DAY:      ${{ vars.LLM_AGENT_MAX_COST_USD_PER_DAY || '1.00' }}
   # v3.28.2 — free-only policy. Defaults to "true" so paid providers
   # (anthropic / openai) are blocked at the call_provider gate unless
@@ -138,6 +147,7 @@ jobs:
           git config user.email "llm-mesh@trading-system.local"
           git add learning-loop/llm_advisory/ \
                   docs/LLM_ADVISORY_MESH_LATEST.md \
+                  docs/LLM_ADVISORY_QUALITY_REVIEW.md \
                   learning-loop/position_reconciliation/latest.json \
                   || true
           CHANGED=$(git diff --cached --name-only)
@@ -148,6 +158,7 @@ jobs:
             case "$f" in
               learning-loop/llm_advisory/*) ;;
               docs/LLM_ADVISORY_MESH_LATEST.md) ;;
+              docs/LLM_ADVISORY_QUALITY_REVIEW.md) ;;
               learning-loop/position_reconciliation/latest.json) ;;
               *) BAD="$BAD $f" ;;
             esac

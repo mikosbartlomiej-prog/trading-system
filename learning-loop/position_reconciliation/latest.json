@@ -97,6 +97,86 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v3283_followups": {
+    "title": "GEMINI_ADVISORY_QUALITY_CALIBRATION",
+    "trigger": "v3282_first_gemini_run_produced_5_schema_valid_but_generic_placeholder_rows_because_v3.28_runner_never_actually_invoked_call_provider_per_agent_and_used_a_hardcoded_recommendation_string",
+    "generated_at_iso": "2026-06-09T20:30:00+00:00",
+    "problem": "v3.28.2 confirmed Gemini was reachable end-to-end and produced 5 schema-valid advisory rows, but every row carried the same placeholder recommendation because the v3.28 runner loop never actually called shared/llm_provider_client.call_provider() per agent — the prompt builder did not exist and the loop wrote a hard-coded string instead.",
+    "fix": {
+      "per_agent_prompts_added": "scripts/run_llm_advisory_mesh.py gained _AGENT_PROMPT_TEMPLATES (one per registered agent) + _evidence_summary_for_agent + _build_prompt that joins template + evidence + safety footer + JSON-only response sentinel.",
+      "real_provider_calls_wired": "Runner loop now invokes call_provider(prompt, max_tokens=512) per agent. Mock provider still returns PROVIDER_SKIPPED_DISABLED. Gemini / Anthropic / OpenAI paths return PROVIDER_USED when successful.",
+      "response_parser_added": "_parse_provider_response_into_row_fields handles direct JSON, ```json``` fences, embedded JSON, and prose-only responses. Confidence clamped to [0,1]. Risks and next-actions arrays capped at 6 items.",
+      "quality_guard_added": "shared/llm_advisory_quality.py is a new pure module. 7 statuses; SECRET_LEAK and UNSAFE are BLOCKING_STATUSES.",
+      "quality_status_emitted": "Runner summary carries quality_status + quality_report. write_quality_artifact() writes learning-loop/llm_advisory/quality_review_latest.json + docs/LLM_ADVISORY_QUALITY_REVIEW.md.",
+      "per_run_budget_override_added": "shared/llm_agent_budget.py honours LLM_AGENT_PER_RUN_BUDGET_OVERRIDE only when LLM_FREE_ONLY=true AND LLM_PROVIDER=gemini, clamped to [1,11]. Workflow exposes per_run_budget_override input.",
+      "schema_extended_with_optional_provider_status": "learning-loop/llm_advisory/schema.json adds optional provider_status field. All pinned safety enums unchanged.",
+      "workflow_commit_allowlist_extended": "docs/LLM_ADVISORY_QUALITY_REVIEW.md added to allow-list."
+    },
+    "added_per_row_provider_statuses": [
+      "PROVIDER_USED",
+      "PROVIDER_SKIPPED_DISABLED",
+      "PROVIDER_FAILED_FAIL_SOFT",
+      "PROVIDER_OUTPUT_INVALID_SCHEMA"
+    ],
+    "added_quality_statuses": [
+      "LLM_ADVISORY_QUALITY_ACCEPTABLE",
+      "LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER",
+      "LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED",
+      "LLM_ADVISORY_QUALITY_SCHEMA_INVALID",
+      "LLM_ADVISORY_QUALITY_SECRET_LEAK_BLOCKED",
+      "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED",
+      "LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE"
+    ],
+    "blocking_quality_statuses": [
+      "LLM_ADVISORY_QUALITY_SECRET_LEAK_BLOCKED",
+      "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED"
+    ],
+    "new_artifacts_auto_generated": [
+      "learning-loop/llm_advisory/quality_review_latest.json",
+      "docs/LLM_ADVISORY_QUALITY_REVIEW.md"
+    ],
+    "new_tests": [
+      "tests/test_llm_advisory_quality_guard_v3283.py",
+      "tests/test_llm_advisory_prompt_quality_v3283.py",
+      "tests/test_llm_advisory_mesh_quality_review_v3283.py",
+      "tests/test_llm_advisory_budget_override_v3283.py"
+    ],
+    "test_summary": {
+      "v3283_new_tests": 34,
+      "combined_v3.28_v3.28.2_v3.28.3_v3.13_v3.26_v3.27.x": 297
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "llm_modules_never_import_broker_orders_module": true,
+      "quality_guard_blocks_secret_leak": true,
+      "quality_guard_blocks_unsafe_action_phrases": true,
+      "per_run_budget_override_clamped_to_11": true,
+      "per_run_budget_override_only_for_gemini_free_only": true,
+      "schedule_remains_disabled_pending_acceptable_quality_over_n_runs": true,
+      "llm_pre_order_veto_honored_remains_false": true,
+      "this_sprint_calibrates_llm_output_quality_only_not_trading_behavior": true
+    },
+    "next_action_items_v3283": [
+      "TRIGGER_workflow_dispatch_with_per_run_budget_override_11_after_v3.28.3_lands_on_main",
+      "VALIDATE_quality_status_acceptable_or_at_least_provider_used_count_gt_zero",
+      "REVIEW_first_concrete_gemini_advisory_rows",
+      "DO_NOT_ENABLE_SCHEDULE_UNTIL_QUALITY_ACCEPTABLE_OVER_MULTIPLE_RUNS",
+      "DO_NOT_FLIP_LLM_PRE_ORDER_VETO_HONORED_TRUE",
+      "DO_NOT_FLIP_LLM_FREE_ONLY_FALSE",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD"
+    ]
+  },
   "v3282_followups": {
     "title": "GEMINI_FREE_PROVIDER_AND_CLOUD_ADVISORY_MESH_ACTIVATION",
     "trigger": "operator_created_GEMINI_API_KEY_github_secret_and_wants_to_activate_v3.28_mesh_using_free_first_gemini_provider_without_paying_for_anthropic_or_openai_and_without_keeping_local_computer_open",

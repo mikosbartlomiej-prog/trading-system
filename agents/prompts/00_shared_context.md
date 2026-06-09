@@ -1342,4 +1342,105 @@ gate, or real-market-evidence counters are touched.
 
 ---
 
+## v3.28.3 coverage (added 2026-06-09)
+
+v3.28.2 activated Gemini and produced 5 schema-valid advisory rows
+— but they were **generic placeholders** because the v3.28 runner
+never actually called `call_provider()` per agent. v3.28.3 fixes
+the root cause and adds a quality guard so future runs cannot
+silently regress to placeholder output.
+
+When reviewing, also check:
+
+- `scripts/run_llm_advisory_mesh.py` — **per-agent prompts +
+  real provider calls now wired**. Each of the 11 registered
+  agents gets a distinct prompt template (`_AGENT_PROMPT_TEMPLATES`)
+  plus a per-agent evidence slice (`_evidence_summary_for_agent`).
+  The prompt footer requires the provider to return ONE JSON
+  object with `recommendation` / `rationale` / `risks_identified`
+  / `proposed_next_actions` / `confidence` / `veto_recommendation`.
+  `_parse_provider_response_into_row_fields` handles direct JSON,
+  ```json``` fences, embedded JSON, and falls back to prose-as-
+  recommendation. Each emitted row carries a new
+  `provider_status` field: `PROVIDER_USED`,
+  `PROVIDER_SKIPPED_DISABLED`, `PROVIDER_FAILED_FAIL_SOFT`, or
+  `PROVIDER_OUTPUT_INVALID_SCHEMA`. Mock provider still returns
+  `PROVIDER_SKIPPED_DISABLED` (deterministic placeholder text);
+  Gemini / Anthropic / OpenAI paths return `PROVIDER_USED` on
+  success.
+- `shared/llm_advisory_quality.py` — **NEW** quality guard. 7
+  statuses (`ALL_QUALITY_STATUSES`): `ACCEPTABLE`,
+  `GENERIC_PLACEHOLDER`, `PROVIDER_OUTPUT_NOT_USED`,
+  `SCHEMA_INVALID`, `SECRET_LEAK_BLOCKED`, `UNSAFE_BLOCKED`,
+  `INSUFFICIENT_SAMPLE`. Secret-pattern scan (`AIza*`, `sk-ant-*`,
+  `sk-*`, 20+ char uppercase-alphanumeric) blocks the batch.
+  Unsafe-phrase scan (`enable broker paper`, `submit_order`, etc.)
+  blocks the batch. `BLOCKING_STATUSES` = {secret-leak, unsafe}
+  — runner must not commit on those.
+- `learning-loop/llm_advisory/quality_review_latest.json` +
+  `docs/LLM_ADVISORY_QUALITY_REVIEW.md` — **NEW** auto-generated
+  artefacts. Contain quality status, full report, rationale, and
+  full safety block.
+- `shared/llm_agent_budget.py::per_run_budget` — gained an
+  override path. `LLM_AGENT_PER_RUN_BUDGET_OVERRIDE` env is
+  honoured ONLY when `LLM_FREE_ONLY=true` AND
+  `LLM_PROVIDER=gemini`, clamped to `[1, 11]`. Override is
+  silently ignored otherwise so a misconfigured value can never
+  amplify cost on a paid provider.
+- `.github/workflows/llm-advisory-mesh.yml` — new
+  `workflow_dispatch` input `per_run_budget_override` (string,
+  empty default). Plumbed through env as
+  `LLM_AGENT_PER_RUN_BUDGET_OVERRIDE`. Schedule still gated on
+  `LLM_AGENTS_SCHEDULED == 'true'`. All 7 broker-execution env
+  flags remain hard-pinned `false`. Commit allow-list extended
+  with `docs/LLM_ADVISORY_QUALITY_REVIEW.md`.
+- `learning-loop/llm_advisory/schema.json` — optional
+  `provider_status` field added (enum: the four PROVIDER_*
+  tokens). All v3.28 v3.28.2 pinned safety enums unchanged.
+
+### v3.28.3 status tokens (added)
+
+- 4 per-row provider statuses (`PROVIDER_USED`,
+  `PROVIDER_SKIPPED_DISABLED`, `PROVIDER_FAILED_FAIL_SOFT`,
+  `PROVIDER_OUTPUT_INVALID_SCHEMA`).
+- 7 quality statuses (see above).
+
+### Final Arbiter v3.28.3 escalation triggers (P0)
+
+In addition to all v3.23.x through v3.28.2 triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the runner regresses to the v3.28 hard-coded placeholder
+  recommendation (i.e. removes the `call_provider()` wire-in)
+- the per-agent prompt builder is bypassed and a single
+  prompt is sent for every agent
+- any advisory row contains a secret-shape token
+  (`AIza*`, `sk-ant-*`, `sk-*`, 20+ char uppercase-alphanumeric)
+  not redacted to `<REDACTED>` — the quality guard returns
+  `LLM_ADVISORY_QUALITY_SECRET_LEAK_BLOCKED` and the runner
+  MUST not commit
+- any advisory row contains an unsafe-action phrase (the
+  quality guard returns `LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED`
+  and the runner MUST not commit)
+- the per-run budget override is honoured outside the
+  `gemini+free-only` configuration, or exceeds the `[1, 11]`
+  clamp, or applies to the schedule (it must apply only to
+  workflow-dispatch validation runs)
+- the runner removes the `quality_status` /
+  `quality_report` fields from its summary
+- the runner removes the `provider_status` field from a row
+- the schema's optional `provider_status` enum gains a value
+  outside the four PROVIDER_* tokens
+- the quality guard's `BLOCKING_STATUSES` set shrinks
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.28.3 calibrates LLM output quality
+— no trading behaviour, broker state, readiness gate, or
+real-market-evidence counters are touched. Schedule remains
+disabled until quality is consistently `ACCEPTABLE` across N
+runs; `LLM_PRE_ORDER_VETO_HONORED` remains `false`.
+
+---
+
 ## End of shared context
