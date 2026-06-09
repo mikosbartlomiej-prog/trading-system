@@ -13,6 +13,7 @@
       "TodoWrite",
       "Skill",
       "Monitor",
+      "Workflow",
       "mcp__claude_ai_Alpaca__*"
     ]
   }
