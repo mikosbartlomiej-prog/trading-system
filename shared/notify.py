@@ -208,9 +208,33 @@ def _append_to_digest(subject: str, body: str) -> None:
         print(f"  [notify-digest] append failed (non-fatal): {e}")
 
 
+def _consult_flood_guard(subject: str, body: str) -> tuple[str, str, str] | None:
+    """v3.27.3 — apply ``shared/notification_flood_guard`` ahead of the
+    SMTP fast-path. Returns ``(verdict, fingerprint, reason)`` or ``None``
+    if the flood-guard module is unavailable (import error → fail-soft
+    preserves v3.13 behaviour).
+    """
+    try:
+        import notification_flood_guard as _g  # type: ignore
+    except ImportError:
+        try:
+            from shared import notification_flood_guard as _g  # type: ignore
+        except ImportError:
+            return None
+    try:
+        return _g.evaluate_and_record(subject, body)
+    except Exception as e:
+        # Never let the flood-guard break the SMTP path; surface and
+        # fall through to the legacy classifier.
+        print(f"  [notify-flood-guard] error (non-fatal): {e}")
+        return None
+
+
 def send_email(subject: str, body: str, html: bool = False) -> bool:
     """
-    Send email via Gmail SMTP, gated by NotificationPolicy.
+    Send email via Gmail SMTP, gated by NotificationPolicy + v3.27.3
+    flood guard.
+
     Returns True on successful delivery OR successful digest append.
     Returns False only on hard failure (SMTP error after classifier said "send").
     """
@@ -229,6 +253,28 @@ def send_email(subject: str, body: str, html: bool = False) -> bool:
         print(f"  [notify-policy] DIGEST: {subject[:80]}")
         _append_to_digest(subject, body)
         return True   # successfully digested
+
+    # ── v3.27.3: consult flood-guard before the SMTP fast-path ──
+    # The guard only gates flood-guarded prefixes (default:
+    # `[INCIDENT-CRITICAL]`). Everything else returns
+    # ``FLOOD_SEND_ESCALATION`` and falls through to SMTP unchanged.
+    guard_result = _consult_flood_guard(subject, body)
+    if guard_result is not None:
+        fg_verdict, fg_fp, fg_reason = guard_result
+        try:
+            import notification_flood_guard as _g  # type: ignore
+        except ImportError:
+            from shared import notification_flood_guard as _g  # type: ignore
+        if fg_verdict in _g.DIGEST_VERDICTS:
+            print(
+                f"  [notify-flood-guard] {fg_verdict} fp={fg_fp} "
+                f"reason={fg_reason}: {subject[:80]}")
+            # Always append to the standard digest so the operator
+            # never loses sight of the event — even capped ones.
+            _append_to_digest(subject, body)
+            return True
+        # SENDING verdicts (FLOOD_SEND_FIRST / FLOOD_SEND_ESCALATION /
+        # FLOOD_BYPASS_DISABLED) fall through to SMTP.
 
     # verdict == "send" → original SMTP path
     try:

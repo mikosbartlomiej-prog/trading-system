@@ -30,13 +30,37 @@ sys.path.insert(0, str(REPO_ROOT / "shared"))
 
 
 def _reload_notify(env_overrides: dict | None = None):
-    """Re-import notify with optional env overrides (NOTIFY_MODE etc.)."""
+    """Re-import notify with optional env overrides (NOTIFY_MODE etc.).
+
+    v3.27.3 — also reset ``notification_flood_guard`` module state and
+    isolate the flood-guard state + digest directories under
+    ``tempfile.mkdtemp()`` so legacy v3.13 tests do not collide with the
+    on-repo state file written by production runs.
+    """
     # Clean prior env keys
     for k in ("NOTIFY_MODE", "NOTIFY_FORCE_SEND", "NOTIFY_FORCE_SUPPRESS",
-                "NOTIFY_DIGEST_DIR"):
+                "NOTIFY_DIGEST_DIR", "NOTIFY_FLOOD_STATE_DIR",
+                "NOTIFY_FLOOD_GUARD_ENABLED",
+                "INCIDENT_CRITICAL_IMMEDIATE_FIRST",
+                "INCIDENT_CRITICAL_COOLDOWN_MINUTES",
+                "INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_HOUR",
+                "INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_DAY",
+                "NOTIFY_ALWAYS_SEND_MARKERS",
+                "NOTIFY_ALWAYS_DIGEST_MARKERS"):
         os.environ.pop(k, None)
+    # Isolate the flood-guard state under a unique tempdir per call.
+    import tempfile
+    _iso = tempfile.mkdtemp(prefix="notify_v3131_")
+    os.environ["NOTIFY_FLOOD_STATE_DIR"] = _iso
+    os.environ["NOTIFY_DIGEST_DIR"]      = _iso
     if env_overrides:
         os.environ.update(env_overrides)
+    # Reset flood-guard cached module too — env is re-read at call time
+    # but a stale import would shadow any test patches.
+    for _mod in ("notification_flood_guard",
+                  "shared.notification_flood_guard"):
+        if _mod in sys.modules:
+            del sys.modules[_mod]
     # Re-import
     if "notify" in sys.modules:
         del sys.modules["notify"]

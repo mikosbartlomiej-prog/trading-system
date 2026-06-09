@@ -97,6 +97,107 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v3273_followups": {
+    "title": "NOTIFICATION_FLOOD_GUARD_AND_INCIDENT_CRITICAL_DIGEST",
+    "trigger": "v3260_through_v3272_added_INCIDENT_CRITICAL_emit_paths_and_a_5_minute_cron_loop_on_scripts_incident_pattern_detector_could_deliver_hundreds_of_identical_INCIDENT_CRITICAL_emails_per_hour_during_an_incident_loop_burying_the_first_actionable_alert",
+    "generated_at_iso": "2026-06-09T20:00:00+00:00",
+    "problem": "shared/notify.py's _CRITICAL_MARKERS shipped [INCIDENT-CRITICAL] through the SMTP fast-path. The 5-min incident-pattern-detector cron, when re-detecting the same condition on every tick, generated hundreds of identical critical emails per hour. The truly actionable first alert was buried in the noise; the operator's inbox became unusable. Critical visibility had to be preserved without flooding the mailbox.",
+    "fix": {
+      "flood_guard_module_added": "shared/notification_flood_guard.py is a pure-function flood guard. Public surface: normalize_subject, incident_fingerprint, should_send_immediate, apply_verdict, evaluate_and_record, load_flood_state, save_flood_state, record_notification_decision. Six verdicts: FLOOD_SEND_FIRST / FLOOD_SEND_ESCALATION / FLOOD_DIGEST / FLOOD_BLOCK_HOURLY_CAP / FLOOD_BLOCK_DAILY_CAP / FLOOD_BYPASS_DISABLED.",
+      "notify_wire_in": "shared/notify.py::send_email gained a _consult_flood_guard helper inserted AFTER the v3.13 classifier resolves to 'send' — so off/suppress/digest short-circuits are preserved. The flood guard only gates flood-guarded prefixes (default: [INCIDENT-CRITICAL]); all other subjects fall through to SMTP. Sending verdicts proceed to SMTP. Digest verdicts also call the standard _append_to_digest so the operator can still see digested events through the existing digest pipeline.",
+      "digest_script_added": "scripts/send_incident_digest.py aggregates the day's audit JSONL + digest JSONL into ONE summary email ([INCIDENT-DIGEST] YYYY-MM-DD — N unique, M immediate, K digested). Sends AT MOST ONE email per invocation regardless of input size. Refuses (exit 1) on any truthy broker-execution env flag. NEVER imports the broker-orders module.",
+      "legacy_test_isolation": "tests/test_notify_policy_v3131.py::_reload_notify extended to isolate flood-guard state per call (NOTIFY_FLOOD_STATE_DIR + NOTIFY_DIGEST_DIR pointed at tempfile.mkdtemp()) so the legacy v3.13 baseline does not collide with on-repo state files written by production runs.",
+      "docs_added": "docs/NOTIFICATION_POLICY.md is the new canonical reference: layered routing, six verdicts, fingerprinting algorithm, env knobs table, always-send markers, on-disk artefacts, operator persona tuning, hard safety invariants, test coverage."
+    },
+    "verdicts_enum": [
+      "FLOOD_SEND_FIRST",
+      "FLOOD_SEND_ESCALATION",
+      "FLOOD_DIGEST",
+      "FLOOD_BLOCK_HOURLY_CAP",
+      "FLOOD_BLOCK_DAILY_CAP",
+      "FLOOD_BYPASS_DISABLED"
+    ],
+    "default_policy": {
+      "NOTIFY_FLOOD_GUARD_ENABLED":              true,
+      "INCIDENT_CRITICAL_IMMEDIATE_FIRST":       true,
+      "INCIDENT_CRITICAL_COOLDOWN_MINUTES":      60,
+      "INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_HOUR": 3,
+      "INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_DAY":  10,
+      "NOTIFY_ALWAYS_SEND_MARKERS":              "[KILL-SWITCH,[FAIL",
+      "NOTIFY_ALWAYS_DIGEST_MARKERS":            ""
+    },
+    "new_modules": {
+      "shared/notification_flood_guard.py": {
+        "purpose": "pure-function notification flood guard (fingerprint + cooldown + caps + audit)",
+        "never_submits_orders": true,
+        "never_imports_broker_orders_module": true,
+        "never_deletes_existing_audit_or_digest_files": true,
+        "never_silently_drops_critical_events": true,
+        "redacts_secret_shaped_tokens_in_audit_previews": true
+      },
+      "scripts/send_incident_digest.py": {
+        "purpose": "daily incident digest aggregator — one summary email per invocation",
+        "never_submits_orders": true,
+        "never_imports_broker_orders_module": true,
+        "refuses_on_truthy_broker_flag": true,
+        "sends_at_most_one_email_per_invocation": true
+      }
+    },
+    "new_artifacts_runtime_only": [
+      "learning-loop/notify_state/notification_flood_state.json",
+      "learning-loop/notify_digest/YYYY-MM-DD.jsonl",
+      "learning-loop/notify_digest/notification_decisions_YYYY-MM-DD.jsonl"
+    ],
+    "runtime_artifacts_not_committed": true,
+    "new_tests": [
+      "tests/test_notification_flood_guard_v3273.py",
+      "tests/test_notify_policy_incident_digest_v3273.py",
+      "tests/test_incident_digest_script_v3273.py"
+    ],
+    "test_summary": {
+      "v3273_new_tests": 35,
+      "legacy_v3131_baseline_preserved": 32,
+      "combined_v327x_plus_v326x_plus_v3131": 262,
+      "tests_e2e_suite": 65,
+      "tests_architecture_vnext_suite": 290,
+      "audits": {
+        "workflow_audit": "OK (36 workflows clean)",
+        "system_consistency": "PASS 100.0/100",
+        "strategy_coherence": "PASS 100.0/100"
+      }
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "flood_guard_never_imports_broker_orders_module": true,
+      "flood_guard_never_silently_drops_critical_event": true,
+      "digest_script_refuses_on_truthy_broker_flag": true,
+      "digest_script_sends_at_most_one_email_per_invocation": true,
+      "audit_jsonl_is_append_only": true,
+      "secret_shaped_tokens_redacted_in_audit_previews": true,
+      "v3_13_critical_off_suppress_paths_unchanged": true,
+      "kill_switch_and_fail_markers_bypass_cooldown_and_caps": true,
+      "this_sprint_changes_notification_routing_only_not_trading_behavior": true
+    },
+    "next_action_items_v3273": [
+      "OBSERVE_NEXT_INCIDENT_LOOP_AND_VERIFY_FIRST_CRITICAL_REACHES_INBOX_DUPLICATES_DIGESTED",
+      "REVIEW_LEARNING_LOOP_NOTIFY_DIGEST_NOTIFICATION_DECISIONS_AFTER_EACH_INCIDENT",
+      "OPTIONAL_RUN_SCRIPTS_SEND_INCIDENT_DIGEST_AT_END_OF_SESSION_OR_DAILY",
+      "DO_NOT_DISABLE_FLOOD_GUARD_UNLESS_DEBUGGING",
+      "DO_NOT_REMOVE_KILL_SWITCH_OR_FAIL_FROM_NOTIFY_ALWAYS_SEND_MARKERS",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD"
+    ]
+  },
   "v3272_followups": {
     "title": "AUTOMATED_EVIDENCE_PROGRESS_MONITOR_AND_NO_SIGNAL_REMEDIATION",
     "trigger": "v3271_evaluator_answered_per_tick_health_but_could_not_distinguish_progressing_pipeline_from_silently_stuck_pipeline_across_many_ticks",

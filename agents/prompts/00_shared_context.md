@@ -1036,4 +1036,114 @@ markers MUST be present in every monitor invocation.
 
 ---
 
+## v3.27.3 coverage (added 2026-06-09)
+
+v3.27.x added autonomous shadow-evidence visibility. v3.27.3 closes an
+**operational** issue introduced as a side-effect of that growth:
+`shared/notify.py`'s `_CRITICAL_MARKERS` ships `[INCIDENT-CRITICAL]`
+through the SMTP fast-path, and the `scripts/incident_pattern_detector.py`
+cron firing every 5 min could (and did) deliver hundreds of identical
+`[INCIDENT-CRITICAL]` emails per hour during an incident loop. v3.27.3
+layers a deterministic flood guard in front of the SMTP path so the
+**first unique critical incident still reaches the operator
+immediately**, while duplicates within a configurable cooldown are
+routed to a digest. Every decision is appended to an audit JSONL — no
+critical event is ever silently dropped.
+
+When reviewing, also check:
+
+- `shared/notification_flood_guard.py` — **NEW** pure-function flood
+  guard. Public surface: `normalize_subject`, `incident_fingerprint`,
+  `should_send_immediate`, `apply_verdict`, `evaluate_and_record`,
+  `load_flood_state`, `save_flood_state`, `record_notification_decision`.
+  Six verdicts (`ALL_FLOOD_VERDICTS`):
+  `FLOOD_SEND_FIRST` / `FLOOD_SEND_ESCALATION` / `FLOOD_DIGEST` /
+  `FLOOD_BLOCK_HOURLY_CAP` / `FLOOD_BLOCK_DAILY_CAP` /
+  `FLOOD_BYPASS_DISABLED`. NEVER submits orders. NEVER imports the
+  broker-orders module. NEVER deletes existing audit or digest files.
+  NEVER silently drops a critical event — even capped events are
+  appended to the digest JSONL. Subject + body previews stored in the
+  audit JSONL redact any 16+ char uppercase-alphanumeric token
+  (Alpaca-key shape).
+- `shared/notify.py::send_email` — extended with `_consult_flood_guard`
+  helper. Insertion point is AFTER the v3.13 classifier resolves to
+  `send` — so `off` / `suppress` / `digest` short-circuits are
+  preserved. The flood guard only gates flood-guarded prefixes
+  (default: `[INCIDENT-CRITICAL]`); all other subjects fall through
+  to SMTP. Sending verdicts (`FLOOD_SEND_FIRST` /
+  `FLOOD_SEND_ESCALATION` / `FLOOD_BYPASS_DISABLED`) proceed to SMTP.
+  Digest verdicts also call the standard `_append_to_digest` so the
+  operator can still see digested events through the existing digest
+  pipeline.
+- `scripts/send_incident_digest.py` — **NEW** daily digest aggregator.
+  Reads the v3.13 digest JSONL + the v3.27.3 audit JSONL, groups by
+  fingerprint, renders ONE email
+  (`[INCIDENT-DIGEST] YYYY-MM-DD — N unique, M immediate, K digested`).
+  Sends AT MOST ONE email per invocation regardless of input size.
+  Refuses (exit 1) on any truthy broker-execution env flag. NEVER
+  imports the broker-orders module. Modes: default = send today's
+  digest; `--only-if-events` = quiet exit when nothing to send;
+  `--print-only` = render to stdout without sending; `--date YYYY-MM-DD`
+  = aggregate a specific date.
+- `docs/NOTIFICATION_POLICY.md` — **NEW** comprehensive doc covering
+  the layered routing (NOTIFY_MODE → v3.13 classifier → flood guard),
+  the six flood-guard verdicts, fingerprinting algorithm, env knobs,
+  always-send markers, on-disk artefacts, operator persona tuning,
+  hard safety invariants, and test coverage.
+- `tests/test_notify_policy_v3131.py::_reload_notify` — extended to
+  isolate the flood-guard state directory (`NOTIFY_FLOOD_STATE_DIR` +
+  `NOTIFY_DIGEST_DIR`) per call so the legacy v3.13 baseline does not
+  collide with on-repo state files written by production runs.
+
+### v3.27.3 status tokens (added)
+
+- 6 flood-guard verdicts (`FLOOD_SEND_FIRST` / `FLOOD_SEND_ESCALATION`
+  / `FLOOD_DIGEST` / `FLOOD_BLOCK_HOURLY_CAP` / `FLOOD_BLOCK_DAILY_CAP`
+  / `FLOOD_BYPASS_DISABLED`).
+
+### v3.27.3 default policy
+
+| Knob | Default | Purpose |
+|---|---|---|
+| `NOTIFY_FLOOD_GUARD_ENABLED` | `true` | Master switch. `false` still writes audit JSONL but bypasses gating. |
+| `INCIDENT_CRITICAL_IMMEDIATE_FIRST` | `true` | First occurrence sends immediately. |
+| `INCIDENT_CRITICAL_COOLDOWN_MINUTES` | `60` | Duplicates within window → digest. |
+| `INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_HOUR` | `3` | Hourly safety cap. |
+| `INCIDENT_CRITICAL_MAX_IMMEDIATE_PER_DAY` | `10` | Daily safety cap. |
+| `NOTIFY_ALWAYS_SEND_MARKERS` | `[KILL-SWITCH,[FAIL` | Bypass cooldown + caps. |
+| `NOTIFY_ALWAYS_DIGEST_MARKERS` | (empty) | Force-digest list. |
+
+### Final Arbiter v3.27.3 escalation triggers (P0)
+
+In addition to all v3.23.x / v3.24 / v3.25 / v3.26 / v3.27.0 /
+v3.27.1 / v3.27.2 triggers, the Final Arbiter MUST block escalation
+and set primary verdict to NEEDS_FIXES with secondary
+NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the v3.27.3 flood guard returns a verdict outside
+  `ALL_FLOOD_VERDICTS`
+- `shared/notification_flood_guard.py` acquires an import of the
+  broker-orders module
+- `scripts/send_incident_digest.py` acquires an import of the
+  broker-orders module
+- the digest script sends more than one email per invocation
+- a `FLOOD_DIGEST` / `FLOOD_BLOCK_*` verdict is emitted without a
+  corresponding append to the digest JSONL (silent drop)
+- the audit JSONL is rewritten in place (the contract is append-only)
+  — verified by stat / size monotonicity
+- the always-send default list shrinks (any of `[KILL-SWITCH*`,
+  `[FAIL*` removed from default routing)
+- the `_consult_flood_guard` wire-in is moved BEFORE the v3.13
+  classifier (the classifier is the authoritative first gate)
+- the digest script's refusal list shrinks (any of the 7 broker
+  env flags removed from the truthy-refusal check)
+- audit JSONL preview fields contain a 20+ char uppercase-alphanumeric
+  run (potential secret leak — the redactor was bypassed)
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.27.3 changes notification ROUTING only;
+no trading behaviour, broker state, or readiness gate is touched.
+
+---
+
 ## End of shared context
