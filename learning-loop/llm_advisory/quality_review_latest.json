@@ -1,25 +1,25 @@
 {
-  "next_recommended_action": "Provider output was not used \u2014 verify provider key + endpoint. Do NOT enable schedule.",
+  "next_recommended_action": "Improve per-agent prompts so Gemini emits concrete evidence-grounded analysis. Do NOT enable schedule.",
   "quality_report": {
     "confidence_max": 0.0,
     "confidence_min": 0.0,
-    "empty_next_actions_count": 11,
-    "empty_risks_count": 11,
+    "empty_next_actions_count": 4,
+    "empty_risks_count": 4,
     "generic_placeholder_count": 0,
     "rationale": [
-      "no row carried PROVIDER_USED \u2014 provider output was not incorporated"
+      "0/4 rows look like generic placeholder; empty-risks=4; empty-next=4; zero-conf=4"
     ],
-    "rows_seen": 11,
-    "rows_with_provider_failed": 11,
+    "rows_seen": 4,
+    "rows_with_provider_failed": 0,
     "rows_with_provider_skipped": 0,
-    "rows_with_provider_used": 0,
+    "rows_with_provider_used": 4,
     "secret_leak_hits": 0,
-    "status": "LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED",
+    "status": "LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER",
     "unsafe_phrase_hits": 0,
-    "zero_confidence_count": 11
+    "zero_confidence_count": 4
   },
-  "quality_status": "LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED",
-  "run_id": "v3283-gemini-quality-20260609T200651Z",
+  "quality_status": "LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER",
+  "run_id": "v329-gemini-recovery-postreqs-20260609T203552Z",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,

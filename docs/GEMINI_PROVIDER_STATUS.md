@@ -1,10 +1,10 @@
 # Gemini Provider Status (v3.29)
 
-- **Smoke status:** `GEMINI_SMOKE_FAILED`
+- **Smoke status:** `GEMINI_SMOKE_OK`
 - **Selected model:** `gemini-flash-latest`
 - **Configured model:** `gemini-flash-latest`
-- **Discovered models count:** 0
-- **Failure category:** `GEMINI_UNKNOWN_PROVIDER_FAILURE`
+- **Discovered models count:** 34
+- **Failure category:** `None`
 - **Failure HTTP:** None
 - **Safe to schedule:** false
 

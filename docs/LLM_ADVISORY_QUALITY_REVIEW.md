@@ -1,21 +1,21 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3283-gemini-quality-20260609T200651Z`
-- **Quality status:** `LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED`
-- **Rows seen:** 11
-- **Rows with PROVIDER_USED:** **0**
+- **Run ID:** `v329-gemini-recovery-postreqs-20260609T203552Z`
+- **Quality status:** `LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER`
+- **Rows seen:** 4
+- **Rows with PROVIDER_USED:** **4**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
-- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 11
+- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 0
 - **generic_placeholder_count:** 0
-- **empty_risks_count:** 11
-- **empty_next_actions_count:** 11
-- **zero_confidence_count:** 11
+- **empty_risks_count:** 4
+- **empty_next_actions_count:** 4
+- **zero_confidence_count:** 4
 - **secret_leak_hits:** 0
 - **unsafe_phrase_hits:** 0
 
 ## Rationale
 
-- no row carried PROVIDER_USED — provider output was not incorporated
+- 0/4 rows look like generic placeholder; empty-risks=4; empty-next=4; zero-conf=4
 
 ## Safety invariants
 
