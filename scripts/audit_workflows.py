@@ -36,6 +36,13 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 # Workflows allowed to write to repo (commit state files etc.). Anything not
 # on this list MUST NOT have `contents: write`.
 CONTENTS_WRITE_ALLOWLIST: set[str] = {
+    # v3.28 (2026-06-09) — LLM advisory mesh runs in cloud and commits
+    # only learning-loop/llm_advisory/** + docs/LLM_ADVISORY_MESH_LATEST.md
+    # + learning-loop/position_reconciliation/latest.json. All 7
+    # broker-execution env flags hard-pinned false; no broker secrets.
+    # Default trigger: workflow_dispatch (schedule gated on
+    # LLM_AGENTS_SCHEDULED repo variable).
+    "llm-advisory-mesh.yml",
     "auto-merge.yml",
     "daily-learning.yml",
     "daily-learning-watchdog.yml",

@@ -97,6 +97,123 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v328_followups": {
+    "title": "CLOUD_LLM_ADVISORY_MESH_ACROSS_TRADING_PROCESS",
+    "trigger": "operator_wants_more_llm_agents_across_the_full_process_running_from_github_actions_cloud_automation_without_local_computer_having_to_stay_open",
+    "generated_at_iso": "2026-06-09T20:00:00+00:00",
+    "problem": "Pre-v3.28 the repository had per-monitor LLM curators and a learning-loop client driven by Anthropic Routines (poll-based via claude.ai). None of them could run from a cloud automation context using an LLM provider API key, and each shipped its own ad-hoc safety contract. The operator needed cloud-callable LLM advisory across the whole process (signal review, no-signal diagnostic, shadow outcome review, pre-order advisory, risk narrative, risk-gate proposal, incident review, broker-paper canary review) with hard execution-authority bounds.",
+    "fix": {
+      "authority_model_added": "docs/LLM_AUTHORITY_MODEL.md defines six levels (L0_OBSERVE_ONLY..L4_PROPOSE_CONFIG_CHANGE_ONLY + L5_EXECUTE_FORBIDDEN sentinel). L5 is non-assignable; the registry constructor raises on attempt.",
+      "advisory_schema_added": "learning-loop/llm_advisory/schema.json pins seven safety-critical fields as JSON Schema enums (advisory_only=[true], may_execute / may_modify_risk / may_unlock_broker_paper / broker_order_submitted / broker_execution_enabled / affects_readiness_gate all =[false]). Authority enum excludes L5.",
+      "budget_governor_added": "shared/llm_agent_budget.py defaults LLM_AGENTS_ENABLED=false. Per-day 20 calls, per-run 5 calls, $1.00 cost cap. Six statuses. Fail-soft.",
+      "provider_client_added": "shared/llm_provider_client.py supports anthropic / openai / offline_mock. Default offline_mock makes no network calls. Six statuses. Response text redacted for secret-shaped tokens.",
+      "agent_registry_added": "shared/llm_advisory_registry.py canonicalises 11 agents. Each agent carries all 10 forbidden capability tokens in its forbidden_actions list (asserted by constructor).",
+      "pre_order_advisory_added": "shared/llm_pre_order_advisory.py verdict enum has no EXECUTE token. is_blocking() returns True only when verdict=ADVISORY_VETO_RECOMMENDED AND LLM_PRE_ORDER_VETO_HONORED=true (default false).",
+      "risk_proposal_added": "shared/llm_risk_change_proposal.py enforces auto_apply=False, requires_operator_approval=True, advisory_only=True at construction. applies_to_risk_config() is a hard return False. No file-write helpers in source.",
+      "mesh_runner_added": "scripts/run_llm_advisory_mesh.py default returns LLM_ADVISORY_MESH_SKIPPED_DISABLED. Refuses on any truthy broker-execution env flag. Validates every emitted row against schema. Outputs append-only JSONL + rendered markdown.",
+      "workflow_added": ".github/workflows/llm-advisory-mesh.yml is workflow_dispatch by default; scheduled cron only when repo variable LLM_AGENTS_SCHEDULED=true. All 7 broker-execution env flags hard-pinned false. Provider keys via secrets; offline_mock path safe with zero secrets. Tight commit allow-list."
+    },
+    "authority_levels_enum": [
+      "L0_OBSERVE_ONLY",
+      "L1_EXPLAIN_ONLY",
+      "L2_RECOMMEND_ONLY",
+      "L3_VETO_RECOMMEND_ONLY",
+      "L4_PROPOSE_CONFIG_CHANGE_ONLY"
+    ],
+    "sentinel_authority_level_not_assignable": "L5_EXECUTE_FORBIDDEN",
+    "default_authority_ceiling": "L3_VETO_RECOMMEND_ONLY",
+    "advisory_verdicts_enum_no_execute": [
+      "ADVISORY_PASS",
+      "ADVISORY_WARN",
+      "ADVISORY_VETO_RECOMMENDED",
+      "ADVISORY_SKIPPED_DISABLED",
+      "ADVISORY_SKIPPED_BUDGET",
+      "ADVISORY_SKIPPED_NO_PROVIDER",
+      "ADVISORY_ERROR_FAIL_SOFT"
+    ],
+    "default_policy": {
+      "LLM_AGENTS_ENABLED":               false,
+      "LLM_AGENTS_SCHEDULED":             false,
+      "LLM_PROVIDER":                     "offline_mock",
+      "LLM_AGENT_DAILY_CALL_BUDGET":      20,
+      "LLM_AGENT_PER_RUN_BUDGET":         5,
+      "LLM_AGENT_MAX_COST_USD_PER_DAY":   1.00,
+      "LLM_AGENT_FAIL_SOFT":              true,
+      "LLM_PRE_ORDER_VETO_HONORED":       false
+    },
+    "new_modules": {
+      "shared/llm_agent_budget.py":         {"never_imports_broker_orders_module": true, "default_disabled": true},
+      "shared/llm_provider_client.py":       {"never_imports_broker_orders_module": true, "default_offline_mock": true},
+      "shared/llm_advisory_registry.py":    {"never_imports_broker_orders_module": true, "l5_sentinel_not_assignable": true},
+      "shared/llm_pre_order_advisory.py":    {"never_imports_broker_orders_module": true, "verdict_enum_has_no_execute": true},
+      "shared/llm_risk_change_proposal.py":  {"never_imports_broker_orders_module": true, "auto_apply_always_false": true, "no_file_write_helpers": true},
+      "scripts/run_llm_advisory_mesh.py":   {"never_imports_broker_orders_module": true, "refuses_on_truthy_broker_flag": true, "default_skipped_disabled": true}
+    },
+    "new_workflow": {
+      "path": ".github/workflows/llm-advisory-mesh.yml",
+      "default_trigger": "workflow_dispatch",
+      "schedule_gated_on_repo_var": "LLM_AGENTS_SCHEDULED",
+      "broker_execution_flags_pinned_false": [
+        "ALLOW_BROKER_PAPER", "EDGE_GATE_ENABLED",
+        "BROKER_EXECUTION_ENABLED",
+        "LIVE_TRADING", "LIVE_ENABLED", "GO_LIVE",
+        "LIVE_TRADING_ENABLED"
+      ],
+      "no_broker_secrets": true,
+      "commit_path_allowlist": [
+        "learning-loop/llm_advisory/**",
+        "docs/LLM_ADVISORY_MESH_LATEST.md",
+        "learning-loop/position_reconciliation/latest.json"
+      ]
+    },
+    "new_tests": [
+      "tests/test_llm_authority_model_v3280.py",
+      "tests/test_llm_advisory_schema_v3280.py",
+      "tests/test_llm_agent_budget_v3280.py",
+      "tests/test_llm_provider_client_v3280.py",
+      "tests/test_llm_advisory_registry_v3280.py",
+      "tests/test_llm_pre_order_advisory_v3280.py",
+      "tests/test_llm_risk_change_proposal_v3280.py",
+      "tests/test_llm_advisory_mesh_runner_v3280.py",
+      "tests/test_llm_advisory_workflow_v3280.py",
+      "tests/test_llm_no_execution_control_v3280.py"
+    ],
+    "test_summary": {
+      "v3280_new_tests": 79
+    },
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "llm_modules_never_import_broker_orders_module": true,
+      "advisory_schema_pins_seven_safety_critical_enums": true,
+      "l5_execute_forbidden_sentinel_not_assignable": true,
+      "default_provider_is_offline_mock_zero_network_calls": true,
+      "llm_agents_enabled_defaults_false": true,
+      "mesh_runner_refuses_on_truthy_broker_flag": true,
+      "pre_order_advisory_verdict_enum_has_no_execute": true,
+      "risk_change_proposal_auto_apply_always_false": true,
+      "llm_output_never_counts_as_real_market_evidence": true,
+      "this_sprint_changes_llm_advisory_routing_only_not_trading_behavior": true
+    },
+    "next_action_items_v328": [
+      "OBSERVE_LLM_ADVISORY_MESH_WORKFLOW_DISPATCH_RUN_ENDS_WITH_LLM_ADVISORY_MESH_SKIPPED_DISABLED_BY_DEFAULT",
+      "OPERATOR_OPT_IN_BY_SETTING_REPO_VAR_LLM_AGENTS_ENABLED_TRUE_PLUS_LLM_PROVIDER_AND_PROVIDER_KEY_AS_SECRET",
+      "MONITOR_LEARNING_LOOP_LLM_ADVISORY_FOR_FIRST_ROWS_AFTER_OPT_IN",
+      "DO_NOT_FLIP_LLM_PRE_ORDER_VETO_HONORED_TRUE_WITHOUT_REVIEW",
+      "DO_NOT_AUTO_APPLY_RISK_CHANGE_PROPOSALS",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD"
+    ]
+  },
   "v3273_followups": {
     "title": "NOTIFICATION_FLOOD_GUARD_AND_INCIDENT_CRITICAL_DIGEST",
     "trigger": "v3260_through_v3272_added_INCIDENT_CRITICAL_emit_paths_and_a_5_minute_cron_loop_on_scripts_incident_pattern_detector_could_deliver_hundreds_of_identical_INCIDENT_CRITICAL_emails_per_hour_during_an_incident_loop_burying_the_first_actionable_alert",

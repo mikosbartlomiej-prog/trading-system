@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trading-system.local/learning-loop/llm_advisory/schema.json",
+  "title": "LLM Advisory Output (v3.28)",
+  "description": "Schema for every row written under learning-loop/llm_advisory/. Pinned enums on safety-critical fields enforce LLM authority bounds at validation time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timestamp",
+    "run_id",
+    "agent_name",
+    "authority_level",
+    "process_stage",
+    "advisory_only",
+    "may_execute",
+    "may_modify_risk",
+    "may_unlock_broker_paper",
+    "evidence_refs",
+    "input_summary",
+    "recommendation",
+    "veto_recommendation",
+    "confidence",
+    "rationale",
+    "risks_identified",
+    "proposed_next_actions",
+    "forbidden_actions_confirmed",
+    "broker_order_submitted",
+    "broker_execution_enabled",
+    "affects_readiness_gate"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of the advisory row."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier of the mesh-runner invocation that produced this row."
+    },
+    "agent_name": {
+      "type": "string",
+      "enum": [
+        "MARKET_REGIME_AGENT",
+        "SIGNAL_QUALITY_AGENT",
+        "DATA_QUALITY_AGENT",
+        "NO_SIGNAL_DIAGNOSTIC_AGENT",
+        "SHADOW_OUTCOME_REVIEW_AGENT",
+        "PRE_ORDER_ADVISORY_AGENT",
+        "RISK_NARRATIVE_AGENT",
+        "RISK_GATE_CHANGE_PROPOSAL_AGENT",
+        "INCIDENT_REVIEW_AGENT",
+        "BROKER_PAPER_CANARY_REVIEW_AGENT",
+        "FINAL_ADVISORY_ARBITER"
+      ]
+    },
+    "authority_level": {
+      "type": "string",
+      "enum": [
+        "L0_OBSERVE_ONLY",
+        "L1_EXPLAIN_ONLY",
+        "L2_RECOMMEND_ONLY",
+        "L3_VETO_RECOMMEND_ONLY",
+        "L4_PROPOSE_CONFIG_CHANGE_ONLY"
+      ],
+      "description": "L5_EXECUTE_FORBIDDEN is a sentinel value used in code; it MUST NEVER appear in serialized output."
+    },
+    "process_stage": {
+      "type": "string",
+      "enum": [
+        "MARKET_REGIME",
+        "SIGNAL_REVIEW",
+        "NO_SIGNAL_DIAGNOSTIC",
+        "SHADOW_OPPORTUNITY_REVIEW",
+        "SHADOW_OUTCOME_REVIEW",
+        "PRE_ORDER_ADVISORY",
+        "RISK_NARRATIVE_REVIEW",
+        "RISK_GATE_CHANGE_PROPOSAL",
+        "INCIDENT_REVIEW",
+        "BROKER_PAPER_CANARY_REVIEW",
+        "FINAL_ADVISORY_ARBITER"
+      ]
+    },
+    "advisory_only":               { "type": "boolean", "enum": [true]  },
+    "may_execute":                 { "type": "boolean", "enum": [false] },
+    "may_modify_risk":             { "type": "boolean", "enum": [false] },
+    "may_unlock_broker_paper":     { "type": "boolean", "enum": [false] },
+    "broker_order_submitted":      { "type": "boolean", "enum": [false] },
+    "broker_execution_enabled":    { "type": "boolean", "enum": [false] },
+    "affects_readiness_gate":      { "type": "boolean", "enum": [false] },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "input_summary":   { "type": "string" },
+    "recommendation":  { "type": "string" },
+    "veto_recommendation": { "type": "boolean" },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "rationale": { "type": "string" },
+    "risks_identified":      { "type": "array", "items": { "type": "string" } },
+    "proposed_next_actions": { "type": "array", "items": { "type": "string" } },
+    "forbidden_actions_confirmed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ORDER_EXECUTION",
+          "POSITION_MODIFICATION",
+          "RISK_GATE_DIRECT_MUTATION",
+          "BROKER_PAPER_UNLOCK",
+          "LIVE_TRADING_ENABLEMENT",
+          "BASELINE_RESET",
+          "DRAWDOWN_GUARD_LOWERING",
+          "READINESS_COUNTER_MUTATION",
+          "MARKET_DATA_FABRICATION",
+          "PNL_FABRICATION"
+        ]
+      }
+    }
+  }
+}

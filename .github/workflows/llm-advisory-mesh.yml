@@ -1,0 +1,172 @@
+name: LLM Advisory Mesh (v3.28)
+
+# v3.28 (2026-06-09) — cloud-callable LLM advisory mesh.
+#
+# DEFAULT: DISABLED. The workflow is workflow_dispatch only by default.
+# Optional schedule fires ONLY when the repo variable LLM_AGENTS_SCHEDULED
+# is set to "true".
+#
+# HARD SAFETY:
+# - NEVER includes broker secrets.
+# - NEVER imports the broker-orders module.
+# - NEVER submits orders.
+# - Refuses to proceed if any of ALLOW_BROKER_PAPER / EDGE_GATE_ENABLED /
+#   BROKER_EXECUTION_ENABLED / LIVE_TRADING / LIVE_ENABLED / GO_LIVE /
+#   LIVE_TRADING_ENABLED is truthy.
+# - Commits ONLY paths inside learning-loop/llm_advisory/** +
+#   docs/LLM_ADVISORY_MESH_LATEST.md +
+#   learning-loop/position_reconciliation/latest.json.
+# - Fails if any unauthorized file appears in the staged diff.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run identifier (optional)"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    # Fires once a day at 22:00 UTC — only effective when the
+    # `LLM_AGENTS_SCHEDULED` repo variable is "true".
+    - cron: "0 22 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: llm-advisory-mesh-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.28 hard-pin: every broker-execution flag is locked OFF.
+  ALLOW_BROKER_PAPER:        "false"
+  EDGE_GATE_ENABLED:         "false"
+  BROKER_EXECUTION_ENABLED:  "false"
+  LIVE_TRADING:              "false"
+  LIVE_ENABLED:              "false"
+  GO_LIVE:                   "false"
+  LIVE_TRADING_ENABLED:      "false"
+  # v3.28 LLM mesh controls. All default disabled / offline_mock so the
+  # workflow is safe to run with zero secrets configured.
+  LLM_AGENTS_ENABLED:                  ${{ vars.LLM_AGENTS_ENABLED || 'false' }}
+  LLM_AGENTS_SCHEDULED:                ${{ vars.LLM_AGENTS_SCHEDULED || 'false' }}
+  LLM_PROVIDER:                        ${{ vars.LLM_PROVIDER || 'offline_mock' }}
+  LLM_AGENT_DAILY_CALL_BUDGET:         ${{ vars.LLM_AGENT_DAILY_CALL_BUDGET || '20' }}
+  LLM_AGENT_PER_RUN_BUDGET:            ${{ vars.LLM_AGENT_PER_RUN_BUDGET || '5' }}
+  LLM_AGENT_MAX_COST_USD_PER_DAY:      ${{ vars.LLM_AGENT_MAX_COST_USD_PER_DAY || '1.00' }}
+  # Provider keys — passed via secrets when present. The runner is
+  # safe when these are empty (returns LLM_PROVIDER_KEY_MISSING).
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  advise:
+    name: LLM Advisory Mesh
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # On a schedule, only run when the repo variable opts in.
+    if: ${{ github.event_name != 'schedule' || vars.LLM_AGENTS_SCHEDULED == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution flags pinned false ✓"
+
+      - name: Run v3.28 safety tests subset
+        run: |
+          python3 -m unittest \
+            tests.test_llm_no_execution_control_v3280 \
+            tests.test_llm_authority_model_v3280 \
+            tests.test_llm_advisory_schema_v3280
+
+      - name: Run LLM advisory mesh
+        id: mesh
+        run: |
+          set -e
+          OUT=$(python3 scripts/run_llm_advisory_mesh.py \
+                  --run-id "${{ github.event.inputs.run_id || github.run_id }}" \
+                  --render-doc)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['status'])" <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-llm-mesh"
+          git config user.email "llm-mesh@trading-system.local"
+          git add learning-loop/llm_advisory/ \
+                  docs/LLM_ADVISORY_MESH_LATEST.md \
+                  learning-loop/position_reconciliation/latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/llm_advisory/*) ;;
+              docs/LLM_ADVISORY_MESH_LATEST.md) ;;
+              learning-loop/position_reconciliation/latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "Update LLM advisory mesh [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

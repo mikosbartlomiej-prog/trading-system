@@ -1146,4 +1146,108 @@ no trading behaviour, broker state, or readiness gate is touched.
 
 ---
 
+## v3.28 coverage (added 2026-06-09)
+
+v3.27.x layered automated shadow-evidence visibility + notification
+flood guard. v3.28 adds the missing layer: a **cloud-run LLM advisory
+mesh** that can review, challenge, recommend, propose-veto, and
+propose-config-change across the whole trading process — without
+direct execution authority and without requiring the operator's
+computer to be open. LLM provider calls happen inside GitHub Actions
+using API keys stored as GitHub Secrets.
+
+When reviewing, also check:
+
+- `docs/LLM_AUTHORITY_MODEL.md` — **NEW** canonical authority enum.
+  Six levels: `L0_OBSERVE_ONLY`, `L1_EXPLAIN_ONLY`,
+  `L2_RECOMMEND_ONLY`, `L3_VETO_RECOMMEND_ONLY`,
+  `L4_PROPOSE_CONFIG_CHANGE_ONLY`, `L5_EXECUTE_FORBIDDEN`. L5 is a
+  **sentinel** — `ASSIGNABLE_LEVELS` excludes it and
+  `assert_assignable_authority` raises `ValueError` on assignment.
+  Default ceiling for every agent is `L3_VETO_RECOMMEND_ONLY`; the
+  single risk-proposal agent gets `L4_PROPOSE_CONFIG_CHANGE_ONLY`.
+- `learning-loop/llm_advisory/schema.json` — **NEW** JSON Schema with
+  pinned safety enums: `advisory_only=[true]`, `may_execute=[false]`,
+  `may_modify_risk=[false]`, `may_unlock_broker_paper=[false]`,
+  `broker_order_submitted=[false]`, `broker_execution_enabled=[false]`,
+  `affects_readiness_gate=[false]`. Authority enum excludes
+  `L5_EXECUTE_FORBIDDEN`. Every row's `forbidden_actions_confirmed`
+  list must include all ten capability tokens.
+- `shared/llm_agent_budget.py` — **NEW** governor: defaults
+  `LLM_AGENTS_ENABLED=false`, daily 20 calls, per-run 5 calls,
+  $1.00/day cost cap, fail-soft. Six statuses. State in
+  `learning-loop/llm_advisory/llm_budget_state.json`. NEVER imports
+  the broker-orders module.
+- `shared/llm_provider_client.py` — **NEW** Anthropic / OpenAI /
+  offline_mock abstraction. Default `offline_mock` makes no network
+  calls. Six statuses. Keys read at call time, never persisted.
+  Response text redacted for secret-shaped tokens.
+- `shared/llm_advisory_registry.py` — **NEW** 11-agent canonical
+  registry. Every agent's `forbidden_actions` list includes all
+  ten capability tokens; constructor asserts. L5 sentinel raises.
+- `shared/llm_pre_order_advisory.py` — **NEW**. Verdict enum does
+  NOT include `EXECUTE`. `is_blocking()` returns True only when
+  verdict=`ADVISORY_VETO_RECOMMENDED` AND
+  `LLM_PRE_ORDER_VETO_HONORED=true`.
+- `shared/llm_risk_change_proposal.py` — **NEW**. Constructor
+  enforces `auto_apply=False`, `requires_operator_approval=True`,
+  `advisory_only=True`. `applies_to_risk_config()` is a hard
+  `return False`.
+- `scripts/run_llm_advisory_mesh.py` — **NEW** cloud-callable
+  runner. Default returns `LLM_ADVISORY_MESH_SKIPPED_DISABLED`.
+  Refuses (exit 1) on any truthy broker-execution env flag.
+  Validates every emitted row against the schema before writing.
+- `.github/workflows/llm-advisory-mesh.yml` — **NEW**
+  `workflow_dispatch` only by default; scheduled cron only when
+  repo variable `LLM_AGENTS_SCHEDULED=true`. All 7 broker flags
+  pinned `false`. No broker secrets. Tight commit allow-list.
+
+### v3.28 status tokens (added)
+
+- 6 budget statuses, 6 provider statuses, 7 advisory verdicts,
+  4 mesh runner statuses, 5 cross-cutting markers
+  (`LLM_CLOUD_ADVISORY_MESH_ADDED`, `LLM_AUTHORITY_MODEL_ADDED`,
+  `LLM_ORDER_EXECUTION_DIRECT_CONTROL_FORBIDDEN`,
+  `LLM_RISK_GATE_DIRECT_MUTATION_FORBIDDEN`,
+  `DETERMINISTIC_GATES_REMAIN_FINAL`,
+  `LLM_OUTPUT_NEVER_COUNTS_AS_REAL_MARKET_EVIDENCE`).
+
+### Final Arbiter v3.28 escalation triggers (P0)
+
+In addition to all v3.23.x through v3.27.x triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- any v3.28 module acquires an import of the broker-orders module
+- the `L5_EXECUTE_FORBIDDEN` sentinel appears in a serialized
+  advisory row
+- any advisory row carries `advisory_only=false`,
+  `may_execute=true`, `may_modify_risk=true`,
+  `may_unlock_broker_paper=true`, `broker_order_submitted=true`,
+  `broker_execution_enabled=true`, or `affects_readiness_gate=true`
+- `llm_pre_order_advisory.is_blocking()` returns `True` for any
+  verdict OTHER than `ADVISORY_VETO_RECOMMENDED`
+- `llm_pre_order_advisory.is_blocking()` returns `True` for
+  `ADVISORY_VETO_RECOMMENDED` while `LLM_PRE_ORDER_VETO_HONORED`
+  is unset / false
+- any `RiskChangeProposal` is serialized with `auto_apply=true`
+- the v3.28 workflow YAML drops the 7 broker-flag hard-pins or
+  adds broker secrets to its `env:` block
+- the v3.28 workflow's commit path allow-list widens beyond the
+  three approved paths
+- the `LLM_AGENTS_ENABLED` env default flips from `false` to `true`
+  anywhere in the workflow
+- the advisory schema's pinned enums on the seven safety-critical
+  fields are loosened
+- the budget governor's `LLM_AGENTS_ENABLED=false` default flips
+  to `true` in source
+- the offline-mock provider acquires a network-call path
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.28 changes LLM advisory ROUTING and
+authority — no trading behaviour, broker state, readiness gate, or
+real-market-evidence counters are touched.
+
+---
+
 ## End of shared context
