@@ -1,21 +1,21 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3283-mock-3`
-- **Quality status:** `LLM_ADVISORY_QUALITY_ACCEPTABLE`
-- **Rows seen:** 5
-- **Rows with PROVIDER_USED:** **5**
+- **Run ID:** `v3283-gemini-quality-20260609T200651Z`
+- **Quality status:** `LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED`
+- **Rows seen:** 11
+- **Rows with PROVIDER_USED:** **0**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
-- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 0
+- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 11
 - **generic_placeholder_count:** 0
-- **empty_risks_count:** 0
-- **empty_next_actions_count:** 0
-- **zero_confidence_count:** 0
+- **empty_risks_count:** 11
+- **empty_next_actions_count:** 11
+- **zero_confidence_count:** 11
 - **secret_leak_hits:** 0
 - **unsafe_phrase_hits:** 0
 
 ## Rationale
 
-- acceptable
+- no row carried PROVIDER_USED — provider output was not incorporated
 
 ## Safety invariants
 

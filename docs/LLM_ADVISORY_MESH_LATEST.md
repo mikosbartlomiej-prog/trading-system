@@ -1,10 +1,27 @@
-# LLM Advisory Mesh — latest run (v3.28)
+# LLM Advisory Mesh — latest run (v3.28.3)
 
-- **Run ID:** `v3282-gemini-activation-20260609T194951`
+- **Run ID:** `v3283-gemini-quality-20260609T200651Z`
 - **Status:** `LLM_ADVISORY_MESH_RAN`
-- **Agents evaluated:** 5
-- **Rows written:** 5
+- **Quality status:** `LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED`
+- **Selected provider:** `gemini`
+- **LLM_FREE_ONLY:** `True`
+- **Agents evaluated:** 11
+- **Rows written:** 11
 - **Standing markers:** `BROKER_PAPER_CANARY_STILL_BLOCKED`, `LIVE_TRADING_UNSUPPORTED`
+
+## Quality report (v3.28.3)
+
+- rows_with_provider_used: **0**
+- rows_with_provider_skipped: 0
+- rows_with_provider_failed: 11
+- generic_placeholder_count: 0
+- empty_risks_count: 11
+- empty_next_actions_count: 11
+- confidence range: [0.0, 0.0]
+- secret_leak_hits: 0
+- unsafe_phrase_hits: 0
+
+**Next recommended action:** Provider output was not used — verify provider key + endpoint. Do NOT enable schedule.
 
 ## Safety invariants (asserted on every run)
 - `broker_paper_canary_still_blocked`: **true**
