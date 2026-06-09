@@ -1081,3 +1081,63 @@ To make broker paper canary ready (a future sprint):
 
 The module returns `BROKER_PAPER_CANARY_READY` only when ALL of the
 above are true.
+
+---
+
+## Scenario BB — Running v3.26 signal/shadow evidence collection
+
+**Pre-flight:**
+
+```sh
+python3 -c "
+from shared.signal_shadow_preflight import run_preflight, PreflightInputs
+report = run_preflight(PreflightInputs(
+    open_orders_count=0,
+    open_equity_positions_count=0,
+    crypto_positions_reconciled=True,
+))
+print(report.verdict)
+print('blockers:', report.blockers)
+"
+```
+
+Expected output:
+
+```text
+SIGNAL_SHADOW_PREFLIGHT_PASS
+blockers: []
+```
+
+**Collector:**
+
+```sh
+python3 scripts/run_signal_shadow_evidence_collection.py --max-records 10
+```
+
+Expected return on a fresh system:
+
+- `status: SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA`
+- `halt_path_opportunities_count` incremented by 1.
+
+To exercise the scaffold path (writes placeholder records):
+
+```sh
+python3 scripts/run_signal_shadow_evidence_collection.py \
+    --max-records 5 --allow-without-market-data
+```
+
+**What the operator does NOT do during this scenario:**
+
+- Do NOT set `ALLOW_BROKER_PAPER=true`. The collector refuses.
+- Do NOT set `EDGE_GATE_ENABLED=true`. The collector refuses.
+- Do NOT set `LIVE_TRADING` or any sibling env var. The collector
+  refuses.
+- Do NOT manually edit
+  `learning-loop/shadow_evidence/evidence_counters_latest.json`
+  to inflate progress. The unlock-readiness gate consumes those
+  counters; falsifying them defeats the safety contract.
+- Do NOT delete `records_YYYY-MM-DD.jsonl` files. They are append-only
+  audit evidence.
+
+`EDGE_GATE_ENABLED` stays `false`. `ALLOW_BROKER_PAPER` stays unset.
+Live trading stays blocked.

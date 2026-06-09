@@ -1,6 +1,165 @@
 {
-  "version": "v3.25.0",
-  "generated_at_iso": "2026-06-09T00:30:00+00:00",
+  "version": "v3.26.1",
+  "generated_at_iso": "2026-06-09T15:30:00+00:00",
+  "v3261_followups": {
+    "title": "DAILY_SIGNAL_SHADOW_RUN_CHECK_AND_EVIDENCE_QUALITY_DISTINCTION",
+    "trigger": "v3260_smoke_run_inflated_normal_non_halt_count_with_scaffold_records",
+    "generated_at_iso": "2026-06-09T15:30:00+00:00",
+    "problem": "v3.26.0 collector incremented normal_non_halt_opportunities_count for every record it emitted, including SCAFFOLD records produced under --allow-without-market-data. That feeds the v3.25 broker-paper readiness gate; treating scaffold records as real-market evidence would prematurely flip the verdict.",
+    "fix": {
+      "schema_change": "added 'evidence_quality' field (REAL_MARKET_DATA | SCAFFOLD_NO_MARKET_DATA | HALT_PATH_ONLY) to shadow record schema, marked required.",
+      "counters_added": [
+        "real_market_opportunities_count (NEW v3.25 readiness input)",
+        "scaffold_no_market_data_records_count",
+        "halt_path_records_count"
+      ],
+      "collector_routing": "scaffold runs now increment scaffold_no_market_data_records_count instead of normal_non_halt_opportunities_count. halt-path runs increment halt_path_records_count + halt_path_opportunities_count. Real-market runs would increment real_market_opportunities_count (and normal_non_halt_opportunities_count for backward compatibility) — but no real-market wiring exists yet, so this path is currently unreachable.",
+      "migration": "v3.26.0 counter file with normal_non_halt_opportunities_count=5 from yesterday's scaffold smoke was migrated: 5 moved to scaffold_no_market_data_records_count, normal_non_halt_opportunities_count reset to 0. All 5 existing 2026-06-09 records were backfilled with evidence_quality=SCAFFOLD_NO_MARKET_DATA."
+    },
+    "daily_run_2026_06_09": {
+      "preflight_verdict": "SIGNAL_SHADOW_PREFLIGHT_PASS",
+      "collector_status": "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA",
+      "evidence_quality_of_run": "HALT_PATH_ONLY",
+      "real_market_records_emitted": 0,
+      "scaffold_records_emitted": 0,
+      "halt_path_increment": 2,
+      "carry_over_scaffold_records_from_smoke": 5
+    },
+    "counters_after_v3261_migration": {
+      "real_market_opportunities_count": 0,
+      "completed_shadow_outcomes_count": 0,
+      "scaffold_no_market_data_records_count": 5,
+      "halt_path_records_count": 3,
+      "halt_path_opportunities_count": 3,
+      "normal_non_halt_opportunities_count_legacy": 0,
+      "audit_bypass_findings_count": 0,
+      "exposure_cap_breach_count": 0,
+      "repeated_buy_violation_count": 0,
+      "unexplained_broker_state_conflicts_count": 0
+    },
+    "status_tokens_added": [
+      "SIGNAL_SHADOW_DAILY_RUN_RECORDED",
+      "SCAFFOLD_EVIDENCE_NOT_COUNTED_AS_REAL_MARKET_DATA",
+      "BROKER_PAPER_CANARY_STILL_BLOCKED",
+      "EVIDENCE_QUALITY_REAL_MARKET_DATA",
+      "EVIDENCE_QUALITY_SCAFFOLD_NO_MARKET_DATA",
+      "EVIDENCE_QUALITY_HALT_PATH_ONLY"
+    ],
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "broker_execution_enabled": false,
+      "live_trading_supported": false
+    },
+    "next_action_items_v3261": [
+      "RUN_NORMAL_COLLECTOR_DURING_US_MARKET_SESSION",
+      "COLLECT_50_REAL_MARKET_OPPORTUNITIES",
+      "COLLECT_20_COMPLETED_SHADOW_OUTCOMES",
+      "KEEP_BROKER_PAPER_DISABLED",
+      "KEEP_EDGE_GATE_DISABLED",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "REVIEW_ETH_AVAX_OPEN_CRYPTO_POSITIONS",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
+  "v326_followups": {
+    "title": "SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK",
+    "trigger": "v3_25_unlock_verdict_signal_shadow_unlock_ready",
+    "generated_at_iso": "2026-06-09T01:30:00+00:00",
+    "new_modules": {
+      "shared/signal_shadow_preflight.py": {
+        "purpose": "preflight validator for any v3.26 collector",
+        "verdicts": [
+          "SIGNAL_SHADOW_PREFLIGHT_PASS",
+          "SIGNAL_SHADOW_PREFLIGHT_BLOCKED"
+        ]
+      },
+      "shared/shadow_evidence_counters.py": {
+        "purpose": "monotonic counters persisted to learning-loop/shadow_evidence/evidence_counters_latest.json",
+        "thresholds": {
+          "normal_opportunities": 50,
+          "completed_shadow_outcomes": 20
+        }
+      }
+    },
+    "new_scripts": [
+      "scripts/run_signal_shadow_evidence_collection.py"
+    ],
+    "new_evidence_layout": {
+      "schema": "learning-loop/shadow_evidence/schema.json",
+      "counters_latest": "learning-loop/shadow_evidence/evidence_counters_latest.json",
+      "records_pattern": "learning-loop/shadow_evidence/records_YYYY-MM-DD.jsonl"
+    },
+    "new_docs": [
+      "docs/SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK.md",
+      "docs/SHADOW_EVIDENCE_PROGRESS.md"
+    ],
+    "new_tests": [
+      "tests/test_signal_shadow_preflight_v3260.py",
+      "tests/test_shadow_evidence_counters_v3260.py",
+      "tests/test_signal_shadow_collection_no_broker_execution_v3260.py"
+    ],
+    "status_tokens_added": [
+      "SIGNAL_SHADOW_PREFLIGHT_PASS",
+      "SIGNAL_SHADOW_PREFLIGHT_BLOCKED",
+      "BROKER_EXECUTION_DISABLED_CONFIRMED",
+      "BROKER_PAPER_DISABLED_CONFIRMED",
+      "LIVE_TRADING_UNSUPPORTED_CONFIRMED",
+      "EDGE_GATE_DISABLED_CONFIRMED",
+      "CRYPTO_GUARDS_PRESENT_CONFIRMED",
+      "AUDIT_BYPASS_INVARIANT_CONFIRMED",
+      "QUARANTINED_SCRIPTS_STILL_DISABLED_CONFIRMED",
+      "UNLOCK_READINESS_VERDICT_CONFIRMED",
+      "BROKER_PAPER_NOT_READY_CONFIRMED",
+      "BASELINE_UNCHANGED_CONFIRMED",
+      "DRAWDOWN_GUARD_NOT_LOWERED_CONFIRMED",
+      "OPEN_ORDERS_ZERO_CONFIRMED",
+      "OPEN_EQUITY_POSITIONS_ZERO_CONFIRMED",
+      "CRYPTO_POSITIONS_RECONCILED_CONFIRMED",
+      "SHADOW_COLLECTION_PROCEEDING",
+      "SHADOW_COLLECTION_REFUSED_BROKER_EXECUTION_ENABLED",
+      "SHADOW_COLLECTION_REFUSED_PREFLIGHT_FAILED",
+      "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA"
+    ],
+    "preserved_facts": {
+      "amd_realized_pnl_usd": -437.07,
+      "amd_close_source_status": "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT",
+      "client_order_id_status": "CLIENT_ORDER_ID_NOT_VISIBLE_IN_UI_TABLE",
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "baseline_reset": false,
+      "no_active_legacy_dangerous_order_script": true,
+      "operator_verified_no_open_orders": true,
+      "operator_verified_no_open_equity_positions": true,
+      "open_crypto_positions_meaningful": ["ETHUSD", "AVAXUSD"],
+      "open_crypto_positions_dust": ["SOLUSD", "LTCUSD"],
+      "broker_execution_enabled": false,
+      "live_trading_supported": false
+    },
+    "expected_progress": {
+      "normal_non_halt_opportunities_count": 0,
+      "completed_shadow_outcomes_count": 0,
+      "broker_paper_canary_ready": false,
+      "live_trading_supported": false
+    },
+    "next_action_items_v326": [
+      "RUN_SIGNAL_SHADOW_ONLY_EVIDENCE_COLLECTION",
+      "COLLECT_50_NORMAL_OPPORTUNITIES",
+      "COLLECT_20_COMPLETED_SHADOW_OUTCOMES",
+      "KEEP_BROKER_PAPER_DISABLED",
+      "KEEP_EDGE_GATE_DISABLED",
+      "KEEP_DRAWDOWN_GUARD_ACTIVE",
+      "REVIEW_ETH_AVAX_OPEN_CRYPTO_POSITIONS",
+      "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
+    ]
+  },
   "v325_followups": {
     "title": "CRYPTO_POSITION_SIZING_LADDERING_EXIT_POLICY_AND_UNLOCK_READINESS",
     "trigger": "V3_24_REATTRIBUTED_DRAWDOWN_TO_SOL_LTC_CLOSE_CYCLE",

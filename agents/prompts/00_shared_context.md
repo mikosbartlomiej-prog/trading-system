@@ -655,4 +655,74 @@ PAPER_TRADING_* verdicts.
 
 ---
 
+## v3.26.0 coverage (added 2026-06-09)
+
+v3.26 ships the signal/shadow evidence-collection scaffolding. The
+unlock verdict ladder is unchanged; v3.26 only adds the operator
+playbook + preflight + counters + dry-run collector + JSON Schema
+that the v3.25 `trading_unlock_readiness` gate consumes.
+
+When reviewing, also check:
+
+- `shared/signal_shadow_preflight.py` — single-call preflight that
+  emits 14 named confirmation tokens or a blocker list. Returns
+  `SIGNAL_SHADOW_PREFLIGHT_PASS` only when every broker-execution
+  flag is off, the audit-bypass invariant is True, the quarantined
+  scripts remain `.py.disabled`, and the unlock verdict is
+  `SIGNAL_SHADOW_UNLOCK_READY` or higher.
+- `shared/shadow_evidence_counters.py` — monotonic counter store
+  under `learning-loop/shadow_evidence/evidence_counters_latest.json`.
+  `save_counters()` refuses to write if any of
+  `broker_order_submitted_ever`, `live_trading_enabled`,
+  `broker_paper_enabled` is True.
+- `learning-loop/shadow_evidence/schema.json` — shadow decision JSON
+  Schema. `broker_order_submitted` and `broker_execution_enabled`
+  are pinned to `enum: [false]`; any future caller attempting to
+  flip them must fail JSON validation.
+- `scripts/run_signal_shadow_evidence_collection.py` — dry-run
+  collector. Refuses to proceed if `ALLOW_BROKER_PAPER`,
+  `EDGE_GATE_ENABLED`, `BROKER_EXECUTION_ENABLED`, `LIVE_TRADING`,
+  `LIVE_ENABLED`, `GO_LIVE`, or `LIVE_TRADING_ENABLED` is truthy.
+  Does NOT import `shared/alpaca_orders.py`.
+- `docs/SIGNAL_SHADOW_EVIDENCE_COLLECTION_RUNBOOK.md` +
+  `docs/SHADOW_EVIDENCE_PROGRESS.md` — operator-facing playbook +
+  current progress.
+
+### Final Arbiter v3.26.0 escalation triggers (P0)
+
+In addition to all v3.23.x / v3.24 / v3.25 triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the `shared/signal_shadow_preflight.py::run_preflight()` verdict
+  is `SIGNAL_SHADOW_PREFLIGHT_BLOCKED` and a downstream operation
+  ignores it
+- `scripts/run_signal_shadow_evidence_collection.py` is modified to
+  import a function from `shared/alpaca_orders.py` (or any other
+  module that submits orders)
+- the v3.26 collector ever returns `SHADOW_COLLECTION_PROCEEDING`
+  while `ALLOW_BROKER_PAPER` / `EDGE_GATE_ENABLED` /
+  `BROKER_EXECUTION_ENABLED` / `LIVE_TRADING` are truthy
+- any shadow record persisted under
+  `learning-loop/shadow_evidence/records_YYYY-MM-DD.jsonl` carries
+  `broker_order_submitted=true` or `broker_execution_enabled=true`
+- the `learning-loop/shadow_evidence/schema.json` is weakened to
+  allow `broker_order_submitted=true` or
+  `broker_execution_enabled=true`
+- the counter file is mutated to inflate
+  `normal_non_halt_opportunities_count` or
+  `completed_shadow_outcomes_count` without matching evidence
+  records
+- the v3.25 `trading_unlock_readiness` thresholds (50 normal / 20
+  outcomes / 0 audit bypass / 0 exposure breach) are weakened
+- `EDGE_GATE_ENABLED` is flipped to True
+- `ALLOW_BROKER_PAPER` is enabled
+- baseline `state.json::cumulative.starting_equity` is reset
+- live trading is enabled in any form
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts.
+
+---
+
 ## End of shared context.
