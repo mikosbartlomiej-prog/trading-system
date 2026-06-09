@@ -1242,3 +1242,72 @@ grep -A2 "auto-progress" docs/SHADOW_EVIDENCE_PROGRESS.md | head -30
 
 `EDGE_GATE_ENABLED` stays `false`. `ALLOW_BROKER_PAPER` stays unset.
 Live trading stays blocked.
+
+---
+
+## Scenario AA.3 (v3.30.1) — repair LLM quality history + run auto-bounded calibration
+
+This scenario describes the self-healing repair step + the auto-
+bounded calibration workflow that ship in v3.30.1. Both are read-
+only with respect to broker flags and order placement.
+
+### Symptom
+
+`learning-loop/broker_paper_canary/unlock_readiness_latest.json`
+shows
+`BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`
+even though calibration appears to have run successfully.
+
+This usually means the latest `quality_review_latest.json` is a
+stale test/fixture artefact (e.g. `run_id` containing the substring
+`mock` / `test` / `placeholder`) and the history file does not
+record it.
+
+### Local repair (no broker calls, no order placement)
+
+```sh
+# Reconcile the latest snapshot with the history file. Mock-pattern
+# and stale snapshots are appended as accepted_for_unlock_counting=
+# false; clean ACCEPTABLE runs are appended as accepted=true.
+python3 scripts/repair_llm_quality_history.py --write-artifacts
+
+# Re-run the unlock evaluator (also invokes the repair step
+# automatically in v3.30.1 fail-soft wrapper).
+python3 scripts/evaluate_broker_paper_canary_unlock.py --evaluate-only
+
+# Inspect outputs.
+cat learning-loop/llm_advisory/quality_history_repair_latest.json
+cat learning-loop/broker_paper_canary/unlock_readiness_latest.json
+```
+
+### Auto-bounded calibration (free-only Gemini)
+
+The v3.30.1 calibration workflow no longer requires a manual
+`LLM_QUALITY_CALIBRATION_ENABLED` repo variable. To enable it:
+
+- Set `GEMINI_API_KEY` (repo secret).
+- Set `LLM_PROVIDER=gemini` (already pinned in the workflow env).
+- Set `LLM_FREE_ONLY=true` (already pinned).
+
+To OPT OUT (operator override):
+
+- Set the optional repo variable `LLM_QUALITY_CALIBRATION_DISABLED`
+  to `true`. The precheck returns
+  `CALIBRATION_SKIPPED_DISABLED_BY_OPERATOR` and no Gemini call is
+  made.
+
+The calibration workflow refuses if any broker / live env flag is
+truthy, refuses if `LLM_AGENTS_SCHEDULED=true` (production schedule
+on), refuses if 2+ accepted quality runs already exist, refuses if
+the daily Gemini budget is exhausted, refuses if the Gemini key is
+absent.
+
+### Hard-safety reminders
+
+- `submit_order`, `place_order`, `safe_close` are NEVER called by
+  either the repair script or the calibration precheck script.
+- `ALLOW_BROKER_PAPER`, `EDGE_GATE_ENABLED`, `BROKER_EXECUTION_ENABLED`
+  and the four live-trading flags remain hard-pinned `false`.
+- The canary pre-executor remains preflight-only; no order
+  placement happens in v3.30.1.
+- LLM remains advisory only.

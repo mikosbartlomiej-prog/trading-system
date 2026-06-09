@@ -1,14 +1,34 @@
 # Broker-Paper Canary Unlock Status (v3.30)
 
-- **Unlock status:** `BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`
+- **Unlock status:** `BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_REAL_MARKET_RECORD`
 - **Stage:** `STAGE_0_SHADOW_ONLY`
 
 ## Gates
 
+- `alignment_status`: **None**
+- `audit_bypass_findings_count`: **0**
+- `baseline_reset`: **False**
+- `broker_paper_enabled`: **False**
+- `canary_executor_mode`: **preflight_only**
+- `canary_order_placement_implemented`: **False**
+- `completed_shadow_outcomes_count`: **0**
+- `drawdown_guard_lowered`: **False**
+- `edge_gate_enabled`: **False**
+- `exposure_cap_breach_count`: **0**
+- `first_real_market_record_seen`: **False**
+- `live_trading_enabled`: **False**
+- `n_acceptable_quality_runs`: **0**
+- `operator_approved_canary`: **False**
+- `quality_status`: **LLM_ADVISORY_QUALITY_ACCEPTABLE**
+- `real_market_opportunities_count`: **0**
+- `repeated_buy_violation_count`: **0**
+- `safe_enable_switch_present`: **True**
+- `unexplained_broker_state_conflicts_count`: **0**
+- `workflow_verdict`: **AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET**
 
 ## Rationale
 
-- quality_history.jsonl missing run_id=v3283-mock-3; latest snapshot may be stale
+- first_real_market_record_seen is false
 
 ## Safety invariants
 

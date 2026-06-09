@@ -37,6 +37,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "shared"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 
 def _env_truthy(name: str) -> bool:
@@ -86,6 +87,23 @@ def main(argv=None) -> int:
     if refuse is not None:
         print(json.dumps({"status": refuse}))
         return 1
+
+    # v3.30.1 — self-healing quality history repair runs BEFORE the
+    # unlock evaluator so the evaluator sees a reconciled history.
+    # Fail-soft: a repair failure must never prevent the evaluator
+    # from running.
+    try:
+        from repair_llm_quality_history import (  # type: ignore
+            reconcile as _repair_reconcile,
+        )
+        _repair_payload = _repair_reconcile(write_artifacts=True)
+        print(
+            f"  [unlock-evaluator] quality_history_repair_status="
+            f"{_repair_payload.get('repair_status')!r}")
+    except Exception as e:
+        print(
+            f"  [unlock-evaluator] quality history repair failed "
+            f"(non-fatal): {e}")
 
     import broker_paper_canary_unlock as bp  # type: ignore
     report = bp.evaluate_unlock_readiness(

@@ -43,10 +43,28 @@ class TestCalibrationWorkflowSafety(unittest.TestCase):
                 re.search(rf'\n\s*{flag}:\s+"false"', self.src),
                 f"{flag} must be pinned to \"false\"")
 
-    def test_scheduled_run_gated_on_repo_variable(self):
-        self.assertIn("LLM_QUALITY_CALIBRATION_ENABLED", self.src)
-        self.assertIn("vars.LLM_QUALITY_CALIBRATION_ENABLED",
-                       self.src)
+    def test_scheduled_run_self_gated_no_manual_variable_required(self):
+        """v3.30.1 contract: the workflow is self-gated. The legacy
+        ``LLM_QUALITY_CALIBRATION_ENABLED`` repo variable is NOT
+        required. The optional opt-out is
+        ``LLM_QUALITY_CALIBRATION_DISABLED``.
+        """
+        import re
+        # The old enable gate must not appear in an active 'if:' line.
+        for line in self.src.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if not stripped.startswith("if:"):
+                continue
+            self.assertNotIn(
+                "LLM_QUALITY_CALIBRATION_ENABLED", stripped,
+                "v3.30.1: workflow must NOT gate on "
+                "LLM_QUALITY_CALIBRATION_ENABLED in any 'if:' block")
+        # Workflow still must reference the cron schedule.
+        self.assertIsNotNone(
+            re.search(r'cron:\s*"10 0 \* \* 1-5"', self.src),
+            "calibration cron schedule must still be present")
 
     def test_refuse_step_present(self):
         self.assertIn("REFUSED:", self.src)
@@ -79,18 +97,42 @@ class TestCalibrationPrecheckScript(unittest.TestCase):
         self.assertTrue(script.exists(),
                           "calibration precheck script missing")
         src = script.read_text(encoding="utf-8")
+        # v3.30.1 — 8 status enum (DISABLED is now DISABLED_BY_OPERATOR).
         for status in (
             "CALIBRATION_PROCEEDING",
             "CALIBRATION_SKIPPED_ALREADY_CALIBRATED",
-            "CALIBRATION_SKIPPED_DISABLED",
+            "CALIBRATION_SKIPPED_DISABLED_BY_OPERATOR",
             "CALIBRATION_SKIPPED_BUDGET_EXHAUSTED",
         ):
             self.assertIn(status, src,
                            f"precheck must expose {status}")
-        # Never calls order placement.
-        for forbidden in ("submit_order", "place_order",
-                            "safe_close", "alpaca_orders"):
-            self.assertNotIn(forbidden, src)
+        # Never calls / imports order placement. Allowed to MENTION
+        # the forbidden symbols in safety comments / docstrings.
+        import ast
+        tree = ast.parse(src)
+        forbidden_imports = {"alpaca_orders"}
+        forbidden_calls = {"submit_order", "place_order",
+                              "safe_close"}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    self.assertNotIn(
+                        alias.name.split(".")[-1],
+                        forbidden_imports)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    self.assertNotIn(
+                        node.module.split(".")[-1],
+                        forbidden_imports)
+                for alias in node.names:
+                    self.assertNotIn(
+                        alias.name, forbidden_imports)
+            elif isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name):
+                    self.assertNotIn(func.id, forbidden_calls)
+                elif isinstance(func, ast.Attribute):
+                    self.assertNotIn(func.attr, forbidden_calls)
 
 
 if __name__ == "__main__":

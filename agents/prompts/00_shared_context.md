@@ -1807,4 +1807,52 @@ trading, and still does NOT count observation records as evidence.
 
 ---
 
+## v3.30.1 coverage block (2026-06-09)
+
+Two non-flag-flipping additions extend the arbiter's review surface
+in v3.30.1:
+
+1. **`scripts/repair_llm_quality_history.py`** — append-only self-
+   healing repair for `learning-loop/llm_advisory/quality_history.jsonl`.
+   Refuses on truthy broker/live env flags. Reconciles
+   `quality_review_latest.json` with history by appending a rejected
+   row for mock-pattern / stale / source-mismatched snapshots and an
+   accepted row for clean ACCEPTABLE snapshots. Never deletes or
+   rewrites a history row. Never imports `alpaca_orders`.
+
+2. **Self-gated bounded calibration workflow** — the legacy
+   `LLM_QUALITY_CALIBRATION_ENABLED` repo variable is removed. The
+   precheck exposes 8 statuses and the optional opt-out is
+   `LLM_QUALITY_CALIBRATION_DISABLED`. The workflow still hard-pins
+   all 7 broker/live env flags `false`, refuses on truthy flags,
+   refuses if the production schedule is on, refuses if 2+ accepted
+   runs already exist, refuses if the daily Gemini budget is
+   exhausted, refuses if `GEMINI_API_KEY` is absent.
+
+### v3.30.1 arbiter regression triggers (additional)
+
+Recommend a regression iteration if ANY of the following is true:
+
+- `repair_llm_quality_history.py` imports `alpaca_orders` or calls
+  `submit_order` / `place_order` / `safe_close`.
+- `repair_llm_quality_history.py` marks a mock-pattern / stale /
+  source-mismatched row as `accepted_for_unlock_counting=true`.
+- The repair script deletes or rewrites a history row.
+- The calibration workflow re-introduces a manual
+  `LLM_QUALITY_CALIBRATION_ENABLED` gate.
+- The precheck enum loses any of its 8 statuses or removes the
+  `LLM_QUALITY_CALIBRATION_DISABLED` opt-out path.
+- The precheck reveals the literal value of `GEMINI_API_KEY` in
+  any artefact (it may only report `gemini_key_present` bool).
+- The repair / calibration commit allow-list is widened beyond the
+  v3.30.1 paths.
+- Any of the 7 broker-execution / live env flags is removed from
+  the hard-pin list in the calibration workflow.
+
+LLM remains advisory only. Canary pre-executor remains preflight-
+only. No order placement in v3.30.1. Live trading remains
+unsupported.
+
+---
+
 ## End of shared context

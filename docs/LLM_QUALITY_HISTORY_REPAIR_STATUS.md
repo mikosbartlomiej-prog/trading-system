@@ -1,18 +1,16 @@
-# LLM Quality Calibration Status (v3.30.1)
+# LLM Quality History Repair Status (v3.30.1)
 
-- **Precheck status:** `CALIBRATION_SKIPPED_NON_FREE_PROVIDER`
-- **Should call provider:** false
-- **Accepted quality runs:** 0 / 2
-- **Budget status:** `LLM_BUDGET_DISABLED`
-- **Provider:** `offline_mock`
-- **Free-only:** false
-- **Production LLM schedule enabled:** false
-- **Broker flags safe:** true
-- **Gemini key present:** false
-- **Calibration disabled by operator:** false
-- **Latest quality status:** `LLM_ADVISORY_QUALITY_ACCEPTABLE`
+- **Repair status:** `QUALITY_HISTORY_ALREADY_CONSISTENT`
 - **Latest run_id:** `v3283-mock-3`
-- **Next action:** LLM_PROVIDER='' or LLM_FREE_ONLY=False; calibration requires gemini + free-only.
+- **Anti-mock passed:** false
+- **Source mismatch:** false
+- **Stale snapshot:** false
+- **Mock-pattern run_id:** true
+- **Accepted for unlock counting:** false
+
+## Rationale
+
+- run_id=v3283-mock-3 already in history; anti_mock_passed=False; accepted_for_unlock_counting=False
 
 ## Safety invariants
 

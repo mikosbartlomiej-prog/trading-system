@@ -93,6 +93,11 @@ jobs:
           print('alignment_status:', rep.status)
           "
 
+      - name: v3.30.1 — self-heal LLM quality history (fail-soft)
+        run: |
+          python3 scripts/repair_llm_quality_history.py \
+                  --write-artifacts || true
+
       - name: Run broker-paper canary unlock evaluator (read-only)
         id: unlock
         run: |
@@ -113,9 +118,12 @@ jobs:
           git config user.email "canary-eval@trading-system.local"
           git add learning-loop/broker_paper_canary/ \
                   learning-loop/llm_advisory/strategy_alignment_latest.json \
+                  learning-loop/llm_advisory/quality_history.jsonl \
+                  learning-loop/llm_advisory/quality_history_repair_latest.json \
                   docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md \
                   docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md \
                   docs/LLM_STRATEGY_ALIGNMENT.md \
+                  docs/LLM_QUALITY_HISTORY_REPAIR_STATUS.md \
                   learning-loop/position_reconciliation/latest.json \
                   || true
           CHANGED=$(git diff --cached --name-only)
@@ -126,9 +134,12 @@ jobs:
             case "$f" in
               learning-loop/broker_paper_canary/*) ;;
               learning-loop/llm_advisory/strategy_alignment_latest.json) ;;
+              learning-loop/llm_advisory/quality_history.jsonl) ;;
+              learning-loop/llm_advisory/quality_history_repair_latest.json) ;;
               docs/BROKER_PAPER_CANARY_UNLOCK_STATUS.md) ;;
               docs/BROKER_PAPER_CANARY_UNLOCK_CONTRACT.md) ;;
               docs/LLM_STRATEGY_ALIGNMENT.md) ;;
+              docs/LLM_QUALITY_HISTORY_REPAIR_STATUS.md) ;;
               learning-loop/position_reconciliation/latest.json) ;;
               *) BAD="$BAD $f" ;;
             esac

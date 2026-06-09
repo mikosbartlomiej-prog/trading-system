@@ -697,3 +697,32 @@ records. None of this changes the LLM authority model:
 The audit-board arbiter's regression triggers for these invariants
 are pinned in `agents/prompts/00_shared_context.md` under "v3.30
 coverage."
+
+---
+
+## v3.30.1 LLM-authority invariants (2026-06-09)
+
+### What v3.30.1 added
+
+- `scripts/repair_llm_quality_history.py` — append-only self-healing
+  repair for `learning-loop/llm_advisory/quality_history.jsonl`.
+- `scripts/llm_quality_calibration_precheck.py` rewritten with
+  8 self-gating statuses (no manual repo variable required).
+- `.github/workflows/llm-quality-calibration.yml` no longer gates
+  on `vars.LLM_QUALITY_CALIBRATION_ENABLED`. Optional opt-out:
+  `LLM_QUALITY_CALIBRATION_DISABLED`.
+
+### What v3.30.1 did NOT change
+
+- LLM remains advisory only.
+- Canary pre-executor remains preflight-only — no order is placed.
+- All 7 broker-execution / live env flags remain hard-pinned false.
+- Stale / mock / placeholder / source-mismatched quality runs are
+  NEVER marked as `accepted_for_unlock_counting=true`.
+- The repair script NEVER deletes or rewrites a history row.
+- Observation records remain diagnostic only (do not count toward
+  `real_market_opportunities_count`).
+
+The audit-board arbiter's regression triggers for these invariants
+are pinned in `agents/prompts/00_shared_context.md` under
+"v3.30.1 coverage block."

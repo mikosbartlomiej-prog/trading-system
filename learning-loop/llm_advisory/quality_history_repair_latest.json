@@ -1,20 +1,13 @@
 {
-  "accepted_quality_runs": 0,
-  "broker_flags_safe": true,
-  "broker_paper_canary_still_blocked": true,
-  "budget_status": "LLM_BUDGET_DISABLED",
-  "calibration_disabled_by_operator": false,
-  "free_only": false,
-  "gemini_key_present": false,
-  "generated_at_iso": "2026-06-09T22:02:36.502047+00:00",
-  "latest_quality_status": "LLM_ADVISORY_QUALITY_ACCEPTABLE",
+  "accepted_for_unlock_counting": false,
+  "anti_mock_passed": false,
+  "generated_at_iso": "2026-06-09T22:02:39.368644+00:00",
   "latest_run_id": "v3283-mock-3",
-  "live_trading_unsupported": true,
-  "model": "",
-  "next_action": "LLM_PROVIDER='' or LLM_FREE_ONLY=False; calibration requires gemini + free-only.",
-  "precheck_status": "CALIBRATION_SKIPPED_NON_FREE_PROVIDER",
-  "production_llm_schedule_enabled": false,
-  "provider": "offline_mock",
+  "mock_pattern": true,
+  "rationale": [
+    "run_id=v3283-mock-3 already in history; anti_mock_passed=False; accepted_for_unlock_counting=False"
+  ],
+  "repair_status": "QUALITY_HISTORY_ALREADY_CONSISTENT",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,
@@ -26,7 +19,8 @@
     "no_order_placement_in_v3301": true,
     "schedule_enabled": false
   },
-  "should_call_provider": false,
+  "source_mismatch": false,
+  "stale": false,
   "standing_markers": [
     "NO_MANUAL_REPO_VARIABLE_REQUIRED_FOR_CALIBRATION",
     "STALE_MOCK_QUALITY_NEVER_COUNTS_AS_ACCEPTABLE",
@@ -39,6 +33,5 @@
     "LIVE_TRADING_UNSUPPORTED",
     "DETERMINISTIC_GATES_REMAIN_FINAL"
   ],
-  "target_accepted_quality_runs": 2,
   "version": "v3.30.1"
 }

@@ -176,3 +176,21 @@ v3.30 also ships diagnostic observation records (`record_type =
 under `learning-loop/shadow_evidence/observations/` and they NEVER
 count toward `real_market_opportunities_count`. They are diagnostic
 only.
+
+---
+
+## v3.30.1 note — quality history can self-heal
+
+The v3.30.1 self-healing repair step
+(`scripts/repair_llm_quality_history.py`) runs BEFORE the unlock
+evaluator. It reconciles the latest `quality_review_latest.json`
+snapshot with `quality_history.jsonl` WITHOUT ever marking a stale,
+mock, placeholder, or source-mismatched run as
+`accepted_for_unlock_counting=true`. The repair is append-only —
+it never deletes or rewrites a history row.
+
+This does NOT lower any hard gate. The repair only ensures the
+quality-source-mismatch symptom (`BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`) no longer fires on a stale-fixture
+artefact left over from a prior run. The downstream LLM-quality
+gate (`n_acceptable_quality_runs >= 2`) is unchanged — mock and
+stale runs still cannot count.

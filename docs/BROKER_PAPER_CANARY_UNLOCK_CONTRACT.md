@@ -221,3 +221,55 @@ because v3.29 does not include the safe enable switch.
 - `LLM_OUTPUT_DOES_NOT_COUNT_AS_REAL_MARKET_EVIDENCE`
 - `BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING`
 - `LIVE_TRADING_UNSUPPORTED`
+
+---
+
+## v3.30.1 addendum (2026-06-09) — self-healing repair + auto-bounded calibration
+
+Two non-flag-flipping additions:
+
+1. **`scripts/repair_llm_quality_history.py`** — a read-only, append-
+   only self-healing step that reconciles the latest
+   `quality_review_latest.json` snapshot with `quality_history.jsonl`.
+   It runs BEFORE `evaluate_unlock_readiness` (fail-soft wrapper) and
+   guarantees that a stale, mock-pattern, placeholder, or self-
+   inconsistent snapshot is recorded in history as
+   `accepted_for_unlock_counting=false`. It never deletes or rewrites
+   a history row. It refuses on truthy broker/live flags. Outputs:
+     - `learning-loop/llm_advisory/quality_history_repair_latest.json`
+     - `docs/LLM_QUALITY_HISTORY_REPAIR_STATUS.md`
+
+2. **Self-gated bounded calibration workflow** — the legacy
+   `LLM_QUALITY_CALIBRATION_ENABLED` repo variable is no longer
+   required. `scripts/llm_quality_calibration_precheck.py` now
+   evaluates 8 deterministic statuses (priority order):
+     1. `CALIBRATION_SKIPPED_BROKER_FLAG_TRUTHY`
+     2. `CALIBRATION_SKIPPED_PRODUCTION_SCHEDULE_ENABLED`
+     3. `CALIBRATION_SKIPPED_DISABLED_BY_OPERATOR`
+        (optional opt-out: `LLM_QUALITY_CALIBRATION_DISABLED=true`)
+     4. `CALIBRATION_SKIPPED_NON_FREE_PROVIDER`
+     5. `CALIBRATION_SKIPPED_NO_GEMINI_KEY`
+     6. `CALIBRATION_SKIPPED_ALREADY_CALIBRATED`
+     7. `CALIBRATION_SKIPPED_BUDGET_EXHAUSTED`
+     8. `CALIBRATION_PROCEEDING`
+
+The calibration workflow only invokes Gemini when status is
+`CALIBRATION_PROCEEDING`. All other status branches early-exit
+without consuming any provider budget.
+
+## Standing markers added in v3.30.1
+
+- `NO_MANUAL_REPO_VARIABLE_REQUIRED_FOR_CALIBRATION`
+- `STALE_MOCK_QUALITY_NEVER_COUNTS_AS_ACCEPTABLE`
+- `CALIBRATION_BOUNDED_FREE_ONLY_GEMINI`
+- `PRODUCTION_LLM_SCHEDULE_REMAINS_DISABLED`
+- `LLM_PRE_ORDER_VETO_REMAINS_DISABLED`
+- `CANARY_PRE_EXECUTOR_PREFLIGHT_ONLY`
+- `NO_ORDER_PLACEMENT`
+- `BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING`
+- `LIVE_TRADING_UNSUPPORTED`
+- `DETERMINISTIC_GATES_REMAIN_FINAL`
+
+LLM remains advisory only. Canary pre-executor remains preflight-only.
+No order placement is implemented in v3.30.1. Live trading remains
+unsupported.
