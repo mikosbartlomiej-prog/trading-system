@@ -9,9 +9,9 @@
     },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-09T16:10:25.216697+00:00",
+      "last_seen_iso": "2026-06-09T16:15:01.127857+00:00",
       "last_status": "ok",
-      "pings_today": 1
+      "pings_today": 2
     },
     "exit-monitor": {
       "last_message": "",
@@ -25,15 +25,15 @@
       "last_status": "ok",
       "pings_today": 3
     },
-    "price-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-09T16:10:33.996076+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
     "options-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-06-09T16:10:42.435490+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "price-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-09T16:10:33.996076+00:00",
       "last_status": "ok",
       "pings_today": 1
     },
