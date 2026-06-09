@@ -1,57 +1,44 @@
-[01:38:06 INFO] ============================================================
-[01:38:06 INFO] AccountAwareAllocator — daily plan 2026-06-09
-[01:38:06 INFO] ============================================================
-[01:38:06 INFO] ── Step 1: fetching account state ──
-[01:38:06 INFO]   equity=$  90068.28  cash=$ 271603.50  buying_power=$ 316637.64
-[01:38:06 INFO] ── Step 2: fetching open positions ──
-[01:38:06 INFO]   4 positions, invested_ratio=0.1211 (target=1.00, min=0.98)
-[01:38:06 DBG ]     AVAXUSD    long  qty=365.9680 mv=$  2438.41  pct_eq=2.71%  pl=-2.30%
-[01:38:06 DBG ]     ETHUSD     long  qty=5.0724 mv=$  8470.46  pct_eq=9.40%  pl=+6.01%
-[01:38:06 DBG ]     LTCUSD     long  qty=0.0000 mv=$     0.00  pct_eq=0.00%  pl=+0.00%
-[01:38:06 DBG ]     SOLUSD     long  qty=0.0000 mv=$     0.00  pct_eq=0.00%  pl=+0.00%
-[01:38:06 INFO]   PDT mode=OK  dt_remaining=3
-[01:38:06 INFO] ── Step 3: defensive mode check ──
-[01:38:06 INFO]   defensive_mode OFF → proceed with deployment
-[01:38:06 INFO] ── Step 4: regime detection ──
-[01:38:06 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[01:38:06 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[01:38:06 INFO] ── Step 5: scoring allowed universe ──
-[01:38:08 DBG ]     NOW      score=+0.225  bucket=software_quality
-[01:38:08 DBG ]     PANW     score=+0.217  bucket=software_quality
-[01:38:08 DBG ]     WDAY     score=+0.182  bucket=software_quality
-[01:38:08 DBG ]     CRWD     score=+0.153  bucket=software_quality
-[01:38:08 DBG ]     CVX      score=+0.153  bucket=inflation_energy
-[01:38:08 INFO] ── Step 6: target weight construction ──
-[01:38:08 INFO]   reason: regime=NEUTRAL | primary_picks=0(0%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=70.00%
-[01:38:08 INFO]   target_invested_ratio_after_plan = 0.3000
-[01:38:08 DBG ]     SPY        target_weight=0.1000 ($9006.83)
-[01:38:08 DBG ]     QQQ        target_weight=0.1000 ($9006.83)
-[01:38:08 DBG ]     GLD        target_weight=0.1000 ($9006.83)
-[01:38:08 INFO] ── Step 7: rebalance order generation ──
-[01:38:08 INFO]     SPY      BUY     current=$     0.00 target=$  9006.83 delta=$ +9006.83  -- new position at target 10.0%
-[01:38:08 INFO]     QQQ      BUY     current=$     0.00 target=$  9006.83 delta=$ +9006.83  -- new position at target 10.0%
-[01:38:08 INFO]     GLD      BUY     current=$     0.00 target=$  9006.83 delta=$ +9006.83  -- new position at target 10.0%
-[01:38:08 INFO]     AVAXUSD  HOLD    current=$  2438.41 target=$     0.00 delta=$ -2438.41  -- BLOCKED (AVAXUSD not on risk_officer whitelist)
-[01:38:08 INFO]     ETHUSD   HOLD    current=$  8470.46 target=$     0.00 delta=$ -8470.46  -- BLOCKED (ETHUSD not on risk_officer whitelist)
-[01:38:08 INFO]     LTCUSD   HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- BLOCKED (LTCUSD not on risk_officer whitelist)
-[01:38:08 INFO]     SOLUSD   HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- BLOCKED (SOLUSD not on risk_officer whitelist)
-[01:38:08 INFO]   summary: 3 actionable + 4 hold; passed=3  failed=4
-[01:38:08 WARN]     order check failed: AVAXUSD:EXIT — AVAXUSD not on risk_officer whitelist
-[01:38:08 WARN]     order check failed: ETHUSD:EXIT — ETHUSD not on risk_officer whitelist
-[01:38:08 WARN]     order check failed: LTCUSD:EXIT — LTCUSD not on risk_officer whitelist
-[01:38:08 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
-[01:38:08 INFO] ── Step 8: plan complete ──
-[01:38:08 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[16:19:10 INFO] ============================================================
-[16:19:10 INFO] execute_orders() — auto-execute path
-[16:19:10 INFO] ============================================================
-[16:19:10 INFO]   market_status: open=True reason=open
-[16:19:10 INFO]   bp_guard: requested $27020 available $316355 open_exposure $10628 | all BUYs fit available BP + exposure cap
-[16:19:10 INFO]     SPY BUY: derived qty=12 from target=$9,007 @ $726.46 (no prior position)
-[16:19:11 INFO]     SPY BUY placed: BUY 12.0000 @ $726.46  id=6673f857-9316-4e35-8f2e-9624c4c97366
-[16:19:11 INFO]     QQQ BUY: derived qty=13 from target=$9,007 @ $692.44 (no prior position)
-[16:19:12 INFO]     QQQ BUY placed: BUY 13.0000 @ $692.44  id=75fa3ea3-241b-49c0-8af4-fb9aab0dfcad
-[16:19:12 INFO]     GLD BUY: derived qty=23 from target=$9,007 @ $390.79 (no prior position)
-[16:19:13 INFO]     GLD BUY placed: BUY 23.0000 @ $390.79  id=4c0dd7df-3b58-4778-bd4d-cac907ec95bc
-[16:19:13 INFO]   execution complete: 3 placed, 0 skipped, 0 failed, 0 deferred_bp
+[22:16:57 INFO] ============================================================
+[22:16:57 INFO] AccountAwareAllocator — daily plan 2026-06-09
+[22:16:57 INFO] ============================================================
+[22:16:57 INFO] ── Step 1: fetching account state ──
+[22:16:57 INFO]   equity=$  89841.89  cash=$ 271304.02  buying_power=$ 316224.96
+[22:16:57 INFO] ── Step 2: fetching open positions ──
+[22:16:58 INFO]   4 positions, invested_ratio=0.1201 (target=1.00, min=0.98)
+[22:16:58 DBG ]     AVAXUSD    long  qty=365.9680 mv=$  2435.41  pct_eq=2.71%  pl=-2.42%
+[22:16:58 DBG ]     ETHUSD     long  qty=5.0724 mv=$  8350.25  pct_eq=9.29%  pl=+4.50%
+[22:16:58 DBG ]     LTCUSD     long  qty=0.0000 mv=$     0.00  pct_eq=0.00%  pl=+0.00%
+[22:16:58 DBG ]     SOLUSD     long  qty=0.0000 mv=$     0.00  pct_eq=0.00%  pl=+0.00%
+[22:16:58 INFO]   PDT mode=OK  dt_remaining=3
+[22:16:58 INFO] ── Step 3: defensive mode check ──
+[22:16:58 INFO]   defensive_mode OFF → proceed with deployment
+[22:16:58 INFO] ── Step 4: regime detection ──
+[22:16:58 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:16:58 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[22:16:58 INFO] ── Step 5: scoring allowed universe ──
+[22:16:59 DBG ]     WDAY     score=+0.268  bucket=software_quality
+[22:16:59 DBG ]     PANW     score=+0.188  bucket=software_quality
+[22:16:59 DBG ]     NOW      score=+0.155  bucket=software_quality
+[22:16:59 DBG ]     CRWD     score=+0.108  bucket=software_quality
+[22:16:59 DBG ]     SMH      score=+0.083  bucket=ai_nasdaq_semis
+[22:16:59 INFO] ── Step 6: target weight construction ──
+[22:16:59 INFO]   reason: regime=NEUTRAL | primary_picks=0(0%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=70.00%
+[22:16:59 INFO]   target_invested_ratio_after_plan = 0.3000
+[22:16:59 DBG ]     SPY        target_weight=0.1000 ($8984.19)
+[22:16:59 DBG ]     QQQ        target_weight=0.1000 ($8984.19)
+[22:16:59 DBG ]     GLD        target_weight=0.1000 ($8984.19)
+[22:16:59 INFO] ── Step 7: rebalance order generation ──
+[22:16:59 INFO]     SPY      BUY     current=$     0.00 target=$  8984.19 delta=$ +8984.19  -- new position at target 10.0%
+[22:16:59 INFO]     QQQ      BUY     current=$     0.00 target=$  8984.19 delta=$ +8984.19  -- new position at target 10.0%
+[22:16:59 INFO]     GLD      BUY     current=$     0.00 target=$  8984.19 delta=$ +8984.19  -- new position at target 10.0%
+[22:16:59 INFO]     AVAXUSD  HOLD    current=$  2435.41 target=$     0.00 delta=$ -2435.41  -- BLOCKED (AVAXUSD not on risk_officer whitelist)
+[22:16:59 INFO]     ETHUSD   HOLD    current=$  8350.25 target=$     0.00 delta=$ -8350.25  -- BLOCKED (ETHUSD not on risk_officer whitelist)
+[22:16:59 INFO]     LTCUSD   HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- BLOCKED (LTCUSD not on risk_officer whitelist)
+[22:16:59 INFO]     SOLUSD   HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- BLOCKED (SOLUSD not on risk_officer whitelist)
+[22:16:59 INFO]   summary: 3 actionable + 4 hold; passed=3  failed=4
+[22:16:59 WARN]     order check failed: AVAXUSD:EXIT — AVAXUSD not on risk_officer whitelist
+[22:16:59 WARN]     order check failed: ETHUSD:EXIT — ETHUSD not on risk_officer whitelist
+[22:16:59 WARN]     order check failed: LTCUSD:EXIT — LTCUSD not on risk_officer whitelist
+[22:16:59 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
+[22:16:59 INFO] ── Step 8: plan complete ──
+[22:16:59 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
