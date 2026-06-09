@@ -42,3 +42,16 @@
 [01:38:08 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
 [01:38:08 INFO] ── Step 8: plan complete ──
 [01:38:08 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[16:19:10 INFO] ============================================================
+[16:19:10 INFO] execute_orders() — auto-execute path
+[16:19:10 INFO] ============================================================
+[16:19:10 INFO]   market_status: open=True reason=open
+[16:19:10 INFO]   bp_guard: requested $27020 available $316355 open_exposure $10628 | all BUYs fit available BP + exposure cap
+[16:19:10 INFO]     SPY BUY: derived qty=12 from target=$9,007 @ $726.46 (no prior position)
+[16:19:11 INFO]     SPY BUY placed: BUY 12.0000 @ $726.46  id=6673f857-9316-4e35-8f2e-9624c4c97366
+[16:19:11 INFO]     QQQ BUY: derived qty=13 from target=$9,007 @ $692.44 (no prior position)
+[16:19:12 INFO]     QQQ BUY placed: BUY 13.0000 @ $692.44  id=75fa3ea3-241b-49c0-8af4-fb9aab0dfcad
+[16:19:12 INFO]     GLD BUY: derived qty=23 from target=$9,007 @ $390.79 (no prior position)
+[16:19:13 INFO]     GLD BUY placed: BUY 23.0000 @ $390.79  id=4c0dd7df-3b58-4778-bd4d-cac907ec95bc
+[16:19:13 INFO]   execution complete: 3 placed, 0 skipped, 0 failed, 0 deferred_bp
