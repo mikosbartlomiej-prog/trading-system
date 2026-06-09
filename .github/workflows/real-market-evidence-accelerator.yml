@@ -1,0 +1,137 @@
+name: Real-Market Evidence Accelerator (v3.29.1)
+
+# v3.29.1 (2026-06-09) — read-only diagnostic. Tells the operator
+# why real-market opportunity records are not landing yet and which
+# SAFE actions could accelerate collection.
+#
+# HARD SAFETY:
+# - Read-only. NEVER mutates readiness counters / shadow counters.
+# - NEVER places orders.
+# - NEVER includes broker secrets.
+# - Hard-pins all 7 broker-execution env flags false.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # After the v3.27 shadow workflow (35 13-19 * * 1-5) — daily at
+    # 22:00 UTC so we observe today's collected diagnostic tokens.
+    - cron: "0 22 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: real-market-accelerator-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  ALLOW_BROKER_PAPER:        "false"
+  EDGE_GATE_ENABLED:         "false"
+  BROKER_EXECUTION_ENABLED:  "false"
+  LIVE_TRADING:              "false"
+  LIVE_ENABLED:              "false"
+  GO_LIVE:                   "false"
+  LIVE_TRADING_ENABLED:      "false"
+
+jobs:
+  accelerate:
+    name: Real-market evidence accelerator
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution flags pinned false ✓"
+
+      - name: Run real-market evidence accelerator
+        id: accel
+        run: |
+          set -e
+          OUT=$(python3 scripts/evaluate_real_market_evidence_acceleration.py)
+          echo "$OUT"
+          STATUS=$(python3 -c "import json,sys; \
+            print(json.loads(sys.stdin.read())['acceleration_status'])" \
+            <<<"$OUT")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-accel"
+          git config user.email "accel@trading-system.local"
+          git add learning-loop/shadow_evidence/acceleration_latest.json \
+                  docs/REAL_MARKET_EVIDENCE_ACCELERATION.md \
+                  docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md \
+                  learning-loop/position_reconciliation/latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/shadow_evidence/acceleration_latest.json) ;;
+              docs/REAL_MARKET_EVIDENCE_ACCELERATION.md) ;;
+              docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md) ;;
+              learning-loop/position_reconciliation/latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "Update real-market evidence acceleration [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

@@ -39,6 +39,11 @@ LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED            = (
     "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED")
 LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE       = (
     "LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE")
+# v3.29.1 — finer-grained "empty analysis" / "no evidence dict" modes.
+LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS            = (
+    "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS")
+LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED   = (
+    "LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED")
 
 ALL_QUALITY_STATUSES: frozenset[str] = frozenset({
     LLM_ADVISORY_QUALITY_ACCEPTABLE,
@@ -48,6 +53,8 @@ ALL_QUALITY_STATUSES: frozenset[str] = frozenset({
     LLM_ADVISORY_QUALITY_SECRET_LEAK_BLOCKED,
     LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED,
     LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE,
+    LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS,
+    LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED,
 })
 
 # Statuses for which the runner MUST NOT commit the produced rows.
@@ -285,15 +292,22 @@ def evaluate_quality(rows: Iterable[dict],
             "incorporated")
         return rep
 
-    # Genericness check: >50% rows match a placeholder phrase OR every
-    # row has empty risks + empty next actions + zero confidence.
-    half = rep.rows_seen / 2.0
+    # v3.29.1 — empty-analysis precedence BEFORE genericness:
+    # all-empty rows is a strictly stronger signal than placeholder
+    # phrases.
     all_empty_quality = (
         rep.empty_risks_count == rep.rows_seen
         and rep.empty_next_actions_count == rep.rows_seen
         and rep.zero_confidence_count == rep.rows_seen)
-    if (rep.generic_placeholder_count > half
-            or all_empty_quality):
+    if all_empty_quality:
+        rep.status = LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS
+        rep.rationale.append(
+            "all rows have empty risks_identified + empty "
+            "proposed_next_actions + zero confidence")
+        return rep
+    # Genericness check: >50% rows match a placeholder phrase.
+    half = rep.rows_seen / 2.0
+    if rep.generic_placeholder_count > half:
         rep.status = LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER
         rep.rationale.append(
             f"{rep.generic_placeholder_count}/{rep.rows_seen} rows look "
@@ -303,11 +317,29 @@ def evaluate_quality(rows: Iterable[dict],
             f"zero-conf={rep.zero_confidence_count}")
         return rep
 
+    # v3.29.1 — evidence-values gate: not a hard fail, but if NO row
+    # carries an evidence_values_used dict with at least one key,
+    # downgrade to NO_EVIDENCE_VALUES_USED so the operator knows
+    # the model did not ground its analysis in the evidence.
+    rows_seen = rep.rows_seen
+    rows_with_evidence_values = sum(
+        1 for r in rows_list
+        if isinstance(r.get("evidence_values_used"), dict)
+        and r["evidence_values_used"])
+    if rows_with_evidence_values == 0:
+        rep.status = LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED
+        rep.rationale.append(
+            "no row populated evidence_values_used — model output is "
+            "not grounded in the evidence dict")
+        return rep
+
     rep.status = LLM_ADVISORY_QUALITY_ACCEPTABLE
     rep.rationale.append(
         f"{rep.rows_with_provider_used} row(s) carried PROVIDER_USED; "
         f"confidence range "
-        f"[{rep.confidence_min:.2f}, {rep.confidence_max:.2f}]")
+        f"[{rep.confidence_min:.2f}, {rep.confidence_max:.2f}]; "
+        f"{rows_with_evidence_values}/{rows_seen} rows populated "
+        f"evidence_values_used")
     return rep
 
 

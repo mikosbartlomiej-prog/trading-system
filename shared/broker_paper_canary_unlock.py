@@ -42,6 +42,10 @@ BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_ALIGNMENT           = (
     "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_ALIGNMENT")
 BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_OPERATOR_APPROVAL    = (
     "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_OPERATOR_APPROVAL")
+# v3.29.1 — quality artifact disagrees with itself / with the doc /
+# with the latest advisory JSONL. Block unlock until reconciled.
+BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH = (
+    "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH")
 BROKER_PAPER_CANARY_UNLOCK_READY                           = (
     "BROKER_PAPER_CANARY_UNLOCK_READY")
 BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH = (
@@ -59,6 +63,7 @@ ALL_UNLOCK_STATUSES: frozenset[str] = frozenset({
     BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY,
     BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_ALIGNMENT,
     BROKER_PAPER_CANARY_UNLOCK_BLOCKED_NO_OPERATOR_APPROVAL,
+    BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH,
     BROKER_PAPER_CANARY_UNLOCK_READY,
     BROKER_PAPER_CANARY_UNLOCK_READY_BUT_NO_SAFE_ENABLE_SWITCH,
     BROKER_PAPER_CANARY_ENABLED,
@@ -171,25 +176,189 @@ class UnlockReadinessReport:
         }
 
 
-def _count_acceptable_quality_runs(history_path: Path | None = None,
-                                     limit: int = 20) -> int:
-    """Count the last N quality_review snapshots that read ACCEPTABLE.
+def _quality_row_passes_anti_mock(qrep: dict) -> bool:
+    """v3.29.1 — extra guards so a status of ACCEPTABLE in the
+    artefact cannot count toward the unlock gate unless the
+    underlying metrics actually demonstrate real provider use.
 
-    The v3.28.3 mesh writes one ``quality_review_latest.json`` per
-    run. We approximate "at least 2 acceptable runs" by counting the
-    most recent JSON (1 if ACCEPTABLE) plus any history file. The
-    canonical extension to a history file is a follow-up; for v3.29
-    we accept the latest-only count.
+    Even if quality_status reads ACCEPTABLE, this function returns
+    False when:
+    - rows_with_provider_used <= 0 (no row carried PROVIDER_USED),
+    - secret_leak_hits > 0,
+    - unsafe_phrase_hits > 0,
+    - every row had empty risks AND every row had empty next-actions
+      AND every row had zero confidence (i.e. the response was
+      "schema-shaped but empty").
     """
-    path = (history_path or
-             (REPO_ROOT / "learning-loop" / "llm_advisory"
-              / "quality_review_latest.json"))
-    d = _safe_read_json(path)
-    if not d:
+    if not qrep or not isinstance(qrep, dict):
+        return False
+    if int(qrep.get("rows_with_provider_used", 0) or 0) <= 0:
+        return False
+    if int(qrep.get("secret_leak_hits", 0) or 0) > 0:
+        return False
+    if int(qrep.get("unsafe_phrase_hits", 0) or 0) > 0:
+        return False
+    rows_seen = int(qrep.get("rows_seen", 0) or 0)
+    if rows_seen <= 0:
+        return False
+    if (int(qrep.get("empty_risks_count", 0) or 0) == rows_seen
+            and int(qrep.get("empty_next_actions_count", 0) or 0)
+                == rows_seen
+            and int(qrep.get("zero_confidence_count", 0) or 0)
+                == rows_seen):
+        return False
+    return True
+
+
+def _read_quality_history(history_path: Path | None = None
+                            ) -> list[dict]:
+    """v3.29.1 — read append-only quality history JSONL."""
+    p = (history_path or
+          (REPO_ROOT / "learning-loop" / "llm_advisory"
+           / "quality_history.jsonl"))
+    if not p.exists():
+        return []
+    out: list[dict] = []
+    try:
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(json.loads(line))
+            except Exception:
+                continue
+    except Exception:
+        return []
+    return out
+
+
+def _quality_source_mismatch_detected() -> tuple[bool, str]:
+    """v3.29.1 — verify the quality artefact is internally consistent
+    and that the latest history entry matches.
+
+    Returns (mismatch, reason).
+    """
+    latest = _safe_read_json(
+        REPO_ROOT / "learning-loop" / "llm_advisory"
+        / "quality_review_latest.json")
+    if not latest:
+        return False, "no quality_review_latest.json — nothing to "\
+                       "mismatch (downstream gates handle absence)"
+    status_top  = latest.get("quality_status")
+    qrep        = latest.get("quality_report") or {}
+    status_rep  = qrep.get("status")
+    # Self-consistency: top-level status must equal the embedded
+    # report's status.
+    if status_top is not None and status_rep is not None and \
+            status_top != status_rep:
+        return True, (
+            f"quality_review_latest mismatch: "
+            f"top={status_top} vs report={status_rep}")
+    # History must contain the latest run_id (if quality_history.jsonl
+    # exists) so a stale "ACCEPTABLE" snapshot left over from a prior
+    # run cannot count silently.
+    run_id = latest.get("run_id")
+    hist = _read_quality_history()
+    if hist and run_id and not any(
+            h.get("run_id") == run_id for h in hist):
+        return True, (
+            f"quality_history.jsonl missing run_id={run_id}; "
+            f"latest snapshot may be stale")
+    return False, "no mismatch"
+
+
+def _count_acceptable_quality_runs(history_path: Path | None = None
+                                     ) -> int:
+    """v3.29.1 — count distinct prior quality runs that genuinely
+    qualify as ACCEPTABLE.
+
+    Counts entries from
+    ``learning-loop/llm_advisory/quality_history.jsonl`` where:
+    - ``quality_status == LLM_ADVISORY_QUALITY_ACCEPTABLE``, AND
+    - ``accepted_for_unlock_counting == True`` (writer is responsible
+      for the anti-mock check at append time).
+
+    Falls back to the latest snapshot only when no history exists,
+    applying the anti-mock check inline so a mock or stale snapshot
+    cannot bootstrap the counter.
+    """
+    history = _read_quality_history(history_path)
+    if history:
+        # Distinct run_ids that explicitly cleared the anti-mock gate.
+        seen: set[str] = set()
+        for h in history:
+            if h.get("quality_status") != (
+                    "LLM_ADVISORY_QUALITY_ACCEPTABLE"):
+                continue
+            if not h.get("accepted_for_unlock_counting", False):
+                continue
+            rid = h.get("run_id")
+            if rid:
+                seen.add(rid)
+        return len(seen)
+    # Fallback: latest-only.
+    path = (REPO_ROOT / "learning-loop" / "llm_advisory"
+             / "quality_review_latest.json")
+    d = _safe_read_json(path) or {}
+    if d.get("quality_status") != "LLM_ADVISORY_QUALITY_ACCEPTABLE":
         return 0
-    if d.get("quality_status") == "LLM_ADVISORY_QUALITY_ACCEPTABLE":
-        return 1
-    return 0
+    qrep = d.get("quality_report") or {}
+    if not _quality_row_passes_anti_mock(qrep):
+        return 0
+    return 1
+
+
+def append_quality_history(*,
+                              run_id: str,
+                              quality_status: str,
+                              quality_report: dict,
+                              selected_provider: str | None,
+                              selected_model: str | None,
+                              free_only: bool,
+                              history_path: Path | None = None,
+                              ) -> dict:
+    """v3.29.1 — append-only quality history. Idempotent on run_id.
+
+    Returns the appended entry (or the existing one if a duplicate).
+    Never raises.
+    """
+    p = (history_path or
+          (REPO_ROOT / "learning-loop" / "llm_advisory"
+           / "quality_history.jsonl"))
+    existing = _read_quality_history(p)
+    for h in existing:
+        if h.get("run_id") == run_id:
+            return h
+    entry = {
+        "appended_at_iso":           datetime.now(timezone.utc).isoformat(),
+        "run_id":                    run_id,
+        "quality_status":            quality_status,
+        "rows_seen":                 int(quality_report.get(
+            "rows_seen", 0) or 0),
+        "rows_with_provider_used":   int(quality_report.get(
+            "rows_with_provider_used", 0) or 0),
+        "empty_risks_count":         int(quality_report.get(
+            "empty_risks_count", 0) or 0),
+        "empty_next_actions_count":  int(quality_report.get(
+            "empty_next_actions_count", 0) or 0),
+        "zero_confidence_count":     int(quality_report.get(
+            "zero_confidence_count", 0) or 0),
+        "secret_leak_hits":          int(quality_report.get(
+            "secret_leak_hits", 0) or 0),
+        "unsafe_phrase_hits":        int(quality_report.get(
+            "unsafe_phrase_hits", 0) or 0),
+        "selected_provider":         selected_provider,
+        "selected_model":            selected_model,
+        "free_only":                 bool(free_only),
+        "accepted_for_unlock_counting": (
+            quality_status == "LLM_ADVISORY_QUALITY_ACCEPTABLE"
+            and _quality_row_passes_anti_mock(quality_report)),
+    }
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, sort_keys=True) + "\n")
+    return entry
 
 
 def evaluate_unlock_readiness(*,
@@ -211,6 +380,16 @@ def evaluate_unlock_readiness(*,
         rep.status = LIVE_TRADING_UNSUPPORTED
         rep.rationale.append(
             "live-trading env flag truthy — refusing to advance")
+        return rep
+
+    # v3.29.1 — quality-source mismatch detection runs BEFORE the
+    # other LLM-quality gates so we never count a self-inconsistent
+    # artefact as ACCEPTABLE.
+    mismatch, mismatch_reason = _quality_source_mismatch_detected()
+    if mismatch:
+        rep.status = (
+            BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH)
+        rep.rationale.append(mismatch_reason)
         return rep
 
     counters = _safe_read_json(

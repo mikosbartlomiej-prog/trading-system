@@ -96,9 +96,23 @@ class _SandboxedRepo(unittest.TestCase):
                 })
 
     def _write_quality(self, status):
+        # v3.29.1 — populate quality_report so the anti-mock check
+        # in the unlock evaluator's _count_acceptable_quality_runs
+        # can verify rows_with_provider_used > 0 + risks/actions
+        # populated + non-zero confidence.
         _write(self.tmp / "learning-loop" / "llm_advisory"
                 / "quality_review_latest.json", {
                     "quality_status": status,
+                    "quality_report": {
+                        "status": status,
+                        "rows_seen": 5,
+                        "rows_with_provider_used": 5,
+                        "empty_risks_count": 1,
+                        "empty_next_actions_count": 1,
+                        "zero_confidence_count": 1,
+                        "secret_leak_hits": 0,
+                        "unsafe_phrase_hits": 0,
+                    },
                 })
 
     def _write_alignment(self, status):

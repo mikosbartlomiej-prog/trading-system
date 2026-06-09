@@ -1589,4 +1589,130 @@ unsupported.
 
 ---
 
+## v3.29.1 coverage (added 2026-06-09)
+
+v3.29 unlocked the canary readiness path but left two operational
+holes: (a) the unlock evaluator could count stale/mock quality
+artefacts as ACCEPTABLE, and (b) the operator had no visibility into
+*why* real-market opportunity records were not landing. v3.29.1
+closes both holes.
+
+When reviewing, also check:
+
+- `shared/broker_paper_canary_unlock.py` — extended with:
+  - `_quality_row_passes_anti_mock()` — rejects ACCEPTABLE status
+    when `rows_with_provider_used <= 0`, secret_leak_hits > 0,
+    unsafe_phrase_hits > 0, OR all rows have empty risks AND
+    empty next-actions AND zero confidence.
+  - `_quality_source_mismatch_detected()` — detects (a) top-level
+    `quality_status` ≠ `quality_report.status`, OR (b) latest
+    artefact's `run_id` missing from `quality_history.jsonl`
+    when history exists.
+  - `_read_quality_history()` + `append_quality_history()` —
+    append-only history with idempotent run_id dedup. Anti-mock
+    check applied at append time → `accepted_for_unlock_counting`.
+  - `_count_acceptable_quality_runs()` — counts distinct
+    `accepted_for_unlock_counting=true` runs from history. Falls
+    back to latest-only WITH anti-mock check.
+  - New status
+    `BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`
+    fires BEFORE the other quality gates.
+- `scripts/run_llm_advisory_mesh.py` — appends every quality
+  result to `quality_history.jsonl` via the new
+  `_append_to_quality_history()`. Strengthened prompt footer
+  (`_AGENT_PROMPT_FOOTER`) now requires:
+  1. Recommendation must cite at least one evidence value.
+  2. Rationale must cite evidence verbatim or say "insufficient
+     evidence because <specific>".
+  3. Risks must contain ≥1 item.
+  4. Proposed_next_actions must contain ≥1 item.
+  5. Confidence > 0 when any evidence is present.
+  6. New required field `evidence_values_used` (dict).
+  Parser extracts the new field; row builder + schema accept it.
+- `shared/llm_advisory_quality.py` — two new statuses
+  (`LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`,
+  `LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED`). Empty-analysis
+  takes precedence over generic placeholder. ACCEPTABLE requires
+  at least one row populated `evidence_values_used`.
+- `learning-loop/llm_advisory/schema.json` — adds optional
+  `evidence_values_used` property (additionalProperties: true; no
+  pinned safety enums affected).
+- `shared/real_market_evidence_accelerator.py` — **NEW**
+  read-only analyzer. 9 statuses
+  (`REAL_MARKET_EVIDENCE_HEALTHY`,
+  `..._BLOCKED_NO_BARS`,
+  `..._BLOCKED_INSUFFICIENT_BARS`,
+  `..._BLOCKED_AUTH_FAILED`,
+  `..._BLOCKED_PROVIDER_ERROR`,
+  `..._BLOCKED_GENERATOR_RESTRICTIVE`,
+  `..._BLOCKED_OUTSIDE_SESSION`,
+  `..._BLOCKED_INSUFFICIENT_RUNS`,
+  `..._ACCELERATION_READY`). 8 `ALLOWED_ACTIONS` + 7
+  `FORBIDDEN_ACTIONS`. NEVER mutates counters. NEVER imports
+  the broker-orders module.
+- `scripts/evaluate_real_market_evidence_acceleration.py` —
+  **NEW** CLI wrapper. Refuses on any truthy broker-execution /
+  live env flag.
+- `.github/workflows/real-market-evidence-accelerator.yml` —
+  **NEW** daily read-only workflow. Cron `0 22 * * 1-5`. All 7
+  broker-execution env flags hard-pinned `false`. Commits only
+  `learning-loop/shadow_evidence/acceleration_latest.json` +
+  `docs/REAL_MARKET_EVIDENCE_ACCELERATION.md` +
+  `docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md` +
+  `learning-loop/position_reconciliation/latest.json`.
+- `docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md` — **NEW**
+  proposal doc. **Observation record schema change DEFERRED to
+  v3.30.** v3.29.1 ships the accelerator + executor design only.
+- `docs/BROKER_PAPER_CANARY_EXECUTOR_DESIGN.md` — **NEW**
+  design-only doc. **No executor code in v3.29.1.** Spec for a
+  future executor: 1 order/day, $25 cap, US equity only, safe
+  order wrapper + post-trade reconciliation, auto-disable on
+  first error / LLM quality regression / reconciliation
+  mismatch.
+
+### v3.29.1 status tokens (added)
+
+- 1 new unlock status
+  (`BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH`).
+- 2 new quality statuses (`EMPTY_ANALYSIS`,
+  `NO_EVIDENCE_VALUES_USED`).
+- 9 new acceleration statuses (see above).
+- 8 `ALLOWED_ACTIONS` + 7 `FORBIDDEN_ACTIONS` in the accelerator.
+
+### Final Arbiter v3.29.1 escalation triggers (P0)
+
+In addition to all v3.23.x through v3.29 triggers, the Final
+Arbiter MUST block escalation and set primary verdict to
+NEEDS_FIXES with secondary NOT_SAFE_FOR_LIVE_TRADING when:
+
+- the unlock evaluator counts a `quality_review_latest.json` snapshot
+  toward `n_acceptable_quality_runs` while its `quality_report`
+  embedded status disagrees with the top-level `quality_status`
+- the unlock evaluator counts a snapshot while
+  `_quality_row_passes_anti_mock` would return False (rows_with_provider_used
+  ≤ 0, secret_leak_hits > 0, unsafe_phrase_hits > 0, or all rows
+  empty)
+- the unlock evaluator counts a stale snapshot (run_id not in
+  `quality_history.jsonl` when history exists)
+- the strengthened prompt footer is reverted to its v3.28.3 form
+- the quality guard's `EMPTY_ANALYSIS` precedence is reversed
+  back behind `GENERIC_PLACEHOLDER`
+- the accelerator acquires a counter-mutation pattern
+- the accelerator suggests a forbidden action
+  (`LOWER_SAFETY_THRESHOLDS_TO_CREATE_FAKE_SIGNALS`,
+  `COUNT_NO_SIGNAL_AS_OPPORTUNITY`,
+  `COUNT_SCAFFOLD_OR_HALT_AS_REAL_MARKET`,
+  `USE_LLM_OUTPUT_AS_EVIDENCE`, etc.)
+- a real-market observation record lands without first updating
+  the v3.30 schema + readiness gate semantics
+- any v3.29.1 module acquires an import of the broker-orders
+  module
+
+The arbiter still NEVER recommends LIVE_TRADING — only
+PAPER_TRADING_* verdicts. v3.29.1 fixes quality gating
+inconsistencies + adds the accelerator + ships executor design —
+no orders placed, no broker flag flipped, no live trading.
+
+---
+
 ## End of shared context

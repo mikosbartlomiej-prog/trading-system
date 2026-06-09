@@ -1,0 +1,57 @@
+{
+  "acceleration_status": "REAL_MARKET_EVIDENCE_HEALTHY",
+  "allowed_actions_enum": [
+    "EXPAND_READ_ONLY_SYMBOL_UNIVERSE",
+    "EXPAND_LOOKBACK_KEEPING_22_BAR_FLOOR",
+    "ADD_DETERMINISTIC_SHADOW_STRATEGY_CANDIDATES",
+    "ADD_NO_TRADE_OBSERVATION_RECORDS_IF_SCHEMA_SAFE",
+    "IMPROVE_DIAGNOSTICS",
+    "INCREASE_WORKFLOW_VISIBILITY",
+    "INCREASE_CRON_EVALUATION_WINDOWS",
+    "ADD_MARKET_SESSIONS_READ_ONLY_ONLY"
+  ],
+  "counters_snapshot": {
+    "completed_shadow_outcomes_count": 0,
+    "first_real_market_record_seen": false,
+    "halt_path_records_count": 8,
+    "latest_workflow_verdict": "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET",
+    "real_market_opportunities_count": 0,
+    "scaffold_no_market_data_records_count": 5
+  },
+  "dominant_diagnostic_token": null,
+  "forbidden_actions_enum": [
+    "LOWER_SAFETY_THRESHOLDS_TO_CREATE_FAKE_SIGNALS",
+    "COUNT_NO_SIGNAL_AS_OPPORTUNITY",
+    "COUNT_SCAFFOLD_OR_HALT_AS_REAL_MARKET",
+    "MUTATE_READINESS_COUNTERS",
+    "USE_LLM_OUTPUT_AS_EVIDENCE",
+    "PLACE_BROKER_ORDERS",
+    "ENABLE_BROKER_PAPER"
+  ],
+  "generated_at_iso": "2026-06-09T20:49:21.033368+00:00",
+  "rationale": [
+    "no dominant blocker \u2014 pipeline appears to be making progress"
+  ],
+  "recommended_actions": [],
+  "safety": {
+    "allow_broker_paper": false,
+    "broker_paper_canary_still_blocked": true,
+    "deterministic_gates_remain_final": true,
+    "edge_gate_enabled": false,
+    "live_trading_unsupported": true,
+    "llm_output_does_not_count_as_real_market_evidence": true,
+    "this_analyzer_never_mutates_counters": true,
+    "this_analyzer_never_places_orders": true
+  },
+  "standing_markers": [
+    "LLM_STRATEGY_ALIGNMENT_ENFORCED",
+    "LLM_OUTPUT_DOES_NOT_COUNT_AS_REAL_MARKET_EVIDENCE",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "QUALITY_SOURCE_MISMATCH_BLOCKS_UNLOCK",
+    "BROKER_PAPER_CANARY_ONLY_NOT_BROAD_TRADING",
+    "LIVE_TRADING_UNSUPPORTED",
+    "DETERMINISTIC_GATES_REMAIN_FINAL"
+  ],
+  "successful_runs_observed": 3,
+  "version": "v3.29.1"
+}

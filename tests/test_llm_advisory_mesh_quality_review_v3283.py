@@ -139,6 +139,10 @@ class TestProviderUsedRowsCounted(_Iso):
                 "proposed_next_actions": ["await next cron"],
                 "confidence":            0.5,
                 "veto_recommendation":   False,
+                # v3.29.1 — quality guard requires evidence_values_used
+                # to declare ACCEPTABLE.
+                "evidence_values_used":  {
+                    "first_real_market_record_seen": False},
             })
             cost_usd = 0.0
             raw = None

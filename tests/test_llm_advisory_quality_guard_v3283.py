@@ -29,6 +29,11 @@ def _good_row(name="MARKET_REGIME_AGENT", *,
         "affects_readiness_gate": False,
         "agent_name":           name,
         "provider_status":      provider_status,
+        # v3.29.1 — evidence_values_used field; quality guard
+        # requires this to declare ACCEPTABLE.
+        "evidence_values_used": {
+            "first_real_market_record_seen": False,
+        },
     }
 
 
@@ -69,10 +74,11 @@ class TestGenericPlaceholder(unittest.TestCase):
             rep.status,
             q.LLM_ADVISORY_QUALITY_PROVIDER_OUTPUT_NOT_USED)
 
-    def test_mixed_provider_used_but_all_empty_returns_generic(self):
+    def test_mixed_provider_used_but_all_empty_returns_empty_analysis(self):
+        # v3.29.1 — EMPTY_ANALYSIS now takes precedence over
+        # GENERIC_PLACEHOLDER when every row has empty risks AND
+        # empty next-actions AND zero confidence.
         import llm_advisory_quality as q
-        # Provider claims USED but rows have empty risks/actions and
-        # zero confidence — the LLM degenerated to placeholder-quality.
         rows = [
             _good_row(name=f"A{i}",
                        recommendation="hi", rationale="meh",
@@ -83,7 +89,7 @@ class TestGenericPlaceholder(unittest.TestCase):
         rep = q.evaluate_quality(rows)
         self.assertEqual(
             rep.status,
-            q.LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER)
+            q.LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS)
 
 
 class TestAcceptable(unittest.TestCase):

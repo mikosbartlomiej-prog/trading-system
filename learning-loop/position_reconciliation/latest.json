@@ -97,6 +97,92 @@
       "AMD_CLOSE_SOURCE_REQUIRES_ALPACA_API_ORDER_DETAILS_OR_EXPORT"
     ]
   },
+  "v3291_followups": {
+    "title": "LLM_QUALITY_TRUTH_SOURCE_FIX_PLUS_REAL_MARKET_EVIDENCE_ACCELERATION",
+    "trigger": "v329_canary_unlock_evaluator_could_count_stale_or_mock_quality_artifacts_as_ACCEPTABLE_and_operator_had_no_visibility_into_why_first_real_market_record_was_not_landing",
+    "generated_at_iso": "2026-06-09T21:00:00+00:00",
+    "problem": "Two operational holes in v3.29: (a) unlock evaluator's _count_acceptable_quality_runs() returned 1 when quality_status=='LLM_ADVISORY_QUALITY_ACCEPTABLE' even if rows_with_provider_used=0 OR all rows were empty (mock or stale snapshot could bootstrap the counter); (b) operator had no read-only diagnostic explaining why first_real_market_record_seen=false despite 3 successful workflow runs.",
+    "fix": {
+      "quality_truth_source_strengthened": "shared/broker_paper_canary_unlock.py gained _quality_row_passes_anti_mock + _quality_source_mismatch_detected + _read_quality_history + append_quality_history. New status BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH fires BEFORE the other quality gates. Counter reads accepted_for_unlock_counting=true entries from quality_history.jsonl.",
+      "quality_history_added": "learning-loop/llm_advisory/quality_history.jsonl is append-only, idempotent on run_id. The runner appends every quality result with accepted_for_unlock_counting computed at append time. No secrets persisted.",
+      "stronger_prompts": "_AGENT_PROMPT_FOOTER in scripts/run_llm_advisory_mesh.py now requires: recommendation cites at least one evidence value, rationale cites verbatim or 'insufficient evidence because <specific>', risks contains ≥1 item, next_actions contains ≥1 item, confidence > 0 if any evidence present, new field evidence_values_used.",
+      "schema_extended": "learning-loop/llm_advisory/schema.json adds optional evidence_values_used property. All v3.27/v3.28 pinned safety enums unchanged.",
+      "quality_guard_strengthened": "shared/llm_advisory_quality.py adds 2 statuses (LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS, LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED). EMPTY_ANALYSIS now precedes GENERIC_PLACEHOLDER. ACCEPTABLE requires evidence_values_used populated on at least one row.",
+      "accelerator_added": "shared/real_market_evidence_accelerator.py + scripts/evaluate_real_market_evidence_acceleration.py + .github/workflows/real-market-evidence-accelerator.yml. 9 statuses + 8 ALLOWED_ACTIONS + 7 FORBIDDEN_ACTIONS. Read-only daily diagnostic.",
+      "observation_record_proposal": "docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md ships the v3.30 spec sketch — observation records DEFERRED.",
+      "executor_design_doc": "docs/BROKER_PAPER_CANARY_EXECUTOR_DESIGN.md ships the future-executor spec — NO executor code in v3.29.1."
+    },
+    "added_unlock_status": "BROKER_PAPER_CANARY_UNLOCK_BLOCKED_LLM_QUALITY_SOURCE_MISMATCH",
+    "added_quality_statuses": [
+      "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
+      "LLM_ADVISORY_QUALITY_NO_EVIDENCE_VALUES_USED"
+    ],
+    "added_acceleration_statuses": [
+      "REAL_MARKET_EVIDENCE_HEALTHY",
+      "REAL_MARKET_EVIDENCE_BLOCKED_NO_BARS",
+      "REAL_MARKET_EVIDENCE_BLOCKED_INSUFFICIENT_BARS",
+      "REAL_MARKET_EVIDENCE_BLOCKED_AUTH_FAILED",
+      "REAL_MARKET_EVIDENCE_BLOCKED_PROVIDER_ERROR",
+      "REAL_MARKET_EVIDENCE_BLOCKED_GENERATOR_RESTRICTIVE",
+      "REAL_MARKET_EVIDENCE_BLOCKED_OUTSIDE_SESSION",
+      "REAL_MARKET_EVIDENCE_BLOCKED_INSUFFICIENT_RUNS",
+      "REAL_MARKET_EVIDENCE_ACCELERATION_READY"
+    ],
+    "new_modules": {
+      "shared/real_market_evidence_accelerator.py": {"never_imports_broker_orders_module": true, "never_mutates_counters": true, "read_only": true},
+      "scripts/evaluate_real_market_evidence_acceleration.py": {"never_imports_broker_orders_module": true, "refuses_on_truthy_broker_or_live_env_flag": true}
+    },
+    "new_workflow": [".github/workflows/real-market-evidence-accelerator.yml"],
+    "new_tests": [
+      "tests/test_llm_quality_truth_source_v3291.py",
+      "tests/test_llm_quality_history_v3291.py",
+      "tests/test_llm_advisory_evidence_values_v3291.py",
+      "tests/test_broker_unlock_quality_mismatch_v3291.py",
+      "tests/test_real_market_evidence_accelerator_v3291.py",
+      "tests/test_real_market_observation_records_v3291.py",
+      "tests/test_shadow_opportunity_expansion_safety_v3291.py"
+    ],
+    "test_summary": {"v3291_new_tests": 42, "combined_regression": 435},
+    "preserved_safety_invariants": {
+      "broker_paper_canary_still_blocked": true,
+      "live_trading_unsupported": true,
+      "drawdown_guard_active": true,
+      "edge_gate_enabled": false,
+      "allow_broker_paper": false,
+      "broker_execution_enabled": false,
+      "baseline_reset": false,
+      "v3291_modules_never_import_broker_orders_module": true,
+      "quality_history_is_append_only_idempotent_on_run_id": true,
+      "anti_mock_check_rejects_acceptable_when_provider_used_zero_or_all_rows_empty": true,
+      "quality_source_mismatch_blocks_unlock": true,
+      "accelerator_never_mutates_readiness_counters": true,
+      "accelerator_never_mutates_shadow_evidence_counters": true,
+      "accelerator_never_suggests_forbidden_actions": true,
+      "observation_record_deferred_to_v3.30": true,
+      "executor_code_deferred": true,
+      "v3_29_introduces_no_safe_canary_executor": true,
+      "operator_approval_required_for_unlock_ready": true,
+      "schedule_remains_disabled_pending_acceptable_quality": true,
+      "llm_pre_order_veto_honored_remains_false": true,
+      "this_sprint_introduces_no_trading_behavior_change": true,
+      "live_trading_unconditionally_refused_on_any_truthy_live_flag": true
+    },
+    "next_action_items_v3291": [
+      "TRIGGER_TWO_DISTINCT_workflow_dispatch_RUNS_WITH_NEW_PROMPT_TO_TEST_IF_GEMINI_CAN_REACH_ACCEPTABLE",
+      "OBSERVE_quality_history_jsonl_AFTER_EACH_RUN_TO_VERIFY_accepted_for_unlock_counting_FLIP",
+      "ALLOW_DAILY_real_market_evidence_accelerator_WORKFLOW_TO_REPORT_DOMINANT_DIAGNOSTIC_TOKEN",
+      "DO_NOT_SET_OPERATOR_APPROVED_BROKER_PAPER_CANARY_TRUE_UNTIL_FIRST_REAL_MARKET_RECORD_SEEN",
+      "DO_NOT_INTRODUCE_canary_execution_flag_present_TRUE_OUTSIDE_AN_AUDITED_PR_THAT_ALSO_INTRODUCES_THE_SAFE_CANARY_EXECUTOR",
+      "DO_NOT_ENABLE_SCHEDULE_UNTIL_TWO_DISTINCT_ACCEPTABLE_RUNS_ARE_IN_QUALITY_HISTORY",
+      "DO_NOT_FLIP_LLM_FREE_ONLY_FALSE",
+      "DO_NOT_FLIP_LLM_PRE_ORDER_VETO_HONORED_TRUE",
+      "DO_NOT_ENABLE_BROKER_PAPER",
+      "DO_NOT_ENABLE_LIVE_TRADING",
+      "DO_NOT_FLIP_EDGE_GATE",
+      "DO_NOT_RESET_BASELINE",
+      "DO_NOT_LOWER_DRAWDOWN_GUARD"
+    ]
+  },
   "v329_followups": {
     "title": "GEMINI_RECOVERY_PLUS_BROKER_PAPER_CANARY_UNLOCK_ORCHESTRATOR",
     "trigger": "v3283_first_gemini_run_yielded_11_PROVIDER_FAILED_rows_likely_because_default_model_name_was_not_available_on_free_tier_AND_operator_wants_automated_path_toward_broker_paper_canary_without_enabling_live_trading_or_bypassing_evidence_gates",

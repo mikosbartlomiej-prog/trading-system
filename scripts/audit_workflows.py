@@ -52,6 +52,15 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # secrets. NEVER imports the broker-orders module. NEVER
     # places an order. NEVER flips a broker flag.
     "broker-paper-canary-unlock-evaluator.yml",
+    # v3.29.1 (2026-06-09) — read-only real-market evidence
+    # acceleration analyzer. Daily 22:00 UTC. Commits only
+    # learning-loop/shadow_evidence/acceleration_latest.json +
+    # docs/REAL_MARKET_EVIDENCE_ACCELERATION.md +
+    # docs/REAL_MARKET_OBSERVATION_RECORD_PROPOSAL.md +
+    # learning-loop/position_reconciliation/latest.json. Hard-pins
+    # all 7 broker-execution env flags false. NEVER imports the
+    # broker-orders module. NEVER mutates counters.
+    "real-market-evidence-accelerator.yml",
     "auto-merge.yml",
     "daily-learning.yml",
     "daily-learning-watchdog.yml",

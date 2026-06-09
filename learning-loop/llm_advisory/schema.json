@@ -131,6 +131,11 @@
         "PROVIDER_OUTPUT_INVALID_SCHEMA"
       ],
       "description": "v3.28.3 — per-row provider attribution. Optional field; if absent, treat the row as v3.28-era output."
+    },
+    "evidence_values_used": {
+      "type": "object",
+      "description": "v3.29.1 — concrete evidence values the model consulted, as key/value pairs (e.g. first_real_market_record_seen=false, real_market_opportunities_count=0). Operator-visible debug; never carries secrets or raw API responses.",
+      "additionalProperties": true
     }
   }
 }

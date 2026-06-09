@@ -246,18 +246,40 @@ _AGENT_PROMPT_FOOTER = (
     "You CANNOT execute, modify positions, change risk config, "
     "unlock broker paper, enable live trading, lower the drawdown "
     "guard, reset the baseline, mutate readiness counters, or "
-    "fabricate market data / P&L. Use 'insufficient evidence' "
-    "explicitly when data is absent; do NOT invent conclusions.\n\n"
+    "fabricate market data / P&L. Use the explicit phrase "
+    "'insufficient evidence because <specific missing value>' when "
+    "data is absent; do NOT invent conclusions.\n\n"
+    "STRICT OUTPUT RULES (v3.29.1):\n"
+    "1. `recommendation` must be a single concrete sentence that "
+    "names at least one evidence value from the evidence dict "
+    "(e.g. 'first_real_market_record_seen=false', "
+    "'real_market_opportunities_count=0').\n"
+    "2. `rationale` must cite at least one evidence value verbatim "
+    "or say 'insufficient evidence because <specific missing "
+    "artifact>'.\n"
+    "3. `risks_identified` must contain AT LEAST ONE item. If no "
+    "material risk applies, write exactly ONE item of the form "
+    "'No material risk identified because <specific reason>'.\n"
+    "4. `proposed_next_actions` must contain AT LEAST ONE item. "
+    "If no action applies, write exactly ONE item of the form "
+    "'No action recommended because <specific reason>'.\n"
+    "5. `confidence` must be > 0.0 when ANY evidence value is "
+    "present. Confidence may be 0.0 ONLY if the evidence dict is "
+    "completely empty AND you cite which artifact is missing.\n"
+    "6. `evidence_values_used` must list the evidence keys you "
+    "actually consulted (subset of the keys in the evidence dict).\n"
+    "7. Return ONLY one JSON object — no prose before or after.\n\n"
     "Return ONLY one JSON object with these keys (no prose outside):\n"
     "{\n"
     "  \"recommendation\":         <one concrete sentence>,\n"
     "  \"rationale\":              <one short paragraph citing "
-    "evidence values>,\n"
-    "  \"risks_identified\":       [<short string>, ...],\n"
-    "  \"proposed_next_actions\":  [<short string>, ...],\n"
-    "  \"confidence\":             <0.0..1.0 — 0 if insufficient "
-    "evidence>,\n"
-    "  \"veto_recommendation\":    <true/false>\n"
+    "evidence values verbatim>,\n"
+    "  \"risks_identified\":       [<≥1 short string — never empty>],\n"
+    "  \"proposed_next_actions\":  [<≥1 short string — never empty>],\n"
+    "  \"confidence\":             <0.0..1.0 — must be > 0 if any "
+    "evidence value is present>,\n"
+    "  \"veto_recommendation\":    <true/false>,\n"
+    "  \"evidence_values_used\":   {<key>: <value>, ...}\n"
     "}\n"
 )
 
@@ -369,6 +391,7 @@ def _parse_provider_response_into_row_fields(
         "proposed_next_actions": [],
         "confidence":            0.0,
         "veto_recommendation":   False,
+        "evidence_values_used":  {},
     }
     parsed = _try_extract_json(text)
     if parsed is not None:
@@ -398,6 +421,17 @@ def _parse_provider_response_into_row_fields(
         veto = parsed.get("veto_recommendation", False)
         out["veto_recommendation"] = bool(veto) if isinstance(
             veto, (bool, int, str)) else False
+        # v3.29.1 — capture evidence_values_used dict (non-secret,
+        # truncated).
+        evu = parsed.get("evidence_values_used") or {}
+        if isinstance(evu, dict):
+            safe_evu: dict = {}
+            for k, v in list(evu.items())[:30]:
+                ks = str(k)[:80]
+                vs = v if isinstance(v, (int, float, bool)) else str(
+                    v)[:200]
+                safe_evu[ks] = vs
+            out["evidence_values_used"] = safe_evu
     else:
         # Prose-only response — keep first ~280 chars as recommendation
         # so the operator still sees the provider's words.
@@ -415,7 +449,8 @@ def _new_row(*, run_id: str, agent_def, evidence: dict,
               recommendation: str, rationale: str,
               veto: bool = False, confidence: float = 0.0,
               risks: list[str] | None = None,
-              next_actions: list[str] | None = None) -> dict:
+              next_actions: list[str] | None = None,
+              evidence_values_used: dict | None = None) -> dict:
     from llm_advisory_registry import FORBIDDEN_ACTIONS  # type: ignore
     return {
         "timestamp":                  datetime.now(timezone.utc).isoformat(),
@@ -441,6 +476,7 @@ def _new_row(*, run_id: str, agent_def, evidence: dict,
         "broker_order_submitted":     False,
         "broker_execution_enabled":   False,
         "affects_readiness_gate":     False,
+        "evidence_values_used":       dict(evidence_values_used or {}),
     }
 
 
@@ -592,6 +628,8 @@ def run_mesh(run_id: str) -> dict[str, Any]:
             confidence=parsed["confidence"],
             risks=parsed["risks_identified"],
             next_actions=parsed["proposed_next_actions"],
+            evidence_values_used=parsed.get(
+                "evidence_values_used") or {},
         )
         # v3.28.3 — track per-row provider attribution.
         row["provider_status"] = provider_status
@@ -727,6 +765,28 @@ def render_doc(summary: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _append_to_quality_history(summary: dict[str, Any]) -> None:
+    """v3.29.1 — append the freshly-computed quality status to the
+    rolling history so the canary unlock evaluator can count
+    distinct acceptable runs (anti-mock filter applied at append
+    time)."""
+    try:
+        try:
+            import broker_paper_canary_unlock as _bp  # type: ignore
+        except ImportError:
+            from shared import broker_paper_canary_unlock as _bp  # type: ignore
+        _bp.append_quality_history(
+            run_id=summary.get("run_id") or "unknown",
+            quality_status=summary.get("quality_status") or "",
+            quality_report=summary.get("quality_report") or {},
+            selected_provider=summary.get("selected_provider"),
+            selected_model=None,  # mesh runner doesn't track per-call model
+            free_only=bool(summary.get("llm_free_only", True)),
+        )
+    except Exception as e:
+        print(f"  [v3.29.1] quality_history append failed: {e}")
+
+
 def write_quality_artifact(summary: dict[str, Any]) -> None:
     """v3.28.3 — write the quality review JSON + markdown alongside
     the latest-run markdown."""
@@ -824,6 +884,9 @@ def main(argv: list[str] | None = None) -> int:
             write_quality_artifact(summary)
         except Exception as e:
             print(f"  [v3.28.3] quality artifact write failed: {e}")
+        # v3.29.1 — also append to the rolling history so the canary
+        # unlock evaluator can count distinct acceptable runs.
+        _append_to_quality_history(summary)
     print(json.dumps(summary, sort_keys=True))
     return 0
 
