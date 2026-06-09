@@ -1,21 +1,21 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v329-gemini-recovery-postreqs-20260609T203552Z`
-- **Quality status:** `LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER`
-- **Rows seen:** 4
-- **Rows with PROVIDER_USED:** **4**
+- **Run ID:** `v3291-gemini-quality-a-20260609T210119Z`
+- **Quality status:** `LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE`
+- **Rows seen:** 0
+- **Rows with PROVIDER_USED:** **0**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
 - **Rows with PROVIDER_FAILED_FAIL_SOFT:** 0
 - **generic_placeholder_count:** 0
-- **empty_risks_count:** 4
-- **empty_next_actions_count:** 4
-- **zero_confidence_count:** 4
+- **empty_risks_count:** 0
+- **empty_next_actions_count:** 0
+- **zero_confidence_count:** 0
 - **secret_leak_hits:** 0
 - **unsafe_phrase_hits:** 0
 
 ## Rationale
 
-- 0/4 rows look like generic placeholder; empty-risks=4; empty-next=4; zero-conf=4
+- no rows produced
 
 ## Safety invariants
 

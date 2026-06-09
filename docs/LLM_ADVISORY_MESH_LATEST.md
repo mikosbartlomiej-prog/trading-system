@@ -1,27 +1,25 @@
 # LLM Advisory Mesh — latest run (v3.28.3)
 
-- **Run ID:** `v329-gemini-recovery-postreqs-20260609T203552Z`
-- **Status:** `LLM_ADVISORY_MESH_RAN`
-- **Quality status:** `LLM_ADVISORY_QUALITY_GENERIC_PLACEHOLDER`
+- **Run ID:** `v3291-gemini-quality-a-20260609T210119Z`
+- **Status:** `LLM_ADVISORY_MESH_SKIPPED_BUDGET`
+- **Quality status:** `LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE`
 - **Selected provider:** `gemini`
 - **LLM_FREE_ONLY:** `True`
-- **Agents evaluated:** 4
-- **Rows written:** 4
+- **Agents evaluated:** 0
+- **Rows written:** 0
 - **Standing markers:** `BROKER_PAPER_CANARY_STILL_BLOCKED`, `LIVE_TRADING_UNSUPPORTED`
 
 ## Quality report (v3.28.3)
 
-- rows_with_provider_used: **4**
+- rows_with_provider_used: **0**
 - rows_with_provider_skipped: 0
 - rows_with_provider_failed: 0
 - generic_placeholder_count: 0
-- empty_risks_count: 4
-- empty_next_actions_count: 4
-- confidence range: [0.0, 0.0]
+- empty_risks_count: 0
+- empty_next_actions_count: 0
+- confidence range: [1.0, 0.0]
 - secret_leak_hits: 0
 - unsafe_phrase_hits: 0
-
-**Next recommended action:** Improve per-agent prompts so Gemini emits concrete evidence-grounded analysis. Do NOT enable schedule.
 
 ## Safety invariants (asserted on every run)
 - `broker_paper_canary_still_blocked`: **true**
