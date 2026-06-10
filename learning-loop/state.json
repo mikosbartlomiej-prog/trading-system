@@ -1,37 +1,37 @@
 {
   "asset_classes": {
     "stocks": {
-      "trades_7d": 6,
+      "trades_7d": 3,
       "win_rate_7d": 0.0,
-      "pnl_usd_7d": -103.17
+      "pnl_usd_7d": -260.67
     }
   },
   "cumulative": {
-    "total_trades": 6,
-    "total_pnl_usd": -103.17,
-    "starting_equity": 90068.27944992931
+    "total_trades": 3,
+    "total_pnl_usd": -260.67,
+    "starting_equity": 89775.62059870496
   },
   "daily_peak": {
     "date": "2026-06-10",
-    "peak_pl_usd": 0.0,
-    "peak_pl_pct": 0.0,
-    "peak_at": "2026-06-10T00:00:20.887444+00:00",
-    "peak_equity": 90068.27944992931,
-    "current_pl_usd": -268.9594499293016,
-    "current_equity": 89799.32,
-    "retrace_from_peak": 0.0,
-    "verdict": "FLAT",
-    "verdict_at": "2026-06-10T01:35:14.661752+00:00",
+    "peak_pl_usd": 162.10940129503433,
+    "peak_pl_pct": 0.001805717412076267,
+    "peak_at": "2026-06-10T13:45:19.448278+00:00",
+    "peak_equity": 89937.73,
+    "current_pl_usd": -467.59059870496276,
+    "current_equity": 89308.03,
+    "retrace_from_peak": 3.8844138277579696,
+    "verdict": "GREEN",
+    "verdict_at": "2026-06-10T22:40:44.657842+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 68,
+  "days_tracked": 69,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-06-10T01:35:58.145141+00:00",
+  "last_updated": "2026-06-10T22:45:16.267633+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
@@ -204,17 +204,17 @@
       "win_rate_lifetime": 0.0
     },
     "allocator-rebalance": {
-      "trades_lifetime": 6,
-      "trades_7d": 6,
+      "trades_lifetime": 3,
+      "trades_7d": 3,
       "win_rate_lifetime": 0.0,
       "win_rate_7d": 0.0,
-      "pnl_usd_lifetime": -103.17,
-      "pnl_usd_7d": -103.17,
+      "pnl_usd_lifetime": -260.67,
+      "pnl_usd_7d": -260.67,
       "size_multiplier": 1.0,
       "enabled": true,
       "side_bias": null,
-      "consecutive_losses": 6,
-      "rationale": "hold (lifetime trades 6 < 10; need more sample before adapting)",
+      "consecutive_losses": 3,
+      "rationale": "hold (lifetime trades 3 < 10; need more sample before adapting)",
       "paused_until": null
     },
     "crypto-breakdown": {

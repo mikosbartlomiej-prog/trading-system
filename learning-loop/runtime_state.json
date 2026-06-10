@@ -1,5 +1,5 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "llm-availability",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -91,6 +91,20 @@
     "session_start_equity": 89775.62059870496,
     "state_entered_at": "2026-06-10T12:35:16.933679+00:00",
     "top_giveback_symbols": []
+  },
+  "llm_availability": {
+    "actions_enqueued_this_run": [],
+    "consecutive_failures": 1,
+    "history": [
+      {
+        "at": "2026-06-10T22:45:16.683738+00:00",
+        "reason": "senior_pm_unavailable",
+        "success": false
+      }
+    ],
+    "last_reason": "senior_pm_unavailable",
+    "last_run_at": "2026-06-10T22:45:16.683738+00:00",
+    "last_success": false
   },
   "position_mfe": {
     "AVAXUSD": {
@@ -1296,13 +1310,15 @@
   },
   "routine_budget": {
     "by_routine": {
-      "crypto-curator": 4
+      "crypto-curator": 4,
+      "daily-learning-pm": 1
     },
     "by_tier": {
+      "P0_essential": 1,
       "P2_optional": 4
     },
     "date": "2026-06-10",
-    "last_updated": "2026-06-10T20:15:49.229370+00:00",
-    "total": 4
+    "last_updated": "2026-06-10T22:45:16.281980+00:00",
+    "total": 5
   }
 }
