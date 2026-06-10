@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-10T20:35:48.514311+00:00",
+      "last_seen_iso": "2026-06-10T20:40:47.684805+00:00",
       "last_status": "ok",
-      "pings_today": 94
+      "pings_today": 95
     },
     "geo-monitor": {
       "last_message": "",
@@ -82,7 +82,7 @@
     "intraday_peak_pnl": 162.10940129503433,
     "intraday_peak_pnl_pct": 0.001805717412076267,
     "last_action": "noop",
-    "last_update_at": "2026-06-10T20:35:48.473499+00:00",
+    "last_update_at": "2026-06-10T20:40:47.643431+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-10T13:45:19.448278+00:00",
@@ -96,13 +96,13 @@
     "AVAXUSD": {
       "first_seen_at": "2026-06-10T08:50:16.067178+00:00",
       "last_pct": -0.05087,
-      "last_seen_at": "2026-06-10T20:35:48.476276+00:00",
+      "last_seen_at": "2026-06-10T20:40:47.646227+00:00",
       "peak_pct": 0.0
     },
     "ETHUSD": {
       "first_seen_at": "2026-06-10T08:50:16.067695+00:00",
       "last_pct": 0.03548,
-      "last_seen_at": "2026-06-10T20:35:48.478864+00:00",
+      "last_seen_at": "2026-06-10T20:40:47.648813+00:00",
       "peak_pct": 0.0577
     },
     "GLD": {
@@ -114,7 +114,7 @@
     "LTCUSD": {
       "first_seen_at": "2026-06-10T08:50:16.068200+00:00",
       "last_pct": 0.0,
-      "last_seen_at": "2026-06-10T20:35:48.481546+00:00",
+      "last_seen_at": "2026-06-10T20:40:47.651467+00:00",
       "peak_pct": 0.0
     },
     "QQQ": {
@@ -126,7 +126,7 @@
     "SOLUSD": {
       "first_seen_at": "2026-06-10T08:50:16.068687+00:00",
       "last_pct": -0.07143,
-      "last_seen_at": "2026-06-10T20:35:48.484130+00:00",
+      "last_seen_at": "2026-06-10T20:40:47.654024+00:00",
       "peak_pct": 0.0
     },
     "SPY": {
@@ -145,14 +145,14 @@
       "entry_price": 6.82,
       "entry_qty": 365.968010756,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-10T20:35:48.502544+00:00",
+      "last_eval_at_iso": "2026-06-10T20:40:47.672897+00:00",
       "lifecycle": "ARMED",
       "opened_at_iso": "2026-06-10T08:50:16.086994+00:00",
       "peak_pl_pct": 0.0,
       "peak_price": 6.82,
       "profile_quality_now": null,
       "symbol": "AVAXUSD",
-      "time_at_eval_hours": 11.759004319444443,
+      "time_at_eval_hours": 11.842107195277778,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.054824046920821094,
       "trough_price": 6.4461,
@@ -166,14 +166,14 @@
       "entry_price": 1575.276615039,
       "entry_qty": 5.0724058,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-10T20:35:48.505068+00:00",
+      "last_eval_at_iso": "2026-06-10T20:40:47.675377+00:00",
       "lifecycle": "CLOSED",
       "opened_at_iso": "2026-06-10T08:50:16.087461+00:00",
       "peak_pl_pct": 0.05769995192796647,
       "peak_price": 1666.17,
       "profile_quality_now": null,
       "symbol": "ETHUSD",
-      "time_at_eval_hours": 11.759004890833333,
+      "time_at_eval_hours": 11.842107754444443,
       "time_stop_hours": 48.0,
       "trough_pl_pct": 0.0,
       "trough_price": 1575.276615039,
@@ -208,14 +208,14 @@
       "entry_price": 44.21,
       "entry_qty": 1.83e-07,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-10T20:35:48.507592+00:00",
+      "last_eval_at_iso": "2026-06-10T20:40:47.677871+00:00",
       "lifecycle": "ARMED",
       "opened_at_iso": "2026-06-10T08:50:16.087947+00:00",
       "peak_pl_pct": 0.0,
       "peak_price": 44.21,
       "profile_quality_now": null,
       "symbol": "LTCUSD",
-      "time_at_eval_hours": 11.759005456944445,
+      "time_at_eval_hours": 11.842108312222223,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.05134584935534954,
       "trough_price": 41.94,
@@ -250,14 +250,14 @@
       "entry_price": 66.15,
       "entry_qty": 2.1e-07,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-10T20:35:48.510111+00:00",
+      "last_eval_at_iso": "2026-06-10T20:40:47.680324+00:00",
       "lifecycle": "ARMED",
       "opened_at_iso": "2026-06-10T08:50:16.088421+00:00",
       "peak_pl_pct": 0.0,
       "peak_price": 66.15,
       "profile_quality_now": null,
       "symbol": "SOLUSD",
-      "time_at_eval_hours": 11.759006025000001,
+      "time_at_eval_hours": 11.842108861944444,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.04597127739984888,
       "trough_price": 63.109,
