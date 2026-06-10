@@ -1,23 +1,23 @@
 # LLM Advisory Mesh — latest run (v3.28.3)
 
-- **Run ID:** `v3291-gemini-quality-a-20260609T210119Z`
-- **Status:** `LLM_ADVISORY_MESH_SKIPPED_BUDGET`
-- **Quality status:** `LLM_ADVISORY_QUALITY_INSUFFICIENT_SAMPLE`
+- **Run ID:** `v3300-calibration-27253618219`
+- **Status:** `LLM_ADVISORY_MESH_RAN`
+- **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
 - **Selected provider:** `gemini`
 - **LLM_FREE_ONLY:** `True`
-- **Agents evaluated:** 0
-- **Rows written:** 0
+- **Agents evaluated:** 11
+- **Rows written:** 11
 - **Standing markers:** `BROKER_PAPER_CANARY_STILL_BLOCKED`, `LIVE_TRADING_UNSUPPORTED`
 
 ## Quality report (v3.28.3)
 
-- rows_with_provider_used: **0**
+- rows_with_provider_used: **7**
 - rows_with_provider_skipped: 0
-- rows_with_provider_failed: 0
+- rows_with_provider_failed: 4
 - generic_placeholder_count: 0
-- empty_risks_count: 0
-- empty_next_actions_count: 0
-- confidence range: [1.0, 0.0]
+- empty_risks_count: 11
+- empty_next_actions_count: 11
+- confidence range: [0.0, 0.0]
 - secret_leak_hits: 0
 - unsafe_phrase_hits: 0
 

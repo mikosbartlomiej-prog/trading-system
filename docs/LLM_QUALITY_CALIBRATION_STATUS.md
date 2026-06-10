@@ -1,18 +1,18 @@
 # LLM Quality Calibration Status (v3.30.1)
 
-- **Precheck status:** `CALIBRATION_SKIPPED_NON_FREE_PROVIDER`
-- **Should call provider:** false
+- **Precheck status:** `CALIBRATION_PROCEEDING`
+- **Should call provider:** true
 - **Accepted quality runs:** 0 / 2
-- **Budget status:** `LLM_BUDGET_DISABLED`
-- **Provider:** `offline_mock`
-- **Free-only:** false
+- **Budget status:** `LLM_BUDGET_ALLOWED`
+- **Provider:** `gemini`
+- **Free-only:** true
 - **Production LLM schedule enabled:** false
 - **Broker flags safe:** true
-- **Gemini key present:** false
+- **Gemini key present:** true
 - **Calibration disabled by operator:** false
 - **Latest quality status:** `LLM_ADVISORY_QUALITY_ACCEPTABLE`
 - **Latest run_id:** `v3283-mock-3`
-- **Next action:** LLM_PROVIDER='' or LLM_FREE_ONLY=False; calibration requires gemini + free-only.
+- **Next action:** Proceed to Gemini smoke + bounded mesh run with per-run budget override = 11.
 
 ## Safety invariants
 
