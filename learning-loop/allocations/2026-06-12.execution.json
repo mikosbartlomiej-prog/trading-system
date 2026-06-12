@@ -1,49 +1,54 @@
 {
   "plan_date": "2026-06-12",
-  "executed_at": "2026-06-12T13:00:58Z",
-  "n_placed": 0,
-  "n_skipped": 5,
+  "executed_at": "2026-06-12T16:33:18Z",
+  "n_placed": 5,
+  "n_skipped": 0,
   "n_failed": 0,
   "results": [
     {
       "symbol": "PANW",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-12T13:00:58Z"
+      "status": "placed",
+      "reason": "BUY 57.0000 @ $280.37",
+      "attempted_at": "2026-06-12T16:33:09Z",
+      "alpaca_order_id": "a4406876-a4be-40ec-8c82-345a9c1b06a3"
     },
     {
       "symbol": "CRWD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-12T13:00:58Z"
+      "status": "placed",
+      "reason": "BUY 23.0000 @ $689.97",
+      "attempted_at": "2026-06-12T16:33:11Z",
+      "alpaca_order_id": "a16b7a16-8e44-42bf-9abf-c170cba5cd2f"
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-12T13:00:58Z"
+      "status": "placed",
+      "reason": "BUY 12.0000 @ $740.45",
+      "attempted_at": "2026-06-12T16:33:12Z",
+      "alpaca_order_id": "e6f9f3c1-eaf3-438b-a4fe-b2859c777f40"
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-12T13:00:58Z"
+      "status": "placed",
+      "reason": "BUY 12.0000 @ $719.77",
+      "attempted_at": "2026-06-12T16:33:14Z",
+      "alpaca_order_id": "7d0c1fdd-23ab-4811-abd2-b43d64db0018"
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-12T13:00:58Z"
+      "status": "placed",
+      "reason": "BUY 23.0000 @ $387.12",
+      "attempted_at": "2026-06-12T16:33:16Z",
+      "alpaca_order_id": "28a70d85-61d8-439f-b986-7848e56081ef"
     }
   ]
 }

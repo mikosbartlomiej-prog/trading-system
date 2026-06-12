@@ -58,3 +58,20 @@
 [13:00:58 WARN]     QQQ BUY: skipped — market not open
 [13:00:58 WARN]     GLD BUY: skipped — market not open
 [13:00:58 INFO]   execution complete: 0 placed, 5 skipped, 0 failed, 0 deferred_bp
+
+[16:33:08 INFO] ============================================================
+[16:33:08 INFO] execute_orders() — auto-execute path
+[16:33:08 INFO] ============================================================
+[16:33:08 INFO]   market_status: open=True reason=open
+[16:33:09 INFO]   bp_guard: requested $59165 available $314932 open_exposure $10897 | all BUYs fit available BP + exposure cap
+[16:33:09 INFO]     PANW BUY: derived qty=57 from target=$16,136 @ $280.37 (no prior position)
+[16:33:11 INFO]     PANW BUY placed: BUY 57.0000 @ $280.37  id=a4406876-a4be-40ec-8c82-345a9c1b06a3
+[16:33:11 INFO]     CRWD BUY: derived qty=23 from target=$16,136 @ $689.97 (no prior position)
+[16:33:12 INFO]     CRWD BUY placed: BUY 23.0000 @ $689.97  id=a16b7a16-8e44-42bf-9abf-c170cba5cd2f
+[16:33:13 INFO]     SPY BUY: derived qty=12 from target=$8,964 @ $740.44 (no prior position)
+[16:33:14 INFO]     SPY BUY placed: BUY 12.0000 @ $740.45  id=e6f9f3c1-eaf3-438b-a4fe-b2859c777f40
+[16:33:14 INFO]     QQQ BUY: derived qty=12 from target=$8,964 @ $719.77 (no prior position)
+[16:33:16 INFO]     QQQ BUY placed: BUY 12.0000 @ $719.77  id=7d0c1fdd-23ab-4811-abd2-b43d64db0018
+[16:33:16 INFO]     GLD BUY: derived qty=23 from target=$8,964 @ $387.12 (no prior position)
+[16:33:18 INFO]     GLD BUY placed: BUY 23.0000 @ $387.12  id=28a70d85-61d8-439f-b986-7848e56081ef
+[16:33:18 INFO]   execution complete: 5 placed, 0 skipped, 0 failed, 0 deferred_bp
