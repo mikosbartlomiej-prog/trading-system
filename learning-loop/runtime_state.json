@@ -1,11 +1,11 @@
 {
-  "_last_writer": "pre-open-planner",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-12T16:10:56.394281+00:00",
+      "last_seen_iso": "2026-06-12T16:15:55.866138+00:00",
       "last_status": "ok",
-      "pings_today": 196
+      "pings_today": 197
     },
     "defense-monitor": {
       "last_message": "",
@@ -1264,15 +1264,15 @@
   },
   "routine_budget": {
     "by_routine": {
-      "crypto-curator": 3,
+      "crypto-curator": 4,
       "daily-learning-pm": 1
     },
     "by_tier": {
       "P0_essential": 1,
-      "P2_optional": 3
+      "P2_optional": 4
     },
     "date": "2026-06-12",
-    "last_updated": "2026-06-12T16:10:53.866453+00:00",
-    "total": 4
+    "last_updated": "2026-06-12T16:15:54.197516+00:00",
+    "total": 5
   }
 }
