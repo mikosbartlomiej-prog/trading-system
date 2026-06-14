@@ -51,3 +51,16 @@
 [01:43:39 WARN]     order check failed: SOLUSD:EXIT — SOLUSD not on risk_officer whitelist
 [01:43:39 INFO] ── Step 8: plan complete ──
 [01:43:39 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:46:09 INFO] ============================================================
+[13:46:09 INFO] execute_orders() — auto-execute path
+[13:46:09 INFO] ============================================================
+[13:46:09 INFO]   market_status: open=False reason=weekend
+[13:46:10 INFO]   bp_guard: requested $50227 available $266173 open_exposure $51410 | all BUYs fit available BP + exposure cap
+[13:46:10 WARN]     PANW EXIT: skipped — market not open
+[13:46:10 WARN]     CRWD EXIT: skipped — market not open
+[13:46:10 WARN]     AMD BUY: skipped — market not open
+[13:46:10 WARN]     SMH BUY: skipped — market not open
+[13:46:10 WARN]     SPY BUY: skipped — market not open
+[13:46:10 WARN]     QQQ BUY: skipped — market not open
+[13:46:10 INFO]   execution complete: 0 placed, 6 skipped, 0 failed, 0 deferred_bp
