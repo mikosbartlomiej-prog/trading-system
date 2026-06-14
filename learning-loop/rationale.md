@@ -967,3 +967,5 @@
 - 2026-06-14 · crypto-oversold-bounce: SILENT 77d but LLM override 2026-06-07 active (7d ago < 14d lock) → keep enabled
 - 2026-06-14 · equity-gap [WARN]: Equity dropped $8,559 ($98,446 → $89,887) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 
+- 2026-06-14 · WEEKLY RETRO: LLM unavailable — fallback report only
+
