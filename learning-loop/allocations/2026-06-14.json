@@ -1,15 +1,15 @@
 {
   "date": "2026-06-14",
-  "generated_at": "2026-06-14T01:43:32Z",
+  "generated_at": "2026-06-14T22:01:05Z",
   "version": "1.0",
   "config": {
     "target_invested_ratio": 1.0,
     "min_invested_ratio": 0.98,
     "auto_execute": true
   },
-  "account_equity": 89690.85,
-  "portfolio_value": 89690.85,
-  "cash": 221327.825,
+  "account_equity": 89887.34,
+  "portfolio_value": 89887.34,
+  "cash": 221229.58000000002,
   "buying_power": 266173.25,
   "account_blocked": false,
   "trading_blocked": false,
@@ -20,11 +20,11 @@
       "side": "long",
       "qty": 365.968011,
       "avg_entry_price": 6.82,
-      "current_price": 6.6837,
-      "market_value": 2446.02,
-      "unrealized_pl": -49.89,
-      "pl_pct": -2.0,
-      "pct_equity": 2.73
+      "current_price": 6.6365,
+      "market_value": 2428.75,
+      "unrealized_pl": -67.16,
+      "pl_pct": -2.69,
+      "pct_equity": 2.7
     },
     {
       "symbol": "CRWD",
@@ -36,7 +36,7 @@
       "market_value": 15704.4,
       "unrealized_pl": -43.93,
       "pl_pct": -0.28,
-      "pct_equity": 17.51
+      "pct_equity": 17.47
     },
     {
       "symbol": "ETHUSD",
@@ -44,11 +44,11 @@
       "side": "long",
       "qty": 5.072406,
       "avg_entry_price": 1575.2766,
-      "current_price": 1683.93,
-      "market_value": 8541.58,
-      "unrealized_pl": 551.13,
-      "pl_pct": 6.9,
-      "pct_equity": 9.52
+      "current_price": 1726.072,
+      "market_value": 8755.34,
+      "unrealized_pl": 764.9,
+      "pl_pct": 9.57,
+      "pct_equity": 9.74
     },
     {
       "symbol": "GLD",
@@ -60,7 +60,7 @@
       "market_value": 8890.42,
       "unrealized_pl": -12.88,
       "pl_pct": -0.14,
-      "pct_equity": 9.91
+      "pct_equity": 9.89
     },
     {
       "symbol": "LTCUSD",
@@ -68,7 +68,7 @@
       "side": "long",
       "qty": 0.0,
       "avg_entry_price": 44.21,
-      "current_price": 44.46,
+      "current_price": 44.696,
       "market_value": 0.0,
       "unrealized_pl": 0.0,
       "pl_pct": 0.0,
@@ -84,7 +84,7 @@
       "market_value": 15938.34,
       "unrealized_pl": 12.54,
       "pl_pct": 0.08,
-      "pct_equity": 17.77
+      "pct_equity": 17.73
     },
     {
       "symbol": "SOLUSD",
@@ -92,14 +92,14 @@
       "side": "long",
       "qty": 0.0,
       "avg_entry_price": 66.15,
-      "current_price": 69.0145,
+      "current_price": 70.284,
       "market_value": 0.0,
       "unrealized_pl": 0.0,
-      "pl_pct": 0.0,
+      "pl_pct": 7.14,
       "pct_equity": 0.0
     }
   ],
-  "invested_ratio_before": 0.5744,
+  "invested_ratio_before": 0.5754,
   "pdt_mode": "OK",
   "pdt_dt_remaining": 3,
   "pdt_dt_count": 0,
@@ -397,12 +397,12 @@
   "allocation_reason": "regime=NEUTRAL | primary_picks=2(36%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=34.00%",
   "invested_ratio_after_target": 0.6599999999999999,
   "current_weights": {
-    "AVAXUSD": 0.0273,
-    "CRWD": 0.1751,
-    "ETHUSD": 0.0952,
-    "GLD": 0.0991,
+    "AVAXUSD": 0.027,
+    "CRWD": 0.1747,
+    "ETHUSD": 0.0974,
+    "GLD": 0.0989,
     "LTCUSD": 0.0,
-    "PANW": 0.1777,
+    "PANW": 0.1773,
     "SOLUSD": 0.0
   },
   "rebalance_orders": [
@@ -411,8 +411,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 16144.35,
-      "delta": 16144.35,
+      "target_value": 16179.72,
+      "delta": 16179.72,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -423,8 +423,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 16144.35,
-      "delta": 16144.35,
+      "target_value": 16179.72,
+      "delta": 16179.72,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -459,8 +459,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 8969.09,
-      "delta": 8969.09,
+      "target_value": 8988.73,
+      "delta": 8988.73,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -471,8 +471,8 @@
       "action": "BUY",
       "asset_class": "us_equity",
       "current_value": 0.0,
-      "target_value": 8969.09,
-      "delta": 8969.09,
+      "target_value": 8988.73,
+      "delta": 8988.73,
       "current_qty": 0.0,
       "qty_delta": null,
       "current_price": null,
@@ -482,33 +482,33 @@
       "symbol": "AVAXUSD",
       "action": "HOLD",
       "asset_class": "crypto",
-      "current_value": 2446.02,
+      "current_value": 2428.75,
       "target_value": 0.0,
-      "delta": -2446.02,
+      "delta": -2428.75,
       "current_qty": 365.968011,
       "qty_delta": -365.968011,
-      "current_price": 6.6837,
+      "current_price": 6.6365,
       "reason": "BLOCKED (AVAXUSD not on risk_officer whitelist)"
     },
     {
       "symbol": "ETHUSD",
       "action": "HOLD",
       "asset_class": "crypto",
-      "current_value": 8541.58,
+      "current_value": 8755.34,
       "target_value": 0.0,
-      "delta": -8541.58,
+      "delta": -8755.34,
       "current_qty": 5.072406,
       "qty_delta": -5.072406,
-      "current_price": 1683.93,
+      "current_price": 1726.072,
       "reason": "BLOCKED (ETHUSD not on risk_officer whitelist)"
     },
     {
       "symbol": "GLD",
       "action": "HOLD",
       "current_value": 8890.42,
-      "target_value": 8969.09,
-      "delta": 78.67,
-      "reason": "|delta +0.09%| < min_diff 2.00%"
+      "target_value": 8988.73,
+      "delta": 98.31,
+      "reason": "|delta +0.11%| < min_diff 2.00%"
     },
     {
       "symbol": "LTCUSD",
@@ -519,7 +519,7 @@
       "delta": 0.0,
       "current_qty": 0.0,
       "qty_delta": -0.0,
-      "current_price": 44.46,
+      "current_price": 44.696,
       "reason": "BLOCKED (LTCUSD not on risk_officer whitelist)"
     },
     {
@@ -531,7 +531,7 @@
       "delta": 0.0,
       "current_qty": 0.0,
       "qty_delta": -0.0,
-      "current_price": 69.0145,
+      "current_price": 70.284,
       "reason": "BLOCKED (SOLUSD not on risk_officer whitelist)"
     }
   ],

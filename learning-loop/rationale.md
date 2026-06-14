@@ -957,3 +957,13 @@
 - 2026-06-14 · rsi-alert [oversold]: BTC/USD RSI=27.8 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-06-14 · rsi-alert [oversold]: ETH/USD RSI=27.3 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-06-14 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-14 · crypto-momentum: SILENT 77d but LLM override 2026-06-07 active (7d ago < 14d lock) → keep enabled
+- 2026-06-14 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 77d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-14 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 77d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-14 · geo-gold: SILENT 77d with 1 placement attempts — insufficient sample for prune (need ≥5). v3.11.1 keeps enabled.
+- 2026-06-14 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 77d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-14 · options-momentum: SILENT 77d but LLM override 2026-06-07 active (7d ago < 14d lock) → keep enabled
+- 2026-06-14 · crypto-oversold-bounce: SILENT 77d but LLM override 2026-06-07 active (7d ago < 14d lock) → keep enabled
+- 2026-06-14 · equity-gap [WARN]: Equity dropped $8,559 ($98,446 → $89,887) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+
