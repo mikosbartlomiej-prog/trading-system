@@ -90,6 +90,14 @@ class _BaseEntryTest(unittest.TestCase):
         # instrument_windows / portfolio_risk / pdt / governor / heartbeat.
         # The 6 gates upstream of risk_officer must all return ALLOW to
         # focus on Task-2 risk-officer behavior.
+        #
+        # v3.22 (2026-06-15): the new entry-gate stack (confidence-mandatory
+        # + canary preflight) now runs BEFORE the v3.17 fail-CLOSED logic.
+        # These tests pre-date v3.22 and don't supply confidence_inputs /
+        # don't mock the canary, so we explicitly bypass the v3.22 gate
+        # here to keep the v3.17 test intent isolated. The v3.22 gate
+        # itself is exercised by tests/test_entry_path_confidence_mandatory_v3220.py
+        # and tests/test_canary_preflight_wired_v3220.py.
         self._patches = [
             mock.patch("instrument_windows.can_trade_now",
                        return_value=(True, "ok")),
@@ -99,6 +107,9 @@ class _BaseEntryTest(unittest.TestCase):
                        return_value=(True, "ok")),
             mock.patch("alpaca_orders._pdt_gate",
                        return_value=(True, "ok")),
+            mock.patch("alpaca_orders._v322_entry_gate_stack",
+                       return_value=(True, "OBSERVE_ONLY_SKIP",
+                                      "v3.17 test fixture bypass")),
         ]
         for p in self._patches:
             p.start()

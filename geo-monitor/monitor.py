@@ -13,6 +13,19 @@ import requests
 import feedparser
 from datetime import datetime, timezone, timedelta
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status, has_open_position, concentration_ok
@@ -344,6 +357,36 @@ def execute_geo_signal(signal: dict) -> bool:
 
     Returns True iff Alpaca returned an order ID.
     """
+    # v3.22.0 — observability emit BEFORE any broker dispatch. Records
+    # a SignalEvent in the opportunity ledger so the operator can
+    # reconstruct every fire of this strategy. NEVER places an order.
+    try:
+        emit_monitor_signal(
+            source_monitor="geo-monitor",
+            strategy_id=signal.get("strategy", "geo-news"),
+            symbol=signal.get("symbol", "?"),
+            asset_class="us_equity",
+            side="long" if signal.get("action", "BUY").upper().startswith("BUY") else "short",
+            action=signal.get("action", "BUY"),
+            entry_capable=True,
+            raw_signal={
+                "score":    signal.get("score") or signal.get("confidence"),
+                "headline": (signal.get("headline") or "")[:200],
+                "source":   signal.get("source"),
+            },
+            confidence_inputs={
+                "primary_score": float(signal.get("confidence", 0.6)),
+                "regime":        signal.get("regime"),
+                "data_quality":  "REAL_NEWS_FEED",
+            },
+            risk_inputs={
+                "size_usd": signal.get("size_usd", 8000),
+            },
+            market_regime={"regime": signal.get("regime", "NEUTRAL")},
+            metadata={"audit_link": f"geo-{signal.get('symbol', '?')}"},
+        )
+    except Exception:
+        pass
     if not USE_ROUTINE:
         if not AUTO_EXECUTE:
             print(f"  AUTO_EXECUTE_GEO=false — signal {signal['symbol']} skipped (email-only)")

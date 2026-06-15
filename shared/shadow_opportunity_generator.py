@@ -45,11 +45,18 @@ ONLY_EMITS_FOR_REAL_MARKET_DATA   = True
 # callable from ``backtest/strategies.py``. v3.27 keeps the registry
 # tight: 1 stock + 1 crypto strategy. Future iterations can extend it.
 
+# v3.22 — module-level version stamp so tests can pin the registry.
+REGISTRY_VERSION = "v3.22.0"
+
+
 def _strategy_registry() -> dict[str, dict[str, Any]]:
     try:
         from backtest.strategies import (
             momentum_long_signal_at,
+            momentum_long_loose_signal_at,
+            overbought_short_signal_at,
             crypto_momentum_signal_at,
+            crypto_oversold_bounce_signal_at,
         )
     except ImportError:  # pragma: no cover
         return {}
@@ -59,9 +66,40 @@ def _strategy_registry() -> dict[str, dict[str, Any]]:
             "signal_at":   momentum_long_signal_at,
             "default_size_usd": 1000.0,
         },
+        "momentum-long-loose": {
+            "asset_class": "us_equity",
+            "signal_at":   momentum_long_loose_signal_at,
+            "default_size_usd": 1000.0,
+        },
+        "overbought-short": {
+            "asset_class": "us_equity",
+            "signal_at":   overbought_short_signal_at,
+            "default_size_usd": 1000.0,
+        },
         "crypto-momentum": {
             "asset_class": "crypto",
             "signal_at":   crypto_momentum_signal_at,
+            "default_size_usd": 500.0,
+        },
+        "crypto-oversold-bounce": {
+            "asset_class": "crypto",
+            "signal_at":   crypto_oversold_bounce_signal_at,
+            "default_size_usd": 500.0,
+        },
+        # v3.22 observe-only entries — no pure daily-bar helper, but
+        # we still want them to show up in the registry so the
+        # universe map covers the live monitor set. The shadow runner
+        # skips would-trade emission for observe_only entries.
+        "geo-defense": {
+            "asset_class": "us_equity",
+            "signal_at":   None,
+            "observe_only": True,
+            "default_size_usd": 1000.0,
+        },
+        "options-momentum": {
+            "asset_class": "us_option",
+            "signal_at":   None,
+            "observe_only": True,
             "default_size_usd": 500.0,
         },
     }
@@ -323,9 +361,19 @@ def to_shadow_record(
 
 def policy_summary() -> dict[str, Any]:
     reg = _strategy_registry()
+    strategy_details: dict[str, dict[str, Any]] = {}
+    for name, cfg in reg.items():
+        strategy_details[name] = {
+            "asset_class":      cfg.get("asset_class"),
+            "observe_only":     bool(cfg.get("observe_only", False)),
+            "has_signal_at":    callable(cfg.get("signal_at")),
+            "default_size_usd": cfg.get("default_size_usd"),
+        }
     return {
-        "version": "v3.27.0",
+        "version":              "v3.27.0",
+        "registry_version":     REGISTRY_VERSION,
         "strategies_registered": sorted(reg.keys()),
+        "strategy_details":     strategy_details,
         "invariants": {
             "NEVER_SUBMITS_ORDERS": NEVER_SUBMITS_ORDERS,
             "NEVER_IMPORTS_ALPACA_ORDERS": NEVER_IMPORTS_ALPACA_ORDERS,

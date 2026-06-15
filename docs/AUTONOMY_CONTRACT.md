@@ -341,3 +341,84 @@ automatic.
 - `budget_bypasses_safety = True` (safety reports never throttled)
 - `fill_model_no_silent_mutation = True` (insufficient → no model change)
 
+
+---
+
+## v3.22.0 invariants (2026-06-15)
+
+v3.22 wires the signal-production spine end-to-end. It does NOT
+flip any broker flag and it does NOT generate evidence by itself.
+The invariants below are enforced by `tests/test_*_v3220.py`.
+
+### Signal pipeline invariants
+
+1. **`confidence_inputs` mandatory for entry.**
+   Every `entry_capable=True` `SignalEvent` MUST carry a non-empty
+   `confidence_inputs` dict. The emitter's validator blocks any
+   entry-capable event with empty `confidence_inputs` and writes
+   `status="BLOCKING_VALIDATION_ERROR"`. NO ledger row is produced
+   for blocked events. (See
+   `tests/test_entry_path_confidence_mandatory_v3220.py`.)
+
+2. **`risk_inputs` mandatory for entry.** Same rule as
+   `confidence_inputs` — entry-capable events without `risk_inputs`
+   are blocked at validation.
+
+3. **`pipeline` is a closed enum.** `monitor`, `shadow`, `paper`,
+   `replay`, `backtest`. **`live` is intentionally absent** and the
+   validator rejects it.
+
+4. **`source_monitor` mandatory.** Every event must declare which
+   monitor produced it. Used downstream for fault attribution.
+
+5. **`evidence_source` mandatory.** One of `BACKTEST`, `REPLAY`,
+   `PAPER`. The learning loop weights evidence by this field; a
+   missing value is rejected.
+
+### Canary preflight wired (no order placement)
+
+6. **Canary preflight runs as a soft gate.** When a monitor proposes
+   an entry, the v3.22 entry-gate stack
+   (`shared/alpaca_orders.py::_v322_entry_gate_stack`) reads
+   `learning-loop/broker_paper_canary/unlock_readiness_latest.json`
+   and refuses the entry if `verdict` is not in
+   `_V322_PREFLIGHT_OK_VERDICTS`. No order is placed because
+   `ALLOW_BROKER_PAPER` remains `false` at the alpaca_orders level;
+   the preflight rejection happens BEFORE that final gate. (See
+   `tests/test_canary_preflight_wired_v3220.py`.)
+
+7. **Canary remains preflight-only.** `BROKER_EXECUTION_ENABLED`,
+   `ALLOW_BROKER_PAPER`, `EDGE_GATE_ENABLED`, `LIVE_TRADING`,
+   `LIVE_ENABLED`, `GO_LIVE`, `LIVE_TRADING_ENABLED`,
+   `OPERATOR_APPROVED_BROKER_PAPER_CANARY` all stay `false`. No
+   order is ever placed by the canary in v3.22.
+
+### Safe-mode auto-triggers on P01/P02/P13
+
+8. **Incident → safe_mode coupling.** `scripts/incident_pattern_detector.py`
+   detects P01 (state corruption), P02 (workflow loss), and P13
+   (broker invariant breach) and writes a `safe_mode_trigger`
+   marker. The safe-mode runtime
+   (`shared/safe_mode.py`) reads the marker on next monitor entry
+   and gates all NEW entries with `SAFE_MODE_ACTIVE`. Existing
+   emergency closes continue. (See
+   `tests/test_safe_mode_incident_trigger_v3220.py`.)
+
+### Hard-safety invariants (unchanged from v3.21)
+
+- LLM stays advisory only.
+- Canary stays preflight-only.
+- Live remains unsupported.
+- `EDGE_GATE_ENABLED = false` (hard-pinned).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned).
+- `BROKER_EXECUTION_ENABLED = false` (hard-pinned).
+- `LIVE_TRADING` and the four siblings remain `false`.
+- No paid APIs added. No LLM calls on the runtime trading path.
+
+### System status
+
+- System is NOT live-ready.
+- System has NOT yet proven edge.
+- Aggressive trading requires real evidence. v3.22 wires the
+  production layer but does NOT generate evidence by itself.
+- Confidence score without data is not proof of edge.

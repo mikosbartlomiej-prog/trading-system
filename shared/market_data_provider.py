@@ -429,6 +429,149 @@ def fetch_universe_snapshots(
     return out
 
 
+# ─── v3.22 per-symbol diagnostic categorisation ──────────────────────────────
+#
+# `fetch_universe_snapshots_with_diagnostics` returns the same list of
+# snapshots PLUS an aggregate Counter of diagnostic tokens so the
+# operator can tell at a glance whether a thin evidence day is a
+# strategy problem or a data problem.
+
+DIAG_OK             = "OK"
+DIAG_AUTH_MISSING   = "AUTH_MISSING"
+DIAG_AUTH_FAILED    = "AUTH_FAILED"
+DIAG_BARS_EMPTY     = "BARS_EMPTY"
+DIAG_INVALID_SYMBOL = "INVALID_SYMBOL"
+DIAG_RATE_LIMIT     = "RATE_LIMIT"
+DIAG_STALE          = "STALE"
+DIAG_PROVIDER_ERROR = "PROVIDER_ERROR"
+DIAG_OTHER          = "OTHER"
+
+ALL_DIAG_TOKENS: frozenset[str] = frozenset({
+    DIAG_OK, DIAG_AUTH_MISSING, DIAG_AUTH_FAILED, DIAG_BARS_EMPTY,
+    DIAG_INVALID_SYMBOL, DIAG_RATE_LIMIT, DIAG_STALE,
+    DIAG_PROVIDER_ERROR, DIAG_OTHER,
+})
+
+
+@dataclass
+class UniverseFetchResult:
+    """Return type for v3.22 diagnostic fetch.
+
+    ``snapshots`` is the same list ``fetch_universe_snapshots`` returns,
+    so callers that just want quotes can ignore the diagnostic counter.
+
+    ``diagnostic_token_counts`` is a ``dict[str, int]`` keyed by the
+    DIAG_* tokens above. Use it for the shadow-runner per-cycle report
+    or the heartbeat freshness diagnostics.
+
+    ``symbols_skipped_stale`` and ``symbols_skipped_provider_error`` are
+    explicit per-bucket lists so the shadow runner can name the
+    affected symbols in its report without re-walking the snapshots.
+    """
+    snapshots:                  list[MarketSnapshot]
+    diagnostic_token_counts:    dict[str, int]
+    symbols_skipped_stale:      list[str]
+    symbols_skipped_provider_error: list[str]
+
+
+def _classify_snapshot_diagnostic(snap: MarketSnapshot) -> str:
+    """Map one MarketSnapshot to a single DIAG_* token."""
+    err = (snap.error or "").lower()
+    tok = snap.status_token or ""
+
+    # Auth-related categorisation happens BEFORE we look at data_quality
+    # because a credentials-missing snapshot will have data_quality
+    # NO_MARKET_DATA but the cause is auth, not a data outage.
+    if tok == MARKET_DATA_CREDENTIALS_MISSING or "not set" in err:
+        return DIAG_AUTH_MISSING
+    if tok == MARKET_DATA_AUTH_FAILED or "http 401" in err or "http 403" in err:
+        return DIAG_AUTH_FAILED
+    if "http 404" in err:
+        return DIAG_INVALID_SYMBOL
+    if "http 429" in err:
+        return DIAG_RATE_LIMIT
+    if "missing bid/ask" in err or tok == MARKET_DATA_EMPTY_RESPONSE:
+        return DIAG_BARS_EMPTY
+    if snap.data_quality == STALE_MARKET_DATA or tok == MARKET_DATA_STALE:
+        return DIAG_STALE
+    if snap.data_quality == PROVIDER_ERROR or tok == MARKET_DATA_PROVIDER_ERROR:
+        return DIAG_PROVIDER_ERROR
+    if snap.data_quality == REAL_MARKET_DATA:
+        return DIAG_OK
+    return DIAG_OTHER
+
+
+def fetch_universe_snapshots_with_diagnostics(
+    equity_symbols: tuple[str, ...] = DEFAULT_EQUITY_SYMBOLS,
+    crypto_symbols: tuple[str, ...] = DEFAULT_CRYPTO_SYMBOLS,
+    *,
+    stale_budget_seconds: float = DEFAULT_STALE_BUDGET_SECONDS,
+    timeout_seconds: float = 5.0,
+) -> UniverseFetchResult:
+    """Fetch the universe and bucket each snapshot into a DIAG_* token.
+
+    NEVER raises. Catches every error inside the per-symbol fetch and
+    surfaces it on the snapshot. The aggregate counter is built from
+    the resulting snapshots so even a total outage (every symbol
+    raises) still returns a populated counter.
+    """
+    snapshots: list[MarketSnapshot] = []
+
+    # v3.22 contract: when credentials are missing, every symbol must
+    # report NO_MARKET_DATA + CREDENTIALS_MISSING. The legacy crypto
+    # fetcher tolerates missing creds; the diagnostics wrapper does
+    # NOT, so the operator sees the auth gap up front instead of a
+    # noisy provider error.
+    if _headers() is None:
+        for sym in equity_symbols:
+            snapshots.append(MarketSnapshot(
+                symbol=sym, asset_class="us_equity",
+                timestamp=None, price=None,
+                data_quality=NO_MARKET_DATA,
+                error="ALPACA_API_KEY / ALPACA_SECRET_KEY not set",
+                status_token=MARKET_DATA_CREDENTIALS_MISSING,
+            ))
+        for sym in crypto_symbols:
+            snapshots.append(MarketSnapshot(
+                symbol=sym, asset_class="crypto",
+                timestamp=None, price=None,
+                data_quality=NO_MARKET_DATA,
+                error="ALPACA_API_KEY / ALPACA_SECRET_KEY not set",
+                status_token=MARKET_DATA_CREDENTIALS_MISSING,
+            ))
+    else:
+        try:
+            snapshots = fetch_universe_snapshots(
+                equity_symbols=equity_symbols,
+                crypto_symbols=crypto_symbols,
+                stale_budget_seconds=stale_budget_seconds,
+                timeout_seconds=timeout_seconds,
+            )
+        except Exception:
+            # Belt-and-braces: per-symbol fetches already swallow errors,
+            # but if something genuinely upstream blows up we still want
+            # a valid UniverseFetchResult.
+            snapshots = []
+
+    counts: dict[str, int] = {}
+    stale_syms: list[str] = []
+    err_syms: list[str] = []
+    for snap in snapshots:
+        tok = _classify_snapshot_diagnostic(snap)
+        counts[tok] = counts.get(tok, 0) + 1
+        if tok == DIAG_STALE:
+            stale_syms.append(snap.symbol)
+        if tok == DIAG_PROVIDER_ERROR:
+            err_syms.append(snap.symbol)
+
+    return UniverseFetchResult(
+        snapshots=snapshots,
+        diagnostic_token_counts=counts,
+        symbols_skipped_stale=stale_syms,
+        symbols_skipped_provider_error=err_syms,
+    )
+
+
 def _resolve_get_daily_bars():
     """Module-level injectable resolver for the bars-provider function.
 

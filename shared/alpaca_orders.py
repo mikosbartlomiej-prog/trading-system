@@ -395,6 +395,187 @@ def _emit_entry_audit_event(*, proposal: dict, result: str,
               f"{type(e).__name__}: {e}")
 
 
+# ─── v3.22 — entry gate stack (confidence MANDATORY + canary preflight) ───────
+
+# Stable string verdicts surfaced to callers + audit pipeline. Never change
+# the literal values; downstream tests + dashboards key on them.
+V322_REJECT_NO_CONFIDENCE_INPUTS = "REJECTED_NO_CONFIDENCE_INPUTS"
+V322_REJECT_CANARY_PREFLIGHT     = "REJECTED_CANARY_PREFLIGHT"
+V322_REJECT_CANARY_DEFERRED      = (
+    "REJECTED_CANARY_ORDER_PLACEMENT_DEFERRED")
+V322_REJECT_CANARY_UNAVAILABLE   = "REJECTED_CANARY_PREFLIGHT_UNAVAILABLE"
+
+# Verdicts the preflight can return that mean "preflight green / OK"; in
+# v3.22 BOTH still produce no broker call (DEFERRED is the hard ceiling).
+_V322_PREFLIGHT_OK_VERDICTS = frozenset({
+    "CANARY_PREFLIGHT_DRY_RUN_OK",
+    "CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED",
+})
+
+
+def _read_latest_unlock_status_safe() -> str | None:
+    """Read `unlock_status` from learning-loop/broker_paper_canary/
+    unlock_readiness_latest.json. Fail-soft: any error → None.
+
+    v3.22 caller (`_v322_entry_gate_stack`) feeds this to the canary
+    preflight so the preflight can refuse with UNLOCK_NOT_READY when
+    the readiness file says we are still STAGE_0_SHADOW_ONLY (the
+    default v3.30 state).
+    """
+    try:
+        # Module-local import to keep the top-level import surface lean
+        # and to avoid eager pathlib resolution at import time.
+        from pathlib import Path
+        import json as _json
+        repo_root = Path(__file__).resolve().parent.parent
+        p = (repo_root
+             / "learning-loop"
+             / "broker_paper_canary"
+             / "unlock_readiness_latest.json")
+        if not p.exists():
+            return None
+        d = _json.loads(p.read_text(encoding="utf-8"))
+        return d.get("unlock_status")
+    except Exception:
+        return None
+
+
+def _v322_entry_gate_stack(
+    proposal: dict,
+    *,
+    confidence_inputs: dict | None,
+    observe_only: bool = False,
+    entry_capable: bool = True,
+) -> tuple[bool, str, str]:
+    """v3.22 entry gate stack — MANDATORY for every entry-capable path.
+
+    Two gates, in order:
+      (1) Confidence-inputs MANDATORY for entry-capable callers. Empty
+          / missing → REJECT with reason ``REJECTED_NO_CONFIDENCE_INPUTS``
+          and audit event ``REJECT_ENTRY_NO_CONFIDENCE_INPUTS``.
+      (2) Canary preflight is consulted (fail-CLOSED). Refusal verdicts
+          → REJECT. Even the "all-green" verdict
+          ``CANARY_READY_TO_EXECUTE_BUT_ORDER_PLACEMENT_DEFERRED``
+          BLOCKS at the architectural level in v3.22 — we are wiring the
+          gate so that the v3.31+ executor cannot be added without the
+          preflight already in place. ``CANARY_PREFLIGHT_DRY_RUN_OK``
+          also returns BLOCK because v3.22 does not execute orders.
+
+    Back-compat: callers that flag ``observe_only=True`` OR
+    ``entry_capable=False`` (e.g. shadow-mode pipelines, legacy paths
+    that explicitly opt out) get gate-1 relaxed (no confidence required)
+    but gate-2 still applies — the architectural deferral holds.
+
+    Returns ``(ok, verdict, reason)``:
+      - ``ok=True`` → the caller MAY proceed (only for observe-only).
+      - ``ok=False`` → the caller MUST return None and emit audit.
+
+    NEVER raises. Fail-CLOSED on every internal exception.
+    """
+    symbol = str(proposal.get("symbol", "?"))
+
+    # ── Back-compat: observe_only / entry_capable=False relax gate 1 ─────
+    # The architectural deferral still runs (gate 2) — v3.22 keeps the
+    # "no broker call" invariant even for observe_only callers because
+    # order placement is not implemented yet in any path.
+    _gate1_skip = bool(observe_only or not entry_capable)
+    if _gate1_skip and not confidence_inputs:
+        print(f"  v3.22 gate-stack {symbol}: confidence_inputs missing "
+              f"but observe_only/entry_capable=False — soft-skipping "
+              f"gate-1, still applying gate-2")
+
+    # ── Gate 1: confidence_inputs MANDATORY (unless observe_only) ────────
+    if not _gate1_skip and (not confidence_inputs or not isinstance(confidence_inputs, dict)):
+        reason = (
+            f"v3.22 gate-stack BLOCK {symbol}: entry path requires "
+            f"confidence_inputs (empty/missing); refusing entry")
+        print(f"  {reason}")
+        _emit_entry_audit_event(
+            proposal=proposal,
+            result="rejected",
+            result_reason="REJECT_ENTRY_NO_CONFIDENCE_INPUTS — "
+                          "confidence_inputs missing on entry path",
+        )
+        return False, V322_REJECT_NO_CONFIDENCE_INPUTS, reason
+
+    # ── Gate 2: canary preflight (fail-CLOSED) ───────────────────────────
+    try:
+        try:
+            from broker_paper_canary_preflight import run_preflight  # type: ignore  # noqa: E402
+        except ImportError:
+            from shared.broker_paper_canary_preflight import run_preflight  # type: ignore  # noqa: E402
+    except Exception as e:
+        reason = (
+            f"v3.22 gate-stack BLOCK {symbol}: canary preflight module "
+            f"unavailable ({type(e).__name__}: {e}); refusing entry "
+            f"(fail-CLOSED)")
+        print(f"  {reason}")
+        _emit_entry_audit_event(
+            proposal=proposal,
+            result="rejected",
+            result_reason="REJECT_ENTRY_CANARY_UNAVAILABLE — "
+                          f"{type(e).__name__}: {e}",
+        )
+        return False, V322_REJECT_CANARY_UNAVAILABLE, reason
+
+    unlock_status = _read_latest_unlock_status_safe()
+    # In v3.22, dry-run mode is the SAFE default. Operator must
+    # explicitly set CANARY_DRY_RUN=false to even attempt the
+    # non-dry-run preflight, and even then the verdict caps at
+    # DEFERRED in v3.30+ → still BLOCK here.
+    dry_run_only = (os.environ.get(
+        "CANARY_DRY_RUN", "true").strip().lower() != "false")
+
+    try:
+        verdict_obj = run_preflight(
+            unlock_status=unlock_status,
+            dry_run_only=dry_run_only,
+        )
+    except Exception as e:
+        reason = (
+            f"v3.22 gate-stack BLOCK {symbol}: canary preflight raised "
+            f"({type(e).__name__}: {e}); refusing entry (fail-CLOSED)")
+        print(f"  {reason}")
+        _emit_entry_audit_event(
+            proposal=proposal,
+            result="rejected",
+            result_reason="REJECT_ENTRY_CANARY_RAISED — "
+                          f"{type(e).__name__}: {e}",
+        )
+        return False, V322_REJECT_CANARY_UNAVAILABLE, reason
+
+    pf_verdict = getattr(verdict_obj, "verdict", None) or "UNKNOWN"
+
+    if pf_verdict not in _V322_PREFLIGHT_OK_VERDICTS:
+        reason = (
+            f"v3.22 gate-stack BLOCK {symbol}: canary preflight refused "
+            f"({pf_verdict}); refusing entry")
+        print(f"  {reason}")
+        _emit_entry_audit_event(
+            proposal=proposal,
+            result="rejected",
+            result_reason=f"REJECT_ENTRY_CANARY_PREFLIGHT — {pf_verdict}",
+        )
+        return False, V322_REJECT_CANARY_PREFLIGHT, reason
+
+    # v3.22 hard rule: even all-green preflight does NOT advance to a
+    # broker call. The current sprint only wires the gate; order
+    # placement remains blocked architecturally. v3.31+ will add the
+    # actual placement under an audited PR.
+    reason = (
+        f"v3.22 gate-stack BLOCK {symbol}: preflight ok ({pf_verdict}) "
+        f"BUT v3.22 does not advance entry paths to broker calls "
+        f"(architectural deferral)")
+    print(f"  {reason}")
+    _emit_entry_audit_event(
+        proposal=proposal,
+        result="rejected",
+        result_reason=f"REJECT_ENTRY_CANARY_ORDER_PLACEMENT_DEFERRED — "
+                      f"{pf_verdict}",
+    )
+    return False, V322_REJECT_CANARY_DEFERRED, reason
+
+
 def _headers() -> dict:
     return {
         "APCA-API-KEY-ID":     os.environ.get("ALPACA_API_KEY", ""),
@@ -499,7 +680,9 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
                         entry_price: float, stop_loss: float,
                         take_profit: float,
                         strategy: str = "auto",
-                        confidence_inputs: dict | None = None) -> dict | None:
+                        confidence_inputs: dict | None = None,
+                        observe_only: bool = False,
+                        entry_capable: bool = True) -> dict | None:
     """
     Place a bracket order for stocks/ETFs.
 
@@ -510,6 +693,11 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
     take_profit: absolute price for TP leg
     strategy:    used in client_order_id prefix
 
+    v3.22 (2026-06-15) entry-capable callers MUST pass
+    ``confidence_inputs``. Missing → REJECTED_NO_CONFIDENCE_INPUTS. Canary
+    preflight is consulted; even all-green preflight still BLOCKs in v3.22
+    because order placement remains architecturally deferred.
+
     Returns the Alpaca order JSON on success, None on failure (incl.
     risk-officer REJECT — see shared.risk_officer.evaluate_trade).
     """
@@ -518,6 +706,30 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         return None
     if side not in ("buy", "sell_short"):
         print(f"  bracket reject: bad side '{side}'")
+        return None
+
+    # v3.22 (2026-06-15) — entry gate stack: confidence MANDATORY +
+    # canary preflight. Runs BEFORE per-instrument window so that a
+    # legacy / mis-wired caller can never reach the broker. The stack
+    # already emits audit JSONL on every BLOCK path.
+    _v322_proposal = {
+        "symbol":      symbol,
+        "action":      "BUY" if side == "buy" else "SELL_SHORT",
+        "size_usd":    qty * entry_price,
+        "entry_price": entry_price,
+        "stop_loss":   stop_loss,
+        "take_profit": take_profit,
+        "strategy":    strategy,
+    }
+    if confidence_inputs:
+        _v322_proposal["confidence_inputs"] = confidence_inputs
+    _v322_ok, _v322_verdict, _v322_reason = _v322_entry_gate_stack(
+        _v322_proposal,
+        confidence_inputs=confidence_inputs,
+        observe_only=observe_only,
+        entry_capable=entry_capable,
+    )
+    if not _v322_ok:
         return None
 
     # Per-instrument trading window gate (final guard right before POST).
@@ -679,7 +891,9 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
 def place_crypto_order(symbol: str, side: str, qty: float,
                        limit_price: float,
                        strategy: str = "auto",
-                       confidence_inputs: dict | None = None) -> dict | None:
+                       confidence_inputs: dict | None = None,
+                       observe_only: bool = False,
+                       entry_capable: bool = True) -> dict | None:
     """
     Place a simple limit order for crypto (Alpaca crypto does NOT support
     bracket / OCO).
@@ -687,10 +901,33 @@ def place_crypto_order(symbol: str, side: str, qty: float,
     SL/TP must be managed separately — exit-monitor's crypto thresholds
     (CRYPTO_DECAY_HOURS=48 in v2.0, plus per-position trailing) handle
     exit timing.
+
+    v3.22 (2026-06-15) entry-capable callers MUST pass
+    ``confidence_inputs``. Same architectural deferral as
+    ``place_stock_bracket``.
     """
     if qty <= 0 or limit_price <= 0:
         return None
     if side not in ("buy", "sell"):
+        return None
+
+    # v3.22 (2026-06-15) — entry gate stack.
+    _v322_proposal = {
+        "symbol":      symbol,
+        "action":      "BUY" if side == "buy" else "SELL_SHORT",
+        "size_usd":    qty * limit_price,
+        "entry_price": limit_price,
+        "strategy":    strategy,
+    }
+    if confidence_inputs:
+        _v322_proposal["confidence_inputs"] = confidence_inputs
+    _v322_ok, _v322_verdict, _v322_reason = _v322_entry_gate_stack(
+        _v322_proposal,
+        confidence_inputs=confidence_inputs,
+        observe_only=observe_only,
+        entry_capable=entry_capable,
+    )
+    if not _v322_ok:
         return None
 
     # Per-instrument trading window gate.
@@ -851,7 +1088,9 @@ def place_crypto_order(symbol: str, side: str, qty: float,
 def place_simple_buy(symbol: str, qty: int, limit_price: float,
                      strategy: str = "auto",
                      score: float | None = None,
-                     confidence_inputs: dict | None = None) -> dict | None:
+                     confidence_inputs: dict | None = None,
+                     observe_only: bool = False,
+                     entry_capable: bool = True) -> dict | None:
     """
     Simple limit BUY for instruments that don't support brackets.
     Used by options-monitor (Alpaca paper rejects bracket on options).
@@ -860,8 +1099,31 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
     governor is in PROFIT_LOCK, scores below profit_lock_min_score_override
     (default 0.65) are blocked — only very high-conviction setups punch
     through. Pass score=None to be treated as "low conviction" (blocked).
+
+    v3.22 (2026-06-15) entry-capable callers MUST pass
+    ``confidence_inputs``. Same architectural deferral as the other
+    entry paths.
     """
     if qty < 1 or limit_price <= 0:
+        return None
+
+    # v3.22 (2026-06-15) — entry gate stack.
+    _v322_proposal = {
+        "symbol":      symbol,
+        "action":      "BUY_TO_OPEN",
+        "size_usd":    qty * limit_price,
+        "entry_price": limit_price,
+        "strategy":    strategy,
+    }
+    if confidence_inputs:
+        _v322_proposal["confidence_inputs"] = confidence_inputs
+    _v322_ok, _v322_verdict, _v322_reason = _v322_entry_gate_stack(
+        _v322_proposal,
+        confidence_inputs=confidence_inputs,
+        observe_only=observe_only,
+        entry_capable=entry_capable,
+    )
+    if not _v322_ok:
         return None
 
     # Per-instrument trading window gate (options trade only during regular

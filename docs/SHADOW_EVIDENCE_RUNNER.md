@@ -117,3 +117,30 @@ basename is allow-listed in `scripts/audit_workflows.py`.
   in `env:`. Operator must explicitly choose `shadow` or `broker` via
   `workflow_dispatch` for actual shadow writes — a re-paste cannot
   silently enable them.
+
+---
+
+## v3.22 note (2026-06-15) — strategy registry + market-data diagnostics
+
+v3.22 expanded the shadow opportunity generator's strategy registry
+beyond the original four. The new registry covers the full
+production-monitor set (`price`, `crypto`, `options`, `defense`,
+`geo`, `twitter`, `reddit`, `politician`) so the shadow runner can
+fan out evidence collection across every strategy the live monitors
+would have fired.
+
+The shadow runner also gained market-data diagnostics: each per-cycle
+report now carries `market_data_diagnostics.symbols_skipped_stale`
+and `symbols_skipped_provider_error` so an operator can tell at a
+glance whether a thin evidence day is a strategy problem or a data
+problem.
+
+Hard-safety invariants are unchanged:
+
+- `EVIDENCE_PRODUCTION_MODE=SIGNAL_ONLY` is the default and the only
+  mode the cron picks. `shadow` and `broker` modes remain
+  operator-driven.
+- The runner NEVER imports `alpaca_orders` (asserted by
+  `tests/test_shadow_universe_expansion_v3300.py`).
+- `evidence_runner_no_live_mode` still holds — `--mode live` is
+  rejected by argparse.

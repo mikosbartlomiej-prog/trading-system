@@ -1311,3 +1311,69 @@ absent.
 - The canary pre-executor remains preflight-only; no order
   placement happens in v3.30.1.
 - LLM remains advisory only.
+
+---
+
+## Scenario AA.4 — `emit_signal_opportunity` dry-run / inspect the latest opportunity_ledger row (v3.22.0)
+
+**Use when:** you want to verify the v3.22 signal-production spine
+without firing a real monitor cron, or you want to read the most
+recent opportunity row to confirm a monitor wired the chain
+correctly.
+
+### Dry-run an emit (no ledger write)
+
+```python
+import sys
+sys.path.insert(0, "shared")
+from signal_event import SignalEvent, build_signal_id
+from signal_emitter import emit_signal_opportunity
+
+ev = SignalEvent(
+    signal_id=build_signal_id("momentum-long", "AAPL",
+                              "2026-06-15T13:30:00Z", "price-monitor"),
+    strategy_id="momentum-long",
+    symbol="AAPL",
+    asset_class="us_equity",
+    side="long",
+    action="BUY",
+    timestamp_iso="2026-06-15T13:30:00Z",
+    source_monitor="price-monitor",
+    pipeline="monitor",
+    evidence_source="PAPER",
+    entry_capable=True,
+    raw_signal={"score": 0.72},
+    confidence_inputs={"primary_score": 0.72},
+    risk_inputs={"size_usd": 10_000},
+    metadata={"audit_link": "audit-dry-run"},
+)
+print(emit_signal_opportunity(ev, dry_run=True))
+```
+
+Expected: `status="DRY_RUN"`, `confidence_score` populated (if the
+confidence engine is reachable), `audit_link="audit-dry-run"`, NO
+row written to disk.
+
+### Inspect the latest ledger row
+
+```bash
+LEDGER_DATE=$(date -u +%Y-%m-%d)
+tail -n 1 learning-loop/opportunity_ledger/${LEDGER_DATE}.jsonl | python3 -m json.tool
+```
+
+Look for:
+
+- `signal_id`, `strategy`, `symbol` — all non-empty
+- `confidence_score` — `null` is OK for observe events, populated
+  for entry-capable events
+- `risk_decision` — one of `APPROVE`, `REJECT`, `DEFER`, `UNKNOWN`,
+  `DOWNSIZE`
+- `raw_signal.source_monitor` — the monitor that fired
+- `raw_signal.evidence_source` — `PAPER` / `REPLAY` / `BACKTEST`
+
+### Hard-safety reminder
+
+`emit_signal_opportunity` NEVER places a trade. It NEVER calls
+`safe_close`, `submit_order`, `place_*_order`, or `close_*`. The
+v3.22 happy-path E2E test enforces this with an AST scan plus a
+runtime patch over every forbidden broker function.

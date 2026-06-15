@@ -80,7 +80,22 @@ TRIGGERS = {
     "STALE_DATA":         "Market data bar age > 15min for active strategy symbol",
     "CONFIDENCE_BROKEN":  "Confidence module unable to compute for 3+ ticks",
     "OPERATOR":           "Operator manual flip via runtime_state.json",
+    # v3.22 ETAP 9 (2026-06-15) — CRITICAL incident-pattern-detector findings
+    "INCIDENT_P01_DUPLICATE_ALLOCATOR": "Incident P01 (duplicate allocator execution) detected",
+    "INCIDENT_P02_NAKED_SHORT":         "Incident P02 (naked short on long-only whitelist) detected",
+    "INCIDENT_P13_BRACKET_INTERLOCK":   "Incident P13 (bracket interlock blocked close) detected",
 }
+
+# v3.22 ETAP 9 (2026-06-15) — trigger constants used by incident detector
+# so it does not need to encode the magic strings inline.
+TRIGGER_INCIDENT_P01_DUPLICATE_ALLOCATOR = "INCIDENT_P01_DUPLICATE_ALLOCATOR"
+TRIGGER_INCIDENT_P02_NAKED_SHORT         = "INCIDENT_P02_NAKED_SHORT"
+TRIGGER_INCIDENT_P13_BRACKET_INTERLOCK   = "INCIDENT_P13_BRACKET_INTERLOCK"
+
+# Dedupe window for the incident-driven triggers — same trigger within
+# this many seconds is treated as already active and no fresh entry is
+# written. Spec §9: 60 minutes.
+INCIDENT_DEDUPE_WINDOW_SECONDS = 60 * 60
 
 # Effect parameters
 SIZE_MULTIPLIER_IN_SAFE_MODE = 0.5
@@ -116,13 +131,45 @@ def _now_iso() -> str:
 def read_state() -> SafeModeState:
     """Read current safe_mode state from runtime_state.json.
 
-    Fail-soft: any error → return inactive (don't accidentally lock
-    trading just because parsing failed).
+    Default to ACTIVE on parse error (safer). The module docstring at
+    the top of this file commits to this contract — any error in
+    read/parse is treated as "we cannot prove safety is OK, therefore
+    safe_mode is ACTIVE so new entries are blocked".
+
+    A missing section / cleanly-empty dict / explicit inactive payload
+    all read as inactive. Only an actual parse error or a non-dict
+    section escalates to ACTIVE.
     """
     try:
-        raw = read_section(SAFE_MODE_SECTION) or {}
-        if not isinstance(raw, dict):
-            return SafeModeState.inactive()
+        raw = read_section(SAFE_MODE_SECTION)
+    except Exception:
+        # Hard parse failure inside runtime_state — default ACTIVE per docstring.
+        return SafeModeState(
+            active=True,
+            reason="safe_mode: read_section raised — defaulting to ACTIVE per fail-closed contract",
+            entered_at=_now_iso(),
+            trigger="OPERATOR",  # closest enum entry meaning "unknown forced state"
+            forced=False,
+        )
+
+    # Treat missing section / cleanly-empty dict as inactive (cold-start
+    # behaviour: the system is not in safe_mode until something puts it
+    # there). This matches the v3.12.0 behaviour the rest of the code
+    # already depends on for fresh runtime_state.json files.
+    if raw is None or raw == {}:
+        return SafeModeState.inactive()
+
+    if not isinstance(raw, dict):
+        # Section present but not a dict → parse error per docstring.
+        return SafeModeState(
+            active=True,
+            reason=f"safe_mode: section type={type(raw).__name__} — defaulting to ACTIVE per fail-closed contract",
+            entered_at=_now_iso(),
+            trigger="OPERATOR",
+            forced=False,
+        )
+
+    try:
         return SafeModeState(
             active=bool(raw.get("active", False)),
             reason=str(raw.get("reason", "")),
@@ -131,18 +178,59 @@ def read_state() -> SafeModeState:
             forced=bool(raw.get("forced", False)),
         )
     except Exception:
-        return SafeModeState.inactive()
+        # Per-field parse failure → ACTIVE per docstring.
+        return SafeModeState(
+            active=True,
+            reason="safe_mode: per-field parse failure — defaulting to ACTIVE per fail-closed contract",
+            entered_at=_now_iso(),
+            trigger="OPERATOR",
+            forced=False,
+        )
 
 
-def enter_safe_mode(trigger: str, reason: str, actor: str = "safe_mode") -> SafeModeState:
+def _seconds_since_iso(iso_ts: str | None) -> float | None:
+    if not iso_ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - dt).total_seconds()
+    except Exception:
+        return None
+
+
+def enter_safe_mode(trigger: str, reason: str, actor: str = "safe_mode",
+                    *, dedupe_seconds: float | None = None) -> SafeModeState:
     """Flip safe_mode ON with audit emission.
 
-    Idempotent: if already active with same trigger, no-op (no
+    Idempotent: if already active with the same trigger, no-op (no
     spam audit entries).
+
+    v3.22 ETAP 9 (2026-06-15) dedupe-window contract:
+      - When `dedupe_seconds` is supplied (incident-pattern-detector
+        passes ``INCIDENT_DEDUPE_WINDOW_SECONDS``), callers asking to
+        enter with the SAME trigger within that window get a no-op
+        (no re-write, no fresh audit event). This stops detector spam.
+      - When `dedupe_seconds` is None, the legacy "same trigger →
+        no-op" behaviour is preserved.
     """
     current = read_state()
+
+    # Legacy idempotency — same trigger, already active, not operator-forced.
     if current.active and current.trigger == trigger and not current.forced:
-        return current  # already in this state, no churn
+        if dedupe_seconds is None:
+            return current
+        age = _seconds_since_iso(current.entered_at)
+        # If we cannot read age, treat as "fresh" (i.e. no dedupe — still no-op
+        # because trigger matches the existing active one).
+        if age is None:
+            return current
+        if age < dedupe_seconds:
+            # Within dedupe window → silent no-op.
+            return current
+        # Outside dedupe window → re-stamp entered_at + emit a fresh audit
+        # event so operators can see the trigger renewed (still ACTIVE,
+        # just visible again).
+        # Fall through to write path below.
 
     new = SafeModeState(
         active=True,
@@ -158,6 +246,17 @@ def enter_safe_mode(trigger: str, reason: str, actor: str = "safe_mode") -> Safe
 
     _emit_audit("SAFE_MODE_ENTERED", new, actor=actor)
     return new
+
+
+def enter(trigger: str, reason: str, actor: str = "safe_mode",
+          *, dedupe_seconds: float | None = None) -> SafeModeState:
+    """v3.22 ETAP 9 convenience alias matching the spec's call shape.
+
+    `incident_pattern_detector.py` calls
+    ``safe_mode.enter(trigger=..., reason=...)``. This forwards to
+    `enter_safe_mode` so the legacy name keeps working too.
+    """
+    return enter_safe_mode(trigger, reason, actor, dedupe_seconds=dedupe_seconds)
 
 
 def exit_safe_mode(actor: str = "safe_mode") -> SafeModeState:
@@ -286,9 +385,14 @@ def _emit_audit(event_type: str, state: SafeModeState, actor: str) -> None:
 __all__ = [
     "SafeModeState",
     "TRIGGERS",
+    "TRIGGER_INCIDENT_P01_DUPLICATE_ALLOCATOR",
+    "TRIGGER_INCIDENT_P02_NAKED_SHORT",
+    "TRIGGER_INCIDENT_P13_BRACKET_INTERLOCK",
+    "INCIDENT_DEDUPE_WINDOW_SECONDS",
     "SIZE_MULTIPLIER_IN_SAFE_MODE",
     "CONFIDENCE_PENALTY",
     "read_state",
+    "enter",
     "enter_safe_mode",
     "exit_safe_mode",
     "evaluate_triggers",

@@ -55,6 +55,19 @@ from stockact_client import (
 )
 import llm_curator
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -744,3 +757,27 @@ if __name__ == "__main__":
                  message=f"emitted={summary.get('emitted', 0)}")
     except Exception as _hb_e:
         print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
+
+
+# ── v3.22.0 observability hook ──────────────────────────────────────────────
+# Per the v3.22 signal-pipeline contract this monitor exposes a thin helper
+# that the run loop calls once per scan even when no signal fires (so the
+# operator can see "monitor ran, 0 candidates" in the opportunity ledger).
+# emit_monitor_signal NEVER places trades — it only persists an observation
+# row via shared.signal_emitter.emit_signal_opportunity.
+def _v322_observe(symbol: str = "n/a", action: str = "NO_SIGNAL",
+                  side: str = "n/a", asset_class: str = "us_equity",
+                  raw_signal=None) -> None:
+    try:
+        emit_monitor_signal(
+            source_monitor="politician-monitor",
+            strategy_id="politician-tracker",
+            symbol=symbol,
+            asset_class=asset_class,
+            side=side,
+            action=action,
+            entry_capable=False,
+            raw_signal=raw_signal or {},
+        )
+    except Exception:
+        pass

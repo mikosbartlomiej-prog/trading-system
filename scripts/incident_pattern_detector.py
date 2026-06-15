@@ -790,6 +790,69 @@ def emit_email(findings: list[dict]) -> None:
         print(f"  email emit failed (non-fatal): {e}")
 
 
+def trigger_safe_mode_for_critical(findings: list[dict]) -> list[dict]:
+    """v3.22 ETAP 9 (2026-06-15) — flip safe_mode on for P01/P02/P13.
+
+    When the detector finds at least one CRITICAL finding matching one
+    of {P01, P02, P13}, ensure ``safe_mode`` is ACTIVE for the matching
+    trigger. Dedupe window = 60 min (so a stuck pattern does not
+    re-emit SAFE_MODE_ENTERED every cron tick).
+
+    Returns the list of safe_mode entries actually triggered (for
+    reporting). Fail-soft: any error inside the safe_mode call is
+    swallowed, the detector keeps reporting findings.
+    """
+    if not findings:
+        return []
+    try:
+        sys.path.insert(0, str(_REPO_ROOT / "shared"))
+        import safe_mode  # type: ignore
+    except Exception as e:
+        print(f"  safe_mode import failed (non-fatal): {e}")
+        return []
+
+    pattern_to_trigger = {
+        "P01_duplicate_allocator_execution": safe_mode.TRIGGER_INCIDENT_P01_DUPLICATE_ALLOCATOR,
+        "P02_naked_short_on_long_only":      safe_mode.TRIGGER_INCIDENT_P02_NAKED_SHORT,
+        "P13_bracket_interlock_blocked_close": safe_mode.TRIGGER_INCIDENT_P13_BRACKET_INTERLOCK,
+    }
+    triggered: list[dict] = []
+    seen_triggers: set[str] = set()
+    for f in findings:
+        if f.get("severity") != CRITICAL:
+            continue
+        pattern = f.get("pattern", "")
+        trigger = pattern_to_trigger.get(pattern)
+        if not trigger:
+            continue
+        if trigger in seen_triggers:
+            continue   # same trigger from multiple findings → only attempt once
+        seen_triggers.add(trigger)
+        try:
+            state_before = safe_mode.read_state()
+            new_state = safe_mode.enter(
+                trigger=trigger,
+                reason=f"incident-pattern-detector {pattern}: {f.get('detail', '')[:300]}",
+                actor="incident-pattern-detector",
+                dedupe_seconds=safe_mode.INCIDENT_DEDUPE_WINDOW_SECONDS,
+            )
+            # Detect whether this call actually flipped/refreshed
+            entered = bool(new_state.active) and (
+                not state_before.active
+                or state_before.trigger != trigger
+                or state_before.entered_at != new_state.entered_at
+            )
+            triggered.append({
+                "trigger":   trigger,
+                "pattern":   pattern,
+                "entered":   entered,
+                "deduped":   not entered,
+            })
+        except Exception as e:
+            print(f"  safe_mode.enter({trigger}) failed (non-fatal): {e}")
+    return triggered
+
+
 def emit_audit_events(findings: list[dict]) -> None:
     """One audit JSONL event per finding."""
     if not findings:
@@ -867,6 +930,16 @@ def main() -> int:
 
     emit_email(findings)
     emit_audit_events(findings)
+
+    # v3.22 ETAP 9 (2026-06-15) — flip safe_mode ACTIVE for CRITICAL
+    # P01/P02/P13 findings. Dedupe window keeps detector cron from
+    # re-emitting SAFE_MODE_ENTERED every tick.
+    sm_results = trigger_safe_mode_for_critical(findings)
+    for r in sm_results:
+        if r.get("entered"):
+            print(f"  safe_mode ENTERED via {r['pattern']} → trigger={r['trigger']}")
+        elif r.get("deduped"):
+            print(f"  safe_mode already ACTIVE for {r['trigger']} (deduped)")
 
     action = maybe_auto_disable(findings)
     if action:

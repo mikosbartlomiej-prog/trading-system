@@ -12,6 +12,19 @@ import schedule
 import pytz
 from datetime import datetime, timedelta
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -535,6 +548,34 @@ def run_checks():
                         index_closes=spy_closes)
             print(f"    >>> SYGNAL LONG: {ticker}! score={s['score']:+.3f} regime={regime_info['regime']} size=${new_size}")
             signals_found += 1
+            # v3.22.0 — observability emit BEFORE alert dispatch so the
+            # ledger captures the signal even if the alert send fails.
+            # NEVER places a trade.
+            try:
+                emit_monitor_signal(
+                    source_monitor="price-monitor",
+                    strategy_id=signal.get("strategy", "momentum-long"),
+                    symbol=ticker,
+                    asset_class="us_equity",
+                    side="long",
+                    action="BUY",
+                    entry_capable=True,
+                    raw_signal={
+                        "score":     s["score"],
+                        "rsi":       signal.get("rsi"),
+                        "atr":       signal.get("atr"),
+                        "price":     signal.get("price"),
+                        "stop_loss": signal.get("stop_loss"),
+                        "take_profit": signal.get("take_profit"),
+                    },
+                    confidence_inputs=signal.get("confidence_inputs")
+                        or {"primary_score": float(s["score"])},
+                    risk_inputs={"size_usd": new_size},
+                    market_regime={"regime": regime_info["regime"]},
+                    metadata={"audit_link": f"price-long-{ticker}"},
+                )
+            except Exception:
+                pass
             sent = send_alert(signal)
             if sent:
                 alerts_sent += 1

@@ -26,6 +26,19 @@ import time
 import requests
 from datetime import datetime, timezone, timedelta
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary, notify_order_executed
@@ -774,6 +787,36 @@ def run_scan():
         if sent >= cap:
             break
         attempts += 1
+        # v3.22.0 — observability emit BEFORE execute_proposal so the
+        # opportunity ledger captures intent even if the broker rejects.
+        # NEVER places a trade.
+        try:
+            emit_monitor_signal(
+                source_monitor="options-monitor",
+                strategy_id="options-momentum",
+                symbol=proposal.get("symbol", "?"),
+                asset_class="us_option",
+                side=("long" if str(proposal.get("action", "")).upper() == "CALL"
+                      else "short"),
+                action=proposal.get("action", "CALL"),
+                entry_capable=True,
+                raw_signal={
+                    "rsi":    proposal.get("rsi"),
+                    "spot":   proposal.get("spot"),
+                    "score":  proposal.get("score"),
+                    "expiry": proposal.get("expiry"),
+                },
+                confidence_inputs={
+                    "primary_score": float(proposal.get("score", 0.6)),
+                    "regime":        proposal.get("regime"),
+                },
+                risk_inputs={"size_usd": proposal.get("size_usd", 500)},
+                metadata={"audit_link":
+                          f"options-{proposal.get('symbol', '?')}-"
+                          f"{proposal.get('action', 'CALL')}"},
+            )
+        except Exception:
+            pass
         if AUTO_EXECUTE:
             status, order = execute_proposal(proposal)
             if status == "executed":

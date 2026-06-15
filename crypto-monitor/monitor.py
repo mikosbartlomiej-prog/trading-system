@@ -21,6 +21,19 @@ import sys
 import requests
 from datetime import datetime, timezone, timedelta
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -63,36 +76,73 @@ def _emit_opportunity(*, strategy: str, symbol: str,
     a paper_action of "signal_detected" / "executed" / "rejected" so the
     ledger captures both fires and misses.
     """
+    # v3.22 migration: route through shared.signal_emitter.emit_signal_opportunity
+    # instead of calling record_opportunity directly. This gives us:
+    # - canonical SignalEvent shape
+    # - idempotency cache
+    # - automatic confidence computation when confidence_inputs are present
+    # - one validated write-path so the learning loop only ever sees rows that
+    #   passed v3.22's validator
     try:
         try:
-            from signal_opportunity_ledger import record_opportunity
+            from signal_emitter import emit_signal_opportunity  # type: ignore
+            from signal_event import SignalEvent, build_signal_id  # type: ignore
         except ImportError:
-            from shared.signal_opportunity_ledger import record_opportunity  # type: ignore
+            from shared.signal_emitter import emit_signal_opportunity  # type: ignore
+            from shared.signal_event import SignalEvent, build_signal_id  # type: ignore
     except Exception:
         return
     try:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-        signal_id = f"crypto-{strategy}-{symbol.replace('/', '')}-{ts}"
+        ts_iso = datetime.now(timezone.utc).isoformat()
+        sid = build_signal_id(strategy, symbol, ts_iso, "crypto-monitor")
         payload = dict(raw_signal or {})
         if rsi is not None and "rsi" not in payload:
             payload["rsi"] = rsi
         payload.setdefault("signal_state", signal_state)
-        record_opportunity(
-            signal_id=signal_id,
-            strategy=strategy,
+
+        # Map signal_state → SignalEvent.action.
+        state_upper = (signal_state or "").upper()
+        if state_upper.startswith("HALTED") or state_upper.startswith("BLOCKED"):
+            action = "HALTED"
+            entry_capable = False
+            side = "n/a"
+        elif state_upper in ("DETECTED",):
+            action = payload.get("action", "BUY") or "BUY"
+            entry_capable = True
+            side = "long" if str(action).upper().startswith("BUY") else "short"
+        elif state_upper in ("EXECUTED", "BUY"):
+            action = "BUY"
+            entry_capable = True
+            side = "long"
+        elif state_upper in ("REJECTED", "REJECT"):
+            action = "REJECT"
+            entry_capable = False
+            side = "n/a"
+        else:
+            action = "DETECTED"
+            entry_capable = False
+            side = "n/a"
+
+        event = SignalEvent(
+            signal_id=sid,
+            strategy_id=strategy,
             symbol=symbol,
+            asset_class="crypto",
+            side=side,
+            action=action,
+            timestamp_iso=ts_iso,
+            source_monitor="crypto-monitor",
+            pipeline="monitor",
+            evidence_source="PAPER",
+            entry_capable=entry_capable,
             raw_signal=payload,
-            confidence_score=None,
-            confidence_components=(confidence_inputs or {}),
-            risk_decision=signal_state,
-            gate_decisions=gate_decisions or [],
-            rejection_reasons=rejection_reasons or [],
-            market_regime=market_regime,
-            universe_status=universe_status,
-            paper_action=paper_action,
-            shadow_action=None,
-            audit_link=audit_link,
+            confidence_inputs=(confidence_inputs or {}) if entry_capable else {},
+            risk_inputs={"strategy": strategy, "symbol": symbol} if entry_capable else {},
+            market_regime={"regime": market_regime} if market_regime else {},
+            universe_status={"status": universe_status} if universe_status else {},
+            metadata={"audit_link": audit_link} if audit_link else {},
         )
+        emit_signal_opportunity(event)
     except Exception as _e:
         # Observability layer never breaks the monitor.
         print(f"  opportunity-ledger emit failed (non-fatal): "

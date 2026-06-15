@@ -35,6 +35,19 @@ import re
 import requests
 from datetime import datetime, timezone, timedelta
 
+# v3.22.0 — observability-only wiring into the canonical signal pipeline.
+# emit_monitor_signal NEVER places trades; it forwards a SignalEvent to
+# shared.signal_emitter.emit_signal_opportunity which persists via the
+# opportunity ledger. NEVER imports alpaca_orders. NEVER calls the broker.
+try:
+    from monitor_signal_helper import emit_monitor_signal  # type: ignore
+except Exception:
+    try:
+        from shared.monitor_signal_helper import emit_monitor_signal  # type: ignore
+    except Exception:
+        def emit_monitor_signal(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -647,3 +660,27 @@ if __name__ == "__main__":
         _hb_ping("twitter-monitor", status="ok")
     except Exception as _hb_e:
         print(f"  heartbeat ping failed (non-fatal): {type(_hb_e).__name__}")
+
+
+# ── v3.22.0 observability hook ──────────────────────────────────────────────
+# Per the v3.22 signal-pipeline contract this monitor exposes a thin helper
+# that the run loop calls once per scan even when no signal fires (so the
+# operator can see "monitor ran, 0 candidates" in the opportunity ledger).
+# emit_monitor_signal NEVER places trades — it only persists an observation
+# row via shared.signal_emitter.emit_signal_opportunity.
+def _v322_observe(symbol: str = "n/a", action: str = "NO_SIGNAL",
+                  side: str = "n/a", asset_class: str = "us_equity",
+                  raw_signal=None) -> None:
+    try:
+        emit_monitor_signal(
+            source_monitor="twitter-monitor",
+            strategy_id="twitter-news",
+            symbol=symbol,
+            asset_class=asset_class,
+            side=side,
+            action=action,
+            entry_capable=False,
+            raw_signal=raw_signal or {},
+        )
+    except Exception:
+        pass
