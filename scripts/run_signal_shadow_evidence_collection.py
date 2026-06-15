@@ -265,8 +265,36 @@ def collect(
     # v3.27.1 — per-symbol diagnostic aggregation. Each symbol gets
     # one status_token explaining why a record was or was not emitted.
     per_symbol_diag: list[dict] = []
+    # v3.23 — aggregate DIAG_* token counts from
+    # ``fetch_universe_snapshots_with_diagnostics``. Falls back to {}
+    # when the diagnostic API is unavailable (legacy code path).
+    diagnostic_token_counts: dict[str, int] = {}
+    symbols_skipped_stale: list[str] = []
+    symbols_skipped_provider_error: list[str] = []
     if mdp is not None and sog is not None:
-        snapshots = mdp.fetch_universe_snapshots()
+        # v3.23 — prefer the diagnostic API so per-cycle health snapshots
+        # contain a populated ``diagnostic_token_counts`` dict. Fail-soft
+        # to the legacy path if the diagnostic helper is not exported.
+        try:
+            _fetch_with_diag = getattr(
+                mdp, "fetch_universe_snapshots_with_diagnostics", None)
+        except Exception:
+            _fetch_with_diag = None
+        if _fetch_with_diag is not None:
+            try:
+                _diag_result = _fetch_with_diag()
+                snapshots = list(_diag_result.snapshots)
+                diagnostic_token_counts = dict(
+                    _diag_result.diagnostic_token_counts or {})
+                symbols_skipped_stale = list(
+                    _diag_result.symbols_skipped_stale or [])
+                symbols_skipped_provider_error = list(
+                    _diag_result.symbols_skipped_provider_error or [])
+            except Exception:
+                # Belt-and-braces — fall through to legacy fetch.
+                snapshots = mdp.fetch_universe_snapshots()
+        else:
+            snapshots = mdp.fetch_universe_snapshots()
         # Pre-fetch daily bars per equity symbol; preserve per-symbol
         # bar-fetch diagnostic so the collector can surface
         # MARKET_CLOSED_OR_NO_BARS vs INSUFFICIENT_BARS_FOR_SIGNAL vs
@@ -381,6 +409,13 @@ def collect(
                 except Exception:
                     pass
     summary["per_symbol_diagnostics"] = per_symbol_diag
+    # v3.23 — surface the v3.22 diagnostic API aggregate counter so the
+    # workflow can pipe it into workflow_health_latest.json via
+    # ``evaluate_automated_shadow_progress.py --collector-summary-path``.
+    summary["diagnostic_token_counts"] = diagnostic_token_counts
+    summary["symbols_skipped_stale"] = symbols_skipped_stale
+    summary["symbols_skipped_provider_error"] = (
+        symbols_skipped_provider_error)
     # v3.27.1 — bump granular "would_block_*" counters when a real
     # signal fired but was blocked by exposure / drawdown.
     if mdp is not None and sog is not None:

@@ -1,157 +1,132 @@
 # End-of-Day System Status — Shadow Evidence Flow
 
-**Generated:** 2026-06-04 EoD (Claude Opus, after v3.21.0 + activation push)
+Generated: 2026-06-15T10:01:32Z (Claude v3.23, after Wire signal pipeline + Agent 3C LATEST refresh)
+HEAD: `4b15542f95fad53584a283fdc8f8b168426a94cd`
 
 ## TL;DR
 
-The system is in `SHADOW_EVIDENCE_FLOW_READY`. The workflow runs cron-driven
-at 22:30 UTC weekdays in `signal_only` mode (hard-locked). **No real,
-broker-paper, or shadow orders are being placed during the active session
-— this is the expected paper/shadow-only contract**, not a bug.
+The system is in `SHADOW_ONLY`, **NOT live-ready**. v3.22 wired the
+signal pipeline end-to-end (`emit_signal_opportunity` paths now exist in
+all 10 monitors); v3.23 adds the observability reporters
+(`real-market-evidence`, `confidence-reality-check`, `strategy-coverage`,
+`shadow-simulator`, `outcome-tracker`, `monitor-emission-status`) plus
+this refreshed LATEST set.
 
-The only operational gap is a **wiring gap**: monitors (price, options,
-crypto, defense, twitter, reddit, geo, politician) do not yet call
-`signal_opportunity_ledger.record_opportunity()`. That refactor is the
-next iteration's scope. Until then, `signals_seen=0` is the honest
-NO_EVIDENCE_FLOW state.
+Real-market opportunity flow has not started yet (`real_market_opportunities_count = 0`).
+Production logs already show v3.22's diagnostic tokens
+(`REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL`,
+`INSUFFICIENT_BARS_FOR_SIGNAL`) reaching stdout — they were not yet
+persisted to `workflow_health_latest.json::diagnostic_token_counts`.
+Closing that visibility gap is the v3.23 P1 follow-up.
 
 ## 1. Repo status
 
 - **Branch:** `main`
-- **HEAD:** `5c52b20f` (origin/main in sync after pull)
-- **Working tree:** clean (84 Cowork sidecar `* 2.*` files removed locally;
-  all were untracked)
-- **Worktrees:** single — `main` only (no stale worktrees)
-- **Local branches:** single — `main` only (no stale post-merge branches)
+- **HEAD:** `4b15542f95fad53584a283fdc8f8b168426a94cd`
+- **Working tree:** clean (Agent 3C edits in flight)
+- **Worktrees:** single — `main` only
 
-## 2. Active workflows
+## 2. System status flags (canonical, hard-pinned)
 
-| Workflow | Cron | Mode lock | Status |
-| --- | --- | --- | --- |
-| `shadow-evidence-cycle.yml` | `30 22 * * 1-5` (22:30 UTC) | `EVIDENCE_PRODUCTION_MODE=SIGNAL_ONLY` at workflow env level | Active |
-| `paper-experiment-update.yml` | `0 22 * * 1-5` | "NEVER changes EDGE_GATE_ENABLED" docstring | Active |
-| `pre-open-planner.yml` | `0 13 * * 1-5` | Read-only (daily bar fetch) | Active |
+| Flag                          | Value     | Notes                                  |
+| ----------------------------- | --------- | -------------------------------------- |
+| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.23 does not flip this. |
+| `ALLOW_BROKER_PAPER`          | **false** | Hard-pinned default.                   |
+| `LIVE_TRADING_UNSUPPORTED`    | **true**  | CLI rejects `--mode live`.             |
+| `NO_ORDER_PLACEMENT`          | **true**  | Reporters never call any order path.   |
+| `BROKER_PAPER_CANARY_BLOCKED` | **true**  | Unlock gate has not flipped.           |
 
-Workflow dispatch choices for `shadow-evidence-cycle`: `{signal_only,
-shadow, broker}` — **no `live` choice exists**.
+This LATEST refresh is a documentation pass. It does **NOT** flip any
+flag, mutate any state file, or place any order.
 
-## 3. Sanity command results (just executed)
+## 3. v3.22 + v3.23 — what shipped today
 
-| Command | Result |
-| --- | --- |
-| `python3 -m scripts.run_shadow_evidence_cycle --dry-run --mode signal_only` | ✅ `mode=signal_only`, `strategies_seen=7`, `signals_seen=0` |
-| `python3 -m scripts.run_shadow_evidence_cycle --dry-run --mode shadow` | ✅ `mode=shadow`, `signals_seen=0`, no fills |
-| `python3 -m scripts.run_shadow_evidence_cycle --dry-run --mode live` | ✅ rejected by argparse |
+- **v3.22 (`4b15542f9`)** — Wire signal pipeline and activate evidence flow.
+  - `shared/signal_emitter.py` + `shared/signal_event.py`: validated emit
+    path with confidence scoring + idempotency.
+  - 10 monitors AST-wired (`tests/test_monitor_wiring_v3220.py`).
+  - Diagnostic tokens enriched (`market_data_provider.py` exports
+    `fetch_universe_snapshots_with_diagnostics`).
+- **v3.23 (Agents 3A / 3B / 3C, pending consolidated commit)** —
+  observability-only reporters; no runtime path changes.
+  - 3A: `real_market_evidence_status` (real-market-only counter +
+    blockers).
+  - 3B: shadow simulator + outcome tracker (no broker, no paper trade).
+  - 3C: monitor emission status reporter + LATEST docs refresh.
 
-## 4. Report status (just executed)
+## 4. Real-market evidence — current count
 
-| Report | Output | Status |
-| --- | --- | --- |
-| `evidence_throughput_report.py` | `strategies analyzed: 0` | Fail-soft on empty ledger ✅ |
-| `signal_density_report.py` | `records: 0` | Fail-soft on empty ledger ✅ |
-| `operator_decision_pack.py` | `edge_gate_flip_now: False` | All invariants True ✅ |
+| Counter | Value | Source |
+|---|---|---|
+| `real_market_opportunities_count` | **0** | `learning-loop/shadow_evidence/workflow_health_latest.json` |
+| `halt_path_records_count` | 15 | same |
+| `scaffold_no_market_data_records_count` | 5 | same |
+| `completed_shadow_outcomes_count` | 0 | same |
+| `first_real_market_record_seen` | false | `first_real_market_record_status.json` (3 days stale) |
 
-## 5. Order placement diagnosis
+Largest current blocker: **AUTH_MISSING_OR_CRON_NOT_FIRING — diagnostic
+pipeline now reports the cause via diagnostic_token_counts**, but the
+runner still calls the legacy `fetch_universe_snapshots()` and never
+aggregates the new `diagnostic_token_counts` dict into the workflow
+health snapshot. v3.22's diagnostic data IS reaching stdout but is not
+persisted; per-symbol diagnostics already show
+`REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL` (data is fine, no breakout in
+current regime) and `INSUFFICIENT_BARS_FOR_SIGNAL` (lookback floor).
 
-**Operator question: "System nie zakłada zleceń mimo że sesja trwa — bug?"**
+## 5. Monitor emission status (latest reporter output)
 
-Technical answer: **NO, this is the contracted paper/shadow-only state.**
+Generated by `scripts/build_monitor_emission_status.py`:
 
-| Defense layer | Setting | Effect |
-| --- | --- | --- |
-| `EDGE_GATE_ENABLED` | default `false` (not in env) | EDGE_GATE flip blocked; no edge-promoted strategy can trigger |
-| `ALPACA_LIVE_*` | not set | No live broker credentials wired |
-| `ALLOW_BROKER_PAPER` | not set | Broker paper adapter returns DISABLED status |
-| `EVIDENCE_PRODUCTION_MODE` | workflow env-locked `SIGNAL_ONLY` | Even cron run won't fill |
-| `DEFAULT_DRY_RUN` (broker adapter) | True | Every call without explicit `dry_run=False` is a no-op |
-| Argparse `--mode` choices | `{signal_only, shadow, broker}` | `--mode live` rejected at parser |
-| `assert_paper_only(PAPER_BASE_URL)` | enforced | Any non-paper URL raises |
-| `test_no_direct_sell_post_outside_safe_close` | AST lint | CI gate against naked sell POSTs |
+| Monitor               | Wired | Ledger rows (7d) | Verdict                  |
+| --------------------- | ----- | ---------------- | ------------------------ |
+| `crypto-monitor`      | Y     | 16562            | **ACTIVE**               |
+| `price-monitor`       | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `options-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `defense-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `twitter-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `reddit-monitor`      | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `geo-monitor`         | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `politician-monitor`  | Y     | 0                | WIRED_BUT_NOT_FIRING     |
+| `exit-monitor`        | Y     | 0                | NOT_APPLICABLE           |
+| `options-exit-monitor`| Y     | 0                | NOT_APPLICABLE           |
 
-So:
+Only the crypto pipeline is actively producing ledger rows today; all
+equity / options / news monitors are wired but not firing under the
+current regime. Full report: `docs/MONITOR_EMISSION_STATUS.md`.
 
-1. **Real/live orders not placed → GOOD / EXPECTED.** Multiple defenses
-   in place; argparse + URL assert + AST lint all confirm.
-2. **Broker paper orders not placed → EXPECTED.** Requires
-   `ALLOW_BROKER_PAPER=true` AND `dry_run=False` AND paper credentials —
-   none of which are set.
-3. **Shadow fills not created → EXPECTED.** Runner saw 0 signals during
-   today's cycle (`signals_seen=0`). Without signals, there's nothing
-   to simulate filling.
-4. **Opportunity ledger empty → WIRING GAP** (not a runtime bug). No
-   monitor module (`price-monitor/monitor.py`, `options-monitor/monitor.py`,
-   `crypto-monitor/monitor.py`, etc.) currently imports or calls
-   `signal_opportunity_ledger.record_opportunity()`. The v3.20 ledger
-   module was shipped before the monitor refactor. The shadow runner
-   observes the strategy registry but does not invoke each strategy's
-   signal generator (this is a design choice — runner does not
-   duplicate monitor logic).
+## 6. Active workflows (hard-pinned safety env)
 
-**Safe?** Yes. **Bug?** Not in runtime behavior. The wiring gap is a
-known next-iteration item.
+| Workflow                              | Cron                  | Mode lock                              |
+| ------------------------------------- | --------------------- | -------------------------------------- |
+| `signal-shadow-evidence.yml` v3.27    | `35 13-19 * * 1-5`    | `--with-market-data`, observability-only |
+| `shadow-evidence-cycle.yml` v3.21     | `30 22 * * 1-5`       | `--mode signal_only`                   |
+| `paper-experiment-update.yml` v3.18   | `0 22 * * 1-5`        | "NEVER changes EDGE_GATE_ENABLED"      |
+| `real-market-evidence-accelerator`    | `0 22 * * 1-5`        | hard-pins 7 broker/live flags = false  |
 
-## 6. When does "0 signals" become a real problem?
+All 4 workflows hard-pin the canonical safety flags = `false`. Zero drift.
 
-- After 1-2 full cron cycles (≈ 2 weekdays) with still
-  `current_daily_signal_rate=0`, the wiring gap should be investigated.
-- Possible remediation paths:
-  1. Add `signal_opportunity_ledger.record_opportunity(...)` calls in
-     each monitor's signal-detection branch (mechanical refactor, ~5
-     line-changes per monitor × 8 monitors).
-  2. Add a `--invoke-strategies` flag to `run_shadow_evidence_cycle.py`
-     that walks the registry and calls each strategy's
-     `generate_signal()` directly (more intrusive — would duplicate
-     monitor logic).
-  3. Hybrid: instrument a shared `_emit_signal()` helper that monitors
-     already call, and route through `record_opportunity()` there.
+## 7. Standing markers
 
-  **Recommendation:** Path #3 (single helper-level instrumentation)
-  when prioritized.
+- EDGE_GATE_ENABLED = false
+- ALLOW_BROKER_PAPER = false
+- LIVE_TRADING_UNSUPPORTED
+- NO_ORDER_PLACEMENT
 
-## 7. Ledger status
+## 8. Recommendation for next session
 
-| Ledger | Path | Files | Last write |
-| --- | --- | --- | --- |
-| Opportunity | `learning-loop/opportunity_ledger/` | 0 | never |
-| Shadow | `learning-loop/shadow_ledger/` | 0 | never |
-| Paper experiments | `learning-loop/paper_experiments/` | 0 | never |
-| `current_daily_signal_rate` | — | **0** | — |
-| `current_shadow_fill_rate` | — | **0** | — |
-| `current_rejected_signal_rate` | — | **0** | — |
-| `current_counterfactual_outcome_rate` | — | **0** | — |
-| `estimated_days_to_n50` | — | ∞ (cannot extrapolate from 0) | — |
-
-**Bottleneck:** monitor → opportunity ledger wiring (8 monitor modules
-do not call `record_opportunity()`).
-
-## 8. Safety invariants
-
-| Setting | Required | Actual |
-| --- | --- | --- |
-| `EDGE_GATE_ENABLED` | False | False (default) ✅ |
-| `ALLOW_BROKER_PAPER` | not "true" | unset ✅ |
-| `LIVE_TRADING` | False | not set, blocked by `assert_paper_only` ✅ |
-| Risk engine | final say | `risk_officer.evaluate_trade` enforced ✅ |
-| Safe mode | functional | `shared/safe_mode.py` present, FSM intact ✅ |
-| Kill-switch | functional | `shared/autonomy.py` invariants enforced ✅ |
-| Paid services | none | scanned ✅ |
-
-## 9. Recommendation for the next working day
-
-**Choice: `WAIT_FOR_NEXT_CRON` for one more day, then
-`INVESTIGATE_MONITOR_TO_OPPORTUNITY_LEDGER_WIRING` if still 0.**
-
-Steps for the operator (or next Claude session):
-
-1. Tomorrow 22:30 UTC: shadow-evidence-cycle.yml fires automatically.
-2. Tomorrow 23:00 UTC: re-run `python3 scripts/operator_decision_pack.py`
-   to check `current_daily_signal_rate`.
-3. If still 0 after the first scheduled cron, prioritize the monitor
-   → opportunity ledger wiring (Path #3 from §6 above).
-4. **Do NOT** flip `EDGE_GATE_ENABLED=true`. Do NOT set
-   `ALLOW_BROKER_PAPER=true`. Do NOT fabricate ledger entries.
+1. Wire the runner to call
+   `market_data_provider.fetch_universe_snapshots_with_diagnostics`
+   (so `diagnostic_token_counts` finally populates).
+2. Persist aggregate token counts into
+   `learning-loop/shadow_evidence/workflow_health_latest.json` via a new
+   `--collector-summary-path` arg to
+   `evaluate_automated_shadow_progress.py`.
+3. Wire `scripts/check_heartbeat_freshness.py` + `scripts/check_evidence_throughput_sla.py`
+   into a cron workflow (currently never invoked).
+4. Do NOT flip `EDGE_GATE_ENABLED`, do NOT set `ALLOW_BROKER_PAPER=true`,
+   do NOT fabricate ledger entries.
 
 ---
 
-*This document is read-only operational summary. It does not change
-runtime behavior. Generated by the EoD hygiene pass on 2026-06-04.*
+_This document is observability-only. It does not change runtime
+behavior, place any order, or modify safety flags._

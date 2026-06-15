@@ -422,3 +422,44 @@ The invariants below are enforced by `tests/test_*_v3220.py`.
 - Aggressive trading requires real evidence. v3.22 wires the
   production layer but does NOT generate evidence by itself.
 - Confidence score without data is not proof of edge.
+
+## v3.23 — observability layer additions (2026-06-15)
+
+v3.23 ships six reporters in `scripts/`. All are observability-only;
+none of them places, modifies, or cancels any order, and none of them
+imports `alpaca_orders`. They consume the existing v3.20 ledger, the
+v3.22 diagnostic tokens, and the runtime state files, then write JSON +
+Markdown artefacts.
+
+### Reporters added
+
+1. `build_real_market_evidence_status.py` (Agent 3A) — surfaces the
+   real-market-only opportunity counter + dominant blocker class.
+   Output: `docs/REAL_MARKET_EVIDENCE_STATUS.md`,
+   `learning-loop/shadow_evidence/real_market_evidence_status_latest.json`.
+2. `confidence_reality_check_report.py` (Agent 3A) — compares declared
+   confidence against actual ledger outcomes; READ-only over the
+   ledger.
+3. `strategy_coverage_report.py` (Agent 3A) — per-strategy coverage
+   summary across the active universe.
+4. `shadow_simulator.py` (Agent 3B) — pure simulator over historical
+   ledger rows. Never calls the broker; never opens a paper trade.
+   Produces no broker side-effects.
+5. `outcome_tracker.py` (Agent 3B) — tracks shadow-outcome rows that
+   already exist in the ledger. NOT a paper trade.
+6. `build_monitor_emission_status.py` (Agent 3C) — per-monitor runtime
+   emission summary. Output: `docs/MONITOR_EMISSION_STATUS.md`,
+   `learning-loop/shadow_evidence/monitor_emission_status_latest.json`.
+
+### v3.23 hard-safety invariants (re-asserted, unchanged)
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default).
+- `BROKER_EXECUTION_ENABLED = false`.
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.23 reporter.
+- Live trading remains unsupported. LLM stays advisory only. Canary
+  stays preflight-only.
+
+HEAD at v3.23 LATEST refresh: `4b15542f95fad53584a283fdc8f8b168426a94cd`
+(v3.23 commit follows the consolidated push).

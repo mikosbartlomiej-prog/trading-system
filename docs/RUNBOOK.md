@@ -1377,3 +1377,35 @@ Look for:
 `safe_close`, `submit_order`, `place_*_order`, or `close_*`. The
 v3.22 happy-path E2E test enforces this with an AST scan plus a
 runtime patch over every forbidden broker function.
+
+## v3.23 — observability reporters (2026-06-15)
+
+v3.23 adds six observability-only reporters in `scripts/`. None of
+them places, modifies, or cancels any order. They consume the
+existing v3.20 ledger, v3.22 diagnostic tokens, and runtime state
+files, then write JSON + Markdown artefacts:
+
+- `build_real_market_evidence_status.py` — surfaces the real-market
+  opportunity counter + dominant blocker class.
+- `confidence_reality_check_report.py` — compares declared confidence
+  vs ledger outcomes.
+- `strategy_coverage_report.py` — per-strategy coverage summary.
+- `shadow_simulator.py` — pure simulator over historical ledger rows
+  (no broker, no paper trade).
+- `outcome_tracker.py` — tracks pre-existing shadow-outcome rows in
+  the ledger (NOT a paper trade).
+- `build_monitor_emission_status.py` — per-monitor runtime emission
+  status. Output: `docs/MONITOR_EMISSION_STATUS.md`.
+
+### v3.23 hard-safety invariants
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned, unchanged).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default).
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.23 reporter.
+- Live trading remains unsupported. Confirms: every v3.23 reporter is
+  observability-only and never imports `alpaca_orders` or calls any
+  broker entry point.
+
+HEAD at v3.23 LATEST refresh: `4b15542f95fad53584a283fdc8f8b168426a94cd`
+(v3.23 commit follows the consolidated push).

@@ -256,6 +256,14 @@ def main(argv: list[str] | None = None) -> int:
                           choices=[None, "success", "failure",
                                     "cancelled", "skipped"])
     parser.add_argument("--collector-status", default=None)
+    parser.add_argument(
+        "--collector-summary-path", default=None,
+        help="v3.23 — path to a JSON file emitted by "
+             "scripts/run_signal_shadow_evidence_collection.py that "
+             "contains per_symbol_diagnostics + diagnostic_token_counts. "
+             "When provided, those fields are persisted under "
+             "last_collector_summary in workflow_health_latest.json so "
+             "the next evaluator run can aggregate diagnostic tokens.")
     parser.add_argument("--resolver-status", default=None)
     parser.add_argument("--secrets-status",
                           default="SECRETS_STATUS_UNKNOWN",
@@ -271,12 +279,39 @@ def main(argv: list[str] | None = None) -> int:
 
     counters = _load_counters()
     existing_health = _load_existing_health()
-    # Per-symbol diagnostics from the previous collector run (passed
-    # through workflow_health when available).
-    last_collector_summary = existing_health.get(
-        "last_collector_summary") or {}
+
+    # v3.23 — when the collector emits a summary file (per_symbol_
+    # diagnostics + diagnostic_token_counts from the v3.22 diagnostic
+    # API), load it and use it for THIS evaluator run as well as
+    # persisting it for the NEXT one.
+    fresh_collector_summary: dict = {}
+    if args.collector_summary_path:
+        try:
+            fresh_collector_summary = json.loads(
+                Path(args.collector_summary_path)
+                .read_text(encoding="utf-8"))
+            if not isinstance(fresh_collector_summary, dict):
+                fresh_collector_summary = {}
+        except Exception:
+            fresh_collector_summary = {}
+
+    # Prefer fresh summary; fall back to the previous run's summary
+    # so we don't regress an existing populated dict to {}.
+    last_collector_summary = (
+        fresh_collector_summary
+        or existing_health.get("last_collector_summary")
+        or {})
     diag_counts = _aggregate_diagnostic_tokens(
         records=[], last_collector_summary=last_collector_summary)
+
+    # v3.23 — if the collector summary contains a v3.22-API populated
+    # ``diagnostic_token_counts`` dict, honor that (the aggregate is
+    # more authoritative than re-counting per_symbol_diagnostics, e.g.
+    # when symbols outside the per-symbol list contributed counts).
+    fresh_diag_counts = (
+        fresh_collector_summary.get("diagnostic_token_counts") or {})
+    if isinstance(fresh_diag_counts, dict) and fresh_diag_counts:
+        diag_counts = dict(fresh_diag_counts)
 
     verdict, rationale = evaluate_verdict(
         counters,
@@ -301,6 +336,7 @@ def main(argv: list[str] | None = None) -> int:
         "last_resolver_status":          args.resolver_status,
         "secrets_status":                args.secrets_status,
         "diagnostic_token_counts":       diag_counts,
+        "last_collector_summary":        last_collector_summary,
         "counters_snapshot": {
             "real_market_opportunities_count":
                 counters.get("real_market_opportunities_count", 0),

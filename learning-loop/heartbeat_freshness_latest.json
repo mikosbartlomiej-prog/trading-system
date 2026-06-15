@@ -1,0 +1,97 @@
+{
+  "components": [
+    {
+      "age_seconds": 1980.109285,
+      "component": "crypto-monitor",
+      "last_seen_iso": "2026-06-15T09:31:10.180893+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 1672.733197,
+      "component": "defense-monitor",
+      "last_seen_iso": "2026-06-15T09:36:17.556981+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 1657.738194,
+      "component": "twitter-monitor",
+      "last_seen_iso": "2026-06-15T09:36:32.551984+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 39345.405464,
+      "component": "reddit-monitor",
+      "last_seen_iso": "2026-06-14T23:08:24.884714+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 1977.648822,
+      "component": "geo-monitor",
+      "last_seen_iso": "2026-06-15T09:31:12.641356+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 9162.93299,
+      "component": "politician-monitor",
+      "last_seen_iso": "2026-06-15T07:31:27.357188+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": null,
+      "component": "options-monitor",
+      "last_seen_iso": null,
+      "status": "MISSING",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 1677.694662,
+      "component": "options-exit-monitor",
+      "last_seen_iso": "2026-06-15T09:36:12.595516+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": null,
+      "component": "price-monitor",
+      "last_seen_iso": null,
+      "status": "MISSING",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": 1977.640832,
+      "component": "exit-monitor",
+      "last_seen_iso": "2026-06-15T09:31:12.649346+00:00",
+      "status": "FRESH",
+      "threshold_seconds": 86400
+    },
+    {
+      "age_seconds": null,
+      "component": "incident-pattern-detector",
+      "last_seen_iso": null,
+      "status": "MISSING",
+      "threshold_seconds": 86400
+    }
+  ],
+  "exit_code": 0,
+  "generated_at_iso": "2026-06-15T10:04:10.290178+00:00",
+  "market_open": false,
+  "market_reason": "pre_market",
+  "summary": {
+    "fresh": 8,
+    "missing": 3,
+    "stale": 0,
+    "total": 11
+  },
+  "threshold_seconds": 86400,
+  "thresholds": {
+    "market_session_stale_seconds": 7200,
+    "non_market_stale_seconds": 86400
+  },
+  "version": "v3.22.0"
+}

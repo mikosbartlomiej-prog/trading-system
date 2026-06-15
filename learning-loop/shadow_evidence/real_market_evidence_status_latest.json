@@ -1,0 +1,55 @@
+{
+  "as_of": "2026-06-15T10:07:56.149073+00:00",
+  "confidence_distribution": {
+    "0.0-0.5": 0,
+    "0.5-0.65": 0,
+    "0.65-0.80": 0,
+    "0.80+": 0,
+    "null": 4
+  },
+  "current_blocker": "NO_REAL_MARKET_DATA",
+  "data_failure_counts": {},
+  "days_to_n50_estimate": "UNKNOWN",
+  "gate_decision_distribution": {
+    "DETECTED": 1,
+    "HALTED_BY_DRAWDOWN_GUARD": 1,
+    "UNKNOWN": 2
+  },
+  "generated_at_iso": "2026-06-15T10:07:56.193712+00:00",
+  "git_head": "4b15542f95fad53584a283fdc8f8b168426a94cd",
+  "last_collector_status": "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA",
+  "last_workflow_run_conclusion": "success",
+  "last_workflow_run_id": "27441653073",
+  "observations_today": 3,
+  "opportunities_today": 4,
+  "opportunities_today_by_monitor": {
+    "crypto-monitor": 4
+  },
+  "opportunities_today_by_strategy": {
+    "crypto-momentum": 4
+  },
+  "opportunities_today_by_symbol_top10": {
+    "BTC/USD": 4
+  },
+  "real_market_opportunities_count_lifetime": 0,
+  "real_market_opportunities_target": 50,
+  "rolling_avg_real_market_opps_per_day": 0.0,
+  "rolling_window_days": 3,
+  "safety": {
+    "allow_broker_paper": false,
+    "edge_gate_enabled": false,
+    "live_trading_supported": false,
+    "observations_count_as_opportunities": false
+  },
+  "secrets_status": "SECRETS_AVAILABLE",
+  "shadow_eligible_count_today": 0,
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED"
+  ],
+  "version": "v3.23.0"
+}
