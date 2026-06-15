@@ -563,5 +563,5 @@ fabrication.
 - **Near-miss is NOT trade evidence. Shadow is NOT broker paper.
   Fixture is NOT real evidence. LLM output is NOT real-market evidence.**
 
-HEAD at v3.25 FINAL-PHASE refresh: `d532e3504e88290707d9cfaa12d16046f00297ca`
-(v3.25 commit follows the consolidated push).
+HEAD at v3.25 FINAL-PHASE refresh: `30dcf4e48a644122938d7dc089ee0293f1dc76c4`
+(v3.25 commit included in the consolidated push).

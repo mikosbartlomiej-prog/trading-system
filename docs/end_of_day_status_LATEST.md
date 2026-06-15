@@ -1,7 +1,7 @@
 # End-of-Day System Status — Shadow Evidence Flow
 
 Generated: 2026-06-15T11:52:45Z (Claude v3.25 FINAL-PHASE — production confidence verification + conditional shadow accumulation)
-HEAD: `d532e3504e88290707d9cfaa12d16046f00297ca`
+HEAD: `30dcf4e48a644122938d7dc089ee0293f1dc76c4`
 
 ## TL;DR
 
@@ -21,7 +21,7 @@ only. Canary stays preflight-only.
 ## 1. Repo status
 
 - **Branch:** `main`
-- **HEAD:** `d532e3504e88290707d9cfaa12d16046f00297ca`
+- **HEAD:** `30dcf4e48a644122938d7dc089ee0293f1dc76c4`
 - **Working tree:** v3.25 staged for commit
 - **Worktrees:** single — `main` only
 
