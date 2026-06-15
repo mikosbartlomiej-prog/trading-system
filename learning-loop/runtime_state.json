@@ -1,5 +1,5 @@
 {
-  "_last_writer": "llm-availability",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "comp-a": {
       "last_message": "",
@@ -45,9 +45,9 @@
     },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-15T22:51:12.405897+00:00",
+      "last_seen_iso": "2026-06-15T22:56:07.126108+00:00",
       "last_status": "ok",
-      "pings_today": 246
+      "pings_today": 247
     },
     "options-monitor": {
       "last_message": "",
