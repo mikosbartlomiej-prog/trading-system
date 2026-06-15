@@ -1,0 +1,65 @@
+name: Rebalance Portfolio
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run only (no orders placed)'
+        type: boolean
+        default: true
+
+concurrency:
+  group: rebalance
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+
+jobs:
+  rebalance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run rebalancer
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python3 scripts/rebalance_portfolio_20260615.py --dry-run
+          else
+            python3 scripts/rebalance_portfolio_20260615.py
+          fi
+
+      - name: Commit journal entry
+        if: always()
+        run: |
+          git config user.name "claude-code[bot]"
+          git config user.email "claude-code[bot]@users.noreply.github.com"
+          DATE=$(date -u +%Y-%m-%d)
+          mkdir -p journal
+          echo "## Rebalance run $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "journal/trades-${DATE}.md"
+          echo "- dry_run: ${{ inputs.dry_run }}" >> "journal/trades-${DATE}.md"
+          echo "- status: completed" >> "journal/trades-${DATE}.md"
+          git add journal/ || true
+          git diff --cached --quiet || git commit -m "[automerge] rebalance journal ${DATE}"
+          git push origin HEAD:main || true
