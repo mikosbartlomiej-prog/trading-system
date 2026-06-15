@@ -56,10 +56,21 @@ DIAG_EMIT_ATTEMPTED   = "EMIT_ATTEMPTED"
 DIAG_EMIT_SUCCESS     = "EMIT_SUCCESS"
 DIAG_EMIT_FAILED      = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Added so monitors can
+# emit per-tick records about whether the scanned symbol was on the
+# trigger watchlist and whether the scan produced a candidate /
+# near-miss / threshold cross. The watchlist file is read once per scan
+# (cached) and these tokens fire as the scan unfolds. Pure observation —
+# never blocks or alters scan behavior.
+DIAG_WATCHLIST_SYMBOL_SCANNED  = "WATCHLIST_SYMBOL_SCANNED"
+DIAG_WATCHLIST_NO_TRIGGER      = "WATCHLIST_NO_TRIGGER"
+DIAG_WATCHLIST_NEAR_MISS       = "WATCHLIST_NEAR_MISS"
+DIAG_WATCHLIST_TRIGGER_CROSSED = "WATCHLIST_TRIGGER_CROSSED"
+
 
 # Frozen so callers cannot mutate it at runtime — the v3.24 contract
 # treats the token set as a closed enum so the reporter can rely on a
-# fixed schema.
+# fixed schema. v3.27 added the 4 watchlist-aware tokens.
 DIAG_TOKENS: frozenset[str] = frozenset({
     DIAG_RAN,
     DIAG_INPUT_EMPTY,
@@ -68,7 +79,14 @@ DIAG_TOKENS: frozenset[str] = frozenset({
     DIAG_EMIT_ATTEMPTED,
     DIAG_EMIT_SUCCESS,
     DIAG_EMIT_FAILED,
+    DIAG_WATCHLIST_SYMBOL_SCANNED,
+    DIAG_WATCHLIST_NO_TRIGGER,
+    DIAG_WATCHLIST_NEAR_MISS,
+    DIAG_WATCHLIST_TRIGGER_CROSSED,
 })
+
+# Alias for callers / tests that expect a ``TOKEN_SET`` constant.
+TOKEN_SET = DIAG_TOKENS
 
 
 # Test hook so tests can swap the output directory without monkey-patching
@@ -176,6 +194,11 @@ __all__ = [
     "DIAG_EMIT_ATTEMPTED",
     "DIAG_EMIT_SUCCESS",
     "DIAG_EMIT_FAILED",
+    "DIAG_WATCHLIST_SYMBOL_SCANNED",
+    "DIAG_WATCHLIST_NO_TRIGGER",
+    "DIAG_WATCHLIST_NEAR_MISS",
+    "DIAG_WATCHLIST_TRIGGER_CROSSED",
     "DIAG_TOKENS",
+    "TOKEN_SET",
     "record_diag",
 ]

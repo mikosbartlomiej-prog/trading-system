@@ -21,7 +21,7 @@
     "unexplained_broker_state_conflicts_count": 0,
     "workflow_verdict": "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET"
   },
-  "generated_at_iso": "2026-06-09T22:02:39.375746+00:00",
+  "generated_at_iso": "2026-06-15T15:19:18.848677+00:00",
   "rationale": [
     "first_real_market_record_seen is false"
   ],

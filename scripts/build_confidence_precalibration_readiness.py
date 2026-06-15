@@ -50,13 +50,25 @@ LATEST_MD_PATH = (REPO_ROOT / "docs"
                   / "CONFIDENCE_PRECALIBRATION_READINESS.md")
 LEDGER_DIR = REPO_ROOT / "learning-loop" / "opportunity_ledger"
 
-VERSION = "v3.26.0"
+VERSION = "v3.27.0"
 
-# Verdicts
+# Verdicts (v3.26 backward-compat names kept for snapshot consumers)
 VERDICT_NOT_READY            = "NOT_READY_NO_POSITIVE_ROWS"
 VERDICT_READY                = "READY_FOR_SHADOW_OUTCOMES"
 VERDICT_NEEDS_VARIANCE       = "NEEDS_COMPONENT_VARIANCE"
 VERDICT_NEEDS_CANDIDATES     = "NEEDS_MORE_ENTRY_CANDIDATES"
+
+# v3.27 separation verdicts (separate production from replay/near-miss)
+VERDICT_V327_NO_POSITIVES     = "NOT_READY_NO_POSITIVE_ROWS"
+VERDICT_V327_REPLAY_READY     = "READY_FOR_COMPONENT_VARIANCE_REVIEW"
+VERDICT_V327_OUTCOMES_NEEDED  = "READY_FOR_SHADOW_OUTCOME_COLLECTION"
+VERDICT_V327_OUTCOMES_PENDING = "NOT_READY_NO_OUTCOMES"
+
+# v3.27 fixture/replay/near-miss paths (read-only)
+REPLAY_DISCOVERY_PATH = (REPO_ROOT / "learning-loop"
+                         / "replay_discovery_latest.json")
+NEAR_MISS_DIR_V327 = REPO_ROOT / "learning-loop" / "near_miss"
+SHADOW_EVIDENCE_DIR = REPO_ROOT / "learning-loop" / "shadow_evidence"
 
 # Pre-calibration thresholds (operator-tuneable via CLI)
 DEFAULT_MIN_POSITIVE_ROWS              = 30
@@ -72,6 +84,10 @@ STANDING_MARKERS: tuple[str, ...] = (
     "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
     "CONFIDENCE_PRECALIBRATION_DOES_NOT_TRADE",
     "REPORTER_NEVER_MUTATES_STATE",
+    "REPLAY_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "NEAR_MISS_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "FIXTURE_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "CALIBRATION_NEVER_RECOMMENDED_WITHOUT_OUTCOMES",
 )
 
 
@@ -240,6 +256,198 @@ def _decision_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
     return dict(c)
 
 
+# ─── v3.27 source separation helpers ──────────────────────────────────────────
+
+
+def _count_replay_positive_rows(
+    *,
+    replay_path: Path | None = None,
+) -> int:
+    """Count entry-capable rows from the replay-discovery artefact.
+
+    A "replay positive row" is any record with
+    ``evidence_source="REPLAY"`` and a candidate action — those are
+    surfaced by ``scripts/replay_entry_candidate_discovery.py``.
+
+    NEVER mistakes a replay row for a production positive: the caller
+    keeps the two counts strictly separate.
+    """
+    if replay_path is None:
+        replay_path = REPLAY_DISCOVERY_PATH
+    if not replay_path.exists():
+        return 0
+    try:
+        raw = json.loads(replay_path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+    total = 0
+    rows = raw.get("rows") if isinstance(raw, dict) else None
+    if not isinstance(rows, list):
+        return 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        recs = row.get("candidate_records") or []
+        if isinstance(recs, list):
+            for r in recs:
+                if (isinstance(r, dict)
+                        and r.get("evidence_source") == "REPLAY"
+                        and r.get("action")):
+                    total += 1
+    return total
+
+
+def _count_near_miss_rows(
+    *,
+    base_dir: Path | None = None,
+    as_of: datetime,
+    days: int = 7,
+) -> int:
+    """Count near-miss records from ``learning-loop/near_miss/*.jsonl``.
+
+    Near-miss rows by definition NEVER trigger an order. They are
+    operator-review hints only and remain segregated from production.
+    """
+    if base_dir is None:
+        base_dir = NEAR_MISS_DIR_V327
+    if not base_dir.exists():
+        return 0
+    count = 0
+    end_date = as_of.date()
+    start_date = end_date - timedelta(days=days - 1)
+    for p in sorted(base_dir.glob("*.jsonl")):
+        try:
+            file_date = datetime.strptime(p.stem, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if file_date < start_date or file_date > end_date:
+            continue
+        try:
+            with p.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        json.loads(line)
+                        count += 1
+                    except Exception:
+                        continue
+        except Exception:
+            continue
+    return count
+
+
+def _count_fixture_only_rows(
+    rows: list[dict[str, Any]],
+) -> int:
+    """Count ledger rows that originated from a v3.26 fixture/test path.
+
+    A "fixture" row is identified by an explicit
+    ``evidence_source`` ∈ {"FIXTURE", "TEST_FIXTURE"} or a
+    ``signal_id`` matching a test/quarantine prefix. These never
+    count as production positives.
+    """
+    count = 0
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        es = r.get("evidence_source")
+        if isinstance(es, str) and es.upper() in (
+            "FIXTURE", "TEST_FIXTURE", "QUARANTINE_FIXTURE",
+        ):
+            count += 1
+            continue
+        sid = r.get("signal_id")
+        if isinstance(sid, str) and (
+            sid.startswith("test-")
+            or sid.startswith("fixture-")
+            or sid.startswith("quarantine-")
+        ):
+            count += 1
+    return count
+
+
+def _has_outcomes(
+    *,
+    shadow_dir: Path | None = None,
+) -> bool:
+    """Detect whether any shadow-evidence outcome record is present.
+
+    Outcomes are required before any confidence calibration can run.
+    Without them the verdict ALWAYS lands on
+    ``NOT_READY_NO_OUTCOMES``.
+    """
+    if shadow_dir is None:
+        shadow_dir = SHADOW_EVIDENCE_DIR
+    if not shadow_dir.exists():
+        return False
+    # Any file containing a non-empty "outcome" field counts.
+    for p in sorted(shadow_dir.glob("*.json")):
+        try:
+            raw = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(raw, dict) and raw.get("outcome"):
+            return True
+        if isinstance(raw, dict) and isinstance(raw.get("rows"), list):
+            for r in raw["rows"]:
+                if isinstance(r, dict) and r.get("outcome"):
+                    return True
+    return False
+
+
+def _classify_verdict_v327(
+    *,
+    production_positive_rows: int,
+    replay_positive_rows: int,
+    near_miss_rows: int,
+    has_outcomes: bool,
+) -> tuple[str, str]:
+    """v3.27 separation verdict (REFUSES to recommend 'calibrate' without outcomes).
+
+    Precedence:
+    1. No positives anywhere → NOT_READY_NO_POSITIVE_ROWS
+    2. Replay or near-miss present, no production → READY_FOR_COMPONENT_VARIANCE_REVIEW
+    3. Production positives present, NO outcomes → NOT_READY_NO_OUTCOMES
+    4. Production positives present, outcomes available → READY_FOR_SHADOW_OUTCOME_COLLECTION
+    """
+    if (production_positive_rows == 0
+            and replay_positive_rows == 0
+            and near_miss_rows == 0):
+        return (
+            VERDICT_V327_NO_POSITIVES,
+            ("No positive rows anywhere — production, replay, or "
+             "near-miss. Verify Phase-2 wiring and seed local "
+             "backfill snapshots."),
+        )
+    if production_positive_rows == 0:
+        return (
+            VERDICT_V327_REPLAY_READY,
+            (f"{replay_positive_rows} replay row(s) and "
+             f"{near_miss_rows} near-miss row(s) available for "
+             "component-variance review. NO production positive "
+             "rows yet — calibration MUST NOT be attempted; "
+             "operator may proceed only to variance review."),
+        )
+    # production_positive_rows > 0
+    if not has_outcomes:
+        return (
+            VERDICT_V327_OUTCOMES_PENDING,
+            (f"{production_positive_rows} production positive row(s) "
+             "present BUT no outcomes attached yet. Calibration "
+             "remains explicitly NOT recommended until outcomes "
+             "are collected via the shadow-outcome cycle."),
+        )
+    return (
+        VERDICT_V327_OUTCOMES_NEEDED,
+        (f"{production_positive_rows} production positive row(s) "
+         "AND outcomes available. Operator may stage shadow-outcome "
+         "calibration as the next reviewed step — calibration is "
+         "NEVER auto-applied by this reporter."),
+    )
+
+
 def _classify_verdict(
     *,
     positive_rows: int,
@@ -318,6 +526,23 @@ def build_report(
         min_varying_components=min_varying_components,
     )
 
+    # ─── v3.27 source-separation block ──────────────────────────────────
+    fixture_only_rows = _count_fixture_only_rows(positive_rows)
+    # Production positives must EXCLUDE any fixture-tagged rows.
+    production_positive_rows = max(
+        0, len(positive_rows) - fixture_only_rows)
+    replay_positive_rows = _count_replay_positive_rows()
+    near_miss_rows_count = _count_near_miss_rows(
+        as_of=as_of, days=days)
+    outcomes_available = _has_outcomes()
+
+    verdict_v327, verdict_v327_reason = _classify_verdict_v327(
+        production_positive_rows=production_positive_rows,
+        replay_positive_rows=replay_positive_rows,
+        near_miss_rows=near_miss_rows_count,
+        has_outcomes=outcomes_available,
+    )
+
     return {
         "version":           VERSION,
         "generated_at_iso":  datetime.now(timezone.utc).isoformat(),
@@ -338,6 +563,21 @@ def build_report(
         },
         "verdict":           verdict,
         "verdict_reason":    verdict_reason,
+        # v3.27 extension — separation between sources.
+        "source_separation": {
+            "production_positive_rows": production_positive_rows,
+            "replay_positive_rows":     replay_positive_rows,
+            "near_miss_rows":           near_miss_rows_count,
+            "fixture_only_rows":        fixture_only_rows,
+            "outcomes_available":       outcomes_available,
+            "verdict_v327":             verdict_v327,
+            "verdict_v327_reason":      verdict_v327_reason,
+            "note":                     (
+                "Calibration is NEVER recommended without outcomes. "
+                "Replay / near-miss / fixture rows NEVER count "
+                "as production positives."
+            ),
+        },
         "standing_markers":  list(STANDING_MARKERS),
         "safety": {
             "edge_gate_enabled":          False,
@@ -347,6 +587,10 @@ def build_report(
             "auto_adjusts_thresholds":    False,
             "imports_alpaca_orders":      False,
             "makes_network_calls":        False,
+            "replay_counted_as_production":   False,
+            "near_miss_counted_as_production": False,
+            "fixture_counted_as_production":  False,
+            "calibration_recommended_without_outcomes": False,
         },
     }
 
@@ -384,6 +628,16 @@ def render_md(rep: dict[str, Any]) -> str:
     for d, v in sorted(other.items()):
         decision_rows.append(f"| `{d}` | {v} |")
 
+    sep = rep.get("source_separation", {})
+    separation_table = "\n".join([
+        "| Source | Count | Counts as production? |",
+        "|---|---|---|",
+        f"| PRODUCTION_POSITIVE_ROWS | `{sep.get('production_positive_rows', 0)}` | yes |",
+        f"| REPLAY_POSITIVE_ROWS     | `{sep.get('replay_positive_rows', 0)}` | NO (review-only) |",
+        f"| NEAR_MISS_ROWS           | `{sep.get('near_miss_rows', 0)}` | NO (advisory) |",
+        f"| FIXTURE_ONLY_ROWS        | `{sep.get('fixture_only_rows', 0)}` | NO (test artefacts) |",
+        f"| OUTCOMES_AVAILABLE       | `{sep.get('outcomes_available', False)}` | gate for calibration |",
+    ])
     return f"""# Confidence Pre-Calibration Readiness ({rep["version"]})
 
 **Generated:** `{rep["generated_at_iso"]}`
@@ -393,7 +647,20 @@ def render_md(rep: dict[str, Any]) -> str:
 **Rows total:** `{rep["rows_total"]}`
 **Positive rows (non-null confidence_score):** `{rep["positive_rows"]}`
 
-## Verdict
+## v3.27 Source separation
+
+**Verdict (v3.27):** `{sep.get("verdict_v327", "unknown")}`
+
+{sep.get("verdict_v327_reason", "")}
+
+{separation_table}
+
+> Calibration is **NEVER** recommended without real outcomes.
+> Replay rows, near-miss rows, and fixture rows are surfaced for
+> operator situational awareness only — they never count as
+> production positives.
+
+## Verdict (v3.26, retained for back-compat)
 
 **`{rep["verdict"]}`**
 

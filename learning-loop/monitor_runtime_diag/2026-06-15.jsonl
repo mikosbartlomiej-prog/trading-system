@@ -6,3 +6,31 @@
 {"timestamp":"2026-06-15T14:20:35.932796+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
 {"timestamp":"2026-06-15T14:20:35.932922+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
 {"timestamp":"2026-06-15T14:20:35.933120+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:18:32.993474+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:18:32"}}
+{"timestamp":"2026-06-15T15:18:33.014609+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:18:33.014761+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:18:33.014891+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:18:37.277864+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:18:37"}}
+{"timestamp":"2026-06-15T15:18:37.292998+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:18:37.293153+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:18:37.293303+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:19:06.495404+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:19:06"}}
+{"timestamp":"2026-06-15T15:19:06.499469+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:19:06.503403+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:19:06.503601+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:19:26.410971+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:19:26"}}
+{"timestamp":"2026-06-15T15:19:26.414982+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:19:26.415113+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:19:26.415238+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:20:40.119762+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:20:40"}}
+{"timestamp":"2026-06-15T15:20:40.137558+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:20:40.138181+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:20:40.138348+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:20:55.272741+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:20:55"}}
+{"timestamp":"2026-06-15T15:20:55.288684+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:20:55.288913+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:20:55.289066+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}
+{"timestamp":"2026-06-15T15:21:00.588780+00:00","monitor":"price-monitor","token":"RAN","detail":{"now":"2026-06-15 17:21:00"}}
+{"timestamp":"2026-06-15T15:21:00.602670+00:00","monitor":"price-monitor","token":"SIGNAL_DETECTED","detail":{"symbol":"AAPL","side":"long","score":0.55}}
+{"timestamp":"2026-06-15T15:21:00.602798+00:00","monitor":"price-monitor","token":"EMIT_ATTEMPTED","detail":{"symbol":"AAPL","strategy":"momentum-long"}}
+{"timestamp":"2026-06-15T15:21:00.602928+00:00","monitor":"price-monitor","token":"EMIT_SUCCESS","detail":{"symbol":"AAPL"}}

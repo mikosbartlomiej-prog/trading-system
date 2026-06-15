@@ -612,3 +612,53 @@ What v3.26 adds to the contract:
 
 HEAD at v3.26 FINAL-PHASE refresh: `0546ad4d80b0eecbbf4524264e943aa2904d8750`
 (pre-v3.26 baseline; v3.26 commit follows in this push).
+
+---
+
+## v3.27 — Local backfill discovery seeded (2026-06-15)
+
+Generated: 2026-06-15T17:00:00Z
+HEAD: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+
+Standing markers re-asserted: EDGE_GATE_ENABLED=false, ALLOW_BROKER_PAPER=false,
+LIVE_TRADING_UNSUPPORTED, NO_ORDER_PLACEMENT, REPLAY_NOT_PAPER,
+BACKFILL_NOT_PAPER, NO_FABRICATION.
+
+What v3.27 adds to the contract:
+
+- **Local backfill seeder (`scripts/seed_backfill_snapshots.py`):**
+  derives per-symbol backfill snapshots from local ledger / market_data
+  artefacts and writes `learning-loop/backfill_snapshots/*.json`.
+  Verdict semantics: `NO_LOCAL_BACKFILL_DATA` / `LEDGER_DERIVED_PARTIAL`
+  / `LOCAL_BACKFILL_AVAILABLE`. **Refuses to fabricate synthetic OHLCV.**
+- **Backfill is not paper edge:** `BACKFILL_NOT_PAPER` — a backfill
+  snapshot is not a paper trade, is not real-market evidence, and
+  cannot promote to runtime.
+- **Replay discovery wired to seeded data:** `scripts/replay_entry_candidate_discovery.py`
+  consumes the seeded snapshots. `REPLAY_NOT_PAPER` re-asserted.
+- **Near-miss seeder with source distribution:**
+  `scripts/seed_near_miss_from_evidence.py` derives near-miss rows from
+  REAL / REPLAY / BACKFILL sources with explicit distribution tracking.
+- **Strategy variant quarantine seeder:**
+  `scripts/seed_strategy_variant_quarantine.py` registers quarantined
+  variants. `promote_variant()` still raises `NotImplementedError`
+  (no quarantined variant can promote to active runtime).
+- **Shadow candidate queue seeder:**
+  `scripts/seed_shadow_candidate_queue.py` populates the queue.
+  Shadow remains observability-only.
+- **Trigger watchlist priority (P1/P2/P3/BLOCKED):**
+  `scripts/build_trigger_watchlist.py` upgraded with priority rubric
+  and `distance_to_trigger` / `near_miss_count_7d` /
+  `replay_candidate_support` / `variant_support` / `priority` /
+  `priority_reason` schema fields. Watchlist remains observability-only.
+- **Opportunity density plan:**
+  `scripts/build_opportunity_density_plan.py` emits a section-by-section
+  density plan. Reporter only.
+- **No broker / live changes:** no broker flag flipped, no order
+  placed, no live enabled, no paid services added, no LLM in the
+  runtime trading path, no auto-threshold change, no variant
+  promoted to active, no fabricated evidence — seeders honestly emit
+  `NO_LOCAL_BACKFILL_DATA` when no local data exists.
+
+HEAD at v3.27 FINAL-PHASE refresh: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+(pre-v3.27 baseline; v3.27 commit follows in this push).

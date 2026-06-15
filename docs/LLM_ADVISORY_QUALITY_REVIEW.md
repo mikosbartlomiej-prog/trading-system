@@ -1,21 +1,21 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3300-calibration-27525776237`
-- **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
-- **Rows seen:** 11
-- **Rows with PROVIDER_USED:** **7**
+- **Run ID:** `v3283-mock-3`
+- **Quality status:** `LLM_ADVISORY_QUALITY_ACCEPTABLE`
+- **Rows seen:** 5
+- **Rows with PROVIDER_USED:** **5**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
-- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 4
+- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 0
 - **generic_placeholder_count:** 0
-- **empty_risks_count:** 11
-- **empty_next_actions_count:** 11
-- **zero_confidence_count:** 11
+- **empty_risks_count:** 0
+- **empty_next_actions_count:** 0
+- **zero_confidence_count:** 0
 - **secret_leak_hits:** 0
 - **unsafe_phrase_hits:** 0
 
 ## Rationale
 
-- all rows have empty risks_identified + empty proposed_next_actions + zero confidence
+- acceptable
 
 ## Safety invariants
 

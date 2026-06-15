@@ -1,13 +1,32 @@
-# Confidence Pre-Calibration Readiness (v3.26.0)
+# Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-06-15T14:27:43.508765+00:00`
-**As of:** `2026-06-15T14:27:43.368085+00:00`
-**Git HEAD:** `0546ad4d80b0eecbbf4524264e943aa2904d8750`
+**Generated:** `2026-06-15T15:18:00.575223+00:00`
+**As of:** `2026-06-15T15:18:00.425232+00:00`
+**Git HEAD:** `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
 **Window:** last 7 days
-**Rows total:** `16358`
+**Rows total:** `16508`
 **Positive rows (non-null confidence_score):** `0`
 
-## Verdict
+## v3.27 Source separation
+
+**Verdict (v3.27):** `READY_FOR_COMPONENT_VARIANCE_REVIEW`
+
+29 replay row(s) and 4074 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
+
+| Source | Count | Counts as production? |
+|---|---|---|
+| PRODUCTION_POSITIVE_ROWS | `0` | yes |
+| REPLAY_POSITIVE_ROWS     | `29` | NO (review-only) |
+| NEAR_MISS_ROWS           | `4074` | NO (advisory) |
+| FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
+| OUTCOMES_AVAILABLE       | `False` | gate for calibration |
+
+> Calibration is **NEVER** recommended without real outcomes.
+> Replay rows, near-miss rows, and fixture rows are surfaced for
+> operator situational awareness only — they never count as
+> production positives.
+
+## Verdict (v3.26, retained for back-compat)
 
 **`NOT_READY_NO_POSITIVE_ROWS`**
 
@@ -78,3 +97,7 @@ Default-only components: `0`
 - `REAL_MARKET_EVIDENCE_REMAINS_REQUIRED`
 - `CONFIDENCE_PRECALIBRATION_DOES_NOT_TRADE`
 - `REPORTER_NEVER_MUTATES_STATE`
+- `REPLAY_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE`
+- `NEAR_MISS_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE`
+- `FIXTURE_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE`
+- `CALIBRATION_NEVER_RECOMMENDED_WITHOUT_OUTCOMES`

@@ -1,0 +1,38 @@
+{
+  "allowed_modes": [
+    "replay",
+    "shadow"
+  ],
+  "change_rationale": "0 production fires lifetime for momentum-long; replay candidates cluster near 1.5-2.0% breakout. Lower threshold may surface real entries \u2014 operator review. [created_from: threshold_reality + near_miss seed]",
+  "created_at_iso": "2026-06-15T15:13:54.030211+00:00",
+  "dataclass_status": "QUARANTINED",
+  "description": "Lower breakout threshold from 2.0% to 1.5% (entry sensitivity raise)",
+  "dropped_param_keys": [],
+  "evidence_source": "REPLAY",
+  "id": "momentum-long--breakout_threshold_1_5pct",
+  "params": {},
+  "parent_strategy": "momentum-long",
+  "promotion_criteria": [
+    "min_replay_n",
+    "min_replay_pf",
+    "min_shadow_n",
+    "shadow_outcome_hit_rate_min"
+  ],
+  "promotion_criteria_detail": {
+    "min_replay_n": 30,
+    "min_replay_pf": 1.2,
+    "min_shadow_n": 10,
+    "shadow_outcome_hit_rate_min": 0.4
+  },
+  "rejection_criteria": [
+    "max_replay_drawdown_pct",
+    "shadow_outcome_loss_pct_max"
+  ],
+  "rejection_criteria_detail": {
+    "max_replay_drawdown_pct": 0.15,
+    "shadow_outcome_loss_pct_max": 0.05
+  },
+  "schema_version": "v3.26-dataclass",
+  "status": "QUARANTINED",
+  "test_results": {}
+}

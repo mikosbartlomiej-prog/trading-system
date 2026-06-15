@@ -1,0 +1,159 @@
+{
+  "backtest_cache_seeded": 5,
+  "generated_at_iso": "2026-06-15T15:03:29.688546+00:00",
+  "git_head": "1b2a7b9825753d2e05fc7f218fafdc168709dce2",
+  "ledger_derived_seeded": 10,
+  "partial_bars_count": 10,
+  "per_symbol_summary": [
+    {
+      "bars_count": 123,
+      "data_quality": "REAL_MARKET_DATA",
+      "minimum_fields_present": true,
+      "partial_bars": false,
+      "source_label": "REAL_MARKET_SNAPSHOT",
+      "symbol": "AAPL"
+    },
+    {
+      "bars_count": 1637,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "AAVE/USD"
+    },
+    {
+      "bars_count": 123,
+      "data_quality": "REAL_MARKET_DATA",
+      "minimum_fields_present": true,
+      "partial_bars": false,
+      "source_label": "REAL_MARKET_SNAPSHOT",
+      "symbol": "AMZN"
+    },
+    {
+      "bars_count": 1624,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "AVAX/USD"
+    },
+    {
+      "bars_count": 1636,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "BCH/USD"
+    },
+    {
+      "bars_count": 1637,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "BTC/USD"
+    },
+    {
+      "bars_count": 1624,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "DOT/USD"
+    },
+    {
+      "bars_count": 1648,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "ETH/USD"
+    },
+    {
+      "bars_count": 1636,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "LINK/USD"
+    },
+    {
+      "bars_count": 1648,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "LTC/USD"
+    },
+    {
+      "bars_count": 123,
+      "data_quality": "REAL_MARKET_DATA",
+      "minimum_fields_present": true,
+      "partial_bars": false,
+      "source_label": "REAL_MARKET_SNAPSHOT",
+      "symbol": "META"
+    },
+    {
+      "bars_count": 123,
+      "data_quality": "REAL_MARKET_DATA",
+      "minimum_fields_present": true,
+      "partial_bars": false,
+      "source_label": "REAL_MARKET_SNAPSHOT",
+      "symbol": "MSFT"
+    },
+    {
+      "bars_count": 123,
+      "data_quality": "REAL_MARKET_DATA",
+      "minimum_fields_present": true,
+      "partial_bars": false,
+      "source_label": "REAL_MARKET_SNAPSHOT",
+      "symbol": "NVDA"
+    },
+    {
+      "bars_count": 1624,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "SOL/USD"
+    },
+    {
+      "bars_count": 1624,
+      "data_quality": "PARTIAL_BARS",
+      "minimum_fields_present": false,
+      "partial_bars": true,
+      "source_label": "LEDGER_DERIVED_REPLAY_ONLY",
+      "symbol": "UNI/USD"
+    }
+  ],
+  "safety": {
+    "fabricates_ohlcv": false,
+    "is_paper_trade": false,
+    "is_real_market_evidence": false,
+    "is_shadow_fill": false,
+    "makes_network_call": false,
+    "writes_opportunity_ledger": false
+  },
+  "shadow_derived_seeded": 0,
+  "snapshot_dir": "learning-loop/backfill_snapshots",
+  "snapshots_written": 15,
+  "source_label_counts": {
+    "LEDGER_DERIVED_REPLAY_ONLY": 10,
+    "REAL_MARKET_SNAPSHOT": 5
+  },
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "REPLAY_NEVER_COUNTS_AS_PAPER",
+    "REPLAY_NEVER_COUNTS_AS_REAL_MARKET",
+    "REPLAY_NEVER_AUTO_ENABLES_STRATEGY",
+    "SEEDER_DOES_NOT_FABRICATE_OHLCV",
+    "SEEDER_DOES_NOT_FETCH_NETWORK"
+  ],
+  "status": "LOCAL_BACKFILL_AVAILABLE",
+  "version": "v3.27.0"
+}

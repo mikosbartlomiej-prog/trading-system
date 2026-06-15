@@ -1,6 +1,6 @@
-name: Daily Reporters — read-only aggregations (v3.26)
+name: Daily Reporters — read-only aggregations (v3.27)
 
-# v3.26 (2026-06-15) — Consolidated daily reporter runner.
+# v3.27 (2026-06-15) — Consolidated daily reporter runner.
 #
 # This workflow invokes every read-only reporter script in sequence:
 #
@@ -12,12 +12,20 @@ name: Daily Reporters — read-only aggregations (v3.26)
 #   - scripts/build_near_miss_report.py
 #   - scripts/build_confidence_precalibration_readiness.py
 #
-# The v3.26-new candidates below are run only if present:
+# v3.26-new (run only if present):
 #   - scripts/strategy_threshold_reality_report.py   (v3.26)
 #   - scripts/replay_entry_candidate_discovery.py    (v3.26)
 #
-# All reporters are READ-ONLY. None of them place orders, none of them
-# import shared/alpaca_orders, none of them mutate strategy thresholds.
+# v3.27-new seeders (all LOCAL-ONLY — no network calls):
+#   - scripts/seed_backfill_snapshots.py             (v3.27)
+#   - scripts/seed_near_miss_from_evidence.py        (v3.27)
+#   - scripts/seed_strategy_variant_quarantine.py    (v3.27)
+#   - scripts/seed_shadow_candidate_queue.py         (v3.27)
+#   - scripts/build_opportunity_density_plan.py      (v3.27)
+#
+# All reporters and seeders are READ-ONLY against the broker. None of
+# them place orders, none of them import shared/alpaca_orders, none
+# of them mutate strategy thresholds, none of them call the network.
 #
 # Cron: 04:30 UTC daily (non-conflicting; runs before the LLM-advisory
 # mesh and after the prior-day shadow-evidence cycle).
@@ -133,6 +141,54 @@ jobs:
         run: |
           python3 scripts/build_near_miss_report.py || true
 
+      - name: Seed backfill snapshots (v3.27-new, local-only, no network)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/seed_backfill_snapshots.py ]; then
+            python3 scripts/seed_backfill_snapshots.py || true
+          else
+            echo "scripts/seed_backfill_snapshots.py not present; skipping."
+          fi
+
+      - name: Seed near-miss from evidence (v3.27-new)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/seed_near_miss_from_evidence.py ]; then
+            python3 scripts/seed_near_miss_from_evidence.py || true
+          else
+            echo "scripts/seed_near_miss_from_evidence.py not present; skipping."
+          fi
+
+      - name: Seed strategy variant quarantine (v3.27-new)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/seed_strategy_variant_quarantine.py ]; then
+            python3 scripts/seed_strategy_variant_quarantine.py || true
+          else
+            echo "scripts/seed_strategy_variant_quarantine.py not present; skipping."
+          fi
+
+      - name: Seed shadow candidate queue (v3.27-new)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/seed_shadow_candidate_queue.py ]; then
+            python3 scripts/seed_shadow_candidate_queue.py || true
+          else
+            echo "scripts/seed_shadow_candidate_queue.py not present; skipping."
+          fi
+
       - name: Confidence pre-calibration readiness
         env:
           PYTHONIOENCODING: utf-8
@@ -170,6 +226,18 @@ jobs:
                  "present yet (v3.26-new); skipping."
           fi
 
+      - name: Opportunity density plan (v3.27-new)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/build_opportunity_density_plan.py ]; then
+            python3 scripts/build_opportunity_density_plan.py || true
+          else
+            echo "scripts/build_opportunity_density_plan.py not present; skipping."
+          fi
+
       - name: Commit and push reporter artifacts
         # Narrow allow-list: only reporter output paths.
         run: |
@@ -193,6 +261,20 @@ jobs:
                                                                     2>/dev/null || true
           git add learning-loop/replay_entry_candidate_discovery_latest.json \
                                                                     2>/dev/null || true
+          git add learning-loop/replay_discovery_latest.json   2>/dev/null || true
+          # v3.27 seeder outputs (narrow allow-list):
+          git add learning-loop/backfill_snapshot_status_latest.json \
+                                                                    2>/dev/null || true
+          git add 'learning-loop/backfill_snapshots/*.json'    2>/dev/null || true
+          git add learning-loop/near_miss_seed_status_latest.json \
+                                                                    2>/dev/null || true
+          git add 'learning-loop/near_miss/*.jsonl'            2>/dev/null || true
+          git add learning-loop/strategy_variant_quarantine_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/shadow_candidate_queue_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/opportunity_density_plan_latest.json \
+                                                                    2>/dev/null || true
           git add docs/HEARTBEAT_FRESHNESS_STATUS.md           2>/dev/null || true
           git add docs/EVIDENCE_THROUGHPUT_SLA_STATUS.md       2>/dev/null || true
           git add docs/REAL_MARKET_EVIDENCE_STATUS.md          2>/dev/null || true
@@ -202,6 +284,9 @@ jobs:
           git add docs/CONFIDENCE_PRECALIBRATION_READINESS.md  2>/dev/null || true
           git add docs/STRATEGY_THRESHOLD_REALITY.md           2>/dev/null || true
           git add docs/REPLAY_ENTRY_CANDIDATE_DISCOVERY.md     2>/dev/null || true
+          git add docs/BACKFILL_SNAPSHOT_STATUS.md             2>/dev/null || true
+          git add docs/NEAR_MISS_SEED_STATUS.md                2>/dev/null || true
+          git add docs/OPPORTUNITY_DENSITY_PLAN.md             2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No reporter changes (quiet day)."
           else

@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-15T14:27:43.368085+00:00",
+  "as_of": "2026-06-15T15:18:00.425232+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -13,23 +13,27 @@
     "varying_components": 0
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-06-15T14:27:43.508765+00:00",
-  "git_head": "0546ad4d80b0eecbbf4524264e943aa2904d8750",
+  "generated_at_iso": "2026-06-15T15:18:00.575223+00:00",
+  "git_head": "1b2a7b9825753d2e05fc7f218fafdc168709dce2",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 0,
-  "rows_total": 16358,
+  "rows_total": 16508,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
+    "calibration_recommended_without_outcomes": false,
     "edge_gate_enabled": false,
+    "fixture_counted_as_production": false,
     "imports_alpaca_orders": false,
     "live_trading_supported": false,
     "makes_network_calls": false,
-    "modifies_state_json": false
+    "modifies_state_json": false,
+    "near_miss_counted_as_production": false,
+    "replay_counted_as_production": false
   },
   "score_summary": {
     "count": 0,
@@ -39,6 +43,16 @@
     "min": null,
     "p95": null
   },
+  "source_separation": {
+    "fixture_only_rows": 0,
+    "near_miss_rows": 4074,
+    "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
+    "outcomes_available": false,
+    "production_positive_rows": 0,
+    "replay_positive_rows": 29,
+    "verdict_v327": "READY_FOR_COMPONENT_VARIANCE_REVIEW",
+    "verdict_v327_reason": "29 replay row(s) and 4074 near-miss row(s) available for component-variance review. NO production positive rows yet \u2014 calibration MUST NOT be attempted; operator may proceed only to variance review."
+  },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
     "ALLOW_BROKER_PAPER=false",
@@ -47,10 +61,14 @@
     "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
     "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
     "CONFIDENCE_PRECALIBRATION_DOES_NOT_TRADE",
-    "REPORTER_NEVER_MUTATES_STATE"
+    "REPORTER_NEVER_MUTATES_STATE",
+    "REPLAY_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "NEAR_MISS_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "FIXTURE_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
+    "CALIBRATION_NEVER_RECOMMENDED_WITHOUT_OUTCOMES"
   ],
   "verdict": "NOT_READY_NO_POSITIVE_ROWS",
   "verdict_reason": "No entry-capable ledger row carries a non-null confidence_score yet. Verify Phase-2 wiring once monitors begin emitting positive-path rows.",
-  "version": "v3.26.0",
+  "version": "v3.27.0",
   "window_days": 7
 }

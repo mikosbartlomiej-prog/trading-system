@@ -102,10 +102,17 @@ class TestRecordDiag(unittest.TestCase):
 
 class TestTokenEnum(unittest.TestCase):
     def test_token_enum_complete(self) -> None:
-        expected = {
+        # v3.24 baseline tokens (must remain present — back-compat).
+        v324_baseline = {
             "RAN", "INPUT_EMPTY", "NO_SIGNAL", "SIGNAL_DETECTED",
             "EMIT_ATTEMPTED", "EMIT_SUCCESS", "EMIT_FAILED",
         }
+        # v3.27 ETAP 8 extended the enum with 4 watchlist-aware tokens.
+        v327_extensions = {
+            "WATCHLIST_SYMBOL_SCANNED", "WATCHLIST_NO_TRIGGER",
+            "WATCHLIST_NEAR_MISS", "WATCHLIST_TRIGGER_CROSSED",
+        }
+        expected = v324_baseline | v327_extensions
         self.assertEqual(set(DIAG_TOKENS), expected)
         self.assertEqual(DIAG_RAN, "RAN")
         self.assertEqual(DIAG_INPUT_EMPTY, "INPUT_EMPTY")

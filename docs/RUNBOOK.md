@@ -1563,3 +1563,60 @@ Standing markers (verbatim — re-asserted by this amendment):
 
 HEAD at v3.26 FINAL-PHASE refresh: `0546ad4d80b0eecbbf4524264e943aa2904d8750`
 (pre-v3.26 baseline; v3.26 commit follows in this push).
+
+---
+
+## v3.27 — Local backfill discovery seeded (2026-06-15)
+
+Generated: 2026-06-15T17:00:00Z
+HEAD: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+
+Standing markers re-asserted: EDGE_GATE_ENABLED=false, ALLOW_BROKER_PAPER=false,
+LIVE_TRADING_UNSUPPORTED, NO_ORDER_PLACEMENT, REPLAY_NOT_PAPER,
+BACKFILL_NOT_PAPER, NO_FABRICATION.
+
+### How to seed the discovery layer (NO orders, NO broker calls)
+
+```
+# 1. Backfill snapshots (refuses to fabricate; emits NO_LOCAL_BACKFILL_DATA honestly)
+python3 scripts/seed_backfill_snapshots.py
+
+# 2. Replay discovery consumes seeded snapshots
+python3 scripts/replay_entry_candidate_discovery.py
+
+# 3. Near-miss rows from REAL + REPLAY + BACKFILL (distribution tracked)
+python3 scripts/seed_near_miss_from_evidence.py
+
+# 4. Quarantine registry (promote_variant raises NotImplementedError)
+python3 scripts/seed_strategy_variant_quarantine.py
+
+# 5. Shadow candidate queue
+python3 scripts/seed_shadow_candidate_queue.py
+
+# 6. Trigger watchlist with priority P1/P2/P3/BLOCKED
+python3 scripts/build_trigger_watchlist.py
+
+# 7. Confidence pre-calibration readiness
+python3 scripts/build_confidence_precalibration_readiness.py
+
+# 8. Opportunity density plan (section-by-section)
+python3 scripts/build_opportunity_density_plan.py
+```
+
+### v3.27 invariants
+
+- **`BACKFILL_NOT_PAPER`** — backfill snapshots are not paper trades and
+  are not real-market evidence.
+- **`NO_FABRICATION`** — seeders honestly emit `NO_LOCAL_BACKFILL_DATA`
+  when no local data exists; no synthetic OHLCV is generated.
+- All seeders are reporter-shaped: pure local file operations, no
+  broker calls, no order placement.
+- The trigger watchlist priority rubric (P1/P2/P3/BLOCKED) is
+  advisory observability only — it does **NOT** trigger any trade.
+- No paid APIs / paid services added. No LLM call in the runtime
+  trading path.
+- No broker flag flipped. No live trading enabled. No strategy
+  threshold automatically lowered. No variant promoted to active.
+
+HEAD at v3.27 FINAL-PHASE refresh: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+(pre-v3.27 baseline; v3.27 commit follows in this push).
