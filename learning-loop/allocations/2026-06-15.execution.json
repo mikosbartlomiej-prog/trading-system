@@ -1,0 +1,57 @@
+{
+  "plan_date": "2026-06-15",
+  "executed_at": "2026-06-15T13:01:40Z",
+  "n_placed": 0,
+  "n_skipped": 6,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "PANW",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    },
+    {
+      "symbol": "CRWD",
+      "action": "EXIT",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    },
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    },
+    {
+      "symbol": "SMH",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-15T13:01:40Z"
+    }
+  ]
+}
