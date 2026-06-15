@@ -565,3 +565,50 @@ fabrication.
 
 HEAD at v3.25 FINAL-PHASE refresh: `30dcf4e48a644122938d7dc089ee0293f1dc76c4`
 (v3.25 commit included in the consolidated push).
+
+---
+
+## v3.26 amendment (2026-06-15) — runtime diagnostics + positive path proof + discovery layer
+
+Generated: 2026-06-15T15:00:00Z (Claude v3.26 FINAL-PHASE)
+HEAD: `0546ad4d80b0eecbbf4524264e943aa2904d8750` (pre-v3.26; v3.26 staged
+for commit in this push).
+
+Standing markers (verbatim — re-asserted by this amendment):
+
+- EDGE_GATE_ENABLED = false
+- ALLOW_BROKER_PAPER = false
+- LIVE_TRADING_UNSUPPORTED
+- NO_ORDER_PLACEMENT
+- REPLAY_NOT_PAPER
+
+What v3.26 adds to the contract:
+
+- **Runtime diag wired:** all 8 monitors confirmed emitting `_diag` /
+  `record_diag` tokens (RAN / NO_SIGNAL / SIGNAL_DETECTED /
+  EMIT_ATTEMPTED / EMIT_SUCCESS / EMIT_FAILED) per the v3.24 ETAP 9
+  contract. Audit only — no new monitor edits.
+- **Positive entry-capable path proved by fixture only:** a mechanical
+  test (`test_entry_capable_positive_path_v3260.py`) drives a synthetic
+  `entry_capable=True` signal through the emitter and ledger. **No
+  broker call is made.** Fixture proof is not real-market evidence.
+- **Discovery layers active (advisory only):**
+  - Strategy threshold reality reporter — advisory verdicts only;
+    does **NOT** auto-change any threshold.
+  - Replay entry candidate discovery — `REPLAY_NOT_PAPER`. A surfaced
+    replay candidate is not a paper trade, is not real-market evidence,
+    and cannot promote to runtime.
+  - Universe opportunity review — advisory recommendations only.
+  - Shadow candidate queue + trigger watchlist — observability only.
+  - Confidence pre-calibration readiness reporter — observability only.
+- **Strategy variant quarantine:** `shared/strategy_variant_quarantine.py`
+  registers quarantined variants; `promote_variant()` raises
+  `NotImplementedError`. **No quarantined variant can promote to
+  active runtime in v3.26.**
+- **No broker / live changes:** no broker flag flipped, no order
+  placed, no live enabled, no paid services added, no LLM in the
+  runtime trading path, no auto-threshold change, no variant
+  promoted to active, no fabricated evidence.
+
+HEAD at v3.26 FINAL-PHASE refresh: `0546ad4d80b0eecbbf4524264e943aa2904d8750`
+(pre-v3.26 baseline; v3.26 commit follows in this push).

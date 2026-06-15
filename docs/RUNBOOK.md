@@ -1507,3 +1507,59 @@ HEAD at v3.24 FINAL-PHASE refresh: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
 
 HEAD at v3.25 FINAL-PHASE refresh: `30dcf4e48a644122938d7dc089ee0293f1dc76c4`
 (v3.25 commit included in the consolidated push).
+
+---
+
+## v3.26 amendment (2026-06-15) — runtime diagnostics + discovery layer
+
+Generated: 2026-06-15T15:00:00Z (Claude v3.26 FINAL-PHASE)
+HEAD: `0546ad4d80b0eecbbf4524264e943aa2904d8750`
+
+Standing markers (verbatim — re-asserted by this amendment):
+
+- EDGE_GATE_ENABLED = false
+- ALLOW_BROKER_PAPER = false
+- LIVE_TRADING_UNSUPPORTED
+- NO_ORDER_PLACEMENT
+- REPLAY_NOT_PAPER
+
+### v3.26 operational checks
+
+- **Runtime diagnostics:** `python3 scripts/build_monitor_runtime_diagnostics_report.py`
+  refreshes `learning-loop/monitor_runtime_diag_status_latest.json` and
+  `docs/MONITOR_RUNTIME_DIAGNOSTICS.md`. All 8 monitors should appear
+  with their `_diag` token counts. If a monitor reports STALE / zero
+  tokens, check that its scheduled cron has actually fired.
+- **Threshold reality report:** `python3 scripts/strategy_threshold_reality_report.py`
+  produces advisory verdicts per strategy. **Operator review only —
+  the reporter does NOT auto-change any threshold.**
+- **Replay discovery:** `python3 scripts/replay_entry_candidate_discovery.py`
+  surfaces near-miss replay candidates. **REPLAY_NOT_PAPER.** A
+  surfaced candidate is not a paper trade, is not real-market
+  evidence, and cannot be promoted to active runtime.
+- **Universe opportunity review:** `python3 scripts/universe_opportunity_review.py`
+  surfaces KEEP / REMOVE_LOW_QUALITY recommendations. **Operator
+  review only.**
+- **Shadow candidate queue:** `python3 scripts/build_shadow_candidate_queue.py`
+  lists rows eligible for shadow accumulation. **Observability only.**
+- **Trigger watchlist:** `python3 scripts/build_trigger_watchlist.py`
+  surfaces near-trigger rows by strategy. **Observability only.**
+- **Confidence pre-calibration readiness:**
+  `python3 scripts/build_confidence_precalibration_readiness.py`
+  reports `NOT_READY_NO_POSITIVE_ROWS` until entry-capable rows
+  accumulate in production. **Observability only.**
+
+### v3.26 hard refusals
+
+- **Do NOT lower or tighten strategy thresholds automatically.**
+  Reporter verdicts (`TOO_LOOSE`, `TOO_TIGHT`, `REPLAY_TEST_VARIANT`)
+  are advisory only.
+- **Do NOT promote any quarantined variant to active runtime.**
+  `shared/strategy_variant_quarantine.py::promote_variant` raises
+  `NotImplementedError` by contract.
+- **Do NOT count replay / fixture / near-miss / shadow as paper
+  edge.** None of them are real-market evidence.
+- **Do NOT flip `EDGE_GATE_ENABLED` or `ALLOW_BROKER_PAPER`.**
+
+HEAD at v3.26 FINAL-PHASE refresh: `0546ad4d80b0eecbbf4524264e943aa2904d8750`
+(pre-v3.26 baseline; v3.26 commit follows in this push).

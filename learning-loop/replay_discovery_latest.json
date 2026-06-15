@@ -1,0 +1,72 @@
+{
+  "as_of": "2026-06-15T14:33:21.652331+00:00",
+  "generated_at_iso": "2026-06-15T14:33:21.655138+00:00",
+  "git_head": "0546ad4d80b0eecbbf4524264e943aa2904d8750",
+  "lookback_days": 7,
+  "missing_snapshots": [
+    "SPY",
+    "QQQ",
+    "GLD",
+    "AMD",
+    "CRWD",
+    "NOW",
+    "PANW",
+    "ORCL",
+    "BTC/USD",
+    "ETH/USD",
+    "SOL/USD",
+    "LTC/USD",
+    "AVAX/USD"
+  ],
+  "rows": [],
+  "safety": {
+    "allow_broker_paper": false,
+    "auto_enables_strategy": false,
+    "edge_gate_enabled": false,
+    "evidence_source": "REPLAY",
+    "live_trading_supported": false,
+    "modifies_state_json": false,
+    "writes_opportunity_ledger": false
+  },
+  "snapshot_dir": "learning-loop/backfill_snapshots",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "REPLAY_NEVER_COUNTS_AS_PAPER",
+    "REPLAY_NEVER_COUNTS_AS_REAL_MARKET",
+    "REPLAY_NEVER_AUTO_ENABLES_STRATEGY"
+  ],
+  "strategies_considered": [
+    "momentum-long",
+    "momentum-long-loose",
+    "overbought-short",
+    "crypto-momentum",
+    "crypto-oversold-bounce"
+  ],
+  "totals": {
+    "candidates": 0,
+    "near_misses": 0,
+    "rows": 0,
+    "threshold_crosses": 0
+  },
+  "universe": [
+    "SPY",
+    "QQQ",
+    "GLD",
+    "AMD",
+    "CRWD",
+    "NOW",
+    "PANW",
+    "ORCL",
+    "BTC/USD",
+    "ETH/USD",
+    "SOL/USD",
+    "LTC/USD",
+    "AVAX/USD"
+  ],
+  "version": "v3.26.0"
+}

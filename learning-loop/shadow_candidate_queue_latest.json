@@ -1,0 +1,30 @@
+{
+  "active_risk_blockers": [],
+  "as_of": "2026-06-15T14:33:28.846126+00:00",
+  "generated_at_iso": "2026-06-15T14:33:28.847123+00:00",
+  "rows": [],
+  "rows_by_source": {},
+  "rows_total": 0,
+  "safety": {
+    "all_rows_mode_shadow_only": true,
+    "all_rows_waiting_for_trigger": true,
+    "allow_broker_paper": false,
+    "edge_gate_enabled": false,
+    "live_trading_supported": false,
+    "modifies_state_json": false,
+    "places_orders": false,
+    "writes_opportunity_ledger": false
+  },
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "SHADOW_CANDIDATE_NEVER_AUTO_PROMOTED",
+    "SHADOW_CANDIDATE_NEVER_PLACES_ORDERS",
+    "QUEUE_NEVER_INFLATES_SHADOW_ELIGIBILITY"
+  ],
+  "version": "v3.26.0"
+}

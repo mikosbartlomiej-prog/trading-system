@@ -1,0 +1,219 @@
+name: Daily Reporters — read-only aggregations (v3.26)
+
+# v3.26 (2026-06-15) — Consolidated daily reporter runner.
+#
+# This workflow invokes every read-only reporter script in sequence:
+#
+#   - scripts/check_heartbeat_freshness.py
+#   - scripts/check_evidence_throughput_sla.py
+#   - scripts/build_real_market_evidence_status.py
+#   - scripts/build_monitor_runtime_diagnostics_report.py
+#   - scripts/gate_distribution_report.py
+#   - scripts/build_near_miss_report.py
+#   - scripts/build_confidence_precalibration_readiness.py
+#
+# The v3.26-new candidates below are run only if present:
+#   - scripts/strategy_threshold_reality_report.py   (v3.26)
+#   - scripts/replay_entry_candidate_discovery.py    (v3.26)
+#
+# All reporters are READ-ONLY. None of them place orders, none of them
+# import shared/alpaca_orders, none of them mutate strategy thresholds.
+#
+# Cron: 04:30 UTC daily (non-conflicting; runs before the LLM-advisory
+# mesh and after the prior-day shadow-evidence cycle).
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write     # commits the regenerated reports
+
+concurrency:
+  group: daily-reporters-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Hard-pin every broker-execution flag false. The job refuses to
+  # run if any are truthy.
+  ALLOW_BROKER_PAPER:                       "false"
+  EDGE_GATE_ENABLED:                        "false"
+  BROKER_EXECUTION_ENABLED:                 "false"
+  LIVE_TRADING:                             "false"
+  LIVE_ENABLED:                             "false"
+  GO_LIVE:                                  "false"
+  LIVE_TRADING_ENABLED:                     "false"
+  LLM_PRE_ORDER_VETO_HONORED:               "false"
+  OPERATOR_APPROVED_BROKER_PAPER_CANARY:    "false"
+  LLM_AGENTS_SCHEDULED:                     "false"
+
+jobs:
+  reporters:
+    name: Run daily reporters
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Refuse if any broker / live flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED \
+                    LLM_PRE_ORDER_VETO_HONORED \
+                    OPERATOR_APPROVED_BROKER_PAPER_CANARY \
+                    LLM_AGENTS_SCHEDULED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker/live flags pinned false ✓"
+
+      - name: Heartbeat freshness check
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        # Non-fatal: exit codes 2 (STALE) / 3 (MISSING) are diagnostic.
+        run: |
+          python3 scripts/check_heartbeat_freshness.py || true
+
+      - name: Evidence throughput SLA check
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/check_evidence_throughput_sla.py || true
+
+      - name: Real-market evidence status
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/build_real_market_evidence_status.py || true
+
+      - name: Monitor runtime diagnostics
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/build_monitor_runtime_diagnostics_report.py \
+            || true
+
+      - name: Gate distribution report
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/gate_distribution_report.py || true
+
+      - name: Near-miss report
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/build_near_miss_report.py || true
+
+      - name: Confidence pre-calibration readiness
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          python3 scripts/build_confidence_precalibration_readiness.py \
+            || true
+
+      - name: Strategy threshold reality report (v3.26-new, optional)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/strategy_threshold_reality_report.py ]; then
+            python3 scripts/strategy_threshold_reality_report.py \
+              || true
+          else
+            echo "scripts/strategy_threshold_reality_report.py not " \
+                 "present yet (v3.26-new); skipping."
+          fi
+
+      - name: Replay entry-candidate discovery (v3.26-new, optional)
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/replay_entry_candidate_discovery.py ]; then
+            python3 scripts/replay_entry_candidate_discovery.py \
+              || true
+          else
+            echo "scripts/replay_entry_candidate_discovery.py not " \
+                 "present yet (v3.26-new); skipping."
+          fi
+
+      - name: Commit and push reporter artifacts
+        # Narrow allow-list: only reporter output paths.
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          # Strictly only the reporter outputs.
+          git add learning-loop/heartbeat_freshness_latest.json    2>/dev/null || true
+          git add learning-loop/evidence_quality_latest.json       2>/dev/null || true
+          git add learning-loop/gate_distribution_latest.json      2>/dev/null || true
+          git add learning-loop/near_miss_status_latest.json       2>/dev/null || true
+          git add learning-loop/monitor_runtime_diag_status_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/confidence_precalibration_readiness_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/real_market_evidence_status_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/evidence_throughput_sla_latest.json 2>/dev/null || true
+          git add learning-loop/strategy_threshold_reality_latest.json \
+                                                                    2>/dev/null || true
+          git add learning-loop/replay_entry_candidate_discovery_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/HEARTBEAT_FRESHNESS_STATUS.md           2>/dev/null || true
+          git add docs/EVIDENCE_THROUGHPUT_SLA_STATUS.md       2>/dev/null || true
+          git add docs/REAL_MARKET_EVIDENCE_STATUS.md          2>/dev/null || true
+          git add docs/MONITOR_RUNTIME_DIAGNOSTICS.md          2>/dev/null || true
+          git add docs/GATE_DISTRIBUTION_STATUS.md             2>/dev/null || true
+          git add docs/NEAR_MISS_STATUS.md                     2>/dev/null || true
+          git add docs/CONFIDENCE_PRECALIBRATION_READINESS.md  2>/dev/null || true
+          git add docs/STRATEGY_THRESHOLD_REALITY.md           2>/dev/null || true
+          git add docs/REPLAY_ENTRY_CANDIDATE_DISCOVERY.md     2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No reporter changes (quiet day)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "daily-reporters: refresh ${DATE} [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed daily-reporters refresh on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — pull --rebase + retry"
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 3))
+            done
+          fi

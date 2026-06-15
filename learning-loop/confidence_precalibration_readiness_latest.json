@@ -1,0 +1,56 @@
+{
+  "as_of": "2026-06-15T14:27:43.368085+00:00",
+  "completeness_summary": {
+    "count": 0,
+    "mean": null,
+    "median": null,
+    "min": null
+  },
+  "components": {
+    "default_only_components": 0,
+    "per_component": {},
+    "total_components_seen": 0,
+    "varying_components": 0
+  },
+  "decision_counts": {},
+  "generated_at_iso": "2026-06-15T14:27:43.508765+00:00",
+  "git_head": "0546ad4d80b0eecbbf4524264e943aa2904d8750",
+  "params": {
+    "min_positive_rows": 30,
+    "min_varying_components": 4,
+    "variance_epsilon": 1e-09
+  },
+  "positive_rows": 0,
+  "rows_total": 16358,
+  "safety": {
+    "allow_broker_paper": false,
+    "auto_adjusts_thresholds": false,
+    "edge_gate_enabled": false,
+    "imports_alpaca_orders": false,
+    "live_trading_supported": false,
+    "makes_network_calls": false,
+    "modifies_state_json": false
+  },
+  "score_summary": {
+    "count": 0,
+    "max": null,
+    "mean": null,
+    "median": null,
+    "min": null,
+    "p95": null
+  },
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "CONFIDENCE_PRECALIBRATION_DOES_NOT_TRADE",
+    "REPORTER_NEVER_MUTATES_STATE"
+  ],
+  "verdict": "NOT_READY_NO_POSITIVE_ROWS",
+  "verdict_reason": "No entry-capable ledger row carries a non-null confidence_score yet. Verify Phase-2 wiring once monitors begin emitting positive-path rows.",
+  "version": "v3.26.0",
+  "window_days": 7
+}

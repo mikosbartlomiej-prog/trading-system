@@ -481,6 +481,34 @@ def emit_signal_opportunity(
         rejection_reasons=rejection_reasons,
         extra_raw_fields=extra_fields,
     )
+
+    # ── v3.26 Agent 3A — near-miss capture ──────────────────────────────
+    # If the row did NOT pass risk + confidence (i.e. it is not
+    # shadow-eligible), check whether the raw_signal carries a metric
+    # within ~15% of the strategy's known threshold and log a near-miss.
+    # Fail-soft per HARD safety: a near-miss row is NEVER a signal,
+    # paper trade, shadow fill, or outcome.
+    try:
+        if event.entry_capable:
+            _passes_confidence = (
+                confidence_status == CONFIDENCE_STATUS_OK
+                and confidence_score is not None
+                and (confidence_verdict in (None, "ALLOW", "ALERT_ONLY"))
+            )
+            if not _passes_confidence:
+                try:
+                    from near_miss_tracker import (  # type: ignore
+                        maybe_record_near_miss_from_signal_event,
+                    )
+                except ImportError:
+                    from shared.near_miss_tracker import (  # type: ignore
+                        maybe_record_near_miss_from_signal_event,
+                    )
+                maybe_record_near_miss_from_signal_event(event)
+    except Exception:
+        # Never surface a near-miss tracking error to the caller.
+        pass
+
     if not ok:
         return {
             "emitted":                       False,

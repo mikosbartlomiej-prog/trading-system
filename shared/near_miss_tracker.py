@@ -308,12 +308,135 @@ def load_recent_rows(
     return out
 
 
+# ─── v3.26 (Agent 3A ETAP 3) — helper invoked by signal_emitter ──────────────
+#
+# Default strategy threshold map. Each entry is:
+#   (metric_name, threshold, direction)
+# direction == "above" -> trigger when metric > threshold;
+#              "below" -> trigger when metric < threshold.
+# These values mirror backtest/strategies.py constants. Source of truth
+# stays in strategies.py; this map is a convenience cache for emitter-
+# side near-miss detection.
+DEFAULT_STRATEGY_THRESHOLD_MAP: dict[str, tuple[str, float, str]] = {
+    "crypto-oversold-bounce": ("rsi",         30.0, "below"),
+    "crypto-momentum":        ("rsi",         60.0, "above"),
+    "momentum-long":          ("breakout_pct", 0.02, "above"),
+    "momentum-long-loose":    ("breakout_pct", 0.02, "above"),
+    "overbought-short":       ("rsi",         72.0, "above"),
+}
+
+# Default near-miss capture window: |distance / threshold| <= 0.15.
+NEAR_MISS_WINDOW_RATIO_DEFAULT = 0.15
+
+
+def _within_near_miss_window(
+    current: float,
+    threshold: float,
+    direction: str,
+    *,
+    window_ratio: float,
+) -> bool:
+    """Return True if the metric is within the near-miss window but did
+    NOT actually trigger.
+
+    "Direction" semantics:
+      "above" — trigger fires when current > threshold.
+                NEAR-miss: current < threshold AND distance within ratio.
+      "below" — trigger fires when current < threshold.
+                NEAR-miss: current > threshold AND distance within ratio.
+    """
+    if threshold == 0.0:
+        return False
+    dist_pct = abs(current - threshold) / abs(threshold)
+    if dist_pct > window_ratio:
+        return False
+    if direction == "above":
+        # Already triggered → not a miss.
+        return current < threshold
+    if direction == "below":
+        return current > threshold
+    return False
+
+
+def _extract_metric(raw_signal: Any, metric_name: str) -> float | None:
+    """Pull a metric value out of the raw_signal dict, safely."""
+    if not isinstance(raw_signal, dict):
+        return None
+    val = raw_signal.get(metric_name)
+    return _safe_float(val)
+
+
+def maybe_record_near_miss_from_signal_event(
+    signal_event: Any,
+    *,
+    strategy_threshold_map: dict[str, tuple[str, float, str]] | None = None,
+    window_ratio: float = NEAR_MISS_WINDOW_RATIO_DEFAULT,
+    path: str | Path | None = None,
+) -> dict | None:
+    """If the signal_event's raw_signal carries an evaluation metric
+    within ``window_ratio`` of a known strategy threshold, record a
+    NearMiss. Return the persisted row, or None if no near-miss.
+
+    HARD invariants:
+      - NEVER counts as a signal, paper trade, shadow fill, or outcome.
+      - NEVER raises on a malformed event — fail-soft per spec.
+      - NEVER auto-adjusts a threshold; pure observation.
+
+    Parameters
+    ----------
+    signal_event :
+        Any object whose attributes include ``strategy_id``, ``symbol``,
+        ``raw_signal`` (dict), and ``timestamp_iso``. Most commonly a
+        ``shared.signal_event.SignalEvent``.
+    strategy_threshold_map :
+        Override the default map; helpful for tests.
+    window_ratio :
+        Distance bound expressed as a fraction of |threshold|.
+    """
+    try:
+        strategy_id = getattr(signal_event, "strategy_id", "") or ""
+        symbol = getattr(signal_event, "symbol", "") or ""
+        raw_signal = getattr(signal_event, "raw_signal", None) or {}
+        ts = getattr(signal_event, "timestamp_iso", None)
+    except Exception:
+        return None
+
+    if not isinstance(strategy_id, str) or not strategy_id.strip():
+        return None
+
+    table = strategy_threshold_map or DEFAULT_STRATEGY_THRESHOLD_MAP
+    if strategy_id not in table:
+        return None
+
+    metric_name, threshold, direction = table[strategy_id]
+    current = _extract_metric(raw_signal, metric_name)
+    if current is None:
+        return None
+
+    if not _within_near_miss_window(current, threshold, direction,
+                                    window_ratio=window_ratio):
+        return None
+
+    return record_near_miss(
+        strategy_id=strategy_id,
+        symbol=symbol or "unknown",
+        metric_name=metric_name,
+        current_value=float(current),
+        threshold=float(threshold),
+        timestamp_iso=ts,
+        path=path,
+    )
+
+
 __all__ = [
     "NEAR_MISS_VERSION",
     "NearMiss",
     "record_near_miss",
     "evaluate_threshold_realism",
     "load_recent_rows",
+    "maybe_record_near_miss_from_signal_event",
+    "DEFAULT_STRATEGY_THRESHOLD_MAP",
+    "NEAR_MISS_WINDOW_RATIO_DEFAULT",
     "NEVER_SUBMITS_ORDERS",
     "NEVER_IMPORTS_ALPACA_ORDERS",
     "NEVER_COUNTS_AS_TRADE",
