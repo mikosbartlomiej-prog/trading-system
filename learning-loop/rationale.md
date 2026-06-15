@@ -969,3 +969,15 @@
 
 - 2026-06-14 · WEEKLY RETRO: LLM unavailable — fallback report only
 
+- 2026-06-15 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-15 · crypto-momentum: SILENT 78d but LLM override 2026-06-07 active (8d ago < 14d lock) → keep enabled
+- 2026-06-15 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 78d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-15 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 78d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-15 · geo-gold: SILENT 78d with 2 placement attempts — insufficient sample for prune (need ≥5). v3.11.1 keeps enabled.
+- 2026-06-15 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 78d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-15 · options-momentum: SILENT 78d but LLM override 2026-06-07 active (8d ago < 14d lock) → keep enabled
+- 2026-06-15 · crypto-oversold-bounce: SILENT 78d but LLM override 2026-06-07 active (8d ago < 14d lock) → keep enabled
+- 2026-06-15 · fill-rate alert [unknown]: fill rate 0% below 50% on closed orders (2 canceled / 2 closed, 2 open-GTC ignored) — limits too tight or quote stale
+- 2026-06-15 · equity-gap [WARN]: Equity dropped $7,742 ($98,446 → $90,704) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+- 2026-06-15 · peak-tracker: intraday: peak $+1,098 at 914+00:0 current $+1,098 giveback 0% state=GREEN max_gross=1.50 floor=$274
+
