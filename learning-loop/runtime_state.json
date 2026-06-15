@@ -63,9 +63,9 @@
     },
     "price-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-15T18:56:21.814938+00:00",
+      "last_seen_iso": "2026-06-15T19:01:30.187367+00:00",
       "last_status": "ok",
-      "pings_today": 51
+      "pings_today": 52
     },
     "reddit-monitor": {
       "last_message": "sent=0",
