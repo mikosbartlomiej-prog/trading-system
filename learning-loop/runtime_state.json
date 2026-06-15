@@ -33,9 +33,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-15T19:16:12.318906+00:00",
+      "last_seen_iso": "2026-06-15T19:26:12.146424+00:00",
       "last_status": "ok",
-      "pings_today": 155
+      "pings_today": 156
     },
     "geo-monitor": {
       "last_message": "",
@@ -93,17 +93,17 @@
       "legacy:WARN": "2026-06-15T11:11:09.977905+00:00"
     },
     "block_new_entries": false,
-    "current_equity": 90541.9,
-    "current_intraday_pnl": 932.9670097626367,
-    "current_intraday_pnl_pct": 0.010411540218476666,
+    "current_equity": 90525.57,
+    "current_intraday_pnl": 916.6370097626495,
+    "current_intraday_pnl_pct": 0.010229303922885843,
     "date": "2026-06-15",
-    "giveback_pct_of_peak": 0.30657469005247323,
-    "giveback_usd": 412.4800000000105,
+    "giveback_pct_of_peak": 0.3187119201934566,
+    "giveback_usd": 428.8099999999977,
     "intraday_peak_equity": 90954.38,
     "intraday_peak_pnl": 1345.4470097626472,
     "intraday_peak_pnl_pct": 0.015014652723397899,
     "last_action": "noop",
-    "last_update_at": "2026-06-15T19:16:10.370407+00:00",
+    "last_update_at": "2026-06-15T19:26:10.019471+00:00",
     "max_gross_target": 1.0,
     "options_first_reduction": true,
     "peak_at": "2026-06-15T13:26:07.967180+00:00",
@@ -145,8 +145,8 @@
   "position_mfe": {
     "AVAXUSD": {
       "first_seen_at": "2026-06-13T02:35:45.414869+00:00",
-      "last_pct": 0.0239,
-      "last_seen_at": "2026-06-15T19:16:11.259864+00:00",
+      "last_pct": 0.01735,
+      "last_seen_at": "2026-06-15T19:26:10.847692+00:00",
       "peak_pct": 0.03428
     },
     "CRWD": {
@@ -170,7 +170,7 @@
     "LTCUSD": {
       "first_seen_at": "2026-06-13T02:35:45.965387+00:00",
       "last_pct": 0.0,
-      "last_seen_at": "2026-06-15T19:16:11.262704+00:00",
+      "last_seen_at": "2026-06-15T19:26:10.850600+00:00",
       "peak_pct": 0.0
     },
     "PANW": {
@@ -189,20 +189,20 @@
   "positions": {
     "AVAXUSD": {
       "confidence_now": null,
-      "current_pl_pct": 0.02390029325513187,
-      "current_price": 6.983,
+      "current_pl_pct": 0.017354838709677422,
+      "current_price": 6.93836,
       "entry_confidence": null,
       "entry_price": 6.82,
       "entry_qty": 365.968010756,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-15T19:16:11.282256+00:00",
+      "last_eval_at_iso": "2026-06-15T19:26:10.870003+00:00",
       "lifecycle": "TIME_EXPIRED",
       "opened_at_iso": "2026-06-13T02:35:46.172919+00:00",
       "peak_pl_pct": 0.03428005865102638,
       "peak_price": 7.05379,
       "profile_quality_now": null,
       "symbol": "AVAXUSD",
-      "time_at_eval_hours": 64.6736414825,
+      "time_at_eval_hours": 64.84019363444445,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.061253665689149535,
       "trough_price": 6.40225,
@@ -273,20 +273,20 @@
     },
     "LTCUSD": {
       "confidence_now": null,
-      "current_pl_pct": 0.03267134132549201,
-      "current_price": 45.6544,
+      "current_pl_pct": 0.03883510517982362,
+      "current_price": 45.9269,
       "entry_confidence": null,
       "entry_price": 44.21,
       "entry_qty": 1.83e-07,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-15T19:16:11.887151+00:00",
+      "last_eval_at_iso": "2026-06-15T19:26:11.374262+00:00",
       "lifecycle": "TIME_EXPIRED",
       "opened_at_iso": "2026-06-13T02:35:46.175369+00:00",
       "peak_pl_pct": 0.043270753223252585,
       "peak_price": 46.123,
       "profile_quality_now": null,
       "symbol": "LTCUSD",
-      "time_at_eval_hours": 64.67380882833334,
+      "time_at_eval_hours": 64.84033302583333,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.024833748020809832,
       "trough_price": 43.1121,
