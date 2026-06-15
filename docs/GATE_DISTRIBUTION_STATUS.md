@@ -1,20 +1,20 @@
 # Gate Distribution Status (v3.24.0)
 
-**Generated:** `2026-06-15T11:12:51.755227+00:00`
-**As of:** `2026-06-15T11:12:51.590544+00:00`
-**Git HEAD:** `4bd7ed2403e09608047d5f442da72e500a5885f6`
+**Generated:** `2026-06-15T11:50:56.562189+00:00`
+**As of:** `2026-06-15T11:50:56.401135+00:00`
+**Git HEAD:** `d532e3504e88290707d9cfaa12d16046f00297ca`
 **Window:** last 7 days
-**Total ledger rows:** `16238`
+**Total ledger rows:** `16358`
 **Shadow-eligible rows:** `0`
 
 ## Why `shadow_eligible_count = 0`
 
 | Factor | Share % | Explanation |
 |---|---|---|
-| `confidence_decision=NULL` | 100.0% | confidence_score is NULL — emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field. |
-| `risk_decision=REJECT` | 64.8% | 10516/16238 rows blocked at the risk gate (REJECT) |
-| `risk_decision=HALTED_BY_DRAWDOWN_GUARD` | 1.0% | 169/16238 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD) |
-| `risk_decision=NO_SIGNAL` | 33.4% | 5424/16238 rows blocked at the risk gate (NO_SIGNAL) |
+| `confidence_decision=NULL` | 99.9% | confidence_score is NULL — emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field. |
+| `risk_decision=REJECT` | 64.3% | 10516/16358 rows blocked at the risk gate (REJECT) |
+| `risk_decision=HALTED_BY_DRAWDOWN_GUARD` | 1.0% | 169/16358 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD) |
+| `risk_decision=NO_SIGNAL` | 33.2% | 5424/16358 rows blocked at the risk gate (NO_SIGNAL) |
 
 ## Top 3 blockers overall
 
@@ -22,19 +22,19 @@
 |---|---|
 | `predator_bracket` | 10334 |
 | `no_setup` | 5424 |
-| `NO_BLOCKER` | 129 |
+| `NO_BLOCKER` | 249 |
 
 ## Top blocker per monitor
 
 | Monitor | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-monitor` | `predator_bracket` | 10334 | 63.6% |
+| `crypto-monitor` | `predator_bracket` | 10334 | 63.2% |
 
 ## Top blocker per strategy
 
 | Strategy | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-momentum` | `predator_bracket` | 10334 | 64.3% |
+| `crypto-momentum` | `predator_bracket` | 10334 | 63.8% |
 | `crypto-breakdown` | `short_disabled` | 86 | 100.0% |
 | `crypto-oversold-bounce` | `NO_BLOCKER` | 35 | 50.0% |
 
@@ -42,13 +42,13 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 16238 |
+| `crypto-monitor` | 16358 |
 
 ## Rows by strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 16082 |
+| `crypto-momentum` | 16202 |
 | `crypto-breakdown` | 86 |
 | `crypto-oversold-bounce` | 70 |
 
@@ -59,14 +59,15 @@
 | `REJECT` | 10516 |
 | `NO_SIGNAL` | 5424 |
 | `HALTED_BY_DRAWDOWN_GUARD` | 169 |
+| `UNKNOWN` | 152 |
 | `DETECTED` | 97 |
-| `UNKNOWN` | 32 |
 
 ## Rows by confidence_decision
 
 | Confidence decision | Count |
 |---|---|
-| `NULL` | 16238 |
+| `NULL` | 16338 |
+| `OBSERVE_ONLY_SKIP` | 20 |
 
 ## Rows by gate blocker
 
@@ -74,7 +75,7 @@
 |---|---|
 | `predator_bracket` | 10334 |
 | `no_setup` | 5424 |
-| `NO_BLOCKER` | 129 |
+| `NO_BLOCKER` | 249 |
 | `short_disabled` | 86 |
 | `alt_cap` | 61 |
 | `alpaca_reject_or_deferred` | 35 |
@@ -103,6 +104,22 @@
 | Token | Count |
 |---|---|
 | (none) | 0 |
+
+## Shadow eligibility distribution
+
+| Bucket | Count |
+|---|---|
+| `risk_blocked` | 16261 |
+| `conf_null` | 97 |
+
+## Actionable next-fix advice
+
+| Priority | Hint |
+|---|---|
+| `P1` | 97 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate. |
+| `P2` | 20 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels). |
+| `P3` | 10516/16358 rows REJECTed. Check top blocker per strategy — fix data-quality or filter criteria, NOT risk thresholds. |
+| `INFO` | 169 rows halted by drawdown guard (expected protective behaviour). |
 
 ## Standing markers
 

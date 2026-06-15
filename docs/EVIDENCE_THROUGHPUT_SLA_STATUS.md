@@ -1,6 +1,6 @@
 # Evidence Throughput SLA Status
 
-- Generated at: `2026-06-15T11:25:16.078347+00:00`
+- Generated at: `2026-06-15T11:28:36.932006+00:00`
 - Verdict: **FINDING_P0** (exit_code=3)
 - Consecutive zero cycles: `10`
 - History entries scanned: `10`

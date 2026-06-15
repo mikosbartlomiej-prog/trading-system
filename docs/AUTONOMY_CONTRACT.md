@@ -511,3 +511,57 @@ v3.24 converts v3.22/v3.23's wiring-on-paper into wiring-in-production.
 
 HEAD at v3.24 FINAL-PHASE refresh: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
 (v3.24 commit follows the consolidated push).
+
+---
+
+## v3.25 (FINAL-PHASE — production verification + conditional shadow accumulation)
+
+v3.25 verifies that v3.24's runtime-emit enforcement actually populated
+production rows with confidence fields, and provisions conditional
+shadow accumulation harnesses — all gated on real eligibility, no
+fabrication.
+
+### What v3.25 verifies and provisions
+
+- **Production confidence audit.** `scripts/build_post_v324_audit_report.py`
+  scans every ledger file for rows after the v3.24 cutoff
+  (`2026-06-15T11:35:05+00:00`), classifies each row as entry-capable
+  vs observe-only, and reports the percentage with `confidence_score`
+  populated. Finding: 20 post-v3.24 rows scanned, all 20 carry the
+  `OBSERVE_ONLY_SKIP` sentinel — top-level `confidence_score` field is
+  intentionally NULL by design. Currently 0 entry-capable rows in the
+  post-v3.24 window. **Pre-v3.24 rows remain NULL by design — no
+  rewrites.**
+- **Shadow eligibility distribution.** Reporter scores the post-v3.24
+  rows against the `ShadowEligibilityDecision` enum: 0 ELIGIBLE / 20
+  NOT_ELIGIBLE_OBSERVE_ONLY in the current window.
+- **Conditional shadow accumulation (dry-run).**
+  `scripts/run_shadow_accumulation_dry_run.py` is a pure-local wrapper.
+  Iff eligible rows exist, it produces shadow fills derived from market
+  data already on disk. If 0 rows are eligible, it creates 0 fills.
+  **The script refuses to fabricate fills.**
+- **Conditional outcome scheduling.**
+  `scripts/schedule_outcomes_for_eligible_rows.py` loads the day's
+  shadow fills (0 today) and schedules outcome resolution. With 0
+  fills, 0 outcomes are scheduled with reason
+  `no_shadow_fills_in_ledger_today`.
+- **Reporter refreshes.** Strategy reconcile, gate distribution,
+  near-miss, evidence quality, and monitor-runtime-diag-synthesized-view
+  re-run on the current window; no auto-applies.
+
+### v3.25 hard-safety invariants (re-asserted)
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned, unchanged).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default, unchanged).
+- `BROKER_EXECUTION_ENABLED = false`.
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.25 reporter, accumulator, and
+  scheduler.
+- **No broker flag was flipped. No order was placed. No live mode
+  enabled. No strategy threshold was automatically changed. No paid
+  services were added. No LLM was added to the runtime trading path.**
+- **Near-miss is NOT trade evidence. Shadow is NOT broker paper.
+  Fixture is NOT real evidence. LLM output is NOT real-market evidence.**
+
+HEAD at v3.25 FINAL-PHASE refresh: `d532e3504e88290707d9cfaa12d16046f00297ca`
+(v3.25 commit follows the consolidated push).

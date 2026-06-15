@@ -1,0 +1,58 @@
+{
+  "by_risk_decision": {
+    "UNKNOWN": 20
+  },
+  "by_source_monitor": {
+    "crypto-monitor": 20
+  },
+  "by_strategy_id": {
+    "crypto-momentum": 20
+  },
+  "confidence_components_nonempty": 0,
+  "confidence_components_nonempty_pct": 0.0,
+  "confidence_decision_distribution": {
+    "NULL": 20
+  },
+  "confidence_default_reasons_populated": 0,
+  "confidence_input_completeness_avg": null,
+  "confidence_score_populated": 0,
+  "confidence_score_populated_pct": 0.0,
+  "confidence_status_distribution": {
+    "OBSERVE_ONLY_SKIP": 20
+  },
+  "cutoff_iso": "2026-06-15T11:35:05+00:00",
+  "entry_capable": 0,
+  "entry_capable_confidence_bearing": 0,
+  "entry_capable_silent_null": 0,
+  "entry_capable_with_error": 0,
+  "entry_capable_with_score": 0,
+  "evidence_quality_rows_scored": 20,
+  "evidence_quality_score_avg": 10.0,
+  "files_scanned": [
+    "2026-06-09.jsonl",
+    "2026-06-10.jsonl",
+    "2026-06-11.jsonl",
+    "2026-06-12.jsonl",
+    "2026-06-13.jsonl",
+    "2026-06-14.jsonl",
+    "2026-06-15.jsonl"
+  ],
+  "generated_at": "2026-06-15T11:45:15.557405+00:00",
+  "observe_only": 20,
+  "rows_total": 20,
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT_BY_REPORTER",
+    "PURE_LOCAL_FILE_OPERATIONS",
+    "NEAR_MISS_IS_NOT_TRADE_EVIDENCE",
+    "SHADOW_IS_NOT_BROKER_PAPER",
+    "LLM_ADVISORY_ONLY"
+  ],
+  "top_source_monitor": "crypto-monitor",
+  "top_strategy_id": "crypto-momentum",
+  "used_fallback_to_recent_rows": false,
+  "verdict": "NO_BUT_CRON_HASNT_FIRED_YET",
+  "version": "v3.25.0"
+}

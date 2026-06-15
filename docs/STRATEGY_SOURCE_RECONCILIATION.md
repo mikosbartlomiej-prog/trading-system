@@ -1,8 +1,8 @@
 # Strategy Source Reconciliation (v3.24.0)
 
-**Generated:** `2026-06-15T11:12:47.455058+00:00`
-**As of:** `2026-06-15T11:12:47.298810+00:00`
-**Git HEAD:** `4bd7ed2403e09608047d5f442da72e500a5885f6`
+**Generated:** `2026-06-15T11:45:53.423591+00:00`
+**As of:** `2026-06-15T11:45:53.284136+00:00`
+**Git HEAD:** `d532e3504e88290707d9cfaa12d16046f00297ca`
 
 ## Source totals
 
@@ -54,7 +54,7 @@
 | `alloc-reduce` | `ZOMBIE_STATE_ONLY` | no | yes | no | no (-) | 0 | no | no | yes | operator review — flagged but NOT deleted. Consider removing from state.json or registering in shadow_opportunity_generator |
 | `allocator-rebalance` | `ZOMBIE_STATE_ONLY` | no | yes | no | no (-) | 0 | no | no | yes | operator review — flagged but NOT deleted. Consider removing from state.json or registering in shadow_opportunity_generator |
 | `crypto-breakdown` | `DISABLED_INTENTIONALLY` | no | yes | no | yes (crypto-monitor) | 86 | no | no | no | no action; intentional disable / pause respected |
-| `crypto-momentum` | `ACTIVE_RUNTIME_SOURCE` | yes | yes | yes | yes (crypto-monitor) | 16082 | no | yes | yes | no action; live and recording ledger rows |
+| `crypto-momentum` | `ACTIVE_RUNTIME_SOURCE` | yes | yes | yes | yes (crypto-monitor) | 16202 | no | yes | yes | no action; live and recording ledger rows |
 | `crypto-oversold-bounce` | `ACTIVE_RUNTIME_SOURCE` | yes | yes | yes | yes (crypto-monitor) | 70 | no | yes | yes | no action; live and recording ledger rows |
 | `defense-long` | `ACTIVE_MONITOR_UNREGISTERED` | no | no | no | yes (defense-monitor) | 0 | no | no | yes | operator: add strategy to shadow_opportunity_generator registry OR confirm this is an admin-only client_order_id prefix (e.g. allocator tag) |
 | `defense-short` | `ACTIVE_MONITOR_UNREGISTERED` | no | no | no | yes (defense-monitor) | 0 | no | no | yes | operator: add strategy to shadow_opportunity_generator registry OR confirm this is an admin-only client_order_id prefix (e.g. allocator tag) |

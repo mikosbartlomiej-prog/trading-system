@@ -1451,3 +1451,59 @@ ledger rows representing entry-capable real-market opportunities.
 
 HEAD at v3.24 FINAL-PHASE refresh: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
 (v3.24 commit follows the consolidated push).
+
+---
+
+## Scenario v3.25 — production verification + conditional shadow accumulation
+
+### What v3.25 ships (operator view)
+
+- `scripts/build_post_v324_audit_report.py` — verifies that v3.24's
+  emit-path enforcement actually populates `confidence_score` on
+  entry-capable rows written after the v3.24 cutoff.
+- `scripts/build_shadow_eligibility_distribution_report.py` — token
+  distribution across the post-v3.24 rows
+  (`ELIGIBLE` / `NOT_ELIGIBLE_OBSERVE_ONLY` / `NOT_ELIGIBLE_REJECTED` /
+  `NOT_ELIGIBLE_CONFIDENCE_LOW` / etc.).
+- `scripts/run_shadow_accumulation_dry_run.py` — pure-local wrapper.
+  Iff eligible rows exist, it produces shadow fills from market data
+  already on disk. **Refuses to fabricate fills.**
+- `scripts/schedule_outcomes_for_eligible_rows.py` — conditional
+  outcome scheduler. With 0 fills loaded, schedules 0 outcomes.
+- Refreshes for strategy reconcile, gate distribution, near-miss,
+  evidence quality, and monitor-runtime-diag-synthesized-view.
+
+### When to run
+
+- Trigger ad-hoc after a v3.24 ship to verify the emit path actually
+  populated confidence fields on freshly-emitted rows.
+- Re-run the next session to track whether entry-capable rows have
+  started flowing post-deploy.
+- All scripts are idempotent. Re-running with the same input produces
+  the same output.
+
+### What v3.25 does NOT do
+
+- Does **NOT** flip any broker / live / canary flag.
+- Does **NOT** call `safe_close`, `submit_order`, `place_order`,
+  `place_stock_order`, `place_crypto_order`, `place_option_order`,
+  `close_position`, or `close_all_positions`.
+- Does **NOT** import `alpaca_orders` from any new module.
+- Does **NOT** fabricate market data, shadow records, outcomes, P/L.
+- Does **NOT** lower any strategy threshold automatically.
+- Does **NOT** add paid APIs or paid services.
+- Does **NOT** introduce LLM into the runtime trading path.
+
+### v3.25 hard-safety invariants
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned, unchanged).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default).
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.25 reporter, accumulator, and
+  scheduler.
+- Live trading remains unsupported. **Near-miss is NOT trade evidence.
+  Shadow is NOT broker paper. Fixture is NOT real evidence. LLM output
+  is NOT real-market evidence.**
+
+HEAD at v3.25 FINAL-PHASE refresh: `d532e3504e88290707d9cfaa12d16046f00297ca`
+(v3.25 commit follows the consolidated push).

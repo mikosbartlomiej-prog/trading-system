@@ -1,0 +1,38 @@
+{
+  "by_decision": {
+    "ELIGIBLE": 0,
+    "NOT_ELIGIBLE_CANARY_DEFERRED": 0,
+    "NOT_ELIGIBLE_CONFIDENCE_LOW": 0,
+    "NOT_ELIGIBLE_DATA_FAILURE": 0,
+    "NOT_ELIGIBLE_DRAWDOWN_GUARD": 0,
+    "NOT_ELIGIBLE_NO_CONFIDENCE": 0,
+    "NOT_ELIGIBLE_NO_SIGNAL": 0,
+    "NOT_ELIGIBLE_OBSERVE_ONLY": 20,
+    "NOT_ELIGIBLE_RISK_BLOCK": 0,
+    "NOT_ELIGIBLE_UNKNOWN": 0
+  },
+  "cutoff_iso": "2026-06-15T11:35:05+00:00",
+  "eligible_count": 0,
+  "eligible_pct": 0.0,
+  "eligible_row_signal_ids": [],
+  "generated_at": "2026-06-15T11:47:29.598335+00:00",
+  "rows_evaluated": 20,
+  "sample_reasons": {
+    "NOT_ELIGIBLE_OBSERVE_ONLY": [
+      "row is observe_only; diagnostic only, never shadowed",
+      "row is observe_only; diagnostic only, never shadowed",
+      "row is observe_only; diagnostic only, never shadowed"
+    ]
+  },
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT_BY_REPORTER",
+    "PURE_LOCAL_FILE_OPERATIONS",
+    "NEAR_MISS_IS_NOT_TRADE_EVIDENCE",
+    "SHADOW_IS_NOT_BROKER_PAPER",
+    "LLM_ADVISORY_ONLY"
+  ],
+  "version": "v3.25.0"
+}

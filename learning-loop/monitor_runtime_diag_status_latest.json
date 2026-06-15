@@ -1,16 +1,37 @@
 {
-  "generated_at": "2026-06-15T11:20:17.580686+00:00",
-  "builder_version": "v3.24.0",
+  "generated_at": "2026-06-15T11:50:56.359761+00:00",
+  "builder_version": "v3.25.0",
+  "view_mode": "synthesized",
   "hard_safety": {
     "broker_call": false,
     "network_call": false,
     "paid_service": false
   },
   "aggregate": {
-    "files_scanned": [],
-    "total_rows": 0,
-    "earliest_record": null,
-    "latest_record": null,
-    "per_monitor": {}
+    "files_scanned": [
+      "learning-loop/opportunity_ledger/2026-06-15.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-14.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-13.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-12.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-11.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-10.jsonl",
+      "learning-loop/opportunity_ledger/2026-06-09.jsonl"
+    ],
+    "total_rows": 16358,
+    "earliest_record": "2026-06-09T00:00:33.533700+00:00",
+    "latest_record": "2026-06-15T11:41:10.055684+00:00",
+    "per_monitor": {
+      "crypto-monitor": {
+        "RAN": 16358,
+        "INPUT_EMPTY": 0,
+        "NO_SIGNAL": 16090,
+        "SIGNAL_DETECTED": 98,
+        "EMIT_ATTEMPTED": 16358,
+        "EMIT_SUCCESS": 16358,
+        "EMIT_FAILED": 0,
+        "UNKNOWN": 0
+      }
+    },
+    "synthesized": true
   }
 }

@@ -1,15 +1,15 @@
 # Confidence Reality Check (v3.23.0)
 
-**Generated:** `2026-06-15T10:10:55.290872+00:00`
-**As of:** `2026-06-15T10:10:55.166565+00:00`
-**Git HEAD:** `4bd7ed2403e09608047d5f442da72e500a5885f6`
+**Generated:** `2026-06-15T11:28:34.556860+00:00`
+**As of:** `2026-06-15T11:28:34.440442+00:00`
+**Git HEAD:** `a8186d5f70f66f77b86d337f936541bea06c544b`
 **Calibrated yet:** `False`
 
 ## Population over last 7 days
 
 | Metric | Value |
 |---|---|
-| Total ledger rows (7d) | `16238` |
+| Total ledger rows (7d) | `16338` |
 | Rows with `confidence_score` non-null | `0` (`0.0%`) |
 | Rows with `confidence_components` non-empty | `0` (`0.0%`) |
 
@@ -21,13 +21,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 16238 |
+| `null` | 16338 |
 
 ## Verdict distribution
 
 | Verdict | Count |
 |---|---|
-| `unknown` | 16238 |
+| `unknown` | 16338 |
 
 ## Components currently producing default 0.5 only
 

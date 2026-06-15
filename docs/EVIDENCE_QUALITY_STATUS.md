@@ -1,8 +1,8 @@
-# Evidence quality status — 2026-06-15T11:11:00+00:00
+# Evidence quality status — 2026-06-15T11:46:01+00:00
 
 Window: last **7 days** of opportunity ledger.
-Rows scored: **16238**
-Average score: **14.94 / 100**
+Rows scored: **16358**
+Average score: **14.9 / 100**
 
 ## Label distribution
 
@@ -11,13 +11,13 @@ Average score: **14.94 / 100**
 | HIGH_QUALITY | 0 | 0.0% |
 | USABLE | 0 | 0.0% |
 | MARGINAL | 0 | 0.0% |
-| GARBAGE | 16238 | 100.0% |
+| GARBAGE | 16358 | 100.0% |
 
 ## Per-monitor average
 
 | Monitor | Rows | Avg score |
 |---|---:|---:|
-| (unknown) | 16238 | 14.94 |
+| (unknown) | 16358 | 14.9 |
 
 ## Per-strategy average
 
@@ -25,7 +25,7 @@ Average score: **14.94 / 100**
 |---|---:|---:|
 | crypto-breakdown | 86 | 15.0 |
 | crypto-oversold-bounce | 70 | 15.0 |
-| crypto-momentum | 16082 | 14.94 |
+| crypto-momentum | 16202 | 14.9 |
 
 ---
 

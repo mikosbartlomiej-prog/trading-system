@@ -352,6 +352,95 @@ def build_distribution(
                     "< 0.50; no shadow-eligible rows."),
             })
 
+    # ── Shadow-eligibility distribution (v3.25 explicit) ──
+    # Rows fall into one of four buckets that operators use to triage:
+    #   * eligible            — APPROVE/DETECTED + numeric conf >= 0.50
+    #   * conf_null           — confidence_score is None
+    #   * conf_below_thresh   — confidence_score is numeric but < 0.50
+    #   * risk_blocked        — risk_decision NOT in (APPROVE, DETECTED)
+    shadow_eligibility_distribution: dict[str, int] = collections.Counter()
+    for r in rows:
+        rd = _row_risk_decision(r)
+        score = r.get("confidence_score")
+        if rd not in ("APPROVE", "DETECTED"):
+            shadow_eligibility_distribution["risk_blocked"] += 1
+            continue
+        if score is None:
+            shadow_eligibility_distribution["conf_null"] += 1
+            continue
+        try:
+            if float(score) >= 0.50:
+                shadow_eligibility_distribution["eligible"] += 1
+            else:
+                shadow_eligibility_distribution["conf_below_thresh"] += 1
+        except (TypeError, ValueError):
+            shadow_eligibility_distribution["conf_null"] += 1
+
+    # ── Actionable next-fix advice (v3.25) ──
+    # Deterministic operator-facing hints based on dominant blockers.
+    # NEVER recommends lowering risk thresholds or enabling broker paths.
+    actionable: list[dict] = []
+    if total_rows > 0:
+        cd_null = rows_by_confidence_decision.get("NULL", 0)
+        observe_only = rows_by_confidence_decision.get("OBSERVE_ONLY_SKIP", 0)
+        risk_reject = rows_by_risk_decision.get("REJECT", 0)
+        no_signal = rows_by_risk_decision.get("NO_SIGNAL", 0)
+        drawdown_halt = rows_by_risk_decision.get(
+            "HALTED_BY_DRAWDOWN_GUARD", 0)
+        approve_or_det = (
+            rows_by_risk_decision.get("APPROVE", 0)
+            + rows_by_risk_decision.get("DETECTED", 0)
+        )
+        # Bias hints toward what is highest-impact for shadow_eligible_count.
+        if cd_null > 0 and approve_or_det > 0:
+            actionable.append({
+                "priority":  "P1",
+                "hint": (
+                    f"{approve_or_det} APPROVE/DETECTED rows lack numeric "
+                    "confidence_score. Wire post-decision confidence "
+                    "back-fill so eligible rows can accumulate."),
+            })
+        if observe_only > 0:
+            actionable.append({
+                "priority":  "P2",
+                "hint": (
+                    f"{observe_only} OBSERVE_ONLY_SKIP rows present. "
+                    "Verify v3.24 confidence emitter promotes top-level "
+                    "fields (or extend readers to consume raw_signal.* "
+                    "sentinels)."),
+            })
+        if no_signal > 0 and approve_or_det == 0:
+            actionable.append({
+                "priority":  "P3",
+                "hint": (
+                    f"{no_signal} NO_SIGNAL rows but zero APPROVE/DETECTED. "
+                    "Monitors are scanning; strategies are not detecting "
+                    "setups. Review setup criteria — do NOT lower risk "
+                    "thresholds."),
+            })
+        if risk_reject > total_rows * 0.50:
+            actionable.append({
+                "priority":  "P3",
+                "hint": (
+                    f"{risk_reject}/{total_rows} rows REJECTed. Check top "
+                    "blocker per strategy — fix data-quality or filter "
+                    "criteria, NOT risk thresholds."),
+            })
+        if drawdown_halt > 0:
+            actionable.append({
+                "priority":  "INFO",
+                "hint": (
+                    f"{drawdown_halt} rows halted by drawdown guard "
+                    "(expected protective behaviour)."),
+            })
+        if not actionable:
+            actionable.append({
+                "priority":  "INFO",
+                "hint": (
+                    "No dominant blocker detected; pipeline appears idle "
+                    "or healthy — continue local observation."),
+            })
+
     return {
         "version":             VERSION,
         "generated_at_iso":    datetime.now(timezone.utc).isoformat(),
@@ -360,6 +449,8 @@ def build_distribution(
         "window_days":         days,
         "total_rows":          total_rows,
         "shadow_eligible_count": shadow_eligible_count,
+        "shadow_eligibility_distribution":
+            dict(shadow_eligibility_distribution),
         "rows_by_monitor":     dict(rows_by_monitor),
         "rows_by_strategy":    dict(rows_by_strategy),
         "rows_by_risk_decision":      dict(rows_by_risk_decision),
@@ -369,6 +460,7 @@ def build_distribution(
         "top_blocker_per_strategy":    top_per_strategy_reduced,
         "top_blocker_per_monitor":     top_per_monitor_reduced,
         "dominant_explanation":        dominant_explanation,
+        "actionable_next_fix":         actionable,
         "standing_markers":            list(STANDING_MARKERS),
         "safety": {
             "edge_gate_enabled":      False,
@@ -454,6 +546,32 @@ def render_md(rep: dict[str, Any]) -> str:
 
     standing = "\n".join(f"- `{m}`" for m in rep["standing_markers"])
 
+    # Shadow-eligibility distribution
+    shadow_dist = rep.get("shadow_eligibility_distribution") or {}
+    if shadow_dist:
+        sd_lines = [
+            "| Bucket | Count |",
+            "|---|---|",
+        ]
+        for k, v in sorted(shadow_dist.items(), key=lambda kv: -kv[1]):
+            sd_lines.append(f"| `{k}` | {v} |")
+        shadow_dist_section = "\n".join(sd_lines)
+    else:
+        shadow_dist_section = "(no rows)"
+
+    # Actionable next-fix
+    actionable = rep.get("actionable_next_fix") or []
+    if actionable:
+        an_lines = [
+            "| Priority | Hint |",
+            "|---|---|",
+        ]
+        for a in actionable:
+            an_lines.append(f"| `{a['priority']}` | {a['hint']} |")
+        actionable_section = "\n".join(an_lines)
+    else:
+        actionable_section = "(none)"
+
     return f"""# Gate Distribution Status ({rep["version"]})
 
 **Generated:** `{rep["generated_at_iso"]}`
@@ -499,6 +617,14 @@ def render_md(rep: dict[str, Any]) -> str:
 ## Rows by data-failure token
 
 {_table(rep["rows_by_data_failure_token"], "Token")}
+
+## Shadow eligibility distribution
+
+{shadow_dist_section}
+
+## Actionable next-fix advice
+
+{actionable_section}
 
 ## Standing markers
 

@@ -1,8 +1,8 @@
 # Near-Miss Status (v3.24.0)
 
-**Generated:** `2026-06-15T11:12:54.440724+00:00`
-**As of:** `2026-06-15T11:12:54.432024+00:00`
-**Git HEAD:** `4bd7ed2403e09608047d5f442da72e500a5885f6`
+**Generated:** `2026-06-15T11:45:56.016346+00:00`
+**As of:** `2026-06-15T11:45:56.009327+00:00`
+**Git HEAD:** `d532e3504e88290707d9cfaa12d16046f00297ca`
 **Window:** last 7 days
 **Tracker version:** `v3.24.0`
 **Total rows ingested:** `0`
