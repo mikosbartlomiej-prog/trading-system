@@ -1,0 +1,32 @@
+{
+  "as_of": "2026-06-15T11:12:54.432024+00:00",
+  "flagged": [],
+  "generated_at_iso": "2026-06-15T11:12:54.440724+00:00",
+  "git_head": "4bd7ed2403e09608047d5f442da72e500a5885f6",
+  "pairs": [],
+  "params": {
+    "flag_distance_ratio": 0.4,
+    "min_sample": 10
+  },
+  "rows_total": 0,
+  "safety": {
+    "allow_broker_paper": false,
+    "auto_adjusts_thresholds": false,
+    "edge_gate_enabled": false,
+    "live_trading_supported": false,
+    "modifies_state_json": false
+  },
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "NEAR_MISS_NEVER_COUNTS_AS_TRADE",
+    "NEAR_MISS_NEVER_AUTO_ADJUSTS_THRESHOLDS"
+  ],
+  "tracker_version": "v3.24.0",
+  "version": "v3.24.0",
+  "window_days": 7
+}

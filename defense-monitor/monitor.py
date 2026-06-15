@@ -26,6 +26,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 # Email notifications (optional)
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
@@ -648,6 +672,7 @@ def send_alert(alert: dict, retries: int = 2) -> bool:
 def run_scan():
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] === DEFENSE MARKET MONITOR ===")
+    _diag("defense-monitor", DIAG_RAN, {"now": now_str})
 
     # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
     account = get_account_status()
@@ -699,6 +724,9 @@ def run_scan():
     all_items.extend(news_items)
 
     print(f"\n  Łącznie itemów do analizy: {len(all_items)}")
+    if not all_items:
+        _diag("defense-monitor", DIAG_INPUT_EMPTY,
+              {"sources_tried": ["DoD", "RSS", "NewsAPI"]})
 
     # 4. Analiza i scoring
     raw_signals = analyze_items(all_items)
@@ -839,9 +867,50 @@ def run_scan():
             notify_signal(signal, alert_sent=False, reason=mkt_reason)
             continue
 
+        _diag("defense-monitor", DIAG_SIGNAL_DETECTED,
+              {"symbol": signal.get("symbol"),
+               "score": signal.get("score")})
+        _diag("defense-monitor", DIAG_EMIT_ATTEMPTED,
+              {"symbol": signal.get("symbol"),
+               "strategy": signal.get("strategy", "defense-news")})
+        # v3.24 — observability emit BEFORE send_alert so the ledger captures
+        # this entry-capable signal even if Alpaca rejects. NEVER places a
+        # trade — emit_monitor_signal is observability-only.
+        try:
+            emit_monitor_signal(
+                source_monitor="defense-monitor",
+                strategy_id=signal.get("strategy", "defense-news"),
+                symbol=signal["symbol"],
+                asset_class="us_equity",
+                side=("long" if str(signal.get("action", "BUY")).upper().startswith("BUY")
+                      else "short"),
+                action=signal.get("action", "BUY"),
+                entry_capable=True,
+                raw_signal={
+                    "score":     signal.get("score"),
+                    "headline":  (signal.get("headline") or "")[:200],
+                    "source":    signal.get("source"),
+                    "keywords":  signal.get("keywords", []),
+                },
+                confidence_inputs=signal.get("confidence_inputs")
+                    or {"primary_score":
+                            min(1.0, max(0.0,
+                                float(signal.get("score", 50)) / 100.0))},
+                risk_inputs={"size_usd": signal.get("size_usd", 8000)},
+                market_regime={"regime": signal.get("regime", "NEUTRAL")},
+                metadata={"audit_link": f"defense-{signal['symbol']}"},
+            )
+        except Exception:
+            pass
         sent = send_alert(signal)
         if sent:
             alerts_sent += 1
+            _diag("defense-monitor", DIAG_EMIT_SUCCESS,
+                  {"symbol": signal.get("symbol")})
+        else:
+            _diag("defense-monitor", DIAG_EMIT_FAILED,
+                  {"symbol": signal.get("symbol"),
+                   "reason": "alpaca_reject"})
         # Pass reason="alpaca_reject" if send failed in regular session
         # (most common: risk-officer REJECT, quote unavailable, insufficient
         # buying power). Workflow log has specific cause.
@@ -851,6 +920,10 @@ def run_scan():
 
     if len(signals) > MAX_ALERTS_PER_RUN:
         print(f"\n  Pominięto {len(signals) - MAX_ALERTS_PER_RUN} sygnałów (rate limit guard)")
+
+    if not signals:
+        _diag("defense-monitor", DIAG_NO_SIGNAL,
+              {"raw_signals": len(raw_signals), "items": len(all_items)})
 
     notify_summary("Defense Monitor", len(signals), alerts_sent)
     print(f"\n  Wysłano alertów: {alerts_sent}")

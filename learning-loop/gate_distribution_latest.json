@@ -1,0 +1,116 @@
+{
+  "as_of": "2026-06-15T11:12:51.590544+00:00",
+  "dominant_explanation": [
+    {
+      "explanation": "confidence_score is NULL \u2014 emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field.",
+      "factor": "confidence_decision=NULL",
+      "share_pct": 100.0
+    },
+    {
+      "explanation": "10516/16238 rows blocked at the risk gate (REJECT)",
+      "factor": "risk_decision=REJECT",
+      "share_pct": 64.8
+    },
+    {
+      "explanation": "169/16238 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD)",
+      "factor": "risk_decision=HALTED_BY_DRAWDOWN_GUARD",
+      "share_pct": 1.0
+    },
+    {
+      "explanation": "5424/16238 rows blocked at the risk gate (NO_SIGNAL)",
+      "factor": "risk_decision=NO_SIGNAL",
+      "share_pct": 33.4
+    }
+  ],
+  "generated_at_iso": "2026-06-15T11:12:51.755227+00:00",
+  "git_head": "4bd7ed2403e09608047d5f442da72e500a5885f6",
+  "rows_by_confidence_decision": {
+    "NULL": 16238
+  },
+  "rows_by_data_failure_token": {},
+  "rows_by_gate_blocker": {
+    "NO_BLOCKER": 129,
+    "alpaca_reject_or_deferred": 35,
+    "alt_cap": 61,
+    "daily_drawdown_guard:daily P&L -3.71% <= -3.0% -> HALT new entries": 14,
+    "daily_drawdown_guard:daily P&L -3.72% <= -3.0% -> HALT new entries": 6,
+    "daily_drawdown_guard:daily P&L -3.73% <= -3.0% -> HALT new entries": 8,
+    "daily_drawdown_guard:daily P&L -3.74% <= -3.0% -> HALT new entries": 2,
+    "daily_drawdown_guard:daily P&L -3.75% <= -3.0% -> HALT new entries": 8,
+    "daily_drawdown_guard:daily P&L -3.76% <= -3.0% -> HALT new entries": 10,
+    "daily_drawdown_guard:daily P&L -3.77% <= -3.0% -> HALT new entries": 14,
+    "daily_drawdown_guard:daily P&L -3.80% <= -3.0% -> HALT new entries": 14,
+    "daily_drawdown_guard:daily P&L -3.81% <= -3.0% -> HALT new entries": 8,
+    "daily_drawdown_guard:daily P&L -3.82% <= -3.0% -> HALT new entries": 4,
+    "daily_drawdown_guard:daily P&L -3.83% <= -3.0% -> HALT new entries": 2,
+    "daily_drawdown_guard:daily P&L -3.86% <= -3.0% -> HALT new entries": 4,
+    "daily_drawdown_guard:daily P&L -3.88% <= -3.0% -> HALT new entries": 18,
+    "daily_drawdown_guard:daily P&L -3.89% <= -3.0% -> HALT new entries": 22,
+    "daily_drawdown_guard:daily P&L -3.90% <= -3.0% -> HALT new entries": 2,
+    "daily_drawdown_guard:daily P&L -3.91% <= -3.0% -> HALT new entries": 12,
+    "daily_drawdown_guard:daily P&L -3.92% <= -3.0% -> HALT new entries": 8,
+    "daily_drawdown_guard:daily P&L -3.94% <= -3.0% -> HALT new entries": 12,
+    "drawdown_halt": 1,
+    "no_setup": 5424,
+    "predator_bracket": 10334,
+    "short_disabled": 86
+  },
+  "rows_by_monitor": {
+    "crypto-monitor": 16238
+  },
+  "rows_by_risk_decision": {
+    "DETECTED": 97,
+    "HALTED_BY_DRAWDOWN_GUARD": 169,
+    "NO_SIGNAL": 5424,
+    "REJECT": 10516,
+    "UNKNOWN": 32
+  },
+  "rows_by_strategy": {
+    "crypto-breakdown": 86,
+    "crypto-momentum": 16082,
+    "crypto-oversold-bounce": 70
+  },
+  "safety": {
+    "allow_broker_paper": false,
+    "edge_gate_enabled": false,
+    "live_trading_supported": false,
+    "modifies_state_json": false
+  },
+  "shadow_eligible_count": 0,
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "OBSERVATIONS_DO_NOT_COUNT_AS_OPPORTUNITIES",
+    "REAL_MARKET_EVIDENCE_REMAINS_REQUIRED",
+    "GATE_DISTRIBUTION_IS_READ_ONLY"
+  ],
+  "top_blocker_per_monitor": {
+    "crypto-monitor": {
+      "count": 10334,
+      "share_pct": 63.6,
+      "top_blocker": "predator_bracket"
+    }
+  },
+  "top_blocker_per_strategy": {
+    "crypto-breakdown": {
+      "count": 86,
+      "share_pct": 100.0,
+      "top_blocker": "short_disabled"
+    },
+    "crypto-momentum": {
+      "count": 10334,
+      "share_pct": 64.3,
+      "top_blocker": "predator_bracket"
+    },
+    "crypto-oversold-bounce": {
+      "count": 35,
+      "share_pct": 50.0,
+      "top_blocker": "NO_BLOCKER"
+    }
+  },
+  "total_rows": 16238,
+  "version": "v3.24.0",
+  "window_days": 7
+}

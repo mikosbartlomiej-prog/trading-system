@@ -238,6 +238,16 @@ def _render_markdown(report: dict) -> str:
     lines.append(f"- FINDING_P1 at `{th['p1_zero_cycles']}` consecutive empty cycles")
     lines.append(f"- FINDING_P0 at `{th['p0_zero_cycles']}`+ consecutive empty cycles")
     lines.append("")
+    lines.append("## Standing markers")
+    lines.append("")
+    lines.append("- EDGE_GATE_ENABLED = false")
+    lines.append("- ALLOW_BROKER_PAPER = false")
+    lines.append("- LIVE_TRADING_UNSUPPORTED")
+    lines.append("- NO_ORDER_PLACEMENT")
+    lines.append("")
+    lines.append("_This report is observability-only. It never places orders, "
+                 "never imports `alpaca_orders`, never mutates runtime state._")
+    lines.append("")
     return "\n".join(lines) + "\n"
 
 

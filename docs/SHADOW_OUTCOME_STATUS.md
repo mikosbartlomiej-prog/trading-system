@@ -1,6 +1,6 @@
 # Shadow outcome status
 
-_Generated_: 2026-06-15T10:03:09Z  
+_Generated_: 2026-06-15T10:10:55Z  
 _Window_: last 7 days (UTC)
 
 **Source records** are shadow simulations (no broker order submitted, no paper trade). Outcomes are hypothetical observations only and MUST NOT be tallied as paper-trade edge evidence.

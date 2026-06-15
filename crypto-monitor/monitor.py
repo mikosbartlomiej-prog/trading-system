@@ -34,6 +34,34 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft: any import
+# failure or write error must NEVER break the monitor.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"
+        DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"
+        DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"
+        DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -673,6 +701,8 @@ def run_scan():
     print(f"  Universe: {len(CRYPTO_SYMBOLS)} coins "
           f"(Tier1={sum(1 for c in COIN_TIERS.values() if c['tier']==1)}, "
           f"Tier2={sum(1 for c in COIN_TIERS.values() if c['tier']==2)})")
+    # v3.24 — runtime diagnostic: scan started.
+    _diag("crypto-monitor", DIAG_RAN, {"universe_size": len(CRYPTO_SYMBOLS)})
 
     if not ALPACA_API_KEY or not ALPACA_SECRET_KEY:
         print("BŁĄD: Brak ALPACA_API_KEY lub ALPACA_SECRET_KEY")
@@ -779,8 +809,14 @@ def run_scan():
 
     if not candidates:
         print(f"  No candidates after filters — quiet scan")
+        _diag("crypto-monitor", DIAG_NO_SIGNAL,
+              {"scanned": scanned, "rejected_no_signal": rejected_no_signal,
+               "rejected_alt_cap": rejected_alt_cap,
+               "rejected_open_pos": rejected_open_pos})
         notify_summary("Crypto Monitor", 0, 0)
         return
+    _diag("crypto-monitor", DIAG_SIGNAL_DETECTED,
+          {"candidates": len(candidates), "scanned": scanned})
 
     # ── Phase 2: optional LLM Curator filter ──
     candidates = _maybe_curate(candidates, account, btc_1h_change)
@@ -868,23 +904,33 @@ def run_scan():
             print(f"  confidence_inputs build failed (non-fatal): {type(_ci_e).__name__}")
         print(f"  >>> SYGNAŁ: {signal['action']} {signal['symbol']}! "
               f"size=${new_size} concentration={combined:.1f}%")
+        _diag("crypto-monitor", DIAG_EMIT_ATTEMPTED,
+              {"symbol": signal.get("symbol"),
+               "strategy": signal.get("strategy", "crypto-momentum")})
         sent = send_alert(signal)
         if sent:
             alerts_sent += 1
+            _diag("crypto-monitor", DIAG_EMIT_SUCCESS,
+                  {"symbol": signal.get("symbol")})
             _emit_opportunity(
                 strategy=signal.get("strategy", "crypto-momentum"),
                 symbol=signal["symbol"], signal_state="APPROVE",
                 rsi=signal.get("rsi"), raw_signal=signal,
+                confidence_inputs=signal.get("confidence_inputs"),
                 gate_decisions=[{"gate": "risk", "decision": "PASS",
                                  "reason": "executed_via_alpaca"}],
                 paper_action="executed",
                 audit_link=f"alpaca:order:{signal['symbol'].replace('/', '')}",
             )
         else:
+            _diag("crypto-monitor", DIAG_EMIT_FAILED,
+                  {"symbol": signal.get("symbol"),
+                   "reason": "alpaca_reject_or_deferred"})
             _emit_opportunity(
                 strategy=signal.get("strategy", "crypto-momentum"),
                 symbol=signal["symbol"], signal_state="REJECT",
                 rsi=signal.get("rsi"), raw_signal=signal,
+                confidence_inputs=signal.get("confidence_inputs"),
                 gate_decisions=[{"gate": "risk", "decision": "BLOCK",
                                  "reason": "alpaca_reject_or_deferred"}],
                 rejection_reasons=["alpaca_reject_or_deferred"],

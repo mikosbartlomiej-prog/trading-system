@@ -25,6 +25,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -391,6 +415,7 @@ def run_checks():
         return
 
     print(f"\n[{now_str}] === PRICE MONITOR (v3.0 Aggressive Momentum + Event Switch) ===")
+    _diag("price-monitor", DIAG_RAN, {"now": now_str})
 
     # v3.0 defensive mode check — if armed, only existing exits work; no new entries
     if is_defensive_mode_active():
@@ -548,6 +573,10 @@ def run_checks():
                         index_closes=spy_closes)
             print(f"    >>> SYGNAL LONG: {ticker}! score={s['score']:+.3f} regime={regime_info['regime']} size=${new_size}")
             signals_found += 1
+            _diag("price-monitor", DIAG_SIGNAL_DETECTED,
+                  {"symbol": ticker, "side": "long", "score": s.get("score")})
+            _diag("price-monitor", DIAG_EMIT_ATTEMPTED,
+                  {"symbol": ticker, "strategy": "momentum-long"})
             # v3.22.0 — observability emit BEFORE alert dispatch so the
             # ledger captures the signal even if the alert send fails.
             # NEVER places a trade.
@@ -579,6 +608,9 @@ def run_checks():
             sent = send_alert(signal)
             if sent:
                 alerts_sent += 1
+                _diag("price-monitor", DIAG_EMIT_SUCCESS, {"symbol": ticker})
+            else:
+                _diag("price-monitor", DIAG_EMIT_FAILED, {"symbol": ticker})
             notify_signal(signal, sent)
         time.sleep(0.3)
 
@@ -651,6 +683,9 @@ def run_checks():
             notify_signal(signal, sent)
         time.sleep(0.5)
 
+    if signals_found == 0:
+        _diag("price-monitor", DIAG_NO_SIGNAL,
+              {"alerts_sent": alerts_sent})
     notify_summary("Price Monitor", signals_found, alerts_sent)
     print(f"\n[{now_str}] Sygnaly: {signals_found}, alerty wyslane: {alerts_sent}. Nastepne sprawdzenie za 5 minut.\n")
 

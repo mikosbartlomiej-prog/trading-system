@@ -467,6 +467,154 @@ def emit_shadow_fill(
     return fill
 
 
+# ─── v3.24 ETAP 8 — Conservative activation via shadow_eligibility ─
+
+
+def maybe_simulate_from_row(
+    row: Mapping[str, Any],
+    *,
+    market_snapshot: Mapping[str, Any] | None = None,
+    slippage_bps: float = 10.0,
+    spread_bps: float = 5.0,
+    env: Mapping[str, str] | None = None,
+) -> ShadowFill | None:
+    """v3.24 entry point. Build a ShadowFill ONLY when eligibility passes.
+
+    This is the v3.24-blessed bridge between the opportunity ledger
+    and the shadow ledger. The caller hands us a raw opportunity row
+    (as written by :mod:`shared.signal_opportunity_ledger`); we ask
+    :mod:`shared.shadow_eligibility` whether the row meets the v3.24
+    eligibility threshold. Only when the verdict is ``ELIGIBLE`` do we
+    construct a :class:`ShadowFill`. Every other verdict returns
+    ``None`` — no fill, no ledger write.
+
+    HARD invariants re-asserted at the function boundary:
+
+    - NEVER imports ``alpaca_orders``.
+    - NEVER makes a network call.
+    - ShadowFill ``is_paper_trade`` stays ``False``.
+    - ShadowFill ``broker_order_submitted`` stays ``False``.
+    - Qty caps preserved (1 share equity / 0.0001 token crypto) — we
+      do not even pass through to the simulator on a non-eligible
+      row.
+    - Standing markers preserved (see :data:`STANDING_MARKERS`).
+
+    Parameters
+    ----------
+    row :
+        A single opportunity_ledger row dict (the JSONL line). The
+        function tolerates any extra fields and never mutates the
+        input.
+    market_snapshot :
+        Optional ``{reference_price | price, ...}`` mapping passed
+        through to :func:`simulate_shadow_fill`. If absent, the
+        simulator uses the price embedded in ``row.raw_signal``.
+    slippage_bps, spread_bps :
+        Same as :func:`simulate_shadow_fill`.
+    env :
+        Optional environment override for testing. Production callers
+        should pass ``None``.
+
+    Returns
+    -------
+    ShadowFill | None
+        ``None`` whenever eligibility fails or the simulator refuses;
+        otherwise the FILLED ShadowFill ready to be appended via
+        :func:`append_shadow_ledger`.
+    """
+    # Lazy import — shadow_eligibility is the v3.24 sibling module. We
+    # import locally to keep the public module surface clean and so a
+    # missing eligibility module fails closed (returns None) instead
+    # of cascading an ImportError up to the monitor.
+    try:
+        try:
+            from shadow_eligibility import (  # type: ignore
+                evaluate_shadow_eligibility,
+                ShadowEligibilityDecision,
+            )
+        except ImportError:
+            from shared.shadow_eligibility import (  # type: ignore
+                evaluate_shadow_eligibility,
+                ShadowEligibilityDecision,
+            )
+    except Exception:
+        # Fail-closed — without the eligibility module we MUST NOT
+        # emit a ShadowFill.
+        return None
+
+    if not isinstance(row, Mapping):
+        return None
+
+    # Defence in depth — broker / live env flag re-assertion BEFORE
+    # we even compute eligibility.
+    if _any_broker_or_live_flag_truthy(env=env):
+        return None
+
+    verdict = evaluate_shadow_eligibility(row)
+    if verdict.decision != ShadowEligibilityDecision.ELIGIBLE:
+        # Eligibility rejected → no fill. Logging is the caller's job
+        # (the eligibility result is fully self-describing).
+        return None
+
+    # Build the minimal SignalEvent-shaped dict the simulator accepts.
+    raw = row.get("raw_signal") or {}
+    if not isinstance(raw, Mapping):
+        raw = {}
+
+    # Symbol / strategy / side / asset_class come from the row, with
+    # raw_signal as fallback. We never trust raw_signal alone — the
+    # ledger top-level fields are canonical.
+    symbol      = row.get("symbol")     or raw.get("symbol")
+    strategy    = row.get("strategy")   or raw.get("strategy_id") or raw.get("strategy")
+    asset_class = (row.get("asset_class") or raw.get("asset_class")
+                   or "us_equity")
+
+    # side: ledger rows historically carry it under ``side`` or
+    # encode it in ``raw_signal.action`` (BUY / SELL_SHORT / ...).
+    side = row.get("side") or raw.get("side")
+    if not side:
+        action = (raw.get("action") or "").upper()
+        if action in ("BUY", "BUY_TO_OPEN", "LONG"):
+            side = "long"
+        elif action in ("SELL_SHORT", "SHORT", "SELL_TO_OPEN"):
+            side = "short"
+        else:
+            side = "long"
+
+    intended_price = (
+        raw.get("intended_price")
+        or raw.get("price")
+        or raw.get("reference_price")
+        or raw.get("entry_price")
+    )
+
+    # qty defaults to the per-asset cap; the simulator will clamp.
+    qty = (raw.get("qty")
+           or (_CRYPTO_QTY_CAP if str(asset_class).lower() == "crypto"
+               else _EQUITY_QTY_CAP))
+
+    signal_event = {
+        "signal_id":      row.get("signal_id") or raw.get("signal_id"),
+        "symbol":         symbol,
+        "strategy":       strategy,
+        "side":           side,
+        "asset_class":    asset_class,
+        "entry_capable":  True,    # eligibility guarantees this
+        "intended_price": intended_price,
+        "qty":            qty,
+    }
+
+    return simulate_shadow_fill(
+        signal_event,
+        market_snapshot=market_snapshot,
+        canary_preflight_verdict=verdict.canary_verdict,
+        risk_decision="APPROVE",   # eligibility maps APPROVE+DETECTED → APPROVE
+        slippage_bps=slippage_bps,
+        spread_bps=spread_bps,
+        env=env,
+    )
+
+
 __all__ = [
     "ShadowFill",
     "STANDING_MARKERS",
@@ -483,4 +631,5 @@ __all__ = [
     "simulate_shadow_fill",
     "append_shadow_ledger",
     "emit_shadow_fill",
+    "maybe_simulate_from_row",
 ]

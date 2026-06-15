@@ -39,6 +39,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary, notify_order_executed
@@ -692,6 +716,7 @@ def run_scan():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     mode = "AUTO-EXECUTE (Alpaca REST)" if AUTO_EXECUTE else "ROUTINE (Cloudflare Worker)"
     print(f"\n[{now}] === OPTIONS MONITOR — {mode} ===")
+    _diag("options-monitor", DIAG_RAN, {"mode": mode})
 
     # Global kill switch — OPTIONS_ENABLED must be true to allow ANY options
     # entry. Defaults to false per spec §E.1. Existing/exit positions are
@@ -777,6 +802,14 @@ def run_scan():
         print(f"  Learning side_bias '{learning_bias}': pominieto {skipped_by_bias} propozycji o przeciwnym kierunku")
 
     print(f"  Znalezione propozycje: {len(proposals)}")
+    if not proposals:
+        _diag("options-monitor", DIAG_NO_SIGNAL,
+              {"open_options": open_count,
+               "skipped_by_bias": skipped_by_bias,
+               "skipped_by_side_cap": skipped_by_side_cap})
+    else:
+        _diag("options-monitor", DIAG_SIGNAL_DETECTED,
+              {"proposals": len(proposals)})
     proposals.sort(key=lambda p: p["rsi"], reverse=True)
     cap        = min(slots_left, MAX_PROPOSALS_PER_RUN)
     sent       = 0
@@ -787,6 +820,9 @@ def run_scan():
         if sent >= cap:
             break
         attempts += 1
+        _diag("options-monitor", DIAG_EMIT_ATTEMPTED,
+              {"symbol": proposal.get("symbol"),
+               "action": proposal.get("action")})
         # v3.22.0 — observability emit BEFORE execute_proposal so the
         # opportunity ledger captures intent even if the broker rejects.
         # NEVER places a trade.
@@ -821,6 +857,8 @@ def run_scan():
             status, order = execute_proposal(proposal)
             if status == "executed":
                 sent += 1
+                _diag("options-monitor", DIAG_EMIT_SUCCESS,
+                      {"symbol": proposal.get("symbol")})
                 qty   = float(order.get("qty", 1))
                 price = float(order.get("limit_price") or proposal["spot"])
                 tp    = float(order.get("_tp_target", 0))
@@ -837,15 +875,28 @@ def run_scan():
                     order_id = order.get("id", ""),
                 )
             elif status == "rejected":
+                _diag("options-monitor", DIAG_EMIT_FAILED,
+                      {"symbol": proposal.get("symbol"),
+                       "reason": "alpaca_rejected"})
                 # Alpaca actually saw it and said no — worth notifying
                 notify_signal(proposal, False)
             else:
+                _diag("options-monitor", DIAG_EMIT_FAILED,
+                      {"symbol": proposal.get("symbol"),
+                       "reason": "no_contract"})
                 # "no_contract": silently keep iterating to the next proposal
                 skipped += 1
         else:
             ok = send_proposal(proposal)
             if ok:
                 sent += 1
+                _diag("options-monitor", DIAG_EMIT_SUCCESS,
+                      {"symbol": proposal.get("symbol"),
+                       "path": "routine"})
+            else:
+                _diag("options-monitor", DIAG_EMIT_FAILED,
+                      {"symbol": proposal.get("symbol"),
+                       "path": "routine"})
             notify_signal(proposal, ok)
         if sent < cap and attempts < len(proposals):
             time.sleep(2)

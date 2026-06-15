@@ -68,6 +68,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -565,6 +589,7 @@ def run_scan() -> dict[str, Any]:
     print(f"  AUTO_EXECUTE_DJT={AUTO_EXECUTE_DJT}, "
           f"AUTO_EXECUTE_STOCK_ACT={AUTO_EXECUTE_STOCK_ACT}, "
           f"MAX_ALERTS_PER_RUN={MAX_ALERTS_PER_RUN}")
+    _diag("politician-monitor", DIAG_RAN, {})
 
     # ── Account-level guards ─────────────────────────────────────────────
     try:
@@ -674,6 +699,8 @@ def run_scan() -> dict[str, Any]:
     if not djt_candidates and not ptr_candidates and not clusters:
         print(f"  No trade candidates — scan complete "
               f"(filing_alerts_sent={filing_alerts_sent})")
+        _diag("politician-monitor", DIAG_NO_SIGNAL,
+              {"filing_alerts_sent": filing_alerts_sent})
         state["seen_form4"] = list(seen_form4 | {tx["accession"] for tx in form4_txs
                                                   if tx.get("accession")})
         state["seen_ptr"]   = list(seen_ptr | {p["ptr_url"] for p in ptrs
@@ -681,6 +708,9 @@ def run_scan() -> dict[str, Any]:
         _save_state(state)
         return {"emitted": 0, "candidates": 0, "clusters": 0,
                 "filing_alerts_sent": filing_alerts_sent}
+    _diag("politician-monitor", DIAG_SIGNAL_DETECTED,
+          {"djt": len(djt_candidates), "ptr": len(ptr_candidates),
+           "clusters": len(clusters)})
 
     # ── Curator LLM call ─────────────────────────────────────────────────
     ctx = build_account_context()
@@ -707,10 +737,19 @@ def run_scan() -> dict[str, Any]:
     signals = signals[:MAX_ALERTS_PER_RUN]
     emitted = []
     for sig in signals:
+        _diag("politician-monitor", DIAG_EMIT_ATTEMPTED,
+              {"lane": sig.get("lane"), "ticker": sig.get("ticker")})
         if sig["lane"] == "djt_form4":
             r = emit_djt_signal(sig, ctx)
         else:
             r = emit_stockact_signal(sig, ctx)
+        if r.get("result") in ("emitted", "executed", "placed", "ok", "success"):
+            _diag("politician-monitor", DIAG_EMIT_SUCCESS,
+                  {"ticker": sig.get("ticker")})
+        else:
+            _diag("politician-monitor", DIAG_EMIT_FAILED,
+                  {"ticker": sig.get("ticker"),
+                   "reason": r.get("result", "unknown")})
         emitted.append({**sig, "emit_result": r.get("result", "?")})
         print(f"  emitted: {sig['lane']} {sig['side']} {sig['ticker']} "
               f"${sig.get('size_usd', 0):,.0f} → {r.get('result')}")

@@ -1,11 +1,11 @@
 {
-  "as_of": "2026-06-15T10:07:56.149073+00:00",
+  "as_of": "2026-06-15T10:10:51.325408+00:00",
   "confidence_distribution": {
     "0.0-0.5": 0,
     "0.5-0.65": 0,
     "0.65-0.80": 0,
     "0.80+": 0,
-    "null": 4
+    "null": 34
   },
   "current_blocker": "NO_REAL_MARKET_DATA",
   "data_failure_counts": {},
@@ -13,23 +13,32 @@
   "gate_decision_distribution": {
     "DETECTED": 1,
     "HALTED_BY_DRAWDOWN_GUARD": 1,
-    "UNKNOWN": 2
+    "UNKNOWN": 32
   },
-  "generated_at_iso": "2026-06-15T10:07:56.193712+00:00",
-  "git_head": "4b15542f95fad53584a283fdc8f8b168426a94cd",
+  "generated_at_iso": "2026-06-15T10:10:51.374175+00:00",
+  "git_head": "4bd7ed2403e09608047d5f442da72e500a5885f6",
   "last_collector_status": "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA",
   "last_workflow_run_conclusion": "success",
   "last_workflow_run_id": "27441653073",
-  "observations_today": 3,
-  "opportunities_today": 4,
+  "observations_today": 5,
+  "opportunities_today": 34,
   "opportunities_today_by_monitor": {
-    "crypto-monitor": 4
+    "crypto-monitor": 34
   },
   "opportunities_today_by_strategy": {
-    "crypto-momentum": 4
+    "crypto-momentum": 34
   },
   "opportunities_today_by_symbol_top10": {
-    "BTC/USD": 4
+    "AAVE/USD": 3,
+    "AVAX/USD": 3,
+    "BCH/USD": 3,
+    "BTC/USD": 7,
+    "DOT/USD": 3,
+    "ETH/USD": 3,
+    "LINK/USD": 3,
+    "LTC/USD": 3,
+    "SOL/USD": 3,
+    "UNI/USD": 3
   },
   "real_market_opportunities_count_lifetime": 0,
   "real_market_opportunities_target": 50,

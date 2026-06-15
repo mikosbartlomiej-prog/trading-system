@@ -68,6 +68,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -913,6 +937,9 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
     if sig.get("curator_rationale"):
         print(f"      curator: {sig['curator_rationale'][:120]}")
 
+    _diag("reddit-monitor", DIAG_EMIT_ATTEMPTED,
+          {"symbol": ticker, "lane": sig.get("lane"), "stance": stance})
+
     try:
         notify_signal(sig, alert_sent=AUTO_EXECUTE)
     except Exception as e:
@@ -922,11 +949,23 @@ def _emit_signal(sig: dict, account: dict, final_size_mult: float) -> bool:
         try:
             result = execute_stock_signal(sig)
             if result:
+                _diag("reddit-monitor", DIAG_EMIT_SUCCESS,
+                      {"symbol": ticker})
                 print(f"    [EXECUTED] order_id={result.get('id', '?')}")
             else:
+                _diag("reddit-monitor", DIAG_EMIT_FAILED,
+                      {"symbol": ticker, "reason": "alpaca_reject"})
                 print(f"    [EXECUTE FAILED] — see notify email")
         except Exception as e:
+            _diag("reddit-monitor", DIAG_EMIT_FAILED,
+                  {"symbol": ticker, "reason": type(e).__name__})
             print(f"    execute_stock_signal error: {e}")
+    else:
+        # Not executed (either AUTO_EXECUTE=false or stance != FOLLOW_REACTION).
+        # The diag here is informational — the signal made it to the emit
+        # stage but execution was gated.
+        _diag("reddit-monitor", DIAG_EMIT_SUCCESS,
+              {"symbol": ticker, "path": "email_only"})
 
     return True
 
@@ -941,6 +980,7 @@ def run_scan() -> int:
     Each lane has its own MAX_ALERTS_PER_LANE cap.
     """
     print(f"\n=== REDDIT MONITOR — {datetime.now(timezone.utc).isoformat()} ===")
+    _diag("reddit-monitor", DIAG_RAN, {})
 
     # Strategy gate
     if not is_strategy_enabled(STRATEGY_NAME):
@@ -974,6 +1014,8 @@ def run_scan() -> int:
         return 0
     if not subs and not users:
         print(f"  No subs and no tracked users — nothing to scan")
+        _diag("reddit-monitor", DIAG_INPUT_EMPTY,
+              {"subs": 0, "users": 0})
         return 0
     print(f"  Loaded {len(subs)} subs, {len(users)} tracked users, "
           f"{len(whitelist)} whitelisted tickers")
@@ -1166,6 +1208,12 @@ def run_scan() -> int:
     total_signals = len(user_signals) + len(sub_signals)
     print(f"\n  Sygnały: {total_signals} (user={len(user_signals)} sub={len(sub_signals)}), "
           f"alerty wysłane: {sent_total} (user={sent_user} sub={sent_sub})")
+    if total_signals == 0:
+        _diag("reddit-monitor", DIAG_NO_SIGNAL, {})
+    else:
+        _diag("reddit-monitor", DIAG_SIGNAL_DETECTED,
+              {"user_signals": len(user_signals),
+               "sub_signals": len(sub_signals)})
     notify_summary("Reddit Monitor", total_signals, sent_total)
     return sent_total
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# v3.24 LEGACY_DIRECT_LEDGER_ALLOWED — diagnostic shadow-cycle runner;
+# runtime monitors MUST go through shared.signal_emitter.emit_signal_opportunity.
 """v3.21.0 (2026-06-04) — ETAP 2 — Daily Shadow Evidence Runner.
 
 WHY

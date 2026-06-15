@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-15T10:07:56.241967+00:00",
+  "as_of": "2026-06-15T10:10:55.166565+00:00",
   "calibrated_yet": false,
   "calibration_dir_exists": false,
   "components_always_default": [
@@ -14,7 +14,7 @@
   ],
   "components_with_real_data": [],
   "confidence_verdict_distribution": {
-    "unknown": 16208
+    "unknown": 16238
   },
   "expected_components": [
     "data_quality",
@@ -26,8 +26,8 @@
     "track_record",
     "calibration"
   ],
-  "generated_at_iso": "2026-06-15T10:07:56.357591+00:00",
-  "git_head": "4b15542f95fad53584a283fdc8f8b168426a94cd",
+  "generated_at_iso": "2026-06-15T10:10:55.290872+00:00",
+  "git_head": "4bd7ed2403e09608047d5f442da72e500a5885f6",
   "low_sample_strategies": [
     "alloc-exit",
     "alloc-reduce",
@@ -42,7 +42,7 @@
     "overbought-short"
   ],
   "low_sample_strategy_count": 11,
-  "rows_total_7d": 16208,
+  "rows_total_7d": 16238,
   "rows_with_confidence_components_nonempty": 0,
   "rows_with_confidence_components_nonempty_pct": 0.0,
   "rows_with_confidence_score_nonnull": 0,
@@ -57,7 +57,7 @@
     "0.5-0.65": 0,
     "0.65-0.80": 0,
     "0.80+": 0,
-    "null": 16208
+    "null": 16238
   },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",

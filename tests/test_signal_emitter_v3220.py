@@ -177,6 +177,11 @@ class TestHappyPath(_BaseEmitterTest):
 class TestValidationContract(_BaseEmitterTest):
 
     def test_missing_confidence_inputs_blocks_entry_capable(self):
+        # v3.24 supersedes v3.22: when an entry_capable event arrives
+        # with empty confidence_inputs, the emitter back-fills via
+        # build_confidence_inputs BEFORE validate runs, so the event
+        # no longer fails validation. The row is persisted with either
+        # a numeric confidence_score OR confidence_status=ERROR.
         import signal_event as se
         bad = se.SignalEvent(
             signal_id="sig-X",
@@ -190,15 +195,22 @@ class TestValidationContract(_BaseEmitterTest):
             pipeline="monitor",
             evidence_source="PAPER",
             entry_capable=True,
-            confidence_inputs={},      # blank
+            confidence_inputs={},      # v3.24: builder back-fills
             risk_inputs={"size_usd": 10_000},
         )
         result = self.signal_emitter.emit_signal_opportunity(bad)
-        self.assertFalse(result["emitted"])
-        self.assertEqual(result["status"], "BLOCKING_VALIDATION_ERROR")
-        self.assertTrue(any("confidence_inputs" in e for e in result["errors"]))
-        # No ledger row should be written for a blocked event.
-        self.assertEqual(self._read_ledger(), [])
+        # v3.24 contract: emitted=True, status=EMITTED, score numeric OR ERROR.
+        self.assertTrue(result["emitted"], result)
+        self.assertEqual(result["status"], "EMITTED")
+        rows = self._read_ledger()
+        self.assertEqual(len(rows), 1)
+        # Either a real number or an explicit ERROR status — never silent null.
+        status = rows[0]["raw_signal"].get("confidence_status")
+        score = rows[0]["confidence_score"]
+        if score is None:
+            self.assertEqual(status, "ERROR")
+        else:
+            self.assertEqual(status, "OK")
 
     def test_observe_only_event_emits_without_confidence_inputs(self):
         import signal_event as se
@@ -251,6 +263,10 @@ class TestFailSoft(_BaseEmitterTest):
         self.assertEqual(self._read_ledger(), [])
 
     def test_compute_confidence_unavailable_marks_status_unavailable(self):
+        # v3.24 supersedes v3.22: a compute_confidence import / call
+        # failure on an entry-capable event now yields confidence_status
+        # ERROR (was UNAVAILABLE). Ledger write still succeeds — the
+        # operator must see WHY a row has no score.
         def _import_boom(**kwargs):
             raise ImportError("confidence offline")
 
@@ -262,11 +278,15 @@ class TestFailSoft(_BaseEmitterTest):
 
         # Ledger write should STILL succeed (confidence is advisory).
         self.assertTrue(result["emitted"], result)
-        self.assertEqual(result["confidence_status"], "UNAVAILABLE")
+        self.assertEqual(result["confidence_status"], "ERROR")
         self.assertIsNone(result["confidence_score"])
         rows = self._read_ledger()
         self.assertEqual(len(rows), 1)
         self.assertIsNone(rows[0]["confidence_score"])
+        # v3.24: an explicit error reason must be recorded.
+        self.assertEqual(rows[0]["raw_signal"]["confidence_status"], "ERROR")
+        self.assertEqual(rows[0]["raw_signal"]["blocking_reason"],
+                          "CONFIDENCE_COMPUTE_FAILED")
 
 
 class TestIdempotency(_BaseEmitterTest):

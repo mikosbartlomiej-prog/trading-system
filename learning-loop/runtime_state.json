@@ -1,6 +1,18 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "test",
   "heartbeat": {
+    "comp-a": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-15T11:11:27.822098+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "comp-b": {
+      "last_message": "",
+      "last_seen_iso": "2026-06-15T11:11:27.823342+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
       "last_seen_iso": "2026-06-15T11:26:18.335427+00:00",
@@ -46,6 +58,12 @@
     "reddit-monitor": {
       "last_message": "sent=0",
       "last_seen_iso": "2026-06-14T23:08:24.884714+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "test-monitor": {
+      "last_message": "smoke test",
+      "last_seen_iso": "2026-06-15T11:11:27.826608+00:00",
       "last_status": "ok",
       "pings_today": 1
     },

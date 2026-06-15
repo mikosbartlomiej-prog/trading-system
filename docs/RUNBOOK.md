@@ -1409,3 +1409,45 @@ files, then write JSON + Markdown artefacts:
 
 HEAD at v3.23 LATEST refresh: `4b15542f95fad53584a283fdc8f8b168426a94cd`
 (v3.23 commit follows the consolidated push).
+
+---
+
+## v3.24 (FINAL-PHASE — runtime emit path enforcement)
+
+v3.24 enforces the runtime emit path as the sole entry point for
+ledger rows representing entry-capable real-market opportunities.
+
+### What changed
+
+- `shared/confidence_input_builder.py` (NEW) — production
+  `ConfidenceInputs` builder. 12 slots. Fail-soft per-slot defaults.
+- `shared/shadow_eligibility.py` (NEW) — 10-value eligibility enum.
+  Threshold: `confidence_score >= 0.50 AND risk in {APPROVE, DETECTED}
+  AND canary in {DRY_RUN_OK, READY_BUT_DEFERRED}`.
+- `shared/near_miss_tracker.py` (NEW) — flags strategies that almost
+  cleared every gate but did not. Observability-only.
+- `shared/evidence_quality.py` (NEW) — per-row quality label.
+- `shared/monitor_runtime_diag.py` (NEW) — runtime diagnostic JSONL
+  writer with frozen `DIAG_TOKENS` enum.
+- `shared/signal_emitter.py` (MODIFIED) — persists `confidence_score`
+  on every emit.
+- `scripts/build_monitor_runtime_diagnostics_report.py`,
+  `scripts/reconcile_strategy_sources.py`,
+  `scripts/gate_distribution_report.py`,
+  `scripts/build_near_miss_report.py`,
+  `scripts/build_evidence_quality_report.py` (NEW reporters).
+- `tests/test_no_direct_record_opportunity_v3240.py` (NEW lint test) —
+  fails CI if any code bypasses `signal_emitter`.
+
+### v3.24 hard-safety invariants
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned, unchanged).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default).
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.24 reporter and helper.
+- Live trading remains unsupported. **Near-miss is NOT trade evidence.**
+- Confirms: every v3.24 reporter is observability-only and never imports
+  `alpaca_orders` or calls any broker entry point.
+
+HEAD at v3.24 FINAL-PHASE refresh: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
+(v3.24 commit follows the consolidated push).

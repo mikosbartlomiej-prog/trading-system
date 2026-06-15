@@ -463,3 +463,51 @@ Markdown artefacts.
 
 HEAD at v3.23 LATEST refresh: `4b15542f95fad53584a283fdc8f8b168426a94cd`
 (v3.23 commit follows the consolidated push).
+
+---
+
+## v3.24 (FINAL-PHASE — runtime emit path enforcement)
+
+v3.24 converts v3.22/v3.23's wiring-on-paper into wiring-in-production.
+
+### What v3.24 enforces
+
+- **Runtime emit path is mandatory.** Every ledger row that represents
+  an entry-capable real-market opportunity must flow through
+  `shared/signal_emitter.py::emit_signal_opportunity` so the row carries
+  either a non-null `confidence_score` or an explicit
+  `confidence_error` / `observe_only` flag.
+- **Direct `record_opportunity` is banned outside the helper.** The
+  lint test `tests/test_no_direct_record_opportunity_v3240.py` fails CI
+  if any new code path bypasses the emitter. The single legitimate
+  diagnostic site in `scripts/run_shadow_evidence_cycle.py` is
+  explicitly tagged `LEGACY_DIRECT_LEDGER_ALLOWED`.
+- **Real confidence inputs in production.** The new builder
+  `shared/confidence_input_builder.py` populates a 12-slot
+  `ConfidenceInputs` envelope from per-monitor context (market data,
+  strategy state, signal event). Fail-soft per-slot defaults with
+  explicit reasons; never imports `alpaca_orders`; never makes network
+  calls.
+- **Shadow eligibility is explicit.** `shared/shadow_eligibility.py`
+  classifies every row into one of 10 `ShadowEligibilityDecision`
+  values. Threshold: `confidence_score >= 0.50 AND risk in {APPROVE,
+  DETECTED} AND canary in {DRY_RUN_OK, READY_BUT_DEFERRED}`.
+- **Near-miss tracking is observability-only.** Near-miss is NOT trade
+  evidence; it never counts toward unlock progress.
+- **Evidence quality scoring.** Each shadow row gets a quality label
+  (HIGH / MEDIUM / LOW / REJECTED) via `shared/evidence_quality.py`.
+- **Runtime diagnostics.** `shared/monitor_runtime_diag.py` writes
+  JSONL diagnostic tokens per monitor; reporter rolls up 7 days.
+
+### v3.24 hard-safety invariants (re-asserted)
+
+- `EDGE_GATE_ENABLED = false` (hard-pinned, unchanged).
+- `ALLOW_BROKER_PAPER = false` (hard-pinned default, unchanged).
+- `BROKER_EXECUTION_ENABLED = false`.
+- `LIVE_TRADING_UNSUPPORTED`.
+- `NO_ORDER_PLACEMENT` for every v3.24 reporter and helper.
+- Live trading remains unsupported. LLM stays advisory only. Canary
+  stays preflight-only. **Near-miss is NOT trade evidence.**
+
+HEAD at v3.24 FINAL-PHASE refresh: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
+(v3.24 commit follows the consolidated push).

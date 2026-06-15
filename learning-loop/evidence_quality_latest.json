@@ -1,0 +1,42 @@
+{
+  "average_score": 14.94,
+  "generated_at": "2026-06-15T11:11:00+00:00",
+  "label_distribution": {
+    "GARBAGE": 16238,
+    "HIGH_QUALITY": 0,
+    "MARGINAL": 0,
+    "USABLE": 0
+  },
+  "label_distribution_pct": {
+    "GARBAGE": 100.0,
+    "HIGH_QUALITY": 0.0,
+    "MARGINAL": 0.0,
+    "USABLE": 0.0
+  },
+  "ledger_dir": "/Users/bartlomiejmikos/Documents/Git/trading-system/learning-loop/opportunity_ledger",
+  "per_monitor_average": {
+    "(unknown)": 14.94
+  },
+  "per_monitor_count": {
+    "(unknown)": 16238
+  },
+  "per_strategy_average": {
+    "crypto-breakdown": 15.0,
+    "crypto-momentum": 14.94,
+    "crypto-oversold-bounce": 15.0
+  },
+  "per_strategy_count": {
+    "crypto-breakdown": 86,
+    "crypto-momentum": 16082,
+    "crypto-oversold-bounce": 70
+  },
+  "rows_scored": 16238,
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT_BY_REPORTER",
+    "PURE_LOCAL_FILE_OPERATIONS"
+  ],
+  "window_days": 7
+}

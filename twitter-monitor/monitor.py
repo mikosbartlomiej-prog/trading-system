@@ -48,6 +48,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -478,6 +502,7 @@ def run_scan():
     now = datetime.now(timezone.utc)
     now_str = now.strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] === TWITTER MONITOR (Bluesky) ===")
+    _diag("twitter-monitor", DIAG_RAN, {"now": now_str})
 
     # Account-level guards (same pattern as other entry monitors)
     account = get_account_status()
@@ -534,6 +559,12 @@ def run_scan():
 
     candidates = candidates[:MAX_POSTS_PER_RUN]
     print(f"  Kandydatów po keyword-filter: {len(candidates)}")
+    if not candidates:
+        _diag("twitter-monitor", DIAG_NO_SIGNAL,
+              {"accounts_scanned": len(accounts)})
+    else:
+        _diag("twitter-monitor", DIAG_SIGNAL_DETECTED,
+              {"candidates": len(candidates)})
 
     # Real bar-data: per-ticker for ticker:SYM categories, SPY proxy otherwise
     spy_metrics = compute_reaction_metrics("SPY")
@@ -591,6 +622,8 @@ def run_scan():
         actionable         = stance in ("FOLLOW_REACTION", "CONTRARIAN_CANDIDATE")
 
         if actionable:
+            _diag("twitter-monitor", DIAG_EMIT_ATTEMPTED,
+                  {"handle": c.get("handle"), "stance": stance})
             # Default: AUTO_EXECUTE Pattern A-D in Python; Pattern E -> email-only.
             # USE_ROUTINE=true keeps the legacy worker -> routine path.
             ok = False
@@ -599,10 +632,18 @@ def run_scan():
                 if orders:
                     ok = True
                     sent += 1
+                    _diag("twitter-monitor", DIAG_EMIT_SUCCESS,
+                          {"handle": c.get("handle"),
+                           "orders": len(orders)})
                     print(f"    [pattern-{pattern}] {c['handle']}: {len(orders)} order(s) placed")
                 elif pattern == "E":
+                    _diag("twitter-monitor", DIAG_EMIT_FAILED,
+                          {"handle": c.get("handle"), "reason": "pattern_E_ambiguous"})
                     print(f"    [pattern-E] ambiguous -> email-only fallback {c['handle']}: {c['text'][:60]}")
                 else:
+                    _diag("twitter-monitor", DIAG_EMIT_FAILED,
+                          {"handle": c.get("handle"),
+                           "reason": f"pattern_{pattern}_no_orders"})
                     print(f"    [pattern-{pattern}] no actionable orders ({c['handle']}: {c['text'][:60]})")
             elif not USE_ROUTINE and stance == "CONTRARIAN_CANDIDATE":
                 # CONTRARIAN: never auto-trade, flag for manual review

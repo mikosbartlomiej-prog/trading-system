@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-06-15T10:07:34.027388+00:00",
+  "generated_at_iso": "2026-06-15T10:10:55.528856+00:00",
   "monitors": [
     {
       "carries_not_applicable_header": false,
@@ -33,10 +33,10 @@
       "carries_not_applicable_header": false,
       "exists": true,
       "last_autonomy_reference": null,
-      "last_ledger_timestamp": "2026-06-15T09:28:34.180884+00:00",
+      "last_ledger_timestamp": "2026-06-15T09:51:09.088985+00:00",
       "last_modified_commit_iso": "2026-06-15T11:37:30+02:00",
       "last_modified_commit_sha": "4b15542f95fad53584a283fdc8f8b168426a94cd",
-      "ledger_rows_in_window": 16562,
+      "ledger_rows_in_window": 16592,
       "ledger_window_days": 7,
       "monitor": "crypto-monitor",
       "source_path": "crypto-monitor/monitor.py",
@@ -116,7 +116,7 @@
     {
       "carries_not_applicable_header": false,
       "exists": true,
-      "last_autonomy_reference": "{\"action_taken\": \"safe_close(SOLUSD, qty=2.1e-07) \\u2192 failed\", \"actor\": \"exit-monitor\", \"affected_symbols\": [\"SOLUSD\"], \"decision\": \"FULL_EXIT\", \"decision_type\": \"POSITION_LIFECYCLE\", \"reason\": \"trailing_stop_retrace\", \"result\": \"failed:",
+      "last_autonomy_reference": "{\"action_taken\": \"safe_close(AVAXUSD, qty=365.968010756) \\u2192 failed\", \"actor\": \"exit-monitor\", \"affected_symbols\": [\"AVAXUSD\"], \"decision\": \"FULL_EXIT\", \"decision_type\": \"POSITION_LIFECYCLE\", \"reason\": \"time_stop_hit\", \"result\": \"failed:",
       "last_ledger_timestamp": null,
       "last_modified_commit_iso": "2026-06-15T11:37:30+02:00",
       "last_modified_commit_sha": "4b15542f95fad53584a283fdc8f8b168426a94cd",
@@ -159,7 +159,7 @@
     "dormant": 0,
     "not_applicable": 2,
     "total": 10,
-    "total_rows_scanned": 16562,
+    "total_rows_scanned": 16592,
     "unattributed_rows": 0,
     "wired_but_not_firing": 7
   },

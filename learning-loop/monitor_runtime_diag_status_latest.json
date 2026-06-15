@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-06-15T11:20:17.580686+00:00",
+  "builder_version": "v3.24.0",
+  "hard_safety": {
+    "broker_call": false,
+    "network_call": false,
+    "paid_service": false
+  },
+  "aggregate": {
+    "files_scanned": [],
+    "total_rows": 0,
+    "earliest_record": null,
+    "latest_record": null,
+    "per_monitor": {}
+  }
+}

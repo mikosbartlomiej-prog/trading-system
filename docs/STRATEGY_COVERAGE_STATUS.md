@@ -1,8 +1,8 @@
 # Strategy Coverage Status (v3.23.0)
 
-**Generated:** `2026-06-15T10:07:56.537892+00:00`
-**As of:** `2026-06-15T10:07:56.414850+00:00`
-**Git HEAD:** `4b15542f95fad53584a283fdc8f8b168426a94cd`
+**Generated:** `2026-06-15T10:10:55.470054+00:00`
+**As of:** `2026-06-15T10:10:55.351920+00:00`
+**Git HEAD:** `4bd7ed2403e09608047d5f442da72e500a5885f6`
 **Strategies total:** `14` (registry: `7`, state.json: `12`)
 
 ## Status distribution

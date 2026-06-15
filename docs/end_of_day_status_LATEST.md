@@ -1,36 +1,35 @@
 # End-of-Day System Status — Shadow Evidence Flow
 
-Generated: 2026-06-15T10:01:32Z (Claude v3.23, after Wire signal pipeline + Agent 3C LATEST refresh)
-HEAD: `4b15542f95fad53584a283fdc8f8b168426a94cd`
+Generated: 2026-06-15T11:30:00Z (Claude v3.24 FINAL-PHASE — runtime emit path enforcement + confidence-bearing rows activation)
+HEAD: `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
 
 ## TL;DR
 
-The system is in `SHADOW_ONLY`, **NOT live-ready**. v3.22 wired the
-signal pipeline end-to-end (`emit_signal_opportunity` paths now exist in
-all 10 monitors); v3.23 adds the observability reporters
-(`real-market-evidence`, `confidence-reality-check`, `strategy-coverage`,
-`shadow-simulator`, `outcome-tracker`, `monitor-emission-status`) plus
-this refreshed LATEST set.
+The system is in `SHADOW_ONLY`, **NOT live-ready**. v3.24 enforces the
+runtime emit path (`emit_signal_opportunity`) as the sole entry point
+for ledger rows, bans direct `record_opportunity` calls outside an
+allowlisted helper, ships the production confidence input builder
+(`shared/confidence_input_builder.py`), shadow eligibility evaluator
+(`shared/shadow_eligibility.py`), near-miss tracker, evidence quality
+scorer, and runtime diagnostics.
 
-Real-market opportunity flow has not started yet (`real_market_opportunities_count = 0`).
-Production logs already show v3.22's diagnostic tokens
-(`REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL`,
-`INSUFFICIENT_BARS_FOR_SIGNAL`) reaching stdout — they were not yet
-persisted to `workflow_health_latest.json::diagnostic_token_counts`.
-Closing that visibility gap is the v3.23 P1 follow-up.
+v3.24 does NOT flip any safety flag, does NOT enable trading, does NOT
+place any order. EDGE_GATE_ENABLED remains `false`. ALLOW_BROKER_PAPER
+remains `false` (default). LLM stays advisory only. Canary stays
+preflight-only.
 
 ## 1. Repo status
 
 - **Branch:** `main`
-- **HEAD:** `4b15542f95fad53584a283fdc8f8b168426a94cd`
-- **Working tree:** clean (Agent 3C edits in flight)
+- **HEAD:** `e0c5eb1b77aa580a2e4309053bb1cfd46d2dd80e`
+- **Working tree:** v3.24 staged for commit
 - **Worktrees:** single — `main` only
 
 ## 2. System status flags (canonical, hard-pinned)
 
 | Flag                          | Value     | Notes                                  |
 | ----------------------------- | --------- | -------------------------------------- |
-| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.23 does not flip this. |
+| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.24 does not flip this. |
 | `ALLOW_BROKER_PAPER`          | **false** | Hard-pinned default.                   |
 | `LIVE_TRADING_UNSUPPORTED`    | **true**  | CLI rejects `--mode live`.             |
 | `NO_ORDER_PLACEMENT`          | **true**  | Reporters never call any order path.   |
@@ -39,20 +38,42 @@ Closing that visibility gap is the v3.23 P1 follow-up.
 This LATEST refresh is a documentation pass. It does **NOT** flip any
 flag, mutate any state file, or place any order.
 
-## 3. v3.22 + v3.23 — what shipped today
+## 3. v3.24 — what shipped today
 
-- **v3.22 (`4b15542f9`)** — Wire signal pipeline and activate evidence flow.
-  - `shared/signal_emitter.py` + `shared/signal_event.py`: validated emit
-    path with confidence scoring + idempotency.
-  - 10 monitors AST-wired (`tests/test_monitor_wiring_v3220.py`).
-  - Diagnostic tokens enriched (`market_data_provider.py` exports
-    `fetch_universe_snapshots_with_diagnostics`).
-- **v3.23 (Agents 3A / 3B / 3C, pending consolidated commit)** —
-  observability-only reporters; no runtime path changes.
-  - 3A: `real_market_evidence_status` (real-market-only counter +
-    blockers).
-  - 3B: shadow simulator + outcome tracker (no broker, no paper trade).
-  - 3C: monitor emission status reporter + LATEST docs refresh.
+- **Phase 2 (CORE-ENFORCEMENT)** — runtime emit path becomes mandatory.
+  - `shared/confidence_input_builder.py` — production builder for the
+    12-slot `ConfidenceInputs` envelope. Fail-soft defaults, per-slot
+    reasons, completeness fraction, builder version stamp. Does NOT
+    import `alpaca_orders`. Does NOT make network calls.
+  - `shared/signal_emitter.py` persists `confidence_score` on every
+    `emit_signal_opportunity` call.
+  - Direct `record_opportunity` call sites outside `signal_emitter` are
+    banned by lint test (`tests/test_no_direct_record_opportunity_v3240.py`).
+    Legitimate diagnostic site in `scripts/run_shadow_evidence_cycle.py`
+    is explicitly tagged `LEGACY_DIRECT_LEDGER_ALLOWED`.
+- **Phase 3A (RUNTIME-DIAGNOSTICS)** — observability tokens.
+  - `shared/monitor_runtime_diag.py` — frozen `DIAG_TOKENS` enum,
+    fail-soft `record_diag(monitor, token, detail)`, JSONL writer to
+    `learning-loop/monitor_runtime_diag/<date>.jsonl`.
+  - `scripts/build_monitor_runtime_diagnostics_report.py` — 7-day rollup
+    reporter (`docs/MONITOR_RUNTIME_DIAGNOSTICS.md`,
+    `learning-loop/monitor_runtime_diag_status_latest.json`).
+- **Phase 3B (STRATEGY-RECONCILE + GATE-DISTRIBUTION + NEAR-MISS)** —
+  classification + blocker visibility.
+  - `scripts/reconcile_strategy_sources.py` — 5-source ETAP 5
+    reconciler, 9-status classification, safe auto-conversions only.
+  - `scripts/gate_distribution_report.py` — blocker distribution across
+    the 7-day ledger; surfaces top-N blockers + `shadow_eligible_count`.
+  - `shared/near_miss_tracker.py` + `scripts/build_near_miss_report.py`
+    — flags strategies that almost cleared every gate but did not.
+- **Phase 3C (ELIGIBILITY + SIMULATION + EVIDENCE-QUALITY)** —
+  shadow-only acceptance.
+  - `shared/shadow_eligibility.py` — 10-value
+    `ShadowEligibilityDecision` enum. Threshold: `confidence_score >=
+    0.50 AND risk in {APPROVE, DETECTED} AND canary in {DRY_RUN_OK,
+    READY_BUT_DEFERRED}`. Never imports `alpaca_orders`.
+  - `shared/evidence_quality.py` + reporter — scores each shadow row on
+    a quality label (HIGH / MEDIUM / LOW / REJECTED).
 
 ## 4. Real-market evidence — current count
 
@@ -62,37 +83,27 @@ flag, mutate any state file, or place any order.
 | `halt_path_records_count` | 15 | same |
 | `scaffold_no_market_data_records_count` | 5 | same |
 | `completed_shadow_outcomes_count` | 0 | same |
-| `first_real_market_record_seen` | false | `first_real_market_record_status.json` (3 days stale) |
+| `first_real_market_record_seen` | false | `first_real_market_record_status.json` |
 
-Largest current blocker: **AUTH_MISSING_OR_CRON_NOT_FIRING — diagnostic
-pipeline now reports the cause via diagnostic_token_counts**, but the
-runner still calls the legacy `fetch_universe_snapshots()` and never
-aggregates the new `diagnostic_token_counts` dict into the workflow
-health snapshot. v3.22's diagnostic data IS reaching stdout but is not
-persisted; per-symbol diagnostics already show
-`REAL_MARKET_DATA_AVAILABLE_BUT_NO_SIGNAL` (data is fine, no breakout in
-current regime) and `INSUFFICIENT_BARS_FOR_SIGNAL` (lookback floor).
+Largest current blocker (from `learning-loop/gate_distribution_latest.json`):
+**`confidence_decision=NULL` (100% of 16,238 rows)** — emit path did not
+run on those rows, monitor missed back-fill, or downstream consumer did
+not persist the field. v3.24's enforcement closes this for all NEW rows
+written post-deploy; pre-deploy rows remain NULL by design (no rewrites).
+
+Secondary blockers in the same window:
+
+- `risk_decision=REJECT` — 10,516 / 16,238 rows (64.8%)
+- `risk_decision=NO_SIGNAL` — 5,424 / 16,238 rows (33.4%)
+- `risk_decision=HALTED_BY_DRAWDOWN_GUARD` — 169 / 16,238 rows (1.0%)
 
 ## 5. Monitor emission status (latest reporter output)
 
-Generated by `scripts/build_monitor_emission_status.py`:
+Generated by `scripts/build_monitor_emission_status.py`. The crypto
+pipeline remains the only producing channel; all equity / options / news
+monitors are wired but not firing under the current regime.
 
-| Monitor               | Wired | Ledger rows (7d) | Verdict                  |
-| --------------------- | ----- | ---------------- | ------------------------ |
-| `crypto-monitor`      | Y     | 16562            | **ACTIVE**               |
-| `price-monitor`       | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `options-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `defense-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `twitter-monitor`     | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `reddit-monitor`      | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `geo-monitor`         | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `politician-monitor`  | Y     | 0                | WIRED_BUT_NOT_FIRING     |
-| `exit-monitor`        | Y     | 0                | NOT_APPLICABLE           |
-| `options-exit-monitor`| Y     | 0                | NOT_APPLICABLE           |
-
-Only the crypto pipeline is actively producing ledger rows today; all
-equity / options / news monitors are wired but not firing under the
-current regime. Full report: `docs/MONITOR_EMISSION_STATUS.md`.
+Full report: `docs/MONITOR_EMISSION_STATUS.md`.
 
 ## 6. Active workflows (hard-pinned safety env)
 
@@ -114,17 +125,18 @@ All 4 workflows hard-pin the canonical safety flags = `false`. Zero drift.
 
 ## 8. Recommendation for next session
 
-1. Wire the runner to call
-   `market_data_provider.fetch_universe_snapshots_with_diagnostics`
-   (so `diagnostic_token_counts` finally populates).
-2. Persist aggregate token counts into
-   `learning-loop/shadow_evidence/workflow_health_latest.json` via a new
-   `--collector-summary-path` arg to
-   `evaluate_automated_shadow_progress.py`.
-3. Wire `scripts/check_heartbeat_freshness.py` + `scripts/check_evidence_throughput_sla.py`
-   into a cron workflow (currently never invoked).
+1. Watch the first 24h of post-v3.24 ledger rows to confirm
+   `confidence_decision` field populates non-NULL on freshly-emitted
+   rows (pre-deploy rows remain NULL by design).
+2. Wire `scripts/check_heartbeat_freshness.py` +
+   `scripts/check_evidence_throughput_sla.py` into a cron workflow
+   (currently invoked only ad-hoc).
+3. Investigate the high `risk_decision=REJECT` share (64.8%) — is the
+   risk gate over-rejecting, or are signals genuinely thin in this
+   regime?
 4. Do NOT flip `EDGE_GATE_ENABLED`, do NOT set `ALLOW_BROKER_PAPER=true`,
-   do NOT fabricate ledger entries.
+   do NOT fabricate ledger entries, do NOT count near-miss as trade
+   evidence.
 
 ---
 

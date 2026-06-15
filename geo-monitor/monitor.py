@@ -26,6 +26,30 @@ except Exception:
         def emit_monitor_signal(*_a, **_kw):  # type: ignore
             return None
 
+# v3.24 — monitor runtime diagnostics (ETAP 9). Fail-soft.
+try:
+    from monitor_runtime_diag import (  # type: ignore
+        record_diag as _diag,
+        DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+        DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+        DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+    )
+except Exception:
+    try:
+        from shared.monitor_runtime_diag import (  # type: ignore
+            record_diag as _diag,
+            DIAG_RAN, DIAG_INPUT_EMPTY, DIAG_NO_SIGNAL,
+            DIAG_SIGNAL_DETECTED, DIAG_EMIT_ATTEMPTED,
+            DIAG_EMIT_SUCCESS, DIAG_EMIT_FAILED,
+        )
+    except Exception:
+        def _diag(*_a, **_kw):  # type: ignore
+            return False
+        DIAG_RAN = "RAN"; DIAG_INPUT_EMPTY = "INPUT_EMPTY"
+        DIAG_NO_SIGNAL = "NO_SIGNAL"; DIAG_SIGNAL_DETECTED = "SIGNAL_DETECTED"
+        DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
+        DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status, has_open_position, concentration_ok
@@ -558,6 +582,7 @@ def send_alert(news_items: list[dict], priority: str) -> bool:
 def run_scan():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"\n[{now_str}] Skanuję newsy geopolityczne...")
+    _diag("geo-monitor", DIAG_RAN, {"now": now_str})
 
     # v2.0 safety net: account-level circuit breaker BEFORE VIX guard
     dd_status, _ = daily_drawdown_guard()
@@ -575,6 +600,9 @@ def run_scan():
     all_news += fetch_rss_feeds()
 
     print(f"  Pobrano {len(all_news)} newsów łącznie")
+    if not all_news:
+        _diag("geo-monitor", DIAG_INPUT_EMPTY,
+              {"sources": ["finnhub", "newsapi", "rss"]})
 
     # Filtruj i oceniaj
     relevant = []
@@ -605,7 +633,11 @@ def run_scan():
 
     if not relevant:
         print("  Brak istotnych newsów po event-scoring — koniec skanowania")
+        _diag("geo-monitor", DIAG_NO_SIGNAL,
+              {"all_news": len(all_news)})
         return
+    _diag("geo-monitor", DIAG_SIGNAL_DETECTED,
+          {"relevant": len(relevant)})
 
     # Określ ogólny priorytet
     max_score  = relevant[0]["score"]
@@ -633,7 +665,17 @@ def run_scan():
         print(f"\n  >>> {sig['strategy']} {sig['action']} {sig['symbol']} "
               f"(bucket={sig['bucket']}, score={sig['score']}, ${sig['size_usd']:.0f})")
         print(f"      headline: {sig['headline'][:100]}")
+        _diag("geo-monitor", DIAG_EMIT_ATTEMPTED,
+              {"symbol": sig.get("symbol"),
+               "strategy": sig.get("strategy")})
         ok = execute_geo_signal(sig)
+        if ok:
+            _diag("geo-monitor", DIAG_EMIT_SUCCESS,
+                  {"symbol": sig.get("symbol")})
+        else:
+            _diag("geo-monitor", DIAG_EMIT_FAILED,
+                  {"symbol": sig.get("symbol"),
+                   "reason": "alpaca_reject_or_blocked"})
         try:
             notify_signal(sig, ok, reason="" if ok else "alpaca_reject")
         except Exception:
