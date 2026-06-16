@@ -1,51 +1,5 @@
 {
-  "entries": {
-    "AVAX/USD": {
-      "allowed_next_actions": [
-        "operator_marker_required"
-      ],
-      "broker_calls_blocked_until_iso": null,
-      "failed_attempts": 2,
-      "first_seen_iso": "2026-06-16T09:01:51.511973+00:00",
-      "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-      "last_seen_iso": "2026-06-16T09:01:51.513062+00:00",
-      "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-      "retry_after_iso": null,
-      "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "symbol": "AVAX/USD"
-    },
-    "ETH/USD": {
-      "allowed_next_actions": [
-        "operator_marker_required"
-      ],
-      "broker_calls_blocked_until_iso": null,
-      "failed_attempts": 2,
-      "first_seen_iso": "2026-06-16T09:01:51.513738+00:00",
-      "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "last_error": "backfill from audit on 2026-06-08: 304 failed closes, 171 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-      "last_seen_iso": "2026-06-16T09:01:51.514307+00:00",
-      "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-      "retry_after_iso": null,
-      "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "symbol": "ETH/USD"
-    },
-    "LTC/USD": {
-      "allowed_next_actions": [
-        "operator_marker_required"
-      ],
-      "broker_calls_blocked_until_iso": null,
-      "failed_attempts": 1,
-      "first_seen_iso": "2026-06-16T09:01:51.515041+00:00",
-      "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 0 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-      "last_seen_iso": "2026-06-16T09:01:51.515041+00:00",
-      "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-      "retry_after_iso": null,
-      "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-      "symbol": "LTC/USD"
-    }
-  },
+  "entries": {},
   "schema_version": "v3.28",
-  "updated_at": "2026-06-16T11:52:53.317291+00:00"
+  "updated_at": "2026-06-16T16:12:48.005104+00:00"
 }

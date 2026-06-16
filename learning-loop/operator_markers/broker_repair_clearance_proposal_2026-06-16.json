@@ -1,0 +1,59 @@
+{
+  "evaluated_at_iso": "2026-06-16T16:10:14.241937+00:00",
+  "note": "This file is a PROPOSAL only. It does NOT clear any symbol. The operator must invoke shared.broker_repair_required.clear_repair manually with the matching marker path.",
+  "per_symbol": [
+    {
+      "aliases": [
+        "AVAX",
+        "AVAX/USD",
+        "AVAXUSD"
+      ],
+      "detail": "all preconditions met \u2014 marker=2026-06-16T15:59:35.509201+00:00",
+      "last_failure_iso": "2026-06-16T09:01:51.513062+00:00",
+      "marker_iso": "2026-06-16T15:59:35.509201+00:00",
+      "marker_path": null,
+      "symbol": "AVAX/USD",
+      "verdict": "CLEARANCE_READY"
+    },
+    {
+      "aliases": [
+        "ETH",
+        "ETH/USD",
+        "ETHUSD"
+      ],
+      "detail": "all preconditions met \u2014 marker=2026-06-16T15:59:35.554733+00:00",
+      "last_failure_iso": "2026-06-16T09:01:51.514307+00:00",
+      "marker_iso": "2026-06-16T15:59:35.554733+00:00",
+      "marker_path": null,
+      "symbol": "ETH/USD",
+      "verdict": "CLEARANCE_READY"
+    },
+    {
+      "aliases": [
+        "LTC",
+        "LTC/USD",
+        "LTCUSD"
+      ],
+      "detail": "all preconditions met \u2014 marker=2026-06-16T15:59:35.602163+00:00",
+      "last_failure_iso": "2026-06-16T15:48:24.255165+00:00",
+      "marker_iso": "2026-06-16T15:59:35.602163+00:00",
+      "marker_path": null,
+      "symbol": "LTC/USD",
+      "verdict": "CLEARANCE_READY"
+    }
+  ],
+  "proposed_actions": [
+    "Operator: invoke shared.broker_repair_required.clear_repair('AVAX/USD', marker_path='<absolute path of learning-loop/operator_markers/AVAX_USD_<date>.json>') only after operator review.",
+    "Operator: invoke shared.broker_repair_required.clear_repair('ETH/USD', marker_path='<absolute path of learning-loop/operator_markers/ETH_USD_<date>.json>') only after operator review.",
+    "Operator: invoke shared.broker_repair_required.clear_repair('LTC/USD', marker_path='<absolute path of learning-loop/operator_markers/LTC_USD_<date>.json>') only after operator review."
+  ],
+  "schema_version": "v3.31",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+  ],
+  "type": "broker_repair_clearance_proposal"
+}

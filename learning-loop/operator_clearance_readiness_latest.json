@@ -8,12 +8,12 @@
     "block_allocator": false,
     "verdict": "EQUITY_GAP_OK"
   },
-  "evaluated_at_iso": "2026-06-16T13:10:50.175974+00:00",
+  "evaluated_at_iso": "2026-06-16T17:58:09.308389+00:00",
   "operator_confirmed": false,
-  "overall_verdict": "NOT_READY_NO_MARKER",
+  "overall_verdict": "READY_FOR_OPERATOR_MANUAL_APPLY",
   "safe_mode_consistency": {
-    "blocker": "BLOCK_SAFE_MODE_INCONSISTENT",
-    "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+    "blocker": null,
+    "verdict": "CONSISTENT"
   },
   "schema_version": "v3.31",
   "standing_markers": [
@@ -26,43 +26,6 @@
     "NO_AUTO_BROKER_REPAIR_CLEAR_FROM_THIS_SCRIPT",
     "TEMPLATE_FILE_DOES_NOT_COUNT_AS_MARKER"
   ],
-  "symbols": [
-    {
-      "broker_repair_present": true,
-      "fresh_403_count": 0,
-      "fresh_p13_count": 0,
-      "last_failure_ts_iso": "2026-06-16T09:01:51.513062+00:00",
-      "marker_present": false,
-      "marker_ts_iso": null,
-      "proposal_path": null,
-      "refusal_reason": "no operator marker found for 'AVAX/USD'; run scripts/record_operator_repair_confirmation.py --symbol AVAX/USD --operator-confirmed first",
-      "symbol_canonical": "AVAX/USD",
-      "verdict": "NOT_READY_NO_MARKER"
-    },
-    {
-      "broker_repair_present": true,
-      "fresh_403_count": 0,
-      "fresh_p13_count": 0,
-      "last_failure_ts_iso": "2026-06-16T09:01:51.514307+00:00",
-      "marker_present": false,
-      "marker_ts_iso": null,
-      "proposal_path": null,
-      "refusal_reason": "no operator marker found for 'ETH/USD'; run scripts/record_operator_repair_confirmation.py --symbol ETH/USD --operator-confirmed first",
-      "symbol_canonical": "ETH/USD",
-      "verdict": "NOT_READY_NO_MARKER"
-    },
-    {
-      "broker_repair_present": true,
-      "fresh_403_count": 0,
-      "fresh_p13_count": 0,
-      "last_failure_ts_iso": "2026-06-16T09:01:51.515041+00:00",
-      "marker_present": false,
-      "marker_ts_iso": null,
-      "proposal_path": null,
-      "refusal_reason": "no operator marker found for 'LTC/USD'; run scripts/record_operator_repair_confirmation.py --symbol LTC/USD --operator-confirmed first",
-      "symbol_canonical": "LTC/USD",
-      "verdict": "NOT_READY_NO_MARKER"
-    }
-  ],
+  "symbols": [],
   "system_activation_decision": "UNKNOWN"
 }

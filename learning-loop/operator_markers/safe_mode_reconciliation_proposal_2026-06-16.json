@@ -1,0 +1,40 @@
+{
+  "audit_enters": 46,
+  "audit_exits": 0,
+  "blocked_symbols": [
+    "AVAX/USD",
+    "ETH/USD",
+    "LTC/USD"
+  ],
+  "equity_gap_verdict": "EQUITY_GAP_OK",
+  "evaluated_at_iso": "2026-06-16T16:04:31.687175+00:00",
+  "fresh_p13_count": 78,
+  "note": "This file is a PROPOSAL only. It does NOT execute any action. The operator must perform each action manually.",
+  "operator_markers_count": 3,
+  "proposed_actions": [
+    "Operator: add SAFE_MODE_EXITED audit row for trigger=incident-pattern-detector P13_bracket_interlock_blocked_close: 3 CLOSE_POSITION events FAILED in last 30min with Alpaca 403 (insufficient qty / held_for_orders). symbols=['AVAXUSD']. v3.11.3 cancel_brackets_first should prevent this \u2014 if firing post v3.11.3 deploy, the cancel step itself is failing (broker outage, DELETE permission revoked, or new bug). Operato, symbol=<none>, exit_timestamp=2026-06-16T16:04:31.687141+00:00 (append a JSON line to journal/autonomy/<today>.jsonl).",
+    "Operator: set safe_mode_state.active=false via atomic write (target file: /Users/bartlomiejmikos/Documents/Git/trading-system/learning-loop/safe_mode_state.json). Do NOT delete the file; rewrite it with active=false + reason describing the manual exit.",
+    "Operator: mirror runtime_state.safe_mode.active=false (target file: /Users/bartlomiejmikos/Documents/Git/trading-system/learning-loop/runtime_state.json). Preserve every other field in runtime_state.json.",
+    "Preserve historical inconsistency evidence \u2014 do NOT delete any SAFE_MODE_ENTERED audit row. The 46 historical events stay in the journal as forensic evidence of the persistence bug.",
+    "After EXITED row + state writes, broker_repair_required entries for ['AVAX/USD', 'ETH/USD', 'LTC/USD'] STILL remain. Clear them ONLY via scripts/propose_clear_broker_repair_canonical.py with --apply --operator-confirmed and then shared.broker_repair_required.clear_repair(symbol, marker_path).",
+    "After all manual actions, re-run scripts/check_safe_mode_consistency.py and confirm verdict transitions to CONSISTENT."
+  ],
+  "runtime_active": false,
+  "safe_mode_state_file_present": false,
+  "schema_version": "v3.31",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+  ],
+  "symbols_with_marker": [
+    "AVAX/USD",
+    "ETH/USD",
+    "LTC/USD"
+  ],
+  "symbols_without_marker": [],
+  "type": "safe_mode_reconciliation_proposal",
+  "verdict": "RECONCILIATION_READY_TO_PROPOSE"
+}

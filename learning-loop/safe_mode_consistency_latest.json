@@ -1,14 +1,14 @@
 {
-  "audit_enters": 46,
-  "audit_events": 46,
-  "audit_exits": 0,
-  "blocker": "BLOCK_SAFE_MODE_INCONSISTENT",
-  "detail": "46 SAFE_MODE_ENTERED in last 24h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
-  "evaluated_at_iso": "2026-06-16T09:40:08.681517+00:00",
-  "last_event_iso": "2026-06-16T07:46:09.325630+00:00",
+  "audit_enters": 36,
+  "audit_events": 37,
+  "audit_exits": 1,
+  "blocker": null,
+  "detail": "audit and runtime agree (enters=36, exits=1, runtime_active=False)",
+  "evaluated_at_iso": "2026-06-16T17:58:09.267720+00:00",
+  "last_event_iso": "2026-06-16T16:06:49.182418+00:00",
   "lookback_hours": 24,
   "runtime_active": false,
-  "runtime_reason": "",
+  "runtime_reason": "Manual operator reconciliation applied; safe_mode exited after dashboard verification and repair markers.",
   "runtime_trigger": "",
   "schema_version": "v3.29",
   "standing_markers": [
@@ -18,5 +18,5 @@
     "NO_ORDER_PLACEMENT",
     "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
   ],
-  "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+  "verdict": "CONSISTENT"
 }

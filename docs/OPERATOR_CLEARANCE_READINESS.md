@@ -1,11 +1,11 @@
 # Operator clearance readiness
 
-- Evaluated at: `2026-06-16T13:10:50.175974+00:00`
-- Overall verdict: **`NOT_READY_NO_MARKER`**
+- Evaluated at: `2026-06-16T17:58:09.308389+00:00`
+- Overall verdict: **`READY_FOR_OPERATOR_MANUAL_APPLY`**
 - Dry-run: `True`
 - Apply requested: `False`
 - Operator confirmed: `False`
-- safe_mode_consistency verdict: `INCONSISTENT_ENTERED_NOT_PERSISTED` (blocker='BLOCK_SAFE_MODE_INCONSISTENT')
+- safe_mode_consistency verdict: `CONSISTENT` (blocker=None)
 - equity_gap_reconciliation: block_allocator=`False` verdict=`EQUITY_GAP_OK`
 - system_activation_gate decision: `UNKNOWN`
 
@@ -13,9 +13,6 @@
 
 | Symbol | Verdict | Marker | Broker repair | Marker ts | Last failure ts | Fresh P13 | Fresh 403 | Proposal | Refusal |
 |--------|---------|--------|---------------|-----------|-----------------|-----------|-----------|----------|---------|
-| `AVAX/USD` | `NOT_READY_NO_MARKER` | `False` | `True` | `None` | `2026-06-16T09:01:51.513062+00:00` | 0 | 0 | `None` | no operator marker found for 'AVAX/USD'; run scripts/record_operator_repair_confirmation.py --symbol AVAX/USD --operator-confirmed first |
-| `ETH/USD` | `NOT_READY_NO_MARKER` | `False` | `True` | `None` | `2026-06-16T09:01:51.514307+00:00` | 0 | 0 | `None` | no operator marker found for 'ETH/USD'; run scripts/record_operator_repair_confirmation.py --symbol ETH/USD --operator-confirmed first |
-| `LTC/USD` | `NOT_READY_NO_MARKER` | `False` | `True` | `None` | `2026-06-16T09:01:51.515041+00:00` | 0 | 0 | `None` | no operator marker found for 'LTC/USD'; run scripts/record_operator_repair_confirmation.py --symbol LTC/USD --operator-confirmed first |
 
 ## Standing markers
 

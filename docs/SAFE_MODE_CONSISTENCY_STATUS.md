@@ -1,21 +1,21 @@
-# Safe-mode consistency status — 2026-06-16T09:40:08.681517+00:00
+# Safe-mode consistency status — 2026-06-16T17:58:09.267720+00:00
 
-## Verdict: **INCONSISTENT_ENTERED_NOT_PERSISTED**
+## Verdict: **CONSISTENT**
 
-**Blocker:** `BLOCK_SAFE_MODE_INCONSISTENT`
+**Blocker:** _none_
 
 ## Detail
 
-46 SAFE_MODE_ENTERED in last 24h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active — persistence bug or workflow-level commit not happening
+audit and runtime agree (enters=36, exits=1, runtime_active=False)
 
 ## Counts
 
-- audit events in last 24h: 46
-- SAFE_MODE_ENTERED: 46
-- SAFE_MODE_EXITED:  0
+- audit events in last 24h: 37
+- SAFE_MODE_ENTERED: 36
+- SAFE_MODE_EXITED:  1
 - runtime_active:    False
 - runtime_trigger:   
-- last_event_iso:    2026-06-16T07:46:09.325630+00:00
+- last_event_iso:    2026-06-16T16:06:49.182418+00:00
 
 ## Standing markers
 

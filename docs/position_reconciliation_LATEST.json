@@ -1,0 +1,18 @@
+{
+  "account": null,
+  "alpaca_available": false,
+  "alpaca_error": "ALPACA_API_KEY/ALPACA_SECRET_KEY not in env",
+  "executions_scanned": 6,
+  "generated_at_iso": "2026-06-16T17:58:09.223617+00:00",
+  "invariants": {
+    "does_not_close_positions": true,
+    "does_not_place_orders": true,
+    "edge_gate_enabled": false,
+    "live_trading_disabled": true,
+    "read_only": true
+  },
+  "positions": [],
+  "positions_count": 0,
+  "total_unrealized_pl": 0,
+  "version": "v3.22.0"
+}

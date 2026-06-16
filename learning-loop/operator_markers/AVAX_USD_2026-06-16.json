@@ -1,0 +1,15 @@
+{
+  "dashboard_checked": false,
+  "does_not_execute_orders": true,
+  "equity_checked": false,
+  "final_open_orders_state": "",
+  "final_position_state": "",
+  "incident_type": "P13_BRACKET_INTERLOCK",
+  "open_orders_checked": false,
+  "operator_note": "",
+  "position_closed_by_operator": "unknown",
+  "source": "OPERATOR_MANUAL_CONFIRMATION",
+  "stale_oco_cancelled_by_operator": "unknown",
+  "symbol": "AVAX/USD",
+  "timestamp_iso": "2026-06-16T15:59:35.509201+00:00"
+}

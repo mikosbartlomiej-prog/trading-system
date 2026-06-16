@@ -1,4 +1,4 @@
-# Post-repair activation path — 2026-06-16T13:13:09.083296+00:00
+# Post-repair activation path — 2026-06-16T17:58:09.447149+00:00
 
 Read-only simulation. Tells the operator what the activation gate 
 would return after they finish recording markers, applying the 
@@ -7,21 +7,18 @@ clearance proposal.
 
 ## Current state
 
-- verdict: **BLOCKED_OPERATOR_MARKER_REQUIRED**
-- blocked_symbols: ['AVAX/USD', 'ETH/USD', 'LTC/USD']
+- verdict: **BLOCKED_FRESH_INCIDENT**
+- blocked_symbols: none
 - symbols_with_marker: none
-- symbols_without_marker: ['AVAX/USD', 'ETH/USD', 'LTC/USD']
-- safe_mode_consistency_verdict: INCONSISTENT_ENTERED_NOT_PERSISTED
+- symbols_without_marker: none
+- safe_mode_consistency_verdict: CONSISTENT
 - runtime_safe_mode_active: False
 - equity_gap_verdict: EQUITY_GAP_OK
-- fresh_p13_count_last_24h: 86
+- fresh_p13_count_last_24h: 72
 
 Current blockers:
 
-- operator_confirmation_required=['AVAX/USD', 'ETH/USD', 'LTC/USD']
-- safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED
-- broker_repair_required=['AVAX/USD', 'ETH/USD', 'LTC/USD']
-- fresh_p13_count=86
+- fresh_p13_count=72
 
 ## Simulated state (operator finished all 3 steps)
 
@@ -29,7 +26,7 @@ Current blockers:
 
 Remaining blockers (real, NOT simulated away):
 
-- fresh_p13_count=86
+- fresh_p13_count=72
 
 ## Execution layer
 

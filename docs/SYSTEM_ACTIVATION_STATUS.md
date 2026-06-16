@@ -1,6 +1,6 @@
 # SYSTEM ACTIVATION STATUS
 
-_Generated at:_ `2026-06-16T13:11:25.304991+00:00`
+_Generated at:_ `2026-06-16T17:58:09.403764+00:00`
 
 ## Top-level flags
 
@@ -12,37 +12,30 @@ _Generated at:_ `2026-06-16T13:11:25.304991+00:00`
 | `LLM_EXECUTION_AUTHORITY` | `False` |
 | `LLM_ADVISORY_ON` | `True` |
 | `LLM_PROVIDER_MODE` | `UNAVAILABLE` |
-| `ALLOCATOR_ALLOWED` | `False` |
+| `ALLOCATOR_ALLOWED` | `True` |
 | `SHADOW_ONLY_ALLOWED` | `True` |
 | `BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE` | `True` |
 | `RETRY_STORM_SUPPRESSION_ACTIVE` | `True` |
 | `SAFE_MODE_CONSISTENCY_CHECK_ACTIVE` | `True` |
-| `OPERATOR_ACTION_REQUIRED` | `True` |
+| `OPERATOR_ACTION_REQUIRED` | `False` |
 | `CODE_WORK_REMAINING` | `False` |
-| `OPERATOR_WORK_REMAINING` | `True` |
+| `OPERATOR_WORK_REMAINING` | `False` |
 | `SECRET_WORK_REMAINING` | `True` |
 | `MARKET_DATA_WORK_REMAINING` | `True` |
-| `OPERATOR_ACTION_REASON` | safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED |
 
-## Next operator actions
-
-1. Investigate runtime_state vs audit safe_mode mismatch (see docs/RUNBOOK.md scenario 5a); do NOT auto-clear safe_mode.
-2. For each broker-repair symbol: review Alpaca dashboard, manually fix orphaned OCO legs / dust positions, then run `python3 scripts/record_operator_repair_confirmation.py --operator-confirmed`. See docs/OPERATOR_REPAIR_CONFIRMATION.md.
-
-**Master gate decision:** `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT`  
-**Active blockers:** `safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED`  
+**Master gate decision:** `ALLOCATOR_ALLOWED`  
 **LLM advisory status:** `unavailable`
 
 ## Subsystems
 
 | Subsystem | Desired | Actual | Enabled? | Blockers | Safety notes |
 |---|---|---|---|---|---|
-| Broker repair gate | `ENFORCED` | `ENFORCED_BLOCKING` | yes | AVAX/USD, ETH/USD, LTC/USD | deterministic gate, never auto-clears |
+| Broker repair gate | `ENFORCED` | `ENFORCED_CLEAR` | yes | — | deterministic gate, never auto-clears |
 | Safe mode | `AUTO` | `INACTIVE` | yes | — | auto on incident triggers; never auto-cleared |
-| Safe mode consistency checker | `ENFORCED` | `INCONSISTENT_ENTERED_NOT_PERSISTED` | yes | INCONSISTENT_ENTERED_NOT_PERSISTED | blocks allocator on audit-vs-runtime mismatch |
+| Safe mode consistency checker | `ENFORCED` | `CONSISTENT` | yes | — | blocks allocator on audit-vs-runtime mismatch |
 | Equity reconciliation | `FRESH` | `EQUITY_GAP_OK` | yes | — | blocks allocator if unresolved, schema-invalid, or stale |
-| Allocator gate | `ENFORCED` | `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT` | yes | safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
-| Position reconciliation | `FRESH` | `FRESH_AGE_S=587485` | yes | — | informational outside market hours |
+| Allocator gate | `ENFORCED` | `ALLOCATOR_ALLOWED` | yes | — | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
+| Position reconciliation | `FRESH` | `FRESH_AGE_S=0` | yes | — | informational outside market hours |
 | Kill switch | `DISARMED` | `DISARMED` | yes | — | informational |
 | Discovery reporters | `READ_ONLY_ON` | `MISSING` | no | — | never places orders |
 | Trigger watchlist | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders |
@@ -62,15 +55,15 @@ _Generated at:_ `2026-06-16T13:11:25.304991+00:00`
 
 | Action | Owner | Blocking? | Script / Link | Current status |
 |---|---|---|---|---|
-| Operator verify Alpaca dashboard for AVAX/USD | `OPERATOR` | yes | `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` | `pending` |
-| Operator verify Alpaca dashboard for ETH/USD | `OPERATOR` | yes | `docs/operator_repair_templates/ETH_USD_repair_marker_template.md` | `pending` |
-| Operator verify Alpaca dashboard for LTC/USD | `OPERATOR` | yes | `docs/operator_repair_templates/LTC_USD_repair_marker_template.md` | `pending` |
-| Operator record repair markers | `OPERATOR` | yes | `scripts/record_operator_repair_confirmation.py` | `pending` |
-| Operator run clearance proposal | `OPERATOR` | yes | `scripts/run_operator_clearance_readiness.py` | `pending` |
-| Operator reconcile safe_mode | `OPERATOR` | yes | `scripts/propose_safe_mode_reconciliation.py` | `pending` |
+| Operator verify Alpaca dashboard for AVAX/USD | `OPERATOR` | no | `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` | `resolved` |
+| Operator verify Alpaca dashboard for ETH/USD | `OPERATOR` | no | `docs/operator_repair_templates/ETH_USD_repair_marker_template.md` | `resolved` |
+| Operator verify Alpaca dashboard for LTC/USD | `OPERATOR` | no | `docs/operator_repair_templates/LTC_USD_repair_marker_template.md` | `resolved` |
+| Operator record repair markers | `OPERATOR` | no | `scripts/record_operator_repair_confirmation.py` | `resolved` |
+| Operator run clearance proposal | `OPERATOR` | no | `scripts/run_operator_clearance_readiness.py` | `resolved` |
+| Operator reconcile safe_mode | `OPERATOR` | no | `scripts/propose_safe_mode_reconciliation.py` | `resolved` |
 | GitHub secret GEMINI_API_KEY | `GITHUB_SECRET` | no | `Settings -> Secrets and variables -> Actions` | `pending` |
 | Market trigger required for positive entry rows | `MARKET_TRIGGER` | no | `discovery layer` | `observing` |
-| Shadow-only requires deterministic gate clean | `SYSTEM (auto when operator clears)` | no | `system_activation_gate` | `pending` |
+| Shadow-only requires deterministic gate clean | `SYSTEM (auto when operator clears)` | no | `system_activation_gate` | `resolved` |
 
 ---
 

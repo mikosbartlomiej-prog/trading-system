@@ -289,6 +289,16 @@ def main() -> int:
     )
     print(f"Wrote: docs/position_reconciliation_LATEST.md")
     print(f"Wrote: docs/position_reconciliation_LATEST.json")
+
+    # Gate-readable artefact (system_activation_gate reads this exact path).
+    # NOT the same as ``learning-loop/position_reconciliation/latest.json`` —
+    # that one is an unrelated followup-tracking artefact and stays untouched.
+    ll_dir = REPO_ROOT / "learning-loop"
+    ll_dir.mkdir(parents=True, exist_ok=True)
+    (ll_dir / "position_reconciliation_latest.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    print(f"Wrote: learning-loop/position_reconciliation_latest.json")
     return 0
 
 
