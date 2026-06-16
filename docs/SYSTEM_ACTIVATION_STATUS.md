@@ -1,6 +1,6 @@
 # SYSTEM ACTIVATION STATUS
 
-_Generated at:_ `2026-06-16T12:15:10.371215+00:00`
+_Generated at:_ `2026-06-16T13:11:25.304991+00:00`
 
 ## Top-level flags
 
@@ -18,6 +18,10 @@ _Generated at:_ `2026-06-16T12:15:10.371215+00:00`
 | `RETRY_STORM_SUPPRESSION_ACTIVE` | `True` |
 | `SAFE_MODE_CONSISTENCY_CHECK_ACTIVE` | `True` |
 | `OPERATOR_ACTION_REQUIRED` | `True` |
+| `CODE_WORK_REMAINING` | `False` |
+| `OPERATOR_WORK_REMAINING` | `True` |
+| `SECRET_WORK_REMAINING` | `True` |
+| `MARKET_DATA_WORK_REMAINING` | `True` |
 | `OPERATOR_ACTION_REASON` | safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED |
 
 ## Next operator actions
@@ -38,7 +42,7 @@ _Generated at:_ `2026-06-16T12:15:10.371215+00:00`
 | Safe mode consistency checker | `ENFORCED` | `INCONSISTENT_ENTERED_NOT_PERSISTED` | yes | INCONSISTENT_ENTERED_NOT_PERSISTED | blocks allocator on audit-vs-runtime mismatch |
 | Equity reconciliation | `FRESH` | `EQUITY_GAP_OK` | yes | — | blocks allocator if unresolved, schema-invalid, or stale |
 | Allocator gate | `ENFORCED` | `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT` | yes | safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
-| Position reconciliation | `FRESH` | `FRESH_AGE_S=584110` | yes | — | informational outside market hours |
+| Position reconciliation | `FRESH` | `FRESH_AGE_S=587485` | yes | — | informational outside market hours |
 | Kill switch | `DISARMED` | `DISARMED` | yes | — | informational |
 | Discovery reporters | `READ_ONLY_ON` | `MISSING` | no | — | never places orders |
 | Trigger watchlist | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders |
@@ -53,6 +57,20 @@ _Generated at:_ `2026-06-16T12:15:10.371215+00:00`
 | Options monitor | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders unless allocator allows AND broker enabled |
 | Daily reporters | `DAILY` | `DAILY` | yes | — | read-only |
 | Operator dashboard | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | read-only |
+
+## Remaining Actions (v3.31)
+
+| Action | Owner | Blocking? | Script / Link | Current status |
+|---|---|---|---|---|
+| Operator verify Alpaca dashboard for AVAX/USD | `OPERATOR` | yes | `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` | `pending` |
+| Operator verify Alpaca dashboard for ETH/USD | `OPERATOR` | yes | `docs/operator_repair_templates/ETH_USD_repair_marker_template.md` | `pending` |
+| Operator verify Alpaca dashboard for LTC/USD | `OPERATOR` | yes | `docs/operator_repair_templates/LTC_USD_repair_marker_template.md` | `pending` |
+| Operator record repair markers | `OPERATOR` | yes | `scripts/record_operator_repair_confirmation.py` | `pending` |
+| Operator run clearance proposal | `OPERATOR` | yes | `scripts/run_operator_clearance_readiness.py` | `pending` |
+| Operator reconcile safe_mode | `OPERATOR` | yes | `scripts/propose_safe_mode_reconciliation.py` | `pending` |
+| GitHub secret GEMINI_API_KEY | `GITHUB_SECRET` | no | `Settings -> Secrets and variables -> Actions` | `pending` |
+| Market trigger required for positive entry rows | `MARKET_TRIGGER` | no | `discovery layer` | `observing` |
+| Shadow-only requires deterministic gate clean | `SYSTEM (auto when operator clears)` | no | `system_activation_gate` | `pending` |
 
 ---
 

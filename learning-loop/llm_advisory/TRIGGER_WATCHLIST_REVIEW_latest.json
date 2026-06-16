@@ -4,16 +4,42 @@
   "authority_level": "L0_ADVISORY_ONLY",
   "confidence": "LOW",
   "dry_run": true,
-  "findings": "LLM provider unavailable for TRIGGER_WATCHLIST_REVIEW; deterministic fallback active. Deterministic gates remain final.",
-  "generated_at_iso": "2026-06-16T09:21:27.565172+00:00",
+  "findings": "LLM provider unavailable for TRIGGER_WATCHLIST_REVIEW; deterministic stub ACTIVE. ; Deterministic gates (allocator_incident_gate, safe_mode, broker_repair_required) remain the final authority. ; No new evidence has been inferred by this output; rely on the existing on-disk diagnostic artefacts.",
+  "findings_list": [
+    "LLM provider unavailable for TRIGGER_WATCHLIST_REVIEW; deterministic stub ACTIVE.",
+    "Deterministic gates (allocator_incident_gate, safe_mode, broker_repair_required) remain the final authority.",
+    "No new evidence has been inferred by this output; rely on the existing on-disk diagnostic artefacts."
+  ],
+  "generated_at_iso": "2026-06-16T13:11:13.105482+00:00",
   "input_artifacts": [
     "learning-loop/trigger_watchlist/latest.json"
   ],
-  "limitations": "This output is a deterministic placeholder. It carries no model evaluation and no evidence inference. Operators and deterministic gates should rely on the existing deterministic stack.",
+  "limitations": "Deterministic stub carries no model evaluation. The advisory layer fails OPEN at the recommendation level (ALLOW) so LLM unavailability never blocks trading on its own. The deterministic stack still controls broker / order / risk flow.",
   "must_not_execute_orders": true,
+  "next_actions_list": [
+    "Inspect learning-loop/llm_advisory/llm_budget_state.json and learning-loop/llm_provider_health_latest.json.",
+    "If health verdict is DEGRADED/UNKNOWN, add or rotate the GEMINI_API_KEY GitHub Actions secret. Do NOT auto-apply."
+  ],
+  "provider_called": false,
+  "provider_status": "PROVIDER_NOT_INVOKED",
+  "quality_report": {
+    "findings_count": 0,
+    "limitations_len": 0,
+    "next_actions_count": 0,
+    "rationale": [
+      "no provider call attempted"
+    ],
+    "risks_count": 0,
+    "verdict": "LLM_ADVISORY_QUALITY_EMPTY"
+  },
+  "quality_verdict": "LLM_ADVISORY_QUALITY_EMPTY",
   "recommendation": "ALLOW",
   "risk_level": "LOW",
-  "run_id": "mesh-7d3677b815ed",
+  "risks_list": [
+    "LLM advisory layer is degraded \u2014 operator should verify GEMINI_API_KEY / quota / endpoint reachability.",
+    "Risk and incident reports must be read directly from learning-loop/* artefacts; do not infer from this stub."
+  ],
+  "run_id": "mesh-a6ca6fa3cd48",
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
     "ALLOW_BROKER_PAPER=false",

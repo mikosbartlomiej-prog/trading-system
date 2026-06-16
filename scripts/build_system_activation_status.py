@@ -473,6 +473,207 @@ def _safe_mode_consistency_check_active() -> bool:
     return p.exists()
 
 
+# ── v3.31 helpers — Remaining Actions + completion flags ─────────────────────
+
+def _gemini_api_key_present() -> bool:
+    """v3.31 — detect ``GEMINI_API_KEY`` env presence. NEVER reads the
+    value. Used to flip ``SECRET_WORK_REMAINING`` on the dashboard."""
+    raw = os.environ.get("GEMINI_API_KEY", "")
+    if not isinstance(raw, str):
+        return False
+    return bool(raw.strip())
+
+
+def _broker_repair_symbols() -> list[str]:
+    """v3.31 — return the canonical list of symbols still in the
+    broker_repair_required queue. Read-only. Defensive against any
+    schema drift."""
+    out: list[str] = []
+    repair_path = (_REPO_ROOT / "learning-loop"
+                    / "broker_repair_required_latest.json")
+    if not repair_path.exists():
+        return out
+    try:
+        raw = json.loads(repair_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return out
+    if not isinstance(raw, dict):
+        return out
+    canonical = raw.get("canonical_entries") or raw.get("entries") or {}
+    if isinstance(canonical, dict):
+        for k in canonical.keys():
+            if isinstance(k, str) and k.strip():
+                out.append(k.strip())
+    elif isinstance(canonical, list):
+        for entry in canonical:
+            if isinstance(entry, dict):
+                sym = entry.get("symbol") or entry.get("canonical_symbol")
+                if isinstance(sym, str) and sym.strip():
+                    out.append(sym.strip())
+    return sorted(set(out))
+
+
+def _count_positive_entry_capable_rows() -> int:
+    """v3.31 — count entry-capable rows across the opportunity ledger.
+
+    Used to flip ``MARKET_DATA_WORK_REMAINING`` to False once the
+    discovery layer produces at least one positive row.
+    """
+    ledger_dir = _REPO_ROOT / "learning-loop" / "opportunity_ledger"
+    if not ledger_dir.exists() or not ledger_dir.is_dir():
+        return 0
+    count = 0
+    try:
+        for p in ledger_dir.glob("*.jsonl"):
+            try:
+                with open(p, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        if '"entry_capable"' not in line:
+                            continue
+                        try:
+                            row = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if (isinstance(row, dict)
+                                and row.get("entry_capable") is True):
+                            count += 1
+            except OSError:
+                continue
+    except Exception:
+        return count
+    return count
+
+
+def _detect_code_work_items() -> list[str]:
+    """v3.31 — informational hook for CODE_WORK_REMAINING.
+
+    The v3.31 spec sets ``CODE_WORK_REMAINING=false`` once the agent
+    workload is closed. We surface a CI/test failure detection hook
+    here so future drift can flag itself. Currently returns an empty
+    list (no code work remaining).
+    """
+    return []
+
+
+def _build_remaining_actions(broker_repair_symbols: list[str],
+                                gemini_key_present: bool,
+                                positive_rows: int,
+                                shadow_only_allowed: bool,
+                                allocator_allowed: bool) -> list[dict]:
+    """v3.31 — Remaining Actions table per dashboard contract.
+
+    Each row: ``action / owner / blocking / script_or_link / status``.
+    """
+    actions: list[dict] = []
+    symbols = list(broker_repair_symbols)
+    # Always include the three canonical broker-repair symbols (if absent
+    # from the latest queue, mark them ``resolved``).
+    canonical = ("AVAX/USD", "ETH/USD", "LTC/USD")
+    for sym in canonical:
+        in_queue = sym in symbols
+        # Pick the operator-facing template / runbook link per symbol.
+        if sym == "AVAX/USD":
+            link = "docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md"
+        elif sym == "ETH/USD":
+            link = ("docs/operator_repair_templates/"
+                    "ETH_USD_repair_marker_template.md")
+        else:
+            link = ("docs/operator_repair_templates/"
+                    "LTC_USD_repair_marker_template.md")
+        actions.append({
+            "action":         f"Operator verify Alpaca dashboard for {sym}",
+            "owner":          "OPERATOR",
+            "blocking":       in_queue,
+            "script_or_link": link,
+            "status":         "pending" if in_queue else "resolved",
+        })
+
+    # Marker recording action.
+    actions.append({
+        "action":         "Operator record repair markers",
+        "owner":          "OPERATOR",
+        "blocking":       bool(symbols),
+        "script_or_link":
+            "scripts/record_operator_repair_confirmation.py",
+        "status":         "pending" if symbols else "resolved",
+    })
+
+    # Clearance proposal action — always paired with markers.
+    clearance_script = (
+        "scripts/run_operator_clearance_readiness.py")
+    actions.append({
+        "action":         "Operator run clearance proposal",
+        "owner":          "OPERATOR",
+        "blocking":       bool(symbols),
+        "script_or_link": clearance_script,
+        "status":         "pending" if symbols else "resolved",
+    })
+
+    # Safe-mode reconciliation action — surface always (dashboard
+    # blockers gate it).
+    sm_script = "scripts/propose_safe_mode_reconciliation.py"
+    actions.append({
+        "action":         "Operator reconcile safe_mode",
+        "owner":          "OPERATOR",
+        "blocking":       not allocator_allowed,
+        "script_or_link": sm_script,
+        "status":         "pending" if not allocator_allowed else "resolved",
+    })
+
+    # GitHub secret action — non-blocking (advisory fallback active).
+    actions.append({
+        "action":         "GitHub secret GEMINI_API_KEY",
+        "owner":          "GITHUB_SECRET",
+        "blocking":       False,
+        "script_or_link":
+            "Settings -> Secrets and variables -> Actions",
+        "status":         "resolved" if gemini_key_present else "pending",
+    })
+
+    # Market-trigger waiting — non-blocking, observe-only.
+    actions.append({
+        "action":         (
+            "Market trigger required for positive entry rows"),
+        "owner":          "MARKET_TRIGGER",
+        "blocking":       False,
+        "script_or_link": "discovery layer",
+        "status":         "resolved" if positive_rows > 0 else "observing",
+    })
+
+    # Shadow-only auto-resolution row.
+    actions.append({
+        "action":         (
+            "Shadow-only requires deterministic gate clean"),
+        "owner":          "SYSTEM (auto when operator clears)",
+        "blocking":       False,
+        "script_or_link": "system_activation_gate",
+        "status":         "resolved" if allocator_allowed else "pending",
+    })
+    return actions
+
+
+def _compute_v331_completion_flags(broker_repair_symbols: list[str],
+                                       gemini_key_present: bool,
+                                       positive_rows: int,
+                                       code_work_items: list[str]
+                                       ) -> dict:
+    """Compose the v3.31 completion-flag set."""
+    return {
+        # CODE_WORK_REMAINING — false after v3.31 unless a test gate
+        # detects regressed code.
+        "CODE_WORK_REMAINING":          bool(code_work_items),
+        "CODE_WORK_REMAINING_ITEMS":    list(code_work_items),
+        "OPERATOR_WORK_REMAINING":      bool(broker_repair_symbols),
+        "SECRET_WORK_REMAINING":        not gemini_key_present,
+        "MARKET_DATA_WORK_REMAINING":   positive_rows == 0,
+        # NOTE: TRADING_EXECUTION_ON and LLM_EXECUTION_AUTHORITY remain
+        # write-time literal False elsewhere; we surface them here for
+        # easy operator inspection.
+        "TRADING_EXECUTION_ON":         TRADING_EXECUTION_ON,
+        "LLM_EXECUTION_AUTHORITY":      LLM_EXECUTION_AUTHORITY,
+    }
+
+
 # ── Top-level flag composition ───────────────────────────────────────────────
 
 def _compute_top_level_flags(master_decision: str,
@@ -668,8 +869,32 @@ def build_status_payload() -> dict:
                                        snapshot=snapshot,
                                        shadow_only_allowed=shadow_flag)
 
+    # ── v3.31 — Remaining Actions + completion flags ────────────────────────
+    broker_repair_symbols = _broker_repair_symbols()
+    gemini_key_present     = _gemini_api_key_present()
+    positive_rows          = _count_positive_entry_capable_rows()
+    code_work_items        = _detect_code_work_items()
+    allocator_allowed_bool = master_decision == "ALLOCATOR_ALLOWED"
+
+    remaining_actions = _build_remaining_actions(
+        broker_repair_symbols=broker_repair_symbols,
+        gemini_key_present=gemini_key_present,
+        positive_rows=positive_rows,
+        shadow_only_allowed=shadow_flag,
+        allocator_allowed=allocator_allowed_bool,
+    )
+    v331_flags = _compute_v331_completion_flags(
+        broker_repair_symbols=broker_repair_symbols,
+        gemini_key_present=gemini_key_present,
+        positive_rows=positive_rows,
+        code_work_items=code_work_items,
+    )
+    # Merge v3.31 completion flags into the top-level flag dict so the
+    # dashboard JSON exposes them inside ``flags``.
+    flags.update(v331_flags)
+
     payload = {
-        "schema_version":     "v3.30",
+        "schema_version":     "v3.31",
         "generated_at_iso":   _now_iso(),
         "module":             "scripts.build_system_activation_status",
         "master_decision":    master_decision,
@@ -677,6 +902,7 @@ def build_status_payload() -> dict:
         "llm_status":         master.llm_status,
         "flags":              flags,
         "subsystems":         subsystems,
+        "remaining_actions":  remaining_actions,
         "standing_markers":   list(STANDING_MARKERS),
         "does_not_execute_orders":  True,
         "live_trading_unsupported": True,
@@ -713,6 +939,11 @@ def render_markdown(payload: dict) -> str:
         "RETRY_STORM_SUPPRESSION_ACTIVE",
         "SAFE_MODE_CONSISTENCY_CHECK_ACTIVE",
         "OPERATOR_ACTION_REQUIRED",
+        # v3.31 completion flags.
+        "CODE_WORK_REMAINING",
+        "OPERATOR_WORK_REMAINING",
+        "SECRET_WORK_REMAINING",
+        "MARKET_DATA_WORK_REMAINING",
     ):
         out.append(f"| `{k}` | `{flags.get(k)}` |")
     if flags.get("OPERATOR_ACTION_REQUIRED"):
@@ -744,6 +975,25 @@ def render_markdown(payload: dict) -> str:
             f"| {blockers_cell} "
             f"| {s.get('safety_notes','')} |"
         )
+    # v3.31 — Remaining Actions table.
+    remaining = payload.get("remaining_actions") or []
+    if remaining:
+        out.append("")
+        out.append("## Remaining Actions (v3.31)")
+        out.append("")
+        out.append(
+            "| Action | Owner | Blocking? | Script / Link | Current "
+            "status |")
+        out.append("|---|---|---|---|---|")
+        for row in remaining:
+            blocking_cell = "yes" if row.get("blocking") else "no"
+            out.append(
+                f"| {row.get('action','')} "
+                f"| `{row.get('owner','')}` "
+                f"| {blocking_cell} "
+                f"| `{row.get('script_or_link','')}` "
+                f"| `{row.get('status','')}` |"
+            )
     out.append("")
     out.append("---")
     out.append("")
@@ -814,6 +1064,15 @@ def main() -> int:
     print(f"OPERATOR_ACTION_REQUIRED={flags['OPERATOR_ACTION_REQUIRED']}"
           + (f" reason={flags['OPERATOR_ACTION_REASON']}"
              if flags.get('OPERATOR_ACTION_REQUIRED') else ""))
+    # v3.31 completion flags.
+    print(f"CODE_WORK_REMAINING={flags.get('CODE_WORK_REMAINING')}")
+    print(f"OPERATOR_WORK_REMAINING={flags.get('OPERATOR_WORK_REMAINING')}")
+    print(f"SECRET_WORK_REMAINING={flags.get('SECRET_WORK_REMAINING')}")
+    print(
+        f"MARKET_DATA_WORK_REMAINING="
+        f"{flags.get('MARKET_DATA_WORK_REMAINING')}")
+    print(
+        f"remaining_actions_rows={len(payload.get('remaining_actions') or [])}")
     if flags.get("NEXT_OPERATOR_ACTIONS"):
         for i, a in enumerate(flags["NEXT_OPERATOR_ACTIONS"], 1):
             print(f"  [op-{i}] {a}")

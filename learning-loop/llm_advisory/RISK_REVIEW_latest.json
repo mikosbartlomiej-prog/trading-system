@@ -10,7 +10,7 @@
     "Deterministic gates (allocator_incident_gate, safe_mode, broker_repair_required) remain the final authority.",
     "No new evidence has been inferred by this output; rely on the existing on-disk diagnostic artefacts."
   ],
-  "generated_at_iso": "2026-06-16T12:24:45.670092+00:00",
+  "generated_at_iso": "2026-06-16T13:11:13.103944+00:00",
   "input_artifacts": [
     "learning-loop/runtime_state.json",
     "learning-loop/risk_budget_latest.json"
@@ -40,7 +40,7 @@
     "LLM advisory layer is degraded \u2014 operator should verify GEMINI_API_KEY / quota / endpoint reachability.",
     "Risk and incident reports must be read directly from learning-loop/* artefacts; do not infer from this stub."
   ],
-  "run_id": "mesh-33521fd61897",
+  "run_id": "mesh-42b4d6761981",
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
     "ALLOW_BROKER_PAPER=false",

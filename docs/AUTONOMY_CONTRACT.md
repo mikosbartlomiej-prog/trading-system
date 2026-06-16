@@ -893,3 +893,79 @@ All four scenarios verify zero broker calls; every order function in
 `ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
 `BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
 
+
+---
+
+## v3.31 — Final repo-side closure
+
+Generated: 2026-06-16T13:14:44Z
+HEAD: `d94986628b2234f0b2138b6b9867648f4b64d7b7` (pre-commit)
+
+v3.31 is the **last repo-side sprint**. From this commit onward, the
+remaining blockers to allocator unblock are NOT code work — they are
+explicitly:
+
+1. **OPERATOR work.** Apply 5 broker-repair markers (AVAX, AVAXUSD,
+   ETH, ETHUSD, LTCUSD) and reconcile safe-mode runtime persistence
+   with historical ENTERED audit rows.
+2. **SECRET work.** Provision `GEMINI_API_KEY` to activate the real
+   LLM provider path (LLM advisory mesh stays on deterministic-ALLOW
+   fallback without it — no degradation, just less rich advice).
+3. **MARKET-DATA work.** Wait for entry-capable signals to accumulate
+   in the v3.20+ ledger / v3.22+ emitter pipeline.
+
+### v3.31 deliverables (all read-only / proposal-only / dry-run)
+
+- **Templates (3):** `docs/operator_repair_templates/{AVAX,ETH,LTC}_USD_repair_marker_template.md`.
+  Explicit `_template.md` suffix. The operator must copy, fill, and
+  register via `scripts/record_operator_repair_confirmation.py
+  --operator-confirmed`. **Template existence does NOT count as
+  confirmation.** Templates under `docs/operator_repair_templates/`
+  and `learning-loop/operator_markers/templates/` are explicitly NOT
+  markers.
+- **`scripts/run_operator_clearance_readiness.py`** — sweep over the
+  five outstanding broker-repair symbols + safe-mode consistency;
+  emits a readiness verdict per blocker.
+- **`scripts/propose_safe_mode_reconciliation.py`** — dry-run only;
+  writes a proposal artefact describing reconciliation; NEVER flips
+  runtime state.
+- **`scripts/propose_clear_broker_repair_canonical.py`** — dry-run
+  only; refuses to write without a valid operator marker; emits
+  proposal artefact only.
+- **`scripts/check_post_repair_activation_path.py`** — simulates the
+  post-clearance chain without mutating anything; reports the
+  expected post-clearance master gate verdict.
+- **`scripts/check_llm_real_provider_activation.py`** — reports
+  whether `GEMINI_API_KEY` is provisioned WITHOUT ever printing the
+  value.
+- **`scripts/build_llm_advisory_output_quality_report.py`** —
+  strictly read-only; aggregates LLM advisory output quality.
+- **`scripts/build_system_activation_status.py`** — extended with
+  three new top-level flags: `CODE_WORK_REMAINING`,
+  `SECRET_WORK_REMAINING`, `MARKET_DATA_WORK_REMAINING`.
+
+### Hard safety re-asserted
+
+1. **No live execution.** `EDGE_GATE_ENABLED=false`,
+   `ALLOW_BROKER_PAPER=false`, `LIVE_TRADING_UNSUPPORTED`,
+   `NO_ORDER_PLACEMENT`.
+2. **No NEW broker callsites in v3.31 code.** AST + grep verified —
+   no `submit_order` / `place_order` / `safe_close` / `cancel_order`
+   / `close_position` / `close_all_positions`.
+3. **No LLM execution authority.** Authority stays `L0`/`L1`;
+   deterministic gate is always final.
+4. **No LLM state mutation.** `NO_LLM_STATE_MUTATION`.
+5. **No `operator_markers/` non-template files committed by Claude.**
+   Only templates under `/templates/` are allowed.
+6. **No safe_mode auto-clear.** All clearance is proposal-only.
+7. **No broker-repair auto-clear.** Operator marker required.
+8. **No paid services added.** LLM real provider stays in fallback
+   when secret absent.
+9. **No fabricated evidence.** Templates are explicitly templates;
+   simulation scripts explicitly simulate.
+
+`CODE_WORK_COMPLETE_OPERATOR_ACTION_REQUIRED`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`. `LIVE_TRADING_UNSUPPORTED`.
+`NO_ORDER_PLACEMENT`. `NO_AUTO_BROKER_ACTION`. `LLM_ADVISORY_ONLY`.
+`BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
+`NO_FABRICATION`.

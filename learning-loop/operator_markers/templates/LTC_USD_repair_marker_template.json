@@ -1,0 +1,26 @@
+{
+  "_template_notice": "THIS IS A TEMPLATE. Filling this file does NOT count as confirmation. The ONLY way to register a real marker is to run scripts/record_operator_repair_confirmation.py --symbol LTC/USD --operator-confirmed [--dry-run=false]. Templates live under docs/operator_repair_templates/ or learning-loop/operator_markers/templates/ and are NEVER scanned for real markers.",
+  "_standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION",
+    "NO_AUTO_SAFE_MODE_CLEAR",
+    "NO_AUTO_BROKER_REPAIR_CLEAR",
+    "TEMPLATE_FILE_DOES_NOT_COUNT_AS_MARKER"
+  ],
+  "symbol": "LTC/USD",
+  "incident_type": "P13_BRACKET_INTERLOCK",
+  "dashboard_checked": "<FILL_BY_OPERATOR true|false>",
+  "open_orders_checked": "<FILL_BY_OPERATOR true|false>",
+  "stale_oco_cancelled_by_operator": "<FILL_BY_OPERATOR true|false|unknown>",
+  "position_closed_by_operator": "<FILL_BY_OPERATOR true|false|unknown>",
+  "final_position_state": "<FILL_BY_OPERATOR free text e.g. qty=0 confirmed at 14:02 UTC>",
+  "final_open_orders_state": "<FILL_BY_OPERATOR free text e.g. none confirmed at 14:02 UTC>",
+  "equity_checked": "<FILL_BY_OPERATOR true|false>",
+  "dashboard_timestamp_utc": "<FILL_BY_OPERATOR YYYY-MM-DDThh:mm:ssZ>",
+  "operator_note": "<FILL_BY_OPERATOR free text reason / ticket id / notes>",
+  "screenshot_reference_optional": "<FILL_BY_OPERATOR path or url or empty>",
+  "operator_name_optional": "<FILL_BY_OPERATOR name or initials or empty>"
+}

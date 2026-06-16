@@ -193,3 +193,125 @@ read-only, and paper-only:
 - `LIVE_TRADING_UNSUPPORTED`
 - `NO_ORDER_PLACEMENT`
 - `NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE`
+
+---
+
+## v3.31 — Per-symbol templates + end-to-end clearance flow
+
+v3.31 ships paper-only templates for each canonical repair symbol
+plus a consolidated readiness wrapper. The templates are advisory;
+they do NOT advance any state on their own.
+
+### Template locations (NOT scanned as real markers)
+
+- `docs/operator_repair_templates/<safe_symbol>_repair_marker_template.md`
+- `learning-loop/operator_markers/templates/<safe_symbol>_repair_marker_template.json`
+
+Where `<safe_symbol>` substitutes `/` → `_` (e.g. `AVAX_USD`).
+
+The marker scanner in `shared/operator_repair_state.py` ONLY reads
+files directly under `learning-loop/operator_markers/` matching
+`<safe_symbol>_<YYYY-MM-DD>.json`. Anything under a `templates/`
+subdirectory or named with the `_template.md` / `_template.json`
+suffix is explicitly ignored.
+
+### End-to-end operator checklist (v3.31)
+
+This is the canonical step-by-step the operator follows when a
+quarantine alert lands. Every step is paper-only; never live.
+
+1. Open the Alpaca **paper** dashboard at
+   <https://app.alpaca.markets/paper/dashboard/overview>
+   (paper only — the system explicitly does NOT support live).
+2. For each canonical repair symbol — currently `AVAX/USD`,
+   `ETH/USD`, `LTC/USD` — inspect:
+   - position panel (qty, avg entry, unrealized P/L)
+   - open-orders panel (any OCO / bracket child / stop / limit)
+3. Cancel any orphaned OCO / bracket-child legs that the
+   autonomous retry path could not unwind.
+4. Decide whether the residual position should be closed manually
+   (a paper-side flat) or left intentionally.
+5. Verify the final position state and final open-orders state
+   with your own eyes from the dashboard.
+6. For each symbol you actually inspected, copy the template from
+   `docs/operator_repair_templates/<safe_symbol>_repair_marker_template.md`
+   (read-only — do NOT edit the template file in place; it is just
+   a reference for what to put in the CLI call), then run:
+
+   ```
+   python3 scripts/record_operator_repair_confirmation.py \
+       --symbol AVAX/USD \
+       --incident-type P13_BRACKET_INTERLOCK \
+       --dashboard-checked \
+       --open-orders-checked \
+       --stale-oco-cancelled true \
+       --position-closed true \
+       --final-position-state "qty=0 confirmed at 14:02 UTC" \
+       --final-open-orders-state "none confirmed at 14:02 UTC" \
+       --equity-checked \
+       --operator-note "manually closed AVAX/USD dust + cancelled orphan OCO" \
+       --operator-confirmed
+   ```
+
+   This is the ONLY path that writes a real marker. Repeat for
+   `ETH/USD` and `LTC/USD` separately.
+
+7. Once markers exist for ALL 3 canonical repair symbols, run the
+   v3.31 consolidated readiness wrapper:
+
+   ```
+   python3 scripts/run_operator_clearance_readiness.py
+   ```
+
+   With no flags it defaults to dry-run. It validates per-symbol
+   that the marker exists, that no fresh P13 / retry-storm event
+   landed after the marker, that the safe-mode-consistency verdict
+   is `CONSISTENT` (not `INCONSISTENT_ENTERED_NOT_PERSISTED`),
+   that the equity-gap report does NOT block, and that the
+   broker-repair entry is still active (i.e. there is something to
+   clear).
+
+   Possible per-symbol / overall verdicts:
+   - `NOT_READY_NO_MARKER`
+   - `NOT_READY_FRESH_P13_AFTER_MARKER`
+   - `NOT_READY_SAFE_MODE_INCONSISTENT`
+   - `NOT_READY_EQUITY_GAP`
+   - `NOT_READY_BROKER_REPAIR_STILL_ACTIVE`
+   - `READY_TO_PROPOSE_CLEARANCE` (dry-run stops here)
+   - `CLEARANCE_PROPOSAL_WRITTEN` (only with
+     `--apply --operator-confirmed`)
+   - `READY_FOR_OPERATOR_MANUAL_APPLY`
+
+8. If you choose to materialize a proposal (still write-only;
+   does NOT clear safe_mode or broker_repair_required), run:
+
+   ```
+   python3 scripts/run_operator_clearance_readiness.py \
+       --apply --operator-confirmed
+   ```
+
+   The wrapper delegates each READY symbol to
+   `scripts/propose_clear_broker_repair_and_safe_mode.py`. That
+   script never auto-clears anything either — it only writes a
+   proposal JSON for operator review.
+
+9. Finally, re-run the dashboard / `system_activation_status`
+   build (`scripts/build_system_activation_status.py`) to confirm
+   that the activation gate's blocker list reflects reality.
+
+### What this flow still does NOT do
+
+- It does NOT call the broker.
+- It does NOT import `alpaca_orders`.
+- It does NOT clear `safe_mode`.
+- It does NOT clear `broker_repair_required` automatically.
+- It does NOT flip `LIVE_TRADING` / `ALLOW_BROKER_PAPER` /
+  `EDGE_GATE_ENABLED`.
+- It does NOT place, cancel, or modify orders.
+- Filling a template file does NOT count as confirmation.
+
+`run_operator_clearance_readiness.py` is fail-closed. If anything
+is unclear it returns `NOT_READY_*` and refuses to write a
+proposal even with `--operator-confirmed`. Live remains
+unsupported.
+

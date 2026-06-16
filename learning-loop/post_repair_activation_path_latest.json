@@ -1,0 +1,47 @@
+{
+  "blocked_symbols": [
+    "AVAX/USD",
+    "ETH/USD",
+    "LTC/USD"
+  ],
+  "blockers_current": [
+    "operator_confirmation_required=['AVAX/USD', 'ETH/USD', 'LTC/USD']",
+    "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED",
+    "broker_repair_required=['AVAX/USD', 'ETH/USD', 'LTC/USD']",
+    "fresh_p13_count=86"
+  ],
+  "blockers_simulated": [
+    "fresh_p13_count=86"
+  ],
+  "current_verdict": "BLOCKED_OPERATOR_MARKER_REQUIRED",
+  "equity_gap_verdict": "EQUITY_GAP_OK",
+  "evaluated_at_iso": "2026-06-16T13:13:09.083296+00:00",
+  "execution_layer": {
+    "allow_broker_paper": false,
+    "broker_execution_enabled": false,
+    "edge_gate_enabled": false,
+    "live_trading_unsupported": true,
+    "no_order_placement": true,
+    "note": "Even if simulated_verdict == READY_FOR_ALLOCATOR, the execution layer remains DISABLED by architectural design until a separate audited PR enables it. Operator clearance is necessary but not sufficient for execution."
+  },
+  "execution_note": "EXECUTION_STILL_DISABLED_BY_DESIGN",
+  "fresh_p13_count": 86,
+  "llm_advisory_status": "informational_only",
+  "runtime_safe_mode_active": false,
+  "safe_mode_consistency_verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED",
+  "schema_version": "v3.31",
+  "simulated_verdict": "BLOCKED_FRESH_INCIDENT",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+  ],
+  "symbols_with_marker": [],
+  "symbols_without_marker": [
+    "AVAX/USD",
+    "ETH/USD",
+    "LTC/USD"
+  ]
+}

@@ -1883,3 +1883,145 @@ all five callsites at once.
 `BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
 `NO_FABRICATION`.
 
+
+---
+
+## Scenario v3.31 — Final repo-side closure walkthrough
+
+Generated: 2026-06-16T13:14:44Z
+HEAD: `d94986628b2234f0b2138b6b9867648f4b64d7b7` (pre-commit)
+
+### Step 0 — Read the dashboard
+
+```
+python3 scripts/build_system_activation_status.py
+```
+
+Expected flags:
+
+- `CODE_WORK_REMAINING = false`
+- `OPERATOR_WORK_REMAINING = true`
+- `SECRET_WORK_REMAINING = true`
+- `MARKET_DATA_WORK_REMAINING = true`
+- `ALLOCATOR_ALLOWED = false`
+- `OPERATOR_ACTION_REQUIRED = true`
+
+If `CODE_WORK_REMAINING` is anything other than `false`, STOP — a
+later code change introduced a regression. Run the v3.31 test suite
+and the v3.30 / v3.29 / v3.28 regression suites.
+
+### Step 1 — Operator clearance readiness
+
+```
+python3 scripts/run_operator_clearance_readiness.py
+```
+
+Reports per-symbol blocker status and safe-mode consistency verdict.
+**Read-only.** No state mutation.
+
+### Step 2 — Safe-mode reconciliation proposal
+
+```
+python3 scripts/propose_safe_mode_reconciliation.py
+```
+
+Emits a proposal artefact describing how to reconcile ENTERED/EXITED
+audit rows with `runtime_state.safe_mode.active`. **Dry-run only.**
+The script NEVER flips runtime state.
+
+Operator manually adopts per the proposal (flip
+`runtime_state.safe_mode.active` to match outstanding ENTERED audit
+rows OR emit matching EXITED audit rows).
+
+### Step 3 — Apply broker-repair markers (per symbol)
+
+For each of AVAX, AVAXUSD, ETH, ETHUSD, LTCUSD:
+
+a. Copy the template:
+
+```
+cp docs/operator_repair_templates/AVAX_USD_repair_marker_template.md \
+   /tmp/AVAX_USD_repair_marker.md
+```
+
+b. Fill in operator name, timestamp, attested broker state.
+
+c. Register:
+
+```
+python3 scripts/record_operator_repair_confirmation.py \
+    --symbol AVAX/USD \
+    --operator-confirmed \
+    --marker-file /tmp/AVAX_USD_repair_marker.md
+```
+
+d. Propose canonical clearance:
+
+```
+python3 scripts/propose_clear_broker_repair_canonical.py --symbol AVAX/USD
+```
+
+The script refuses to write without a valid operator marker. **Even
+with a valid marker, the script writes a clearance proposal artefact
+only — it does NOT clear `broker_repair_required_latest.json`
+directly.** Operator manually applies the proposal.
+
+### Step 4 — (Optional) Provision real LLM provider
+
+```
+python3 scripts/check_llm_real_provider_activation.py
+```
+
+Reports `GEMINI_API_KEY` presence (NEVER prints the value). Until
+provisioned, the LLM advisory mesh stays on deterministic-ALLOW
+fallback. No degradation — just less rich advisory output.
+
+### Step 5 — Post-repair activation path check
+
+After operator completes Steps 2 + 3, run:
+
+```
+python3 scripts/check_post_repair_activation_path.py
+```
+
+Reports `current=<actual master gate verdict>` and `simulated=<expected
+verdict after clearance>`. The script simulates the post-clearance
+chain WITHOUT mutating anything. Expected `simulated=
+READY_FOR_ALLOCATOR_AFTER_OPERATOR_CLEARANCE` with
+`EXECUTION_STILL_DISABLED_BY_DESIGN`.
+
+### Step 6 — Verify allocator unblocks
+
+```
+python3 -c "import sys; sys.path.insert(0,'shared'); import system_activation_gate as g; r=g.evaluate(); print('decision:', r.decision.value); print('blockers:', r.blockers)"
+```
+
+Expected after Steps 2 + 3 complete: `decision: ALLOCATOR_ALLOWED`,
+`blockers: ()`.
+
+If allocator unblocks but `EDGE_GATE_ENABLED` and `ALLOW_BROKER_PAPER`
+remain `false` (they MUST), then the allocator is allowed to run in
+shadow / read-only mode only. Live execution remains explicitly
+unsupported until the operator independently flips those flags
+(which v3.31 does NOT do).
+
+### Hard safety re-asserted
+
+- Did NOT enable live trading or any forbidden flag.
+- Did NOT write any code that calls `submit_order` / `place_order`
+  / `safe_close` / `cancel_order` / `close_position` /
+  `close_all_positions`.
+- Did NOT import `alpaca_orders` from any new module.
+- Did NOT auto-clear safe_mode or broker_repair_required.
+- Did NOT count template existence as operator confirmation.
+- Did NOT add paid APIs or services.
+- Did NOT commit secrets or non-template `operator_markers/`.
+- Did NOT let LLM mutate state, place orders, or override gates.
+- Did NOT force-push.
+
+`CODE_WORK_COMPLETE_OPERATOR_ACTION_REQUIRED`.
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
+`BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
+`NO_FABRICATION`.

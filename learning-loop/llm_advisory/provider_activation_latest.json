@@ -1,0 +1,34 @@
+{
+  "advisory_only": true,
+  "dry_run": true,
+  "gemini_api_key_present": false,
+  "gemini_api_key_source": "absent",
+  "generated_at_iso": "2026-06-16T13:11:22.091314+00:00",
+  "live_trading_unsupported": true,
+  "module": "scripts.check_llm_real_provider_activation",
+  "must_not_execute_orders": true,
+  "no_auto_broker_action": true,
+  "no_order_placement": true,
+  "operator_instructions": [
+    "GitHub repo: Settings -> Secrets and variables -> Actions -> New repository secret",
+    "Name: GEMINI_API_KEY",
+    "Value: <obtain from https://aistudio.google.com/apikey>",
+    "After saving, the daily llm-advisory-mesh.yml workflow will use the secret automatically"
+  ],
+  "reason": "GEMINI_API_KEY not present in env; LLM advisory mesh remains in deterministic fallback. Deterministic gates remain final.",
+  "schema_version": "v3.31",
+  "smoke_status": "",
+  "smoke_test_executed": false,
+  "smoke_test_requested": false,
+  "smoke_text_redacted": "",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER",
+    "LLM_ADVISORY_ONLY",
+    "NO_LLM_STATE_MUTATION"
+  ],
+  "verdict": "DETERMINISTIC_FALLBACK_UNTIL_SECRET_SET"
+}
