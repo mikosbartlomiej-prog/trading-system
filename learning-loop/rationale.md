@@ -992,3 +992,13 @@
 - 2026-06-15 · equity-gap [WARN]: Equity dropped $7,940 ($98,446 → $90,506) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 - 2026-06-15 · peak-tracker: intraday: peak $+1,345 at 180+00:0 current $+897 giveback 33% state=PROFIT_LOCK max_gross=1.00 floor=$336
 
+- 2026-06-16 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-06-16 · crypto-momentum: SILENT 80d but LLM override 2026-06-07 active (9d ago < 14d lock) → keep enabled
+- 2026-06-16 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 80d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-16 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 80d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-16 · geo-gold: SILENT 80d with 2 placement attempts — insufficient sample for prune (need ≥5). v3.11.1 keeps enabled.
+- 2026-06-16 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 80d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-06-16 · options-momentum: SILENT 80d but LLM override 2026-06-07 active (9d ago < 14d lock) → keep enabled
+- 2026-06-16 · crypto-oversold-bounce: SILENT 80d but LLM override 2026-06-07 active (9d ago < 14d lock) → keep enabled
+- 2026-06-16 · equity-gap [WARN]: Equity dropped $7,940 ($98,446 → $90,506) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+
