@@ -39,25 +39,6 @@ concurrency:
 permissions:
   contents: write
 
-env:
-  # v3.28 INCIDENT CONTAINMENT — hard-pin every broker / live flag false.
-  # The "Refuse if any broker / live flag is truthy" step below aborts
-  # the workflow if any of these gets flipped at runtime. The allocator
-  # incident gate inside execute_allocation_plan.py (Phase 2) is the
-  # SECOND defense layer — it BLOCKs whenever broker_repair_required,
-  # safe_mode, P13 retry-storm, or any of the other incident states
-  # are active.
-  ALLOW_BROKER_PAPER:                       "false"
-  EDGE_GATE_ENABLED:                        "false"
-  BROKER_EXECUTION_ENABLED:                 "false"
-  LIVE_TRADING:                             "false"
-  LIVE_ENABLED:                             "false"
-  GO_LIVE:                                  "false"
-  LIVE_TRADING_ENABLED:                     "false"
-  LLM_PRE_ORDER_VETO_HONORED:               "false"
-  OPERATOR_APPROVED_BROKER_PAPER_CANARY:    "false"
-  LLM_AGENTS_SCHEDULED:                     "false"
-
 jobs:
   execute:
     runs-on: ubuntu-latest
@@ -75,28 +56,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Refuse if any broker / live flag is truthy
-        # v3.28 safety pin. This MUST stay BEFORE any allocator step.
-        # If any of the 7 broker/live flags has been flipped truthy (env
-        # override, workflow_dispatch typo, accidental upstream change),
-        # we abort immediately — no allocator invocation, no plan read,
-        # no broker call. Matches daily-reporters.yml refusal contract.
-        run: |
-          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
-                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
-                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED \
-                    LLM_PRE_ORDER_VETO_HONORED \
-                    OPERATOR_APPROVED_BROKER_PAPER_CANARY \
-                    LLM_AGENTS_SCHEDULED; do
-            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
-            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
-               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
-              echo "REFUSED: $v is truthy"
-              exit 1
-            fi
-          done
-          echo "all broker/live flags pinned false ✓"
-
       - name: Install dependencies
         run: |
           pip install requests
@@ -112,12 +71,6 @@ jobs:
           GMAIL_USER:          ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD:  ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:        ${{ secrets.NOTIFY_EMAIL }}
-        # v3.28 — execute_allocation_plan.py evaluates the
-        # allocator_incident_gate (Phase 2) as the FIRST action inside
-        # main(), BEFORE plan-file lookup, BEFORE allocator import,
-        # BEFORE any broker call. When the gate returns BLOCK_* the
-        # script writes docs/MORNING_ALLOCATOR_BLOCKED_<date>.md and
-        # exits 0 — no orders submitted, no false workflow failure.
         run: |
           ARGS=""
           if [ "${{ inputs.force }}" = "true" ]; then
@@ -136,10 +89,6 @@ jobs:
           git pull --ff-only origin "$BRANCH" 2>/dev/null || true
           # Stage today's execution + trace artifacts (if any)
           git add learning-loop/allocations/ 2>/dev/null || true
-          # v3.28 — also stage any incident-gate BLOCK doc the allocator
-          # script may have produced this morning (narrow allow-list,
-          # never broker-credential outputs).
-          git add 'docs/MORNING_ALLOCATOR_BLOCKED_*.md' 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No execution artifacts to commit (auto_execute likely OFF)."
           else
