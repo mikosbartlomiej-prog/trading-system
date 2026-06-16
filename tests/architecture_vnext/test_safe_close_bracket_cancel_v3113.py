@@ -36,16 +36,34 @@ def setUpModule():
     # Without this, mocked safe_close calls in this module pollute the real
     # journal with CLOSE_POSITION FAILED events, which then triggers
     # P13_bracket_interlock_blocked_close on the next live detector run.
-    global _AUDIT_TMP
+    global _AUDIT_TMP, _BROKER_REPAIR_TMP
     _AUDIT_TMP = tempfile.mkdtemp(prefix="audit_test_safe_close_")
     os.environ["AUDIT_TRADING_DIR"] = _AUDIT_TMP
+
+    # v3.30: tests that mock a 403 "held_for_orders" Alpaca response trip
+    # safe_close's auto-mark code path, which writes to
+    # learning-loop/broker_repair_required_latest.json by default. Without
+    # this redirect the production state file gets polluted with an AMD
+    # quarantine entry — and the precondition guard then short-circuits
+    # every AMD test in the same discovery run with
+    # REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE. broker_repair_required honors
+    # BROKER_REPAIR_REQUIRED_PATH as a tempdir override.
+    _BROKER_REPAIR_TMP = tempfile.mkdtemp(prefix="broker_repair_test_safe_close_")
+    os.environ["BROKER_REPAIR_REQUIRED_PATH"] = str(
+        Path(_BROKER_REPAIR_TMP) / "broker_repair_required_latest.json"
+    )
 
 
 def tearDownModule():
     import shutil
     os.environ.pop("AUDIT_TRADING_DIR", None)
+    os.environ.pop("BROKER_REPAIR_REQUIRED_PATH", None)
     try:
         shutil.rmtree(_AUDIT_TMP)
+    except Exception:
+        pass
+    try:
+        shutil.rmtree(_BROKER_REPAIR_TMP)
     except Exception:
         pass
 
