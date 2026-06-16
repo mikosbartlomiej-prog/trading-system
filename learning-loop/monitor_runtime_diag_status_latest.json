@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-15T14:40:56.388739+00:00",
+  "generated_at": "2026-06-16T09:40:01.826246+00:00",
   "builder_version": "v3.25.0",
   "view_mode": "native",
   "hard_safety": {
@@ -11,17 +11,17 @@
     "files_scanned": [
       "learning-loop/monitor_runtime_diag/2026-06-15.jsonl"
     ],
-    "total_rows": 8,
+    "total_rows": 36,
     "earliest_record": "2026-06-15T14:20:28.840197+00:00",
-    "latest_record": "2026-06-15T14:20:35.933120+00:00",
+    "latest_record": "2026-06-15T15:21:00.602928+00:00",
     "per_monitor": {
       "price-monitor": {
-        "RAN": 2,
+        "RAN": 9,
         "INPUT_EMPTY": 0,
         "NO_SIGNAL": 0,
-        "SIGNAL_DETECTED": 2,
-        "EMIT_ATTEMPTED": 2,
-        "EMIT_SUCCESS": 2,
+        "SIGNAL_DETECTED": 9,
+        "EMIT_ATTEMPTED": 9,
+        "EMIT_SUCCESS": 9,
         "EMIT_FAILED": 0,
         "UNKNOWN": 0
       }

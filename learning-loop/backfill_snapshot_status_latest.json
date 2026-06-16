@@ -1,20 +1,12 @@
 {
-  "backtest_cache_seeded": 5,
-  "generated_at_iso": "2026-06-15T15:25:53.414462+00:00",
-  "git_head": "7cbe74139c8d8ada43bfda120b59755ae9d4cd48",
+  "backtest_cache_seeded": 0,
+  "generated_at_iso": "2026-06-16T09:40:02.525229+00:00",
+  "git_head": "5d493ee95ba682d032a8c55b16cb9b0f321c2280",
   "ledger_derived_seeded": 10,
   "partial_bars_count": 10,
   "per_symbol_summary": [
     {
-      "bars_count": 123,
-      "data_quality": "REAL_MARKET_DATA",
-      "minimum_fields_present": true,
-      "partial_bars": false,
-      "source_label": "REAL_MARKET_SNAPSHOT",
-      "symbol": "AAPL"
-    },
-    {
-      "bars_count": 1644,
+      "bars_count": 1767,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -22,15 +14,7 @@
       "symbol": "AAVE/USD"
     },
     {
-      "bars_count": 123,
-      "data_quality": "REAL_MARKET_DATA",
-      "minimum_fields_present": true,
-      "partial_bars": false,
-      "source_label": "REAL_MARKET_SNAPSHOT",
-      "symbol": "AMZN"
-    },
-    {
-      "bars_count": 1631,
+      "bars_count": 1754,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -38,7 +22,7 @@
       "symbol": "AVAX/USD"
     },
     {
-      "bars_count": 1643,
+      "bars_count": 1766,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -46,7 +30,7 @@
       "symbol": "BCH/USD"
     },
     {
-      "bars_count": 1644,
+      "bars_count": 1767,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -54,7 +38,7 @@
       "symbol": "BTC/USD"
     },
     {
-      "bars_count": 1631,
+      "bars_count": 1754,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -62,7 +46,7 @@
       "symbol": "DOT/USD"
     },
     {
-      "bars_count": 1655,
+      "bars_count": 1778,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -70,7 +54,7 @@
       "symbol": "ETH/USD"
     },
     {
-      "bars_count": 1643,
+      "bars_count": 1766,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -78,7 +62,7 @@
       "symbol": "LINK/USD"
     },
     {
-      "bars_count": 1655,
+      "bars_count": 1778,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -86,31 +70,7 @@
       "symbol": "LTC/USD"
     },
     {
-      "bars_count": 123,
-      "data_quality": "REAL_MARKET_DATA",
-      "minimum_fields_present": true,
-      "partial_bars": false,
-      "source_label": "REAL_MARKET_SNAPSHOT",
-      "symbol": "META"
-    },
-    {
-      "bars_count": 123,
-      "data_quality": "REAL_MARKET_DATA",
-      "minimum_fields_present": true,
-      "partial_bars": false,
-      "source_label": "REAL_MARKET_SNAPSHOT",
-      "symbol": "MSFT"
-    },
-    {
-      "bars_count": 123,
-      "data_quality": "REAL_MARKET_DATA",
-      "minimum_fields_present": true,
-      "partial_bars": false,
-      "source_label": "REAL_MARKET_SNAPSHOT",
-      "symbol": "NVDA"
-    },
-    {
-      "bars_count": 1631,
+      "bars_count": 1754,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -118,7 +78,7 @@
       "symbol": "SOL/USD"
     },
     {
-      "bars_count": 1631,
+      "bars_count": 1754,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -136,10 +96,9 @@
   },
   "shadow_derived_seeded": 0,
   "snapshot_dir": "learning-loop/backfill_snapshots",
-  "snapshots_written": 15,
+  "snapshots_written": 10,
   "source_label_counts": {
-    "LEDGER_DERIVED_REPLAY_ONLY": 10,
-    "REAL_MARKET_SNAPSHOT": 5
+    "LEDGER_DERIVED_REPLAY_ONLY": 10
   },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
@@ -154,6 +113,6 @@
     "SEEDER_DOES_NOT_FABRICATE_OHLCV",
     "SEEDER_DOES_NOT_FETCH_NETWORK"
   ],
-  "status": "LOCAL_BACKFILL_AVAILABLE",
+  "status": "LEDGER_DERIVED_PARTIAL",
   "version": "v3.27.0"
 }

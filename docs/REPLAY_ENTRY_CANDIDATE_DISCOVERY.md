@@ -1,15 +1,15 @@
 # Replay entry-candidate discovery (v3.26.0)
 
-**Generated:** `2026-06-15T15:25:56.175682+00:00`
-**As of:** `2026-06-15T15:25:56.154818+00:00`
-**Git HEAD:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+**Generated:** `2026-06-16T09:40:08.386922+00:00`
+**As of:** `2026-06-16T09:40:08.366595+00:00`
+**Git HEAD:** `5d493ee95ba682d032a8c55b16cb9b0f321c2280`
 **Lookback days:** `7`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
 ## Totals
 
 - Candidates (replay): **0**
-- Near-misses (within 15%): **5**
+- Near-misses (within 15%): **0**
 - Threshold crosses: **0**
 - (strategy, symbol) pairs scanned: **10**
 
@@ -30,16 +30,16 @@ These symbols have no cached bars at `learning-loop/backfill_snapshots`. Replay 
 
 | Strategy | Symbol | Asset | Bars | Replayed | Cands | Near | Cross | Diag |
 |---|---|---|---|---|---|---|---|---|
-| `crypto-momentum` | `BTC/USD` | crypto | 1644 | 7 | 0 | 1 | 0 | OK |
-| `crypto-oversold-bounce` | `BTC/USD` | crypto | 1644 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `ETH/USD` | crypto | 1655 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `ETH/USD` | crypto | 1655 | 7 | 0 | 2 | 0 | OK |
-| `crypto-momentum` | `SOL/USD` | crypto | 1631 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `SOL/USD` | crypto | 1631 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `LTC/USD` | crypto | 1655 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `LTC/USD` | crypto | 1655 | 7 | 0 | 1 | 0 | OK |
-| `crypto-momentum` | `AVAX/USD` | crypto | 1631 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 1631 | 7 | 0 | 1 | 0 | OK |
+| `crypto-momentum` | `BTC/USD` | crypto | 1767 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `BTC/USD` | crypto | 1767 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `ETH/USD` | crypto | 1778 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `ETH/USD` | crypto | 1778 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `SOL/USD` | crypto | 1754 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `SOL/USD` | crypto | 1754 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `LTC/USD` | crypto | 1778 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `LTC/USD` | crypto | 1778 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `AVAX/USD` | crypto | 1754 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 1754 | 7 | 0 | 0 | 0 | OK |
 
 ## Safety contract
 

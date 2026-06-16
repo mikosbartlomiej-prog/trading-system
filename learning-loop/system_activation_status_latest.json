@@ -10,7 +10,7 @@
     "TRADING_EXECUTION_ON": false,
     "WHOLE_SOLUTION_SAFE_ON": true
   },
-  "generated_at_iso": "2026-06-16T09:27:04.242825+00:00",
+  "generated_at_iso": "2026-06-16T09:40:08.834713+00:00",
   "live_trading_unsupported": true,
   "llm_status": "unavailable",
   "master_blockers": [
@@ -64,7 +64,7 @@
       "enabled": true,
       "key": "safe_mode_consistency",
       "name": "Safe mode consistency checker",
-      "notes": "46 SAFE_MODE_ENTERED in last 48h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
+      "notes": "46 SAFE_MODE_ENTERED in last 24h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
       "safety_notes": "blocks allocator on audit-vs-runtime mismatch"
     },
     {
@@ -90,7 +90,7 @@
       "safety_notes": "fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED"
     },
     {
-      "actual_state": "FRESH_AGE_S=574024",
+      "actual_state": "FRESH_AGE_S=574808",
       "blockers": [],
       "desired_state": "FRESH",
       "enabled": true,

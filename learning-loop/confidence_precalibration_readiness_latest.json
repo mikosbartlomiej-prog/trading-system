@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-16T08:22:26.842596+00:00",
+  "as_of": "2026-06-16T09:40:07.204131+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -13,15 +13,15 @@
     "varying_components": 0
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-06-16T08:22:26.980795+00:00",
-  "git_head": "7cbe74139c8d8ada43bfda120b59755ae9d4cd48",
+  "generated_at_iso": "2026-06-16T09:40:08.009215+00:00",
+  "git_head": "5d493ee95ba682d032a8c55b16cb9b0f321c2280",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 0,
-  "rows_total": 14898,
+  "rows_total": 16128,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -45,13 +45,13 @@
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 8138,
+    "near_miss_rows": 12332,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 0,
     "replay_positive_rows": 0,
     "verdict_v327": "READY_FOR_COMPONENT_VARIANCE_REVIEW",
-    "verdict_v327_reason": "0 replay row(s) and 8138 near-miss row(s) available for component-variance review. NO production positive rows yet \u2014 calibration MUST NOT be attempted; operator may proceed only to variance review."
+    "verdict_v327_reason": "0 replay row(s) and 12332 near-miss row(s) available for component-variance review. NO production positive rows yet \u2014 calibration MUST NOT be attempted; operator may proceed only to variance review."
   },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",

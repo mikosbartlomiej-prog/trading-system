@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-06-15T15:25:56.154818+00:00",
-  "generated_at_iso": "2026-06-15T15:25:56.175682+00:00",
-  "git_head": "7cbe74139c8d8ada43bfda120b59755ae9d4cd48",
+  "as_of": "2026-06-16T09:40:08.366595+00:00",
+  "generated_at_iso": "2026-06-16T09:40:08.386922+00:00",
+  "git_head": "5d493ee95ba682d032a8c55b16cb9b0f321c2280",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -17,11 +17,11 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1644,
+      "bars_total": 1767,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-momentum",
       "symbol": "BTC/USD",
       "threshold_crosses": 0
@@ -29,7 +29,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1644,
+      "bars_total": 1767,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -41,7 +41,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1655,
+      "bars_total": 1778,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -53,11 +53,11 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1655,
+      "bars_total": 1778,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 2,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "ETH/USD",
       "threshold_crosses": 0
@@ -65,7 +65,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1631,
+      "bars_total": 1754,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -77,7 +77,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1631,
+      "bars_total": 1754,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -89,7 +89,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1655,
+      "bars_total": 1778,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -101,11 +101,11 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1655,
+      "bars_total": 1778,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "LTC/USD",
       "threshold_crosses": 0
@@ -113,7 +113,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1631,
+      "bars_total": 1754,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -125,11 +125,11 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 1631,
+      "bars_total": 1754,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "AVAX/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 5,
+    "near_misses": 0,
     "rows": 10,
     "threshold_crosses": 0
   },

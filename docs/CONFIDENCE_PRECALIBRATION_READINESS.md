@@ -1,23 +1,30 @@
+> INCIDENT ACTIVE: `AVAX` (and 4 more) in BROKER_REPAIR_REQUIRED state.
+>
+> Blocked symbols: `AVAX`, `AVAXUSD`, `ETH`, `ETHUSD`, `LTCUSD`
+> Discovery layer remains active for analysis but trading is BLOCKED until manual repair.
+> Status: DISCOVERY_ACTIVE_BUT_TRADING_BLOCKED_BY_P13
+> See: [docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md](docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md)
+
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-06-16T08:22:26.980795+00:00`
-**As of:** `2026-06-16T08:22:26.842596+00:00`
-**Git HEAD:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+**Generated:** `2026-06-16T09:40:08.009215+00:00`
+**As of:** `2026-06-16T09:40:07.204131+00:00`
+**Git HEAD:** `5d493ee95ba682d032a8c55b16cb9b0f321c2280`
 **Window:** last 7 days
-**Rows total:** `14898`
+**Rows total:** `16128`
 **Positive rows (non-null confidence_score):** `0`
 
 ## v3.27 Source separation
 
 **Verdict (v3.27):** `READY_FOR_COMPONENT_VARIANCE_REVIEW`
 
-0 replay row(s) and 8138 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
+0 replay row(s) and 12332 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
 
 | Source | Count | Counts as production? |
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `0` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `8138` | NO (advisory) |
+| NEAR_MISS_ROWS           | `12332` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 

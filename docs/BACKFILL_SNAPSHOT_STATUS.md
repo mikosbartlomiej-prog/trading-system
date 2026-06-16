@@ -1,43 +1,37 @@
 # Backfill snapshot status (v3.27.0)
 
-**Generated:** `2026-06-15T15:25:53.407653+00:00`
-**Git HEAD:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+**Generated:** `2026-06-16T09:40:02.523635+00:00`
+**Git HEAD:** `5d493ee95ba682d032a8c55b16cb9b0f321c2280`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
-## Status: `LOCAL_BACKFILL_AVAILABLE`
+## Status: `LEDGER_DERIVED_PARTIAL`
 
 ## Totals
 
-- Snapshots written: **15**
+- Snapshots written: **10**
 - Partial-bars snapshots: **10** (missing one or more of `high`/`low`/`volume`/`open`)
-- From backtest cache (REAL OHLCV): **5**
+- From backtest cache (REAL OHLCV): **0**
 - From opportunity ledger (partial): **10**
 - From shadow evidence (partial): **0**
 
 ## Source label distribution
 
 - `LEDGER_DERIVED_REPLAY_ONLY` × **10**
-- `REAL_MARKET_SNAPSHOT` × **5**
 
 ## Per-symbol summary
 
 | Symbol | Source | Quality | Bars | Partial | Min fields |
 |---|---|---|---|---|---|
-| `AAPL` | REAL_MARKET_SNAPSHOT | REAL_MARKET_DATA | 123 | False | True |
-| `AAVE/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1644 | True | False |
-| `AMZN` | REAL_MARKET_SNAPSHOT | REAL_MARKET_DATA | 123 | False | True |
-| `AVAX/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1631 | True | False |
-| `BCH/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1643 | True | False |
-| `BTC/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1644 | True | False |
-| `DOT/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1631 | True | False |
-| `ETH/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1655 | True | False |
-| `LINK/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1643 | True | False |
-| `LTC/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1655 | True | False |
-| `META` | REAL_MARKET_SNAPSHOT | REAL_MARKET_DATA | 123 | False | True |
-| `MSFT` | REAL_MARKET_SNAPSHOT | REAL_MARKET_DATA | 123 | False | True |
-| `NVDA` | REAL_MARKET_SNAPSHOT | REAL_MARKET_DATA | 123 | False | True |
-| `SOL/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1631 | True | False |
-| `UNI/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1631 | True | False |
+| `AAVE/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1767 | True | False |
+| `AVAX/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1754 | True | False |
+| `BCH/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1766 | True | False |
+| `BTC/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1767 | True | False |
+| `DOT/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1754 | True | False |
+| `ETH/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1778 | True | False |
+| `LINK/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1766 | True | False |
+| `LTC/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1778 | True | False |
+| `SOL/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1754 | True | False |
+| `UNI/USD` | LEDGER_DERIVED_REPLAY_ONLY | PARTIAL_BARS | 1754 | True | False |
 
 ## Safety contract
 

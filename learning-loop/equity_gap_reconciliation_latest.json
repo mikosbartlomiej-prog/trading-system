@@ -31,7 +31,7 @@
   },
   "gap_amount": -6.639999999999418,
   "gap_pct": -0.007336081933428169,
-  "generated_at_iso": "2026-06-16T09:03:00.260149+00:00",
+  "generated_at_iso": "2026-06-16T09:40:08.568204+00:00",
   "peak_equity": 90511.53,
   "schema_version": "v3.29",
   "standing_markers": [
@@ -47,6 +47,6 @@
     "ok_pct": 0.5,
     "warn_upper_pct": 2.0
   },
-  "ts_iso": "2026-06-16T09:03:00.260149+00:00",
+  "ts_iso": "2026-06-16T09:40:08.568204+00:00",
   "verdict": "EQUITY_GAP_OK"
 }
