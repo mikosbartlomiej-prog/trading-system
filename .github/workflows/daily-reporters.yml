@@ -238,6 +238,124 @@ jobs:
             echo "scripts/build_opportunity_density_plan.py not present; skipping."
           fi
 
+      - name: Reconcile equity gap (v3.28-new, observation-only)
+        # v3.28 INCIDENT CONTAINMENT — read-only reconciliation of the
+        # equity-gap signal against broker_repair_required state. NEVER
+        # places orders. NEVER cancels orders. NEVER closes positions.
+        # Guarded by file existence so the workflow does not fail before
+        # the script ships.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/reconcile_equity_gap.py ]; then
+            python3 scripts/reconcile_equity_gap.py || true
+          else
+            echo "scripts/reconcile_equity_gap.py not present; skipping."
+          fi
+
+      - name: Verify manual broker repair (v3.28-new, DRY-RUN ONLY)
+        # v3.28 INCIDENT CONTAINMENT — operator-marker-gated repair
+        # verifier. Default mode is READ-ONLY/dry-run; the safety
+        # contract REQUIRES that this workflow never invoke it with
+        # --apply or --execute or any flag that would clear the
+        # broker_repair_required entry. Guarded by file existence.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/verify_manual_broker_repair.py ]; then
+            python3 scripts/verify_manual_broker_repair.py --dry-run \
+              || true
+          else
+            echo "scripts/verify_manual_broker_repair.py not present; skipping."
+          fi
+
+      - name: Safe-mode consistency check (v3.29-new)
+        # v3.29 ETAP 2 — read-only consistency check between
+        # SAFE_MODE_ENTERED audit rows and runtime_state. Never mutates
+        # safe_mode; never flips any flag.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/check_safe_mode_consistency.py ]; then
+            python3 scripts/check_safe_mode_consistency.py || true
+          else
+            echo "scripts/check_safe_mode_consistency.py not present; skipping."
+          fi
+
+      - name: Backfill broker_repair from incidents (v3.29-new)
+        # v3.29 ETAP 3 — read historical P13 incidents and append
+        # broker_repair_required entries. Honours operator markers so
+        # an entry the operator already cleared is NOT re-added.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/backfill_broker_repair_from_incidents.py ]; then
+            python3 scripts/backfill_broker_repair_from_incidents.py \
+              || true
+          else
+            echo "scripts/backfill_broker_repair_from_incidents.py not present; skipping."
+          fi
+
+      - name: Build system activation status (v3.29-new)
+        # v3.29 ETAP 8 — master gate verdict snapshot. Read-only.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/build_system_activation_status.py ]; then
+            python3 scripts/build_system_activation_status.py || true
+          else
+            echo "scripts/build_system_activation_status.py not present; skipping."
+          fi
+
+      - name: Build shadow candidate queue (v3.29-new)
+        # v3.29 ETAP 8 — read-only seed of the eligible row queue.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/build_shadow_candidate_queue.py ]; then
+            python3 scripts/build_shadow_candidate_queue.py || true
+          else
+            echo "scripts/build_shadow_candidate_queue.py not present; skipping."
+          fi
+
+      - name: Build trigger watchlist (v3.29-new)
+        # v3.29 ETAP 8 — read-only watchlist surface.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/build_trigger_watchlist.py ]; then
+            python3 scripts/build_trigger_watchlist.py || true
+          else
+            echo "scripts/build_trigger_watchlist.py not present; skipping."
+          fi
+
+      - name: Universe opportunity review (v3.29-new)
+        # v3.29 ETAP 8 — read-only universe report.
+        env:
+          PYTHONIOENCODING: utf-8
+          LC_ALL:           C
+          LANG:             C
+        run: |
+          if [ -f scripts/universe_opportunity_review.py ]; then
+            python3 scripts/universe_opportunity_review.py || true
+          else
+            echo "scripts/universe_opportunity_review.py not present; skipping."
+          fi
+
       - name: Commit and push reporter artifacts
         # Narrow allow-list: only reporter output paths.
         run: |
@@ -287,6 +405,33 @@ jobs:
           git add docs/BACKFILL_SNAPSHOT_STATUS.md             2>/dev/null || true
           git add docs/NEAR_MISS_SEED_STATUS.md                2>/dev/null || true
           git add docs/OPPORTUNITY_DENSITY_PLAN.md             2>/dev/null || true
+          # v3.28 incident-containment reporter outputs (narrow allow-
+          # list — only the read-only reconcile + verify reports). The
+          # broker_repair_required_latest.json itself is NEVER staged
+          # here — that state file is written only by the patched retry
+          # path in exit-monitor + the operator-marker clear path; it
+          # is never re-emitted by a reporter cron.
+          git add learning-loop/equity_gap_reconciliation_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/EQUITY_GAP_RECONCILIATION.md             2>/dev/null || true
+          git add learning-loop/manual_broker_repair_verify_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/MANUAL_BROKER_REPAIR_VERIFY.md           2>/dev/null || true
+          # v3.29 ETAP 2/3/8 reporter outputs (narrow allow-list).
+          git add learning-loop/safe_mode_consistency_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/SAFE_MODE_CONSISTENCY_STATUS.md          2>/dev/null || true
+          git add learning-loop/broker_repair_backfill_status_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/BROKER_REPAIR_BACKFILL_STATUS.md         2>/dev/null || true
+          git add learning-loop/system_activation_status_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/SYSTEM_ACTIVATION_STATUS.md              2>/dev/null || true
+          git add learning-loop/trigger_watchlist_latest.json   2>/dev/null || true
+          git add docs/TRIGGER_WATCHLIST.md                     2>/dev/null || true
+          git add learning-loop/universe_opportunity_review_latest.json \
+                                                                    2>/dev/null || true
+          git add docs/UNIVERSE_OPPORTUNITY_REVIEW.md           2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No reporter changes (quiet day)."
           else

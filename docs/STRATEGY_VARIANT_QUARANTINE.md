@@ -1,7 +1,7 @@
 # Strategy variant quarantine (v3.27.0)
 
-**Generated:** `2026-06-15T15:13:54.037234+00:00`
-**git_head:** `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+**Generated:** `2026-06-15T15:26:06.354042+00:00`
+**git_head:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
 **variants_seeded:** 4
 
 Quarantined variants are SHADOW descriptions of proposed strategy changes. They NEVER touch the runtime trading path. `allowed_modes` is locked to `{replay, shadow}` — never `live` or `paper`. Promotion to active strategies requires a separate audited PR.

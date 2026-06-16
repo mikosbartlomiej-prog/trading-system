@@ -100,3 +100,51 @@ that bounds what it may do.
 - [learning-loop/llm_advisory/schema.json](../learning-loop/llm_advisory/schema.json) — JSON Schema with pinned enums for every safety-critical field.
 - [scripts/run_llm_advisory_mesh.py](../scripts/run_llm_advisory_mesh.py) — cloud-callable runner.
 - [.github/workflows/llm-advisory-mesh.yml](../.github/workflows/llm-advisory-mesh.yml) — disabled-by-default workflow.
+
+
+---
+
+## v3.29 ETAP 6 — strict advisory schema
+
+The v3.29 mesh runs every advisory call through
+[`shared/llm_advisory_authority.py`](../shared/llm_advisory_authority.py)
+which defines the canonical `LLMAdvisoryOutput` dataclass.
+
+**Schema invariants (enforced in `__post_init__`):**
+- `advisory_only = True`
+- `must_not_execute_orders = True`
+- `authority_level ∈ {L0_ADVISORY_ONLY, L1_VETO_RECOMMEND_ONLY}`
+- `agent_name ∈ ADVISORY_ROLES` (10 roles)
+- No FORBIDDEN_OUTPUTS token in any string field
+
+**Forbidden output tokens:**
+- `CLEAR_SAFE_MODE`
+- `EXECUTE_ORDER`
+- `FLIP_BROKER_FLAG`
+- `MUTATE_THRESHOLD`
+- `OVERRIDE_GATE`
+- `PLACE_ORDER`
+- `PROMOTE_VARIANT`
+
+**Advisory roles (10):**
+- `ALLOCATOR_PLAN_CRITIC`
+- `DAILY_BRIEF`
+- `EQUITY_RECONCILIATION_CRITIC`
+- `FINAL_ARBITER`
+- `INCIDENT_REVIEW`
+- `NO_SIGNAL_DIAGNOSTIC`
+- `RISK_REVIEW`
+- `SHADOW_CANDIDATE_REVIEW`
+- `STRATEGY_REVIEW`
+- `TRIGGER_WATCHLIST_REVIEW`
+
+**Standing markers asserted on every persistence:**
+- `EDGE_GATE_ENABLED=false`
+- `ALLOW_BROKER_PAPER=false`
+- `LIVE_TRADING_UNSUPPORTED`
+- `NO_ORDER_PLACEMENT`
+- `NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE`
+- `NO_LLM_STATE_MUTATION`
+- `DETERMINISTIC_GATES_REMAIN_FINAL`
+- `LLM_PRE_ORDER_VETO_REMAINS_DISABLED`
+- `SCHEDULE_REMAINS_DISABLED_BY_DEFAULT`

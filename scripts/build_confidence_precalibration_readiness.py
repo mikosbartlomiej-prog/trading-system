@@ -759,6 +759,14 @@ def main(argv: list[str] | None = None) -> int:
         variance_eps=args.variance_eps,
     )
     md = render_md(rep)
+    # v3.28 — ETAP 10 — annotate discovery report with the active
+    # BROKER_REPAIR_REQUIRED incident, if any. Banner is informational
+    # only and NEVER changes the calibration verdict. Fail-soft.
+    try:
+        from _discovery_incident_banner import prepend_incident_banner  # type: ignore
+        md = prepend_incident_banner(md)
+    except Exception:
+        pass
 
     if args.json:
         print(json.dumps(rep, indent=2, sort_keys=True))

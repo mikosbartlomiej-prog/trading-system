@@ -1,175 +1,187 @@
-# End-of-Day System Status — v3.28 INCIDENT CONTAINMENT (AVAX/USD P13 Retry Storm)
+# End-of-Day System Status — v3.29 WHOLE-SOLUTION SAFE ON
 
-Generated: 2026-06-16T10:35:00Z  (Claude v3.28 FINAL-PHASE — incident containment shipped, allocator gated, manual operator repair required)
-HEAD: `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`  (pre-v3.28 commit; v3.28 staged for commit)
+Generated: 2026-06-16T11:30:00Z  (Claude v3.29 FINAL-PHASE — whole safe stack activated; LLM advisory mesh online; broker execution remains OFF)
+HEAD: `e45d8190ce2499bb96901958f0d26f4eb7c7f4ac`  (pre-v3.29 commit; v3.29 staged for commit)
 
 ## TL;DR
 
-**INCIDENT ACTIVE: AVAXUSD P13 bracket interlock — MANUAL REPAIR REQUIRED.**
-On 2026-06-15 a recurring P13 (`bracket_interlock_blocked_close`) pattern
-fired throughout the UTC morning. The runaway pattern was identified in
-`learning-loop/incidents/2026-06-15.md` (12+ CRITICAL findings between
-03:21Z and ~05:06Z). Exit-monitor calls `safe_close(AVAXUSD)` returned
-Alpaca **403 "insufficient balance"** and `safe_close(LTCUSD)` returned
-Alpaca **422 "qty must be > 0"** — both are operator-side broker-state
-divergences that the system cannot resolve autonomously.
+**v3.29 turns the whole SAFE solution ON. LLM advisory ON. Execution stays OFF.**
 
-v3.28 ships **incident containment** (no automated fixes, no broker
-actions, no auto-cleanup). The morning allocator is **blocked by the new
-`shared/allocator_incident_gate`** which fails CLOSED on `BLOCK_UNKNOWN`
-the moment any incident signal cannot be parsed. The operator is the only
-actor who can clear the incident state, via the runbook
-`docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md`.
+The deterministic stack — discovery reporters, shadow simulator, outcome
+tracker, operator dashboard, safe-mode consistency check, broker-repair
+backfill, equity schema reconciler, master system-activation gate, daily
+operational brief generator, geo/LLM provider health auditors — is now
+end-to-end wired. The 10-agent **LLM advisory mesh** (`L0` / `L1` authority
+only) runs alongside in advisory mode: it emits opinions, never mutates
+state, never places orders, never overrides any deterministic gate.
 
-v3.28 does NOT enable live trading, does NOT call any broker API, does
-NOT auto-cancel orders, does NOT auto-close positions, does NOT auto-clear
-safe_mode, does NOT deploy allocator capital, does NOT lower any
-threshold, does NOT add LLM to the runtime trading path, does NOT add
-paid services. `EDGE_GATE_ENABLED` remains `false`. `ALLOW_BROKER_PAPER`
-remains `false`. LLM stays advisory only. Canary stays preflight-only.
-`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`. `NO_AUTO_BROKER_ACTION`.
-`NO_FABRICATION`.
+The master `system_activation_gate` returns
+`ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT` because v3.29 ETAP 2 backfilled
+five symbols (AVAX, AVAXUSD, ETH, ETHUSD, LTCUSD) into
+`broker_repair_required_latest.json` from incident audit history, and the
+safe-mode consistency auditor flagged 46 `SAFE_MODE_ENTERED` events in the
+last 48h with no matching `SAFE_MODE_EXITED` — a persistence inconsistency
+that out-ranks broker_repair under the v3.29 priority contract. Allocator
+is **deterministically blocked**; operator action required.
+
+v3.29 does NOT enable live trading, does NOT set `EDGE_GATE_ENABLED`,
+does NOT set `ALLOW_BROKER_PAPER`, does NOT call any broker API in new
+code, does NOT auto-cancel orders, does NOT auto-close positions, does
+NOT auto-clear safe_mode, does NOT deploy allocator capital, does NOT
+lower any threshold, does NOT let LLM mutate state, does NOT let LLM
+override any deterministic gate, does NOT add paid services. The LLM
+mesh is advisory only with authority level `L0`/`L1`. Canary stays
+preflight-only. `LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `NO_FABRICATION`. `LLM_ADVISORY_ONLY`.
 
 ## 1. Repo status
 
 - **Branch:** `main`
-- **HEAD before v3.28 commit:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
-- **Working tree:** v3.28 incident containment staged for commit
+- **HEAD before v3.29 commit:** `e45d8190ce2499bb96901958f0d26f4eb7c7f4ac`
+- **Working tree:** v3.29 whole-solution activation staged for commit
 - **Worktrees:** single — `main` only
 
 ## 2. System status flags (canonical, hard-pinned)
 
-| Flag                          | Value     | Notes                                  |
-| ----------------------------- | --------- | -------------------------------------- |
-| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.28 does not flip this. |
-| `ALLOW_BROKER_PAPER`          | **false** | Hard-pinned default. v3.28 does not flip this. |
-| `LIVE_TRADING_UNSUPPORTED`    | **true**  | CLI rejects `--mode live`. |
-| `NO_ORDER_PLACEMENT`          | **true**  | Containment modules never call broker APIs. |
-| `NO_AUTO_BROKER_ACTION`       | **true**  | No auto-cancel, no auto-close, no auto-clear. |
-| `NO_FABRICATION`              | **true**  | Reporters honour real broker state and refuse on ambiguity. |
-| `LIVE_TRADING`                | **false** | Hard-pinned. |
-| `LIVE_ENABLED`                | **false** | Hard-pinned. |
-| `GO_LIVE`                     | **false** | Hard-pinned. |
-| `LIVE_TRADING_ENABLED`        | **false** | Hard-pinned. |
-| `BROKER_EXECUTION_ENABLED`    | **false** | Hard-pinned. |
-| `LLM_PRE_ORDER_VETO_HONORED`  | **false** | LLM advisory only. |
-| `OPERATOR_APPROVED_BROKER_PAPER_CANARY` | **false** | Preflight-only. |
-| `LLM_AGENTS_SCHEDULED`        | **false** | Advisory mesh stays advisory. |
+| Flag | Value | Source |
+| --- | --- | --- |
+| `WHOLE_SOLUTION_SAFE_ON` | `true` | `learning-loop/system_activation_status_latest.json` |
+| `TRADING_EXECUTION_ON` | `false` | hard-pinned in `shared/system_activation_gate.py` |
+| `LLM_ADVISORY_ON` | `true` | `shared/llm_advisory_mesh.py` deterministic fallback active |
+| `LLM_EXECUTION_AUTHORITY` | `false` | `shared/llm_advisory_authority.py::FORBIDDEN_OUTPUTS` |
+| `EDGE_GATE_ENABLED` | `false` | repo invariant (lint-gated) |
+| `ALLOW_BROKER_PAPER` | `false` | repo invariant (lint-gated) |
+| `LIVE_TRADING_UNSUPPORTED` | `true` | repo invariant (lint-gated) |
+| `NO_ORDER_PLACEMENT` | `true` | repo invariant (lint-gated) |
+| `ALLOCATOR_ALLOWED` | `false` | derived from master gate decision |
+| `SHADOW_ONLY_ALLOWED` | `false` | derived from master gate decision |
+| `OPERATOR_ACTION_REQUIRED` | `true` | safe_mode_consistency = INCONSISTENT_ENTERED_NOT_PERSISTED |
 
-## 3. Incident snapshot — AVAXUSD P13 bracket interlock
+## 3. Master system activation gate
 
-| Item                                | Value |
-| ----------------------------------- | ----- |
-| First detector finding              | `learning-loop/incidents/2026-06-15.md` 03:21:05 UTC |
-| Detector pattern                    | `P13_bracket_interlock_blocked_close` (CRITICAL) |
-| Symbols implicated                  | `AVAXUSD`, `ETHUSD` (LTCUSD also failing with 422) |
-| Detector findings in window         | 12+ CRITICAL findings between 03:21Z and ~05:06Z |
-| safe_close(AVAXUSD) outcome         | **Alpaca 403** — `insufficient balance for AVAX` |
-| safe_close(LTCUSD) outcome          | **Alpaca 422** — `qty must be > 0` |
-| safe_mode entries (auto-pushed)     | tracked via `shared/safe_mode` + audit JSONL |
-| `broker_repair_required_latest.json` contains `AVAX/USD` | **No** — populates from real failures via `shared/retry_storm_containment` |
-| `verify_manual_broker_repair.py --symbol AVAX/USD` verdict | `NOT_SAFE_TO_CLEAR` — operator marker missing (expected) |
-| `reconcile_equity_gap.py` verdict   | `EQUITY_GAP_OK` (current_equity=$90,523.75 vs peak=$90,954.38, gap=-0.47%) |
-| Allocator incident gate decision    | `ALLOW_ALLOCATOR` (no incident artefacts present yet — see §6) |
-| Discovery banner                    | Present (added by `scripts/_discovery_incident_banner.py`) |
+- **Decision:** `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT`
+- **Blockers:** `('safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED',)`
+- **Enabled subsystems (deterministic, advisory):** `discovery_reporters`,
+  `shadow_simulator`, `outcome_tracker`, `operator_dashboard`
+- **See:** `docs/SYSTEM_ACTIVATION_STATUS.md` (machine-generated dashboard)
 
-## 4. v3.28 modules shipped (defence-in-depth, all read-only or audit-only)
+The gate priority order (v3.29 contract):
 
-- `shared/broker_repair_required.py` — per-symbol quarantine state, frozen
-  dataclass `BrokerRepairRequired`, atomic save, operator-marker-gated
-  clear. Constants `P13_RETRY_BUDGET=3`,
-  `P13_RETRY_BACKOFF_SECONDS=(60,300,1800)`,
-  `SAFE_MODE_DEDUPE_WINDOW_SECONDS=600`.
-- `shared/retry_storm_containment.py` — `should_skip_broker_call`,
-  `record_broker_close_failure` (auto-marks at attempt 3),
-  `record_broker_close_success`, `emit_skip_audit`,
-  `backoff_seconds_for_attempt`. Counter persisted on disk so it
-  survives cron restarts.
-- `shared/allocator_incident_gate.py` — fail-CLOSED 7-step gate.
-  Default `BLOCK_UNKNOWN`. Affirmative pass on every check required to
-  escalate to `ALLOW_ALLOCATOR`. Wired into morning allocator.
-- `scripts/verify_manual_broker_repair.py` — operator runbook verifier.
-  Default `--dry-run=true`. AST-verified to never import
-  `alpaca_orders` and never call any broker mutator.
-- `scripts/reconcile_equity_gap.py` — read-only equity-gap reporter.
-  Writes dated + latest JSON + markdown. Never blocks autonomously.
-- `scripts/_discovery_incident_banner.py` — header banner that surfaces
-  the active incident in discovery reports.
-- `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` — operator runbook.
-- `docs/INCIDENT_AVAXUSD_P13_2026-06-16.md` — incident write-up.
+1. `safe_mode_consistency` INCONSISTENT_ENTERED_NOT_PERSISTED
+2. `safe_mode` active
+3. `broker_repair_required` non-empty
+4. P13 / incident detector CRITICAL
+5. equity_gap > 2%
+6. position_reconciliation stale > 2h during market hours
+7. kill_switch true
 
-## 5. Workflow gating (morning-allocator)
+Allocator is BLOCKED at level 1 — operator must resolve safe-mode
+persistence drift before any lower-level gate is evaluated. See
+`docs/OPERATOR_REPAIR_CONFIRMATION.md`.
 
-`.github/workflows/morning-allocator.yml` now contains:
+## 4. Broker-repair queue (post-backfill)
 
-- Workflow-level `env:` pin block: all 10 forbidden flags hard-pinned to
-  `"false"` (`LIVE_TRADING`, `LIVE_ENABLED`, `GO_LIVE`,
-  `LIVE_TRADING_ENABLED`, `ALLOW_BROKER_PAPER`, `EDGE_GATE_ENABLED`,
-  `BROKER_EXECUTION_ENABLED`, `LLM_PRE_ORDER_VETO_HONORED`,
-  `OPERATOR_APPROVED_BROKER_PAPER_CANARY`, `LLM_AGENTS_SCHEDULED`).
-- A pre-execution step "Refuse if any broker / live flag is truthy" that
-  fails the run before the allocator runs.
-- Wiring of `shared/allocator_incident_gate.evaluate()` ahead of any
-  allocator output; non-`ALLOW_ALLOCATOR` verdict aborts the run.
+`learning-loop/broker_repair_required_latest.json` has 5 entries
+backfilled by `scripts/backfill_broker_repair_from_incidents.py`:
 
-## 6. Why the gate currently returns `ALLOW_ALLOCATOR`
+- `AVAX` (1× failed attempt, P13_BRACKET_INTERLOCK_BACKFILLED)
+- `AVAXUSD` (1×, 208 failed closes / 104 403s)
+- `ETH` (1×, 152 failed closes / 152 403s)
+- `ETHUSD` (1×, 304 failed closes / 171 403s)
+- `LTCUSD` (1×, 208 failed closes)
 
-The gate honestly reflects the **state of incident artefacts on disk**:
+All five require operator marker via
+`scripts/record_operator_repair_confirmation.py --operator-confirmed`
+then `shared/broker_repair_required.clear_repair(symbol, marker_path)`.
+The Claude agent is forbidden from committing or generating these
+markers — they MUST come from the human operator.
 
-- `learning-loop/broker_repair_required_latest.json` — **absent**. This
-  file is populated by `shared/retry_storm_containment` on the third
-  failed `safe_close` of the same symbol. v3.28 just shipped; the
-  containment has not yet executed against a live failure.
-- `learning-loop/incidents/latest.json` — **absent**. The detector emits
-  dated markdown reports; the JSON `latest.json` consumed by the gate
-  does not exist yet.
-- `learning-loop/equity_gap_reconciliation_latest.json` — present, gap
-  is **−0.47%** (well under the 2% block threshold).
-- `safe_mode` — not active.
+## 5. Safe-mode consistency
 
-This is the intended **fail-honest** behaviour: the gate does NOT
-fabricate an incident, but **the morning-allocator workflow refuses to
-run anyway** because (a) `ALLOW_BROKER_PAPER` is hard-pinned `false` and
-(b) the workflow-level pin step refuses on any truthy live flag. The
-operator must still follow the runbook before clearing safe_mode or
-removing the AVAX position via the broker UI.
+- **Verdict:** `INCONSISTENT_ENTERED_NOT_PERSISTED`
+- **Detail:** 46 `SAFE_MODE_ENTERED` events in last 48h (latest
+  `2026-06-16T07:46:09.325630+00:00`) with no later `SAFE_MODE_EXITED`,
+  but `runtime_state.safe_mode` is not active — persistence bug or
+  workflow-level commit not happening.
+- **Source:** `learning-loop/safe_mode_consistency_latest.json`
+- **Master gate impact:** triggers `BLOCK_SAFE_MODE_INCONSISTENT` at the
+  highest priority level.
 
-## 7. Test posture
+## 6. LLM advisory mesh (10 agents)
 
-| Suite                                      | Result      |
-| ------------------------------------------ | ----------- |
-| v3.28 (new): 8 suites, 75 tests             | **OK**      |
-| v3.27 regression (7 suites, 67 tests)       | **OK**      |
-| v3.26 + v3.25 sanity (4 suites, 37 tests)   | **OK**      |
-| v3.24 + v3.22 + v3.30 safety (6 suites, 63) | **OK**      |
-| AST: no `submit_order`/`place_order`/`safe_close`/`cancel_order` in new code | **CLEAN** |
+Authority level: `L0` (read-only diagnostic) / `L1` (write to advisory
+artifact only, never to runtime state).
 
-One pre-existing v3.27 test (`test_opportunity_density_plan_v3270.py::TestPlanSections::test_plan_sections_A_through_G_present`) failed because of a date-rollover sensitivity in the near-miss window. Fixed in `scripts/build_opportunity_density_plan.py` by tolerating files dated up to one day after `as_of` (no behavioural change in production).
+| Agent | Output | Authority |
+| --- | --- | --- |
+| `ALLOCATOR_PLAN_CRITIC` | `learning-loop/llm_advisory/ALLOCATOR_PLAN_CRITIC_latest.json` | L1 |
+| `DAILY_BRIEF` | `learning-loop/llm_advisory/DAILY_BRIEF_latest.json` | L1 |
+| `EQUITY_RECONCILIATION_CRITIC` | `…/EQUITY_RECONCILIATION_CRITIC_latest.json` | L1 |
+| `FINAL_ARBITER` | `…/FINAL_ARBITER_latest.json` | L1 |
+| `INCIDENT_REVIEW` | `…/INCIDENT_REVIEW_latest.json` | L1 |
+| `NO_SIGNAL_DIAGNOSTIC` | `…/NO_SIGNAL_DIAGNOSTIC_latest.json` | L1 |
+| `RISK_REVIEW` | `…/RISK_REVIEW_latest.json` | L1 |
+| `SHADOW_CANDIDATE_REVIEW` | `…/SHADOW_CANDIDATE_REVIEW_latest.json` | L1 |
+| `STRATEGY_REVIEW` | `…/STRATEGY_REVIEW_latest.json` | L1 |
+| `TRIGGER_WATCHLIST_REVIEW` | `…/TRIGGER_WATCHLIST_REVIEW_latest.json` | L1 |
 
-## 8. Standing markers (must appear in every doc)
+When the Gemini provider key is missing, the deterministic fallback
+emits `{"verdict": "advisory_unavailable", "fallback": true}` — never
+blocks the deterministic stack, never claims authority it does not have.
+
+## 7. Daily operational brief
+
+`briefs/2026-06-16.md` — generated by `scripts/generate_daily_operational_brief.py`.
+
+Every numeric claim cites the artefact path it came from. Unverified
+claims are flagged `CLAIM_UNSUPPORTED`. The brief is **read-only** —
+generation does not mutate any runtime state.
+
+## 8. 80-day claims verdict (geo + LLM)
+
+| Subsystem | Claim | Verdict |
+| --- | --- | --- |
+| geo-monitor | "geo down for 80 days" | `CLAIM_UNSUPPORTED` — heartbeat age 1638s (≪ 80 d) |
+| llm-provider | "LLM down for 80 days" | `CLAIM_UNSUPPORTED` — history lacks usable timestamps |
+
+Sources: `learning-loop/geo_monitor_health_latest.json`,
+`learning-loop/llm_provider_health_latest.json`.
+
+## 9. Regression status
+
+| Suite | Tests | Status |
+| --- | --- | --- |
+| v3.29 (12 modules) | 146 | OK |
+| v3.28 (8 modules, post safe-mode-consistency patch) | 75 | OK |
+| v3.27 + v3.26 sanity | 64 | OK |
+| v3.24 + v3.22 + v3.30 safety pins | 57 | OK |
+
+## 10. Standing markers panel (verbatim)
 
 - `EDGE_GATE_ENABLED=false`
 - `ALLOW_BROKER_PAPER=false`
 - `LIVE_TRADING_UNSUPPORTED`
 - `NO_ORDER_PLACEMENT`
-- `NO_AUTO_BROKER_ACTION`
-- `Generated: 2026-06-16T10:35:00Z`
-- `HEAD: 7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+- `NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE`
+- `NO_LLM_STATE_MUTATION`
+- `TRADING_EXECUTION_ON=false`
+- `LLM_ADVISORY_ONLY`
+- `WHOLE_SOLUTION_SAFE_ON=true`
+- `Generated:` 2026-06-16T11:30:00Z
+- `HEAD:` `e45d8190ce2499bb96901958f0d26f4eb7c7f4ac` (pre-commit)
 
-## 9. Operator next steps
+## 11. Operator next steps
 
-1. Open `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md`.
-2. Follow the runbook step-by-step in the Alpaca paper UI to repair the
-   AVAX/USD bracket state. Do NOT skip the verifier.
-3. After the broker side is repaired, run
-   `python3 scripts/verify_manual_broker_repair.py --symbol AVAX/USD`
-   (read-only, dry-run by default).
-4. Only after the verifier reports `SAFE_TO_CLEAR` may the operator
-   create the marker file and clear the per-symbol quarantine.
-5. Re-run `python3 scripts/reconcile_equity_gap.py` and confirm
-   `EQUITY_GAP_OK`.
-6. Re-evaluate the allocator gate by hand; allocator stays gated until
-   the operator confirms every step is green.
+1. Open `docs/SYSTEM_ACTIVATION_STATUS.md` for current dashboard.
+2. Open `briefs/2026-06-16.md` for the operational brief.
+3. Resolve `safe_mode_consistency` drift (either flip runtime_state to
+   match the 46 ENTERED events, or emit matching EXITED events).
+4. Once consistency clears, address the 5 backfilled `broker_repair`
+   symbols via `scripts/record_operator_repair_confirmation.py`.
+5. Allocator stays BLOCKED until both issues are resolved.
 
-`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`. `NO_AUTO_BROKER_ACTION`.
-`EDGE_GATE_ENABLED=false`. `ALLOW_BROKER_PAPER=false`.
+---
+
+*Generated: 2026-06-16T11:30:00Z*
+*HEAD: `e45d8190ce2499bb96901958f0d26f4eb7c7f4ac`*
+*Standing markers: `EDGE_GATE_ENABLED=false`, `ALLOW_BROKER_PAPER=false`, `LIVE_TRADING_UNSUPPORTED`, `NO_ORDER_PLACEMENT`, `LLM_ADVISORY_ONLY`, `TRADING_EXECUTION_ON=false`.*

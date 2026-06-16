@@ -1,0 +1,66 @@
+{
+  "activation_snapshot_present": true,
+  "budget": {
+    "available": true,
+    "calls_today": null,
+    "daily_call_budget": null,
+    "max_cost_usd_per_day": null,
+    "remaining": null,
+    "spent_today_usd": null
+  },
+  "eighty_day_claim_reason": "history lacks usable timestamps; the 80-day-down claim is unsupported by direct evidence",
+  "eighty_day_claim_verdict": "CLAIM_UNSUPPORTED",
+  "generated_at_iso": "2026-06-16T09:21:05.605936+00:00",
+  "history": {
+    "earliest_iso": null,
+    "latest_iso": null,
+    "n_failure": 0,
+    "n_success": 0,
+    "n_unknown": 6,
+    "rows": 6
+  },
+  "module": "scripts.audit_llm_provider_health",
+  "proposed_fixes": [
+    "[PROPOSED-FIX] LLM provider may be DEGRADED/UNKNOWN because GEMINI_API_KEY env not configured in workflow context \u2014 operator should add the secret in GitHub repo settings (Settings \u2192 Secrets and variables \u2192 Actions \u2192 New repository secret). Do NOT auto-apply."
+  ],
+  "providers": {
+    "anthropic": {
+      "env": {
+        "name": "ANTHROPIC_API_KEY",
+        "present": false,
+        "value_length": 0
+      },
+      "reason": "ANTHROPIC_API_KEY env not set; cannot determine provider liveness from a read-only audit",
+      "verdict": "UNKNOWN"
+    },
+    "gemini": {
+      "env": {
+        "name": "GEMINI_API_KEY",
+        "present": false,
+        "value_length": 0
+      },
+      "reason": "GEMINI_API_KEY env not set; cannot determine provider liveness from a read-only audit",
+      "verdict": "UNKNOWN"
+    },
+    "openai": {
+      "env": {
+        "name": "OPENAI_API_KEY",
+        "present": false,
+        "value_length": 0
+      },
+      "reason": "OPENAI_API_KEY env not set; cannot determine provider liveness from a read-only audit",
+      "verdict": "UNKNOWN"
+    }
+  },
+  "quality_review_snapshot_present": true,
+  "schema_version": "v3.29",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER",
+    "LLM_ADVISORY_ONLY",
+    "LLM_NEVER_IN_ORDER_PATH"
+  ]
+}

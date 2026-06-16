@@ -1,0 +1,22 @@
+{
+  "audit_enters": 46,
+  "audit_events": 46,
+  "audit_exits": 0,
+  "blocker": "BLOCK_SAFE_MODE_INCONSISTENT",
+  "detail": "46 SAFE_MODE_ENTERED in last 48h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
+  "evaluated_at_iso": "2026-06-16T09:08:09.888149+00:00",
+  "last_event_iso": "2026-06-16T07:46:09.325630+00:00",
+  "lookback_hours": 48,
+  "runtime_active": false,
+  "runtime_reason": "",
+  "runtime_trigger": "",
+  "schema_version": "v3.29",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+  ],
+  "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+}

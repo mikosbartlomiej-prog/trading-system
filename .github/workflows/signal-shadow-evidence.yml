@@ -49,6 +49,10 @@ env:
   LIVE_ENABLED: "false"
   GO_LIVE: "false"
   LIVE_TRADING_ENABLED: "false"
+  # v3.29 ETAP 8 — pin the shadow simulator master-gate guard ON.
+  # When this is true the shadow simulator REFUSES to emit hypothetical
+  # fills whenever the master system_activation_gate is BLOCKED.
+  SHADOW_SIMULATOR_REQUIRE_MASTER_GATE: "true"
   # Read-only data API credentials (same paper key, separate host).
   ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
   ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}

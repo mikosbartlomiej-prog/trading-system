@@ -1,0 +1,190 @@
+name: LLM Advisory Mesh (v3.29 ETAP 6)
+
+# v3.29 ETAP 6 (2026-06-16) — cloud-callable LLM advisory mesh
+# running on top of the v3.29 authority model
+# (shared/llm_advisory_authority.py + shared/llm_advisory_mesh.py).
+#
+# DEFAULT: schedule disabled by default. Schedule fires ONLY when the
+# repo variable LLM_AGENTS_V329_SCHEDULED is set to "true". The
+# workflow_dispatch path is always available.
+#
+# HARD SAFETY
+# - NEVER includes broker secrets.
+# - NEVER imports the broker-orders module.
+# - NEVER submits orders.
+# - Refuses (exit 1) if any of ALLOW_BROKER_PAPER / EDGE_GATE_ENABLED /
+#   BROKER_EXECUTION_ENABLED / LIVE_TRADING / LIVE_ENABLED / GO_LIVE /
+#   LIVE_TRADING_ENABLED is truthy.
+# - Commits ONLY paths inside learning-loop/llm_advisory/** +
+#   docs/LLM_ADVISORY_MESH_STATUS.md + docs/LLM_AUTHORITY_MODEL.md +
+#   journal/autonomy/<date>.jsonl.
+# - Fails if any unauthorized path appears in the staged diff.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true/false — default true (stubs only)"
+        required: false
+        default: "true"
+        type: string
+      agent:
+        description: "Run a single agent role (empty = run all)"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    # Daily 04:30 UTC, after daily-reporters. Only effective when
+    # the LLM_AGENTS_V329_SCHEDULED repo variable is "true".
+    - cron: "30 4 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: llm-advisory-mesh-v329-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.29 hard-pin: every broker-execution / live flag locked OFF.
+  ALLOW_BROKER_PAPER:        "false"
+  EDGE_GATE_ENABLED:         "false"
+  BROKER_EXECUTION_ENABLED:  "false"
+  LIVE_TRADING:              "false"
+  LIVE_ENABLED:              "false"
+  GO_LIVE:                   "false"
+  LIVE_TRADING_ENABLED:      "false"
+  # v3.29 mesh — feature switch (used to toggle real-call mode in the
+  # underlying provider client without touching the workflow file).
+  LLM_AGENTS_ENABLED:        ${{ vars.LLM_AGENTS_ENABLED || 'false' }}
+  LLM_AGENTS_V329_SCHEDULED: ${{ vars.LLM_AGENTS_V329_SCHEDULED || 'false' }}
+  LLM_PROVIDER:              ${{ vars.LLM_PROVIDER || 'offline_mock' }}
+  LLM_FREE_ONLY:             ${{ vars.LLM_FREE_ONLY || 'true' }}
+  LLM_AGENT_DAILY_CALL_BUDGET: ${{ vars.LLM_AGENT_DAILY_CALL_BUDGET || '20' }}
+  LLM_AGENT_PER_RUN_BUDGET:    ${{ vars.LLM_AGENT_PER_RUN_BUDGET || '5' }}
+  LLM_AGENT_MAX_COST_USD_PER_DAY: ${{ vars.LLM_AGENT_MAX_COST_USD_PER_DAY || '1.00' }}
+  GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+  # Provider keys — only forwarded if the secret exists. The runner
+  # is safe when these are empty (deterministic fallback).
+  GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  advise:
+    name: LLM Advisory Mesh v3.29
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # On a schedule, only run when the repo variable opts in.
+    if: ${{ github.event_name != 'schedule' || vars.LLM_AGENTS_V329_SCHEDULED == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker-execution flags pinned false ✓"
+
+      - name: Run v3.29 ETAP 6 safety tests subset
+        run: |
+          python3 -m unittest \
+            tests.test_llm_authority_model_v3290 \
+            tests.test_llm_advisory_mesh_v3290 \
+            tests.test_daily_brief_v3290
+
+      - name: Run v3.29 advisory mesh
+        id: mesh
+        run: |
+          set -e
+          DRY_RUN="${{ github.event.inputs.dry_run || 'true' }}"
+          AGENT="${{ github.event.inputs.agent || '' }}"
+          if [ -n "$AGENT" ]; then
+            OUT=$(python3 scripts/run_llm_advisory_mesh_v329.py \
+                    --dry-run "$DRY_RUN" \
+                    --agent "$AGENT")
+          else
+            OUT=$(python3 scripts/run_llm_advisory_mesh_v329.py \
+                    --dry-run "$DRY_RUN" \
+                    --all)
+          fi
+          echo "$OUT"
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-llm-mesh-v329"
+          git config user.email "llm-mesh-v329@trading-system.local"
+          TODAY=$(date -u +%Y-%m-%d)
+          git add learning-loop/llm_advisory/ \
+                  docs/LLM_ADVISORY_MESH_STATUS.md \
+                  docs/LLM_AUTHORITY_MODEL.md \
+                  "journal/autonomy/${TODAY}.jsonl" \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              learning-loop/llm_advisory/*) ;;
+              docs/LLM_ADVISORY_MESH_STATUS.md) ;;
+              docs/LLM_AUTHORITY_MODEL.md) ;;
+              journal/autonomy/*) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "v3.29 ETAP 6 — LLM advisory mesh update [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

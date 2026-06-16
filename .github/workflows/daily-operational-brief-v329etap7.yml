@@ -1,0 +1,154 @@
+name: Daily Operational Brief (v3.29 ETAP 7)
+
+# v3.29 ETAP 7 (2026-06-16) — daily operator-facing brief.
+#
+# Reads exclusively from on-disk artefacts and emits:
+#   - briefs/<YYYY-MM-DD>.md
+#   - docs/SYSTEM_ACTIVATION_STATUS.md
+#   - learning-loop/system_activation_status_latest.json
+#
+# HARD SAFETY
+# - NEVER includes broker secrets.
+# - NEVER imports the broker-orders module.
+# - NEVER submits orders.
+# - Refuses (exit 1) if any of ALLOW_BROKER_PAPER / EDGE_GATE_ENABLED /
+#   BROKER_EXECUTION_ENABLED / LIVE_TRADING / LIVE_ENABLED / GO_LIVE /
+#   LIVE_TRADING_ENABLED is truthy.
+# - Commits ONLY paths inside briefs/** + docs/SYSTEM_ACTIVATION_STATUS.md +
+#   learning-loop/system_activation_status_latest.json.
+
+on:
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: "Date YYYY-MM-DD (empty = today UTC)"
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "0 5 * * *"   # daily 05:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-operational-brief-v329etap7-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.29 hard-pin: every broker-execution / live flag locked OFF.
+  ALLOW_BROKER_PAPER:        "false"
+  EDGE_GATE_ENABLED:         "false"
+  BROKER_EXECUTION_ENABLED:  "false"
+  LIVE_TRADING:              "false"
+  LIVE_ENABLED:              "false"
+  GO_LIVE:                   "false"
+  LIVE_TRADING_ENABLED:      "false"
+  TRADING_EXECUTION_ON:      "false"
+
+jobs:
+  brief:
+    name: Daily Operational Brief
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Refuse if any broker-execution env flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED \
+                    TRADING_EXECUTION_ON; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker/live flags pinned false ✓"
+
+      - name: Run brief safety tests subset
+        run: |
+          python3 -m unittest tests.test_daily_brief_v3290
+
+      - name: Generate daily brief
+        run: |
+          set -e
+          AS_OF="${{ github.event.inputs.as_of || '' }}"
+          if [ -n "$AS_OF" ]; then
+            python3 scripts/generate_daily_operational_brief_v329etap7.py \
+              --as-of "$AS_OF"
+          else
+            python3 scripts/generate_daily_operational_brief_v329etap7.py \
+              --as-of "$(date -u +%Y-%m-%d)"
+          fi
+
+      - name: Enforce commit-path allow-list
+        id: pathcheck
+        run: |
+          set -e
+          git config user.name  "trading-system-daily-brief-v329"
+          git config user.email "daily-brief-v329@trading-system.local"
+          git add briefs/ \
+                  docs/SYSTEM_ACTIVATION_STATUS.md \
+                  learning-loop/system_activation_status_latest.json \
+                  || true
+          CHANGED=$(git diff --cached --name-only)
+          echo "changed=$CHANGED"
+          BAD=""
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              briefs/*) ;;
+              docs/SYSTEM_ACTIVATION_STATUS.md) ;;
+              learning-loop/system_activation_status_latest.json) ;;
+              *) BAD="$BAD $f" ;;
+            esac
+          done <<<"$CHANGED"
+          if [ -n "$BAD" ]; then
+            echo "REFUSED: unauthorized paths in staged diff:$BAD"
+            exit 1
+          fi
+          if [ -z "$CHANGED" ]; then
+            echo "no_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push (with rebase retry)
+        if: steps.pathcheck.outputs.no_changes == 'false'
+        run: |
+          set -e
+          git commit -m "v3.29 ETAP 7 — daily operational brief [automerge]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main; then
+              if git push origin HEAD:main; then
+                echo "pushed on attempt $i"
+                exit 0
+              fi
+            fi
+            sleep $((i * 2))
+          done
+          echo "push failed after 5 retries"
+          exit 1

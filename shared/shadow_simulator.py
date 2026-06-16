@@ -604,6 +604,49 @@ def maybe_simulate_from_row(
         "qty":            qty,
     }
 
+    # v3.29 ETAP 8 — master system-activation gate. After eligibility
+    # passes, ask the master gate whether the WHOLE system is in a
+    # state in which the shadow simulator may emit hypothetical
+    # fills. When BLOCKED, emit an audit-friendly REJECTED_BY_GATE
+    # row so the forensic tail explicitly shows the refusal. Tests
+    # can bypass by patching the master gate to return a
+    # SHADOW_PERMITTED decision.
+    #
+    # The guard is controlled by the env override
+    # ``SHADOW_SIMULATOR_REQUIRE_MASTER_GATE``. Production workflows
+    # pin this to ``true``. When unset (legacy callers / pre-existing
+    # unit tests), the master-gate guard is non-blocking — the
+    # eligibility + canary + risk stack remains the safety contract.
+    _gate_env = env if env is not None else os.environ
+    if str(_gate_env.get("SHADOW_SIMULATOR_REQUIRE_MASTER_GATE", "")
+            ).strip().lower() in ("true", "1", "yes", "on"):
+        try:
+            try:
+                from system_activation_gate import (  # type: ignore
+                    evaluate as _eval_master,
+                    SHADOW_PERMITTED_DECISIONS as _PERM,
+                )
+            except ImportError:
+                from shared.system_activation_gate import (  # type: ignore
+                    evaluate as _eval_master,
+                    SHADOW_PERMITTED_DECISIONS as _PERM,
+                )
+            _master = _eval_master()
+            if _master.decision not in _PERM:
+                return _build_rejected(
+                    signal_event=signal_event,
+                    reason="REFUSED_SHADOW_DUE_TO_SYSTEM_GATE",
+                    canary_preflight_verdict=str(_master.decision.value),
+                )
+        except Exception:
+            # Fail closed when the guard is REQUIRED — without a
+            # working master gate we MUST NOT emit a fill.
+            return _build_rejected(
+                signal_event=signal_event,
+                reason="REFUSED_SHADOW_DUE_TO_SYSTEM_GATE",
+                canary_preflight_verdict="MASTER_GATE_UNREACHABLE",
+            )
+
     return simulate_shadow_fill(
         signal_event,
         market_snapshot=market_snapshot,

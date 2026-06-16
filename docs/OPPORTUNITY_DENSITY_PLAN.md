@@ -1,8 +1,8 @@
 # Opportunity Density Plan (v3.27.0)
 
-**Generated:** `2026-06-15T15:18:00.649934+00:00`
-**As of:** `2026-06-15T15:18:00.635451+00:00`
-**Git HEAD:** `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+**Generated:** `2026-06-16T08:22:26.789597+00:00`
+**As of:** `2026-06-16T08:22:26.764170+00:00`
+**Git HEAD:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
 
 > Reporter NEVER recommends auto-lowering thresholds. NEVER recommends
 > enabling broker / paper / live. NEVER promises profit. NEVER counts
@@ -13,26 +13,26 @@
 
 | Strategy | Replay candidates | Near-miss rate | Signals fired | Recommendation | Realism |
 |---|---|---|---|---|---|
-| `overbought-short` | 19 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
-| `momentum-long-loose` | 6 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
-| `momentum-long` | 4 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
 | `crypto-momentum` | 0 | 0.1491 | 124 | `KEEP` | `REALISTIC` |
 | `crypto-oversold-bounce` | 0 | 0.0 | 70 | `REPLAY_TEST_VARIANT` | `TOO_LOOSE` |
+| `momentum-long` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
+| `momentum-long-loose` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
+| `overbought-short` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
 
 ## B. Symbols with most near-misses (top 10)
 
 | Symbol | Near-miss count | Top strategy |
 |---|---|---|
-| `BTC/USD` | 507 | `crypto-momentum` |
-| `LTC/USD` | 439 | `crypto-momentum` |
-| `AVAX/USD` | 436 | `crypto-momentum` |
-| `AAVE/USD` | 432 | `crypto-momentum` |
-| `SOL/USD` | 394 | `crypto-momentum` |
-| `LINK/USD` | 378 | `crypto-momentum` |
-| `ETH/USD` | 356 | `crypto-momentum` |
-| `DOT/USD` | 352 | `crypto-momentum` |
-| `BCH/USD` | 329 | `crypto-momentum` |
-| `UNI/USD` | 307 | `crypto-momentum` |
+| `BTC/USD` | 1021 | `crypto-momentum` |
+| `LTC/USD` | 888 | `crypto-momentum` |
+| `AVAX/USD` | 873 | `crypto-momentum` |
+| `AAVE/USD` | 871 | `crypto-momentum` |
+| `SOL/USD` | 801 | `crypto-momentum` |
+| `LINK/USD` | 759 | `crypto-momentum` |
+| `DOT/USD` | 714 | `crypto-momentum` |
+| `ETH/USD` | 714 | `crypto-momentum` |
+| `BCH/USD` | 660 | `crypto-momentum` |
+| `UNI/USD` | 621 | `crypto-momentum` |
 
 ## C. Variants worth observing (top 5 from quarantine)
 
@@ -87,8 +87,8 @@
 **Global snapshot:**
 
 - Production positive rows: `0`
-- Replay positive rows: `29`
-- Near-miss rows (7d): `4074`
+- Replay positive rows: `0`
+- Near-miss rows (7d): `8138`
 - Outcomes available: `False`
 - Verdict (v3.27): `READY_FOR_COMPONENT_VARIANCE_REVIEW`
 

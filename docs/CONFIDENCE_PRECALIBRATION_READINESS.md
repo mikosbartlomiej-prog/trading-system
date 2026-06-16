@@ -1,23 +1,23 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-06-15T15:18:00.575223+00:00`
-**As of:** `2026-06-15T15:18:00.425232+00:00`
-**Git HEAD:** `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
+**Generated:** `2026-06-16T08:22:26.980795+00:00`
+**As of:** `2026-06-16T08:22:26.842596+00:00`
+**Git HEAD:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
 **Window:** last 7 days
-**Rows total:** `16508`
+**Rows total:** `14898`
 **Positive rows (non-null confidence_score):** `0`
 
 ## v3.27 Source separation
 
 **Verdict (v3.27):** `READY_FOR_COMPONENT_VARIANCE_REVIEW`
 
-29 replay row(s) and 4074 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
+0 replay row(s) and 8138 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
 
 | Source | Count | Counts as production? |
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `0` | yes |
-| REPLAY_POSITIVE_ROWS     | `29` | NO (review-only) |
-| NEAR_MISS_ROWS           | `4074` | NO (advisory) |
+| REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
+| NEAR_MISS_ROWS           | `8138` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 

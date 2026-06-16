@@ -208,6 +208,55 @@ def _find_plan(date_hint: str | None) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _write_block_doc(result, plan_date: str) -> None:
+    """v3.28 ETAP 8 — write a date-stamped block doc when the gate refuses.
+
+    Lives at ``docs/MORNING_ALLOCATOR_BLOCKED_<plan_date>.md``. Operator
+    inspects this file to learn why the gate refused. Fail-soft: any
+    I/O error is logged but does NOT propagate (the audit row is the
+    authoritative record; the doc is a convenience).
+    """
+    try:
+        from pathlib import Path
+        ts = datetime.now(timezone.utc).isoformat()
+        path = Path(_REPO_ROOT) / "docs" / f"MORNING_ALLOCATOR_BLOCKED_{plan_date}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        body = [
+            f"# Morning allocator BLOCKED — {plan_date}",
+            "",
+            f"_Generated at {ts} by allocator_incident_gate (v3.28)._",
+            "",
+            f"**Decision:** `{result.decision.value}`",
+            "",
+            "## Blockers",
+            "",
+        ]
+        if result.blockers:
+            for b in result.blockers:
+                body.append(f"- `{b}`")
+        else:
+            body.append("- _(no specific blocker recorded — gate failed CLOSED on unknown)_")
+        body.extend([
+            "",
+            "## Snapshot",
+            "",
+            "```json",
+            json.dumps(result.snapshot, indent=2, sort_keys=True, default=str),
+            "```",
+            "",
+            "## What now",
+            "",
+            "Operator must resolve the blocker(s) above. Do NOT auto-clear",
+            "safe_mode, do NOT auto-cancel broker orders, do NOT auto-close",
+            "positions. The allocator will retry on the next cron when the",
+            "gate decision flips to `ALLOW_ALLOCATOR`.",
+            "",
+        ])
+        path.write_text("\n".join(body), encoding="utf-8")
+    except Exception as exc:
+        print(f"[executor] block-doc write failed (non-fatal): {exc}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Morning allocator executor")
     parser.add_argument("--date", help="Plan date YYYY-MM-DD (default today, fallback yesterday)")
@@ -216,6 +265,42 @@ def main() -> int:
     parser.add_argument("--force", action="store_true",
                         help="Override config.auto_execute_rebalance for this run")
     args = parser.parse_args()
+
+    # ── v3.28 ETAP 3/8 (2026-06-16): incident gate (fail CLOSED). ─────────
+    # Runs BEFORE anything else, including plan-file lookup. If any
+    # active incident is unresolved (safe_mode / broker_repair / P13 /
+    # equity-gap / position-recon-stale / kill-switch) we refuse to
+    # touch the broker. Default verdict is BLOCK_UNKNOWN so any
+    # exception inside the gate keeps us safe. Audit row is written
+    # for every verdict (including ALLOW_ALLOCATOR).
+    try:
+        from allocator_incident_gate import (
+            evaluate as _gate_evaluate,
+            write_audit_decision as _gate_write_audit,
+            AllocatorIncidentDecision as _GateDecision,
+        )
+    except ImportError:
+        from shared.allocator_incident_gate import (  # type: ignore
+            evaluate as _gate_evaluate,
+            write_audit_decision as _gate_write_audit,
+            AllocatorIncidentDecision as _GateDecision,
+        )
+    gate_result = _gate_evaluate()
+    try:
+        _gate_write_audit(gate_result)
+    except Exception as exc:
+        print(f"[executor] gate audit write failed (non-fatal): {exc}")
+    print(f"[executor] v3.28 incident gate decision: {gate_result.decision.value}")
+    if gate_result.blockers:
+        for b in gate_result.blockers:
+            print(f"[executor]   blocker: {b}")
+    if gate_result.decision is not _GateDecision.ALLOW_ALLOCATOR:
+        # Refused — write a date-stamped doc and exit cleanly.
+        gate_date = (args.date or _today_iso())
+        _write_block_doc(gate_result, gate_date)
+        print(f"[executor] incident gate refused — no orders placed. "
+              f"See docs/MORNING_ALLOCATOR_BLOCKED_{gate_date}.md")
+        return 0
 
     plan_path, plan_date = _find_plan(args.date)
     if not plan_path:

@@ -1,0 +1,512 @@
+{
+  "components": {
+    "backfill_snapshot_status": {
+      "source": "learning-loop/backfill_snapshot_status_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "status=LOCAL_BACKFILL_AVAILABLE",
+      "verdict": "LOCAL_BACKFILL_AVAILABLE"
+    },
+    "broker_repair_required": {
+      "source": "learning-loop/broker_repair_required_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "entries=5",
+      "verdict": null
+    },
+    "confidence_precalibration_readiness": {
+      "source": "learning-loop/confidence_precalibration_readiness_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "verdict=NOT_READY_NO_POSITIVE_ROWS",
+      "verdict": "NOT_READY_NO_POSITIVE_ROWS"
+    },
+    "equity_gap_reconciliation": {
+      "source": "learning-loop/equity_gap_reconciliation_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "verdict=EQUITY_GAP_OK",
+      "verdict": "EQUITY_GAP_OK"
+    },
+    "evidence_throughput_sla": {
+      "source": "learning-loop/evidence_throughput_sla_latest.json",
+      "status": "MISSING",
+      "summary": "no artefact present (cron may not have run yet, or this reporter is not configured)"
+    },
+    "gate_distribution": {
+      "source": "learning-loop/gate_distribution_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "heartbeat_freshness": {
+      "source": "learning-loop/heartbeat_freshness_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "stale_components=0",
+      "verdict": null
+    },
+    "llm_advisory_activation": {
+      "source": "learning-loop/llm_advisory/activation_status_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "llm_advisory_quality_review": {
+      "source": "learning-loop/llm_advisory/quality_review_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "monitor_runtime_diag": {
+      "source": "learning-loop/monitor_runtime_diag_status_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "near_miss_seed_status": {
+      "source": "learning-loop/near_miss_seed_status_latest.json",
+      "status": "MISSING",
+      "summary": "no artefact present (cron may not have run yet, or this reporter is not configured)"
+    },
+    "near_miss_status": {
+      "source": "learning-loop/near_miss_status_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "opportunity_density_plan": {
+      "source": "learning-loop/opportunity_density_plan_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "real_market_evidence_status": {
+      "source": "learning-loop/shadow_evidence/real_market_evidence_status_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "replay_discovery": {
+      "source": "learning-loop/replay_discovery_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "safe_mode_consistency": {
+      "source": "learning-loop/safe_mode_consistency_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "verdict=INCONSISTENT_ENTERED_NOT_PERSISTED",
+      "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+    },
+    "shadow_candidate_queue": {
+      "source": "learning-loop/shadow_candidate_queue_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "strategy_threshold_reality": {
+      "source": "learning-loop/strategy_threshold_reality_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    },
+    "strategy_variant_quarantine": {
+      "source": "learning-loop/strategy_variant_quarantine_latest.json",
+      "status": "OK_PRESENT",
+      "summary": "present",
+      "verdict": null
+    }
+  },
+  "generated_at_iso": "2026-06-16T09:18:11.013344+00:00",
+  "module": "scripts.generate_daily_operational_brief",
+  "schema_version": "v3.29",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER"
+  ],
+  "system_activation": {
+    "audit_row": {
+      "actor": "system_activation_gate",
+      "blockers": [
+        "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED"
+      ],
+      "decision": "ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT",
+      "decision_type": "SYSTEM_ACTIVATION_GATE_DECISION",
+      "does_not_execute_orders": true,
+      "enabled_subsystems": [
+        "discovery_reporters",
+        "shadow_simulator",
+        "outcome_tracker",
+        "operator_dashboard"
+      ],
+      "llm_status": "unavailable",
+      "reason": "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED",
+      "reversible": true,
+      "snapshot": {
+        "broker_repair_blocked": [
+          "AVAX",
+          "AVAXUSD",
+          "ETH",
+          "ETHUSD",
+          "LTCUSD"
+        ],
+        "broker_repair_state": {
+          "AVAX": {
+            "allowed_next_actions": [
+              "operator_marker_required"
+            ],
+            "broker_calls_blocked_until_iso": null,
+            "failed_attempts": 1,
+            "first_seen_iso": "2026-06-16T09:01:51.511973+00:00",
+            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "last_error": "backfill from audit on 2026-06-15: 104 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+            "last_seen_iso": "2026-06-16T09:01:51.511973+00:00",
+            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+            "retry_after_iso": null,
+            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "symbol": "AVAX"
+          },
+          "AVAXUSD": {
+            "allowed_next_actions": [
+              "operator_marker_required"
+            ],
+            "broker_calls_blocked_until_iso": null,
+            "failed_attempts": 1,
+            "first_seen_iso": "2026-06-16T09:01:51.513062+00:00",
+            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+            "last_seen_iso": "2026-06-16T09:01:51.513062+00:00",
+            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+            "retry_after_iso": null,
+            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "symbol": "AVAXUSD"
+          },
+          "ETH": {
+            "allowed_next_actions": [
+              "operator_marker_required"
+            ],
+            "broker_calls_blocked_until_iso": null,
+            "failed_attempts": 1,
+            "first_seen_iso": "2026-06-16T09:01:51.513738+00:00",
+            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "last_error": "backfill from audit on 2026-06-08: 152 failed closes, 152 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+            "last_seen_iso": "2026-06-16T09:01:51.513738+00:00",
+            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+            "retry_after_iso": null,
+            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "symbol": "ETH"
+          },
+          "ETHUSD": {
+            "allowed_next_actions": [
+              "operator_marker_required"
+            ],
+            "broker_calls_blocked_until_iso": null,
+            "failed_attempts": 1,
+            "first_seen_iso": "2026-06-16T09:01:51.514307+00:00",
+            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "last_error": "backfill from audit on 2026-06-08: 304 failed closes, 171 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+            "last_seen_iso": "2026-06-16T09:01:51.514307+00:00",
+            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+            "retry_after_iso": null,
+            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "symbol": "ETHUSD"
+          },
+          "LTCUSD": {
+            "allowed_next_actions": [
+              "operator_marker_required"
+            ],
+            "broker_calls_blocked_until_iso": null,
+            "failed_attempts": 1,
+            "first_seen_iso": "2026-06-16T09:01:51.515041+00:00",
+            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 0 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+            "last_seen_iso": "2026-06-16T09:01:51.515041+00:00",
+            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+            "retry_after_iso": null,
+            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+            "symbol": "LTCUSD"
+          }
+        },
+        "equity_gap_report": {
+          "block_allocator": false,
+          "components": {
+            "cash": 0.0,
+            "crypto_positions": 11763.205880877927,
+            "equity_unrealized": 40737.788,
+            "fees_slippage": 0.0,
+            "held_for_orders": 0.0,
+            "realized_pl_today": 0.0,
+            "unexplained": 38003.89611912207
+          },
+          "confidence": "MEDIUM",
+          "current_equity": 90504.89,
+          "evidence": {
+            "audit_realized_pl": {
+              "path": "journal/autonomy/2026-06-16.jsonl",
+              "realized_pl_today_usd": 0.0
+            },
+            "dashboard_snapshot": {
+              "path": "learning-loop/dashboard_snapshot_latest.json",
+              "present": false
+            },
+            "positions_snapshot": {
+              "count": 7,
+              "path": "learning-loop/runtime_state.json::positions"
+            },
+            "runtime_state": {
+              "path": "learning-loop/runtime_state.json",
+              "peak_equity_source": "intraday_governor"
+            }
+          },
+          "gap_amount": -6.639999999999418,
+          "gap_pct": -0.007336081933428169,
+          "generated_at_iso": "2026-06-16T09:03:00.260149+00:00",
+          "peak_equity": 90511.53,
+          "schema_version": "v3.29",
+          "standing_markers": [
+            "EDGE_GATE_ENABLED=false",
+            "ALLOW_BROKER_PAPER=false",
+            "LIVE_TRADING_UNSUPPORTED",
+            "NO_ORDER_PLACEMENT",
+            "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+          ],
+          "status": "EQUITY_GAP_OK",
+          "thresholds": {
+            "blocks_allocator_pct": 2.0,
+            "ok_pct": 0.5,
+            "warn_upper_pct": 2.0
+          },
+          "ts_iso": "2026-06-16T09:03:00.260149+00:00",
+          "verdict": "EQUITY_GAP_OK"
+        },
+        "evaluated_at": "2026-06-16T09:18:11.019714+00:00",
+        "is_market_hours": false,
+        "kill_switch_armed": false,
+        "llm_status": "unavailable",
+        "position_recon_age_s": 573491.022013,
+        "safe_mode_active": false,
+        "safe_mode_consistency": {
+          "audit_enters": 46,
+          "audit_events": 46,
+          "audit_exits": 0,
+          "blocker": "BLOCK_SAFE_MODE_INCONSISTENT",
+          "detail": "46 SAFE_MODE_ENTERED in last 48h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
+          "evaluated_at_iso": "2026-06-16T09:08:09.888149+00:00",
+          "last_event_iso": "2026-06-16T07:46:09.325630+00:00",
+          "lookback_hours": 48,
+          "runtime_active": false,
+          "runtime_reason": "",
+          "runtime_trigger": "",
+          "schema_version": "v3.29",
+          "standing_markers": [
+            "EDGE_GATE_ENABLED=false",
+            "ALLOW_BROKER_PAPER=false",
+            "LIVE_TRADING_UNSUPPORTED",
+            "NO_ORDER_PLACEMENT",
+            "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+          ],
+          "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+        },
+        "safe_mode_reason": ""
+      },
+      "standing_markers": [
+        "EDGE_GATE_ENABLED=false",
+        "ALLOW_BROKER_PAPER=false",
+        "LIVE_TRADING_UNSUPPORTED",
+        "NO_ORDER_PLACEMENT",
+        "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE"
+      ],
+      "status": "skipped",
+      "ts_iso": "2026-06-16T09:18:11.022266+00:00"
+    },
+    "blockers": [
+      "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED"
+    ],
+    "decision": "ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT",
+    "enabled_subsystems": [
+      "discovery_reporters",
+      "shadow_simulator",
+      "outcome_tracker",
+      "operator_dashboard"
+    ],
+    "evaluated_at_iso": "2026-06-16T09:18:11.022275+00:00",
+    "llm_status": "unavailable",
+    "module": "shared.system_activation_gate",
+    "reason": "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED",
+    "schema_version": "v3.29",
+    "shadow_permitted": false,
+    "snapshot": {
+      "broker_repair_blocked": [
+        "AVAX",
+        "AVAXUSD",
+        "ETH",
+        "ETHUSD",
+        "LTCUSD"
+      ],
+      "broker_repair_state": {
+        "AVAX": {
+          "allowed_next_actions": [
+            "operator_marker_required"
+          ],
+          "broker_calls_blocked_until_iso": null,
+          "failed_attempts": 1,
+          "first_seen_iso": "2026-06-16T09:01:51.511973+00:00",
+          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "last_error": "backfill from audit on 2026-06-15: 104 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+          "last_seen_iso": "2026-06-16T09:01:51.511973+00:00",
+          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+          "retry_after_iso": null,
+          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "symbol": "AVAX"
+        },
+        "AVAXUSD": {
+          "allowed_next_actions": [
+            "operator_marker_required"
+          ],
+          "broker_calls_blocked_until_iso": null,
+          "failed_attempts": 1,
+          "first_seen_iso": "2026-06-16T09:01:51.513062+00:00",
+          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+          "last_seen_iso": "2026-06-16T09:01:51.513062+00:00",
+          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+          "retry_after_iso": null,
+          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "symbol": "AVAXUSD"
+        },
+        "ETH": {
+          "allowed_next_actions": [
+            "operator_marker_required"
+          ],
+          "broker_calls_blocked_until_iso": null,
+          "failed_attempts": 1,
+          "first_seen_iso": "2026-06-16T09:01:51.513738+00:00",
+          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "last_error": "backfill from audit on 2026-06-08: 152 failed closes, 152 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+          "last_seen_iso": "2026-06-16T09:01:51.513738+00:00",
+          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+          "retry_after_iso": null,
+          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "symbol": "ETH"
+        },
+        "ETHUSD": {
+          "allowed_next_actions": [
+            "operator_marker_required"
+          ],
+          "broker_calls_blocked_until_iso": null,
+          "failed_attempts": 1,
+          "first_seen_iso": "2026-06-16T09:01:51.514307+00:00",
+          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "last_error": "backfill from audit on 2026-06-08: 304 failed closes, 171 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+          "last_seen_iso": "2026-06-16T09:01:51.514307+00:00",
+          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+          "retry_after_iso": null,
+          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "symbol": "ETHUSD"
+        },
+        "LTCUSD": {
+          "allowed_next_actions": [
+            "operator_marker_required"
+          ],
+          "broker_calls_blocked_until_iso": null,
+          "failed_attempts": 1,
+          "first_seen_iso": "2026-06-16T09:01:51.515041+00:00",
+          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 0 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
+          "last_seen_iso": "2026-06-16T09:01:51.515041+00:00",
+          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
+          "retry_after_iso": null,
+          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
+          "symbol": "LTCUSD"
+        }
+      },
+      "equity_gap_report": {
+        "block_allocator": false,
+        "components": {
+          "cash": 0.0,
+          "crypto_positions": 11763.205880877927,
+          "equity_unrealized": 40737.788,
+          "fees_slippage": 0.0,
+          "held_for_orders": 0.0,
+          "realized_pl_today": 0.0,
+          "unexplained": 38003.89611912207
+        },
+        "confidence": "MEDIUM",
+        "current_equity": 90504.89,
+        "evidence": {
+          "audit_realized_pl": {
+            "path": "journal/autonomy/2026-06-16.jsonl",
+            "realized_pl_today_usd": 0.0
+          },
+          "dashboard_snapshot": {
+            "path": "learning-loop/dashboard_snapshot_latest.json",
+            "present": false
+          },
+          "positions_snapshot": {
+            "count": 7,
+            "path": "learning-loop/runtime_state.json::positions"
+          },
+          "runtime_state": {
+            "path": "learning-loop/runtime_state.json",
+            "peak_equity_source": "intraday_governor"
+          }
+        },
+        "gap_amount": -6.639999999999418,
+        "gap_pct": -0.007336081933428169,
+        "generated_at_iso": "2026-06-16T09:03:00.260149+00:00",
+        "peak_equity": 90511.53,
+        "schema_version": "v3.29",
+        "standing_markers": [
+          "EDGE_GATE_ENABLED=false",
+          "ALLOW_BROKER_PAPER=false",
+          "LIVE_TRADING_UNSUPPORTED",
+          "NO_ORDER_PLACEMENT",
+          "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+        ],
+        "status": "EQUITY_GAP_OK",
+        "thresholds": {
+          "blocks_allocator_pct": 2.0,
+          "ok_pct": 0.5,
+          "warn_upper_pct": 2.0
+        },
+        "ts_iso": "2026-06-16T09:03:00.260149+00:00",
+        "verdict": "EQUITY_GAP_OK"
+      },
+      "evaluated_at": "2026-06-16T09:18:11.019714+00:00",
+      "is_market_hours": false,
+      "kill_switch_armed": false,
+      "llm_status": "unavailable",
+      "position_recon_age_s": 573491.022013,
+      "safe_mode_active": false,
+      "safe_mode_consistency": {
+        "audit_enters": 46,
+        "audit_events": 46,
+        "audit_exits": 0,
+        "blocker": "BLOCK_SAFE_MODE_INCONSISTENT",
+        "detail": "46 SAFE_MODE_ENTERED in last 48h (latest at 2026-06-16T07:46:09.325630+00:00) with no later SAFE_MODE_EXITED, but runtime_state.safe_mode is not active \u2014 persistence bug or workflow-level commit not happening",
+        "evaluated_at_iso": "2026-06-16T09:08:09.888149+00:00",
+        "last_event_iso": "2026-06-16T07:46:09.325630+00:00",
+        "lookback_hours": 48,
+        "runtime_active": false,
+        "runtime_reason": "",
+        "runtime_trigger": "",
+        "schema_version": "v3.29",
+        "standing_markers": [
+          "EDGE_GATE_ENABLED=false",
+          "ALLOW_BROKER_PAPER=false",
+          "LIVE_TRADING_UNSUPPORTED",
+          "NO_ORDER_PLACEMENT",
+          "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+        ],
+        "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
+      },
+      "safe_mode_reason": ""
+    },
+    "standing_markers": [
+      "EDGE_GATE_ENABLED=false",
+      "ALLOW_BROKER_PAPER=false",
+      "LIVE_TRADING_UNSUPPORTED",
+      "NO_ORDER_PLACEMENT",
+      "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE"
+    ]
+  }
+}

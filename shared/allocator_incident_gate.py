@@ -74,9 +74,12 @@ class AllocatorIncidentDecision(enum.Enum):
 
     ALLOW_ALLOCATOR = "ALLOW_ALLOCATOR"
     BLOCK_SAFE_MODE_ACTIVE = "BLOCK_SAFE_MODE_ACTIVE"
+    BLOCK_SAFE_MODE_INCONSISTENT = "BLOCK_SAFE_MODE_INCONSISTENT"
     BLOCK_BROKER_REPAIR_REQUIRED = "BLOCK_BROKER_REPAIR_REQUIRED"
     BLOCK_P13_ACTIVE = "BLOCK_P13_ACTIVE"
     BLOCK_EQUITY_GAP_UNRESOLVED = "BLOCK_EQUITY_GAP_UNRESOLVED"
+    BLOCK_EQUITY_GAP_SCHEMA_INVALID = "BLOCK_EQUITY_GAP_SCHEMA_INVALID"
+    BLOCK_EQUITY_GAP_STALE = "BLOCK_EQUITY_GAP_STALE"
     BLOCK_POSITION_RECONCILIATION_STALE = "BLOCK_POSITION_RECONCILIATION_STALE"
     BLOCK_KILL_SWITCH = "BLOCK_KILL_SWITCH"
     BLOCK_UNKNOWN = "BLOCK_UNKNOWN"
@@ -163,9 +166,9 @@ def _read_equity_gap_pct() -> Optional[float]:
     """Return the most recent equity-gap percentage (signed, %).
 
     Reads ``learning-loop/equity_gap_reconciliation_latest.json``. The
-    file is produced by ``scripts/equity_gap_reconciliation.py``. We
-    accept any of {``gap_pct``, ``gap_percent``, ``equity_gap_pct``}
-    as the field name. None when missing → treated as unknown.
+    file is produced by ``scripts/reconcile_equity_gap.py``. We accept
+    any of {``gap_pct``, ``gap_percent``, ``equity_gap_pct``} as the
+    field name. None when missing → treated as unknown.
     """
     candidates = [
         _REPO_ROOT / "learning-loop" / "equity_gap_reconciliation_latest.json",
@@ -185,6 +188,51 @@ def _read_equity_gap_pct() -> Optional[float]:
                 except (TypeError, ValueError):
                     continue
     return None
+
+
+def _read_equity_gap_report() -> dict:
+    """v3.29 ETAP 4 — full equity-gap reconciliation report (raw dict).
+
+    Returns ``{}`` when missing. Callers inspect ``verdict``,
+    ``generated_at_iso``, etc. See ``_finalize_equity_gap_decision``.
+    """
+    p = _REPO_ROOT / "learning-loop" / "equity_gap_reconciliation_latest.json"
+    if not p.exists():
+        return {}
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            raw = json.load(fh) or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _equity_gap_report_stale_seconds(report: dict) -> Optional[float]:
+    ts = report.get("generated_at_iso") or report.get("ts_iso")
+    if not ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        return (_now() - dt).total_seconds()
+    except (TypeError, ValueError):
+        return None
+
+
+def _read_safe_mode_consistency() -> dict:
+    """v3.29 ETAP 2 — read safe_mode_consistency_latest.json.
+
+    Returns ``{}`` when missing — consumer treats absence as "no
+    information" (does not block on its own).
+    """
+    p = _REPO_ROOT / "learning-loop" / "safe_mode_consistency_latest.json"
+    if not p.exists():
+        return {}
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            raw = json.load(fh) or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return raw if isinstance(raw, dict) else {}
 
 
 def _read_position_reconciliation_age_seconds() -> Optional[float]:
@@ -274,6 +322,8 @@ def _make_snapshot() -> dict:
     except Exception as e:
         snap["incident_detector_error"] = f"{type(e).__name__}: {e}"
     snap["equity_gap_pct"] = _read_equity_gap_pct()
+    snap["equity_gap_report"] = _read_equity_gap_report()
+    snap["safe_mode_consistency"] = _read_safe_mode_consistency()
     snap["position_recon_age_s"] = _read_position_reconciliation_age_seconds()
     snap["is_market_hours"] = _is_us_market_hours()
     try:
@@ -281,6 +331,44 @@ def _make_snapshot() -> dict:
     except Exception as e:
         snap["kill_switch_error"] = f"{type(e).__name__}: {e}"
     return snap
+
+
+# ── Equity-gap report classification (v3.29 ETAP 4) ───────────────────────────
+EQUITY_GAP_STALE_SECONDS = 24 * 3600
+
+
+def _classify_equity_gap(report: dict) -> tuple[Optional["AllocatorIncidentDecision"], str]:
+    """Return (decision_or_None_if_clean, reason_string).
+
+    The function only signals BLOCK conditions — returning ``(None, "")``
+    means the report is healthy and the caller may continue.
+    """
+    if not report:
+        # No report on disk → SCHEMA_INVALID (treated as BLOCK by spec).
+        return (AllocatorIncidentDecision.BLOCK_EQUITY_GAP_SCHEMA_INVALID,
+                "equity_gap_report_missing")
+
+    # Top-level fields required by v3.29 schema.
+    required = ("verdict", "generated_at_iso", "block_allocator")
+    missing = [k for k in required if k not in report]
+    if missing:
+        return (AllocatorIncidentDecision.BLOCK_EQUITY_GAP_SCHEMA_INVALID,
+                f"equity_gap_schema_missing_keys={','.join(missing)}")
+
+    age = _equity_gap_report_stale_seconds(report)
+    if age is None:
+        return (AllocatorIncidentDecision.BLOCK_EQUITY_GAP_SCHEMA_INVALID,
+                "equity_gap_unparseable_generated_at_iso")
+    if age > EQUITY_GAP_STALE_SECONDS:
+        return (AllocatorIncidentDecision.BLOCK_EQUITY_GAP_STALE,
+                f"equity_gap_stale_seconds={int(age)}")
+
+    verdict = str(report.get("verdict", ""))
+    if report.get("block_allocator") is True or verdict == "EQUITY_GAP_UNRESOLVED_BLOCKS_ALLOCATOR":
+        return (AllocatorIncidentDecision.BLOCK_EQUITY_GAP_UNRESOLVED,
+                f"equity_gap_verdict={verdict}")
+
+    return (None, "")
 
 
 def evaluate(as_of: Optional[datetime] = None) -> IncidentGateResult:
@@ -308,6 +396,17 @@ def evaluate(as_of: Optional[datetime] = None) -> IncidentGateResult:
             decision = AllocatorIncidentDecision.BLOCK_SAFE_MODE_ACTIVE
             return _finalize(decision, blockers, snapshot)
 
+        # 1b. safe_mode consistency (v3.29 ETAP 2)
+        # If audit shows SAFE_MODE_ENTERED in the recent window but
+        # runtime says inactive, the persistence layer dropped the
+        # state — block until the operator investigates.
+        sm_consistency = snapshot.get("safe_mode_consistency") or {}
+        verdict = str(sm_consistency.get("verdict", "")) if isinstance(sm_consistency, dict) else ""
+        if verdict == "INCONSISTENT_ENTERED_NOT_PERSISTED":
+            blockers.append("safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED")
+            decision = AllocatorIncidentDecision.BLOCK_SAFE_MODE_INCONSISTENT
+            return _finalize(decision, blockers, snapshot)
+
         # 2. broker_repair_required
         repair = snapshot.get("broker_repair_blocked")
         if repair is None:
@@ -326,7 +425,15 @@ def evaluate(as_of: Optional[datetime] = None) -> IncidentGateResult:
             decision = AllocatorIncidentDecision.BLOCK_P13_ACTIVE
             return _finalize(decision, blockers, snapshot)
 
-        # 4. equity_gap > 2%
+        # 4. equity_gap report (v3.29 ETAP 4 — top-level verdict-aware)
+        report = snapshot.get("equity_gap_report") or {}
+        gap_decision, gap_reason = _classify_equity_gap(report)
+        if gap_decision is not None:
+            blockers.append(gap_reason)
+            decision = gap_decision
+            return _finalize(decision, blockers, snapshot)
+        # Backward-compat: also keep the percent-based check (a present
+        # report passing the schema-check above will already be clean).
         gap = snapshot.get("equity_gap_pct")
         if gap is not None:
             try:

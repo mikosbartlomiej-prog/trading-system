@@ -4,7 +4,7 @@
     "shadow"
   ],
   "change_rationale": "near-miss cluster observed around RSI 31-33; current 30 cutoff is TOO_LOOSE per threshold-reality output but on the other side the entries cluster near 31-33 \u2014 let operator evaluate. [created_from: threshold_reality + near_miss seed]",
-  "created_at_iso": "2026-06-15T15:13:54.029732+00:00",
+  "created_at_iso": "2026-06-15T15:26:06.346216+00:00",
   "dataclass_status": "QUARANTINED",
   "description": "Raise RSI threshold from 30 to 33 (entry band shift +3 points)",
   "dropped_param_keys": [],

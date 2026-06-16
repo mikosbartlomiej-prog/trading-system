@@ -4,7 +4,7 @@
     "shadow"
   ],
   "change_rationale": "predator bracket [3%, 15%] blocks oversold-bounce setups; wider 2% floor surfaces additional candidates near RSI 60 without changing RSI threshold. [created_from: threshold_reality + near_miss seed]",
-  "created_at_iso": "2026-06-15T15:13:54.029218+00:00",
+  "created_at_iso": "2026-06-15T15:26:06.345553+00:00",
   "dataclass_status": "QUARANTINED",
   "description": "Lower 24h move bracket floor from 3% to 2% (entry filter widening)",
   "dropped_param_keys": [],

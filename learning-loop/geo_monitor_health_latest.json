@@ -1,0 +1,57 @@
+{
+  "diag_tokens_7d": {
+    "EMIT_FAILED": 0,
+    "EMIT_SUCCESS": 0,
+    "RAN": 0,
+    "available": true
+  },
+  "eighty_day_claim_reason": "heartbeat age is 1638s which is FAR less than 80 days; the 80-day-down claim is debunked by direct evidence",
+  "eighty_day_claim_verdict": "CLAIM_UNSUPPORTED",
+  "generated_at_iso": "2026-06-16T09:21:05.571498+00:00",
+  "heartbeat": {
+    "age_seconds": 1637.895597,
+    "last_seen_iso": "2026-06-15T11:01:18.996852+00:00",
+    "ok": true,
+    "status": "FRESH",
+    "threshold_seconds": 86400
+  },
+  "is_market_hours": false,
+  "module": "scripts.audit_geo_monitor_health",
+  "opportunity_ledger_rows_7d": 0,
+  "reason": "heartbeat fresh and pipeline healthy",
+  "schema_version": "v3.29",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER"
+  ],
+  "state_strategies": {
+    "geo-defense": {
+      "enabled": true,
+      "paused_until": null,
+      "placed_lifetime": null,
+      "trades_lifetime": 0
+    },
+    "geo-energy": {
+      "enabled": true,
+      "paused_until": null,
+      "placed_lifetime": null,
+      "trades_lifetime": null
+    },
+    "geo-gold": {
+      "enabled": true,
+      "paused_until": null,
+      "placed_lifetime": null,
+      "trades_lifetime": 0
+    },
+    "geo-xom": {
+      "enabled": true,
+      "paused_until": null,
+      "placed_lifetime": null,
+      "trades_lifetime": 0
+    }
+  },
+  "verdict": "OK"
+}

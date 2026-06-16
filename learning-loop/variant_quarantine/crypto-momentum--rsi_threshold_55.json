@@ -4,7 +4,7 @@
     "shadow"
   ],
   "change_rationale": "threshold reality TOO_STRICT for some 7d windows; relax by 5 points to surface near-miss cluster around RSI 55-58. near-miss seed + replay both show density just below 60. [created_from: threshold_reality + near_miss seed]",
-  "created_at_iso": "2026-06-15T15:13:54.020774+00:00",
+  "created_at_iso": "2026-06-15T15:26:06.333793+00:00",
   "dataclass_status": "QUARANTINED",
   "description": "Lower RSI threshold from 60 to 55 (entry band shift -5 points)",
   "dropped_param_keys": [],

@@ -1,0 +1,118 @@
+name: Daily Operational Brief (v3.29)
+
+# v3.29 (2026-06-16) — operator-readable single-page digest.
+#
+# READ-ONLY by design:
+# - Never imports broker SDK.
+# - Never imports shared/alpaca_orders.
+# - Never places, cancels or closes orders.
+# - Never mutates state.json or runtime_state.json.
+# - Pins every broker / live flag false and aborts if any becomes truthy.
+# - Commit allow-list is narrow: only the brief outputs.
+
+on:
+  schedule:
+    # 05:15 UTC daily — runs after the daily-reporters (04:30) so the
+    # input artefacts already exist when this digest renders.
+    - cron: "15 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-operational-brief-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  LC_ALL: C
+  LANG: C
+  # v3.29 hard-pin: every broker / live / LLM-execution flag false.
+  ALLOW_BROKER_PAPER:                       "false"
+  EDGE_GATE_ENABLED:                        "false"
+  BROKER_EXECUTION_ENABLED:                 "false"
+  LIVE_TRADING:                             "false"
+  LIVE_ENABLED:                             "false"
+  GO_LIVE:                                  "false"
+  LIVE_TRADING_ENABLED:                     "false"
+  LLM_PRE_ORDER_VETO_HONORED:               "false"
+  OPERATOR_APPROVED_BROKER_PAPER_CANARY:    "false"
+  LLM_AGENTS_SCHEDULED:                     "false"
+
+jobs:
+  brief:
+    name: Render daily operational brief
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Refuse if any broker / live flag is truthy
+        run: |
+          for v in ALLOW_BROKER_PAPER EDGE_GATE_ENABLED \
+                    BROKER_EXECUTION_ENABLED LIVE_TRADING \
+                    LIVE_ENABLED GO_LIVE LIVE_TRADING_ENABLED \
+                    LLM_PRE_ORDER_VETO_HONORED \
+                    OPERATOR_APPROVED_BROKER_PAPER_CANARY \
+                    LLM_AGENTS_SCHEDULED; do
+            val=$(printf '%s' "${!v}" | tr '[:upper:]' '[:lower:]')
+            if [ "$val" = "true" ] || [ "$val" = "1" ] || \
+               [ "$val" = "yes" ] || [ "$val" = "on" ]; then
+              echo "REFUSED: $v is truthy"
+              exit 1
+            fi
+          done
+          echo "all broker/live flags pinned false ✓"
+
+      - name: Build system activation status (v3.29)
+        run: |
+          if [ -f scripts/build_system_activation_status.py ]; then
+            python3 scripts/build_system_activation_status.py || true
+          else
+            echo "scripts/build_system_activation_status.py not present; skipping."
+          fi
+
+      - name: Generate daily operational brief
+        run: |
+          if [ -f scripts/generate_daily_operational_brief.py ]; then
+            python3 scripts/generate_daily_operational_brief.py || true
+          else
+            echo "scripts/generate_daily_operational_brief.py not present; skipping."
+          fi
+
+      - name: Commit and push (narrow allow-list)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git pull --ff-only origin "$BRANCH" 2>/dev/null || true
+          git add learning-loop/system_activation_status_latest.json   2>/dev/null || true
+          git add learning-loop/daily_operational_brief_latest.json    2>/dev/null || true
+          git add docs/SYSTEM_ACTIVATION_STATUS.md                     2>/dev/null || true
+          git add docs/DAILY_OPERATIONAL_BRIEF.md                      2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No brief changes (quiet day)."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "daily-operational-brief: refresh ${DATE} [automerge]"
+            for attempt in 1 2 3; do
+              if git push origin "$BRANCH"; then
+                echo "Pushed brief refresh on attempt ${attempt}."
+                break
+              fi
+              echo "Push attempt ${attempt} failed — pull --rebase + retry"
+              git pull --rebase origin "$BRANCH" || true
+              sleep $((attempt * 3))
+            done
+          fi

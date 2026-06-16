@@ -72,6 +72,18 @@ VERDICT_OK     = "EQUITY_GAP_OK"
 VERDICT_WARN   = "EQUITY_GAP_WARN"
 VERDICT_BLOCKS = "EQUITY_GAP_UNRESOLVED_BLOCKS_ALLOCATOR"
 
+# v3.29 ETAP 4 (2026-06-16) — additional verdicts surfaced when the
+# allocator gate reads the report. We never *emit* SCHEMA_INVALID or
+# STALE from this script (it always writes a fresh, complete report);
+# they exist because the gate needs to react to *future* reports that
+# might be missing fields or be older than 24h.
+VERDICT_SCHEMA_INVALID = "EQUITY_GAP_SCHEMA_INVALID"
+VERDICT_STALE          = "EQUITY_GAP_STALE"
+
+CONFIDENCE_LOW    = "LOW"
+CONFIDENCE_MEDIUM = "MEDIUM"
+CONFIDENCE_HIGH   = "HIGH"
+
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -436,13 +448,58 @@ def build_report(*,
     gap_pct = _gap_pct(current_equity, peak_equity)
     verdict = _verdict_for(gap_pct)
 
+    # v3.29 ETAP 4 (2026-06-16) — top-level schema additions.
+    # The allocator gate now reads these fields directly so the
+    # equity-gap check no longer depends on the raw % alone.
+    gap_amount = None
+    if peak_equity is not None:
+        try:
+            gap_amount = float(current_equity) - float(peak_equity)
+        except (TypeError, ValueError):
+            gap_amount = None
+    block_allocator = (verdict == VERDICT_BLOCKS)
+
+    # Confidence heuristic: more evidence = higher confidence.
+    # - HIGH when both equity AND a non-empty positions snapshot are
+    #   present AND dashboard snapshot is present.
+    # - MEDIUM when equity + positions present (no dashboard).
+    # - LOW otherwise.
+    has_equity = peak_equity is not None and float(current_equity) > 0
+    has_positions = bool(positions)
+    has_dashboard = bool(dashboard)
+    if has_equity and has_positions and has_dashboard:
+        confidence = CONFIDENCE_HIGH
+    elif has_equity and has_positions:
+        confidence = CONFIDENCE_MEDIUM
+    else:
+        confidence = CONFIDENCE_LOW
+
+    generated_at_iso = _now_iso()
+
+    evidence = {
+        "runtime_state":      {"path": "learning-loop/runtime_state.json",
+                                "peak_equity_source": "intraday_governor"},
+        "positions_snapshot": {"path": "learning-loop/runtime_state.json::positions",
+                                "count": len(positions or {})},
+        "dashboard_snapshot": {"path": "learning-loop/dashboard_snapshot_latest.json",
+                                "present": has_dashboard},
+        "audit_realized_pl":  {"path": f"journal/autonomy/{_today_iso_date()}.jsonl",
+                                "realized_pl_today_usd": float(realized_pl_today)},
+    }
+
     payload = {
-        "schema_version":     "v3.28",
-        "ts_iso":             _now_iso(),
+        "schema_version":     "v3.29",
+        "ts_iso":             generated_at_iso,
+        "generated_at_iso":   generated_at_iso,
         "current_equity":     float(current_equity),
         "peak_equity":        peak_equity,
         "gap_pct":            gap_pct,
+        "gap_amount":         gap_amount,
         "verdict":            verdict,
+        "status":             verdict,           # back-compat mirror
+        "block_allocator":    block_allocator,
+        "confidence":         confidence,
+        "evidence":           evidence,
         "components":         asdict(components),
         "thresholds": {
             "ok_pct":                 EQUITY_GAP_OK_THRESHOLD_PCT,
@@ -529,6 +586,11 @@ __all__ = [
     "VERDICT_OK",
     "VERDICT_WARN",
     "VERDICT_BLOCKS",
+    "VERDICT_SCHEMA_INVALID",
+    "VERDICT_STALE",
+    "CONFIDENCE_LOW",
+    "CONFIDENCE_MEDIUM",
+    "CONFIDENCE_HIGH",
     "EquityComponents",
     "build_report",
     "write_outputs",

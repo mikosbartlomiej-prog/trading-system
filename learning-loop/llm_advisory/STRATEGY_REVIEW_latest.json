@@ -1,0 +1,27 @@
+{
+  "advisory_only": true,
+  "agent_name": "STRATEGY_REVIEW",
+  "authority_level": "L0_ADVISORY_ONLY",
+  "confidence": "LOW",
+  "dry_run": true,
+  "findings": "LLM provider unavailable for STRATEGY_REVIEW; deterministic fallback active. Deterministic gates remain final.",
+  "generated_at_iso": "2026-06-16T09:21:27.564881+00:00",
+  "input_artifacts": [
+    "learning-loop/state.json",
+    "reports/strategy-coherence/latest.json"
+  ],
+  "limitations": "This output is a deterministic placeholder. It carries no model evaluation and no evidence inference. Operators and deterministic gates should rely on the existing deterministic stack.",
+  "must_not_execute_orders": true,
+  "recommendation": "ALLOW",
+  "risk_level": "LOW",
+  "run_id": "mesh-c8013aca7288",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE",
+    "NO_LLM_STATE_MUTATION"
+  ],
+  "veto_recommendation": false
+}

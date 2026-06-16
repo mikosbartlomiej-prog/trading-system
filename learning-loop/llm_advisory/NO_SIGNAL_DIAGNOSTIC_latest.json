@@ -1,0 +1,27 @@
+{
+  "advisory_only": true,
+  "agent_name": "NO_SIGNAL_DIAGNOSTIC",
+  "authority_level": "L0_ADVISORY_ONLY",
+  "confidence": "LOW",
+  "dry_run": true,
+  "findings": "LLM provider unavailable for NO_SIGNAL_DIAGNOSTIC; deterministic fallback active. Deterministic gates remain final.",
+  "generated_at_iso": "2026-06-16T09:21:27.563868+00:00",
+  "input_artifacts": [
+    "learning-loop/shadow_evidence/workflow_health_latest.json",
+    "learning-loop/shadow_evidence/evidence_counters_latest.json"
+  ],
+  "limitations": "This output is a deterministic placeholder. It carries no model evaluation and no evidence inference. Operators and deterministic gates should rely on the existing deterministic stack.",
+  "must_not_execute_orders": true,
+  "recommendation": "ALLOW",
+  "risk_level": "LOW",
+  "run_id": "mesh-1ef0e428820f",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE",
+    "NO_LLM_STATE_MUTATION"
+  ],
+  "veto_recommendation": false
+}

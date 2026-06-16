@@ -4,7 +4,7 @@
     "shadow"
   ],
   "change_rationale": "0 production fires lifetime for momentum-long; replay candidates cluster near 1.5-2.0% breakout. Lower threshold may surface real entries \u2014 operator review. [created_from: threshold_reality + near_miss seed]",
-  "created_at_iso": "2026-06-15T15:13:54.030211+00:00",
+  "created_at_iso": "2026-06-15T15:26:06.346816+00:00",
   "dataclass_status": "QUARANTINED",
   "description": "Lower breakout threshold from 2.0% to 1.5% (entry sensitivity raise)",
   "dropped_param_keys": [],

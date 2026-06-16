@@ -717,3 +717,89 @@ HEAD pre-commit: `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
 `LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
 `NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
 `ALLOW_BROKER_PAPER=false`.
+
+---
+
+## v3.29 — LLM authority model + master system-activation gate
+
+Generated: 2026-06-16T11:30:00Z
+HEAD: `e45d8190ce2499bb96901958f0d26f4eb7c7f4ac` (pre-commit)
+
+### LLM authority model (`shared/llm_advisory_authority.py`)
+
+The v3.29 contract enumerates exactly two LLM authority levels:
+
+- **L0 — read-only diagnostic.** May read artefacts. May NOT write
+  any artefact. May NOT mutate runtime state. Output is never
+  persisted.
+- **L1 — advisory artifact only.** May write to one specific advisory
+  artefact under `learning-loop/llm_advisory/<AGENT>_latest.json`.
+  May NOT write to runtime state, state.json, allocator plan, broker
+  client, safe_mode, or any deterministic gate input.
+
+**FORBIDDEN_OUTPUTS** (rejected by `validate_output` before persist):
+
+- `place_order`, `submit_order`, `safe_close`, `cancel_order`,
+  `close_position`
+- `set_flag`, `clear_safe_mode`, `auto_resolve_*`
+- `override_gate`, `bypass_*`, `force_*`
+- any output that mentions a broker endpoint URL or a credential
+
+`assert_no_execution_intent(output)` is called on every advisory
+artefact before write. Failure raises `LLMAuthorityViolation` and
+the writer is aborted — the deterministic stack is untouched.
+
+### LLM advisory mesh (`shared/llm_advisory_mesh.py`)
+
+10 advisory agents, all L1, none in any runtime trading path:
+
+- `ALLOCATOR_PLAN_CRITIC`, `DAILY_BRIEF`,
+  `EQUITY_RECONCILIATION_CRITIC`, `FINAL_ARBITER`,
+  `INCIDENT_REVIEW`, `NO_SIGNAL_DIAGNOSTIC`, `RISK_REVIEW`,
+  `SHADOW_CANDIDATE_REVIEW`, `STRATEGY_REVIEW`,
+  `TRIGGER_WATCHLIST_REVIEW`.
+
+When the Gemini provider key is missing, the deterministic fallback
+emits `{"verdict": "advisory_unavailable", "fallback": true}` and
+exits 0. The deterministic stack is **never blocked** by LLM
+unavailability.
+
+### Master system-activation gate
+(`shared/system_activation_gate.py`)
+
+The v3.29 gate is the **single pre-allocator gate**. It evaluates
+the deterministic state of the system and emits one of:
+
+- `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT` (highest priority)
+- `ALLOCATOR_BLOCKED_BROKER_REPAIR`
+- `ALLOCATOR_BLOCKED_INCIDENT_DETECTOR_CRITICAL`
+- `ALLOCATOR_BLOCKED_EQUITY_GAP`
+- `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION_STALE`
+- `ALLOCATOR_BLOCKED_KILL_SWITCH`
+- `ALLOCATOR_BLOCKED_OPERATOR_CONFIRMATION_REQUIRED`
+- `ALLOCATOR_ALLOWED` (only when all 7 lower-level gates are clear)
+
+`SAFE_MODE_INCONSISTENT` out-ranks `BROKER_REPAIR_REQUIRED` because
+a persistence drift in safe_mode means the system's own self-view is
+unreliable — every other gate that depends on safe_mode state could
+be misreading. The operator must resolve persistence first.
+
+The gate fails CLOSED on any read error: `BLOCK_UNKNOWN` with the
+exception captured in `blockers[]`.
+
+### Invariants re-asserted under v3.29
+
+1. **No live execution.** `EDGE_GATE_ENABLED=false`,
+   `ALLOW_BROKER_PAPER=false`, `LIVE_TRADING_UNSUPPORTED`.
+2. **No LLM execution authority.** `LLM_EXECUTION_AUTHORITY=false`,
+   `LLM_PRE_ORDER_VETO_HONORED=false`, `LLM_AGENTS_SCHEDULED=false`.
+3. **No LLM state mutation.** `NO_LLM_STATE_MUTATION`.
+4. **No automated broker action from advisory modules.**
+   `NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE`.
+5. **No paid services added.** Mesh deterministic fallback is free.
+6. **No fabricated evidence.** Every claim in `briefs/<date>.md`
+   cites the artefact path or is flagged `CLAIM_UNSUPPORTED`.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.

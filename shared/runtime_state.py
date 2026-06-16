@@ -76,9 +76,23 @@ def write_section(name: str, payload: dict, actor: str = "intraday-monitor") -> 
     current = read_runtime_state()
     current[name] = payload
     current["_last_writer"] = actor
+    # v3.29 ETAP 2 (2026-06-16) — atomic write to prevent torn writes when
+    # multiple workflows update runtime_state concurrently. The previous
+    # direct-write was a race-condition source: when safe_mode.enter() was
+    # called by incident-pattern-detector and another monitor wrote a
+    # different section a few ms later, the second monitor's read+write
+    # could clobber the first's payload silently.
     try:
-        with open(RUNTIME_STATE_PATH, "w", encoding="utf-8") as f:
+        tmp = RUNTIME_STATE_PATH.with_suffix(RUNTIME_STATE_PATH.suffix + ".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(current, f, indent=2, ensure_ascii=False, sort_keys=True)
+            f.flush()
+            try:
+                os.fsync(f.fileno())
+            except OSError:
+                # fsync best-effort — some filesystems (test tmpfs) reject it.
+                pass
+        os.replace(tmp, RUNTIME_STATE_PATH)
     except OSError as e:
         # Fail-soft: monitor still functions in-process, just no persistence.
         print(f"  [runtime_state] save failed for '{name}': {e}")

@@ -50,6 +50,9 @@ class _GateTestBase(unittest.TestCase):
         self._tmp.cleanup()
 
     # Default helper: all checks affirmatively pass.
+    # v3.29 ETAP 2 added _read_safe_mode_consistency as a higher-priority
+    # blocker than broker_repair_required. We patch it to a clear state so
+    # v3.28-era assertions continue to evaluate the intended blocker.
     def _patch_all_clear(self):
         sm_inactive = sm.SafeModeState.inactive()
         return [
@@ -67,6 +70,9 @@ class _GateTestBase(unittest.TestCase):
                          return_value=True),
             patch.object(gate, "_read_kill_switch",
                          return_value=False),
+            patch.object(gate, "_read_safe_mode_consistency",
+                         return_value={"blocker": None,
+                                        "verdict": "CONSISTENT"}),
         ]
 
 
@@ -82,7 +88,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[0] = patch.object(gate, "_read_safe_mode",
                                   return_value=(True, "safe_mode active"))
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_SAFE_MODE_ACTIVE)
@@ -91,7 +97,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[1] = patch.object(gate, "_read_broker_repair",
                                   return_value={"AVAXUSD"})
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_BROKER_REPAIR_REQUIRED)
@@ -108,7 +114,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[2] = patch.object(gate, "_read_incident_detector_latest",
                                   return_value=det)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_P13_ACTIVE)
@@ -117,7 +123,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[3] = patch.object(gate, "_read_equity_gap_pct",
                                   return_value=3.5)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_EQUITY_GAP_UNRESOLVED)
@@ -126,7 +132,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[3] = patch.object(gate, "_read_equity_gap_pct",
                                   return_value=1.2)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.ALLOW_ALLOCATOR)
@@ -135,7 +141,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[4] = patch.object(gate, "_read_position_reconciliation_age_seconds",
                                   return_value=3 * 3600.0)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_POSITION_RECONCILIATION_STALE)
@@ -144,14 +150,14 @@ class TestAllocatorIncidentGate(_GateTestBase):
         patches = self._patch_all_clear()
         patches[6] = patch.object(gate, "_read_kill_switch",
                                   return_value=True)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.BLOCK_KILL_SWITCH)
 
     def test_09_allow_only_when_all_clear(self):
         patches = self._patch_all_clear()
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
         self.assertIs(r.decision,
                       gate.AllocatorIncidentDecision.ALLOW_ALLOCATOR)
@@ -159,7 +165,7 @@ class TestAllocatorIncidentGate(_GateTestBase):
 
     def test_10_audit_row_written(self):
         patches = self._patch_all_clear()
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
             r = gate.evaluate()
             gate.write_audit_decision(r)
         date = datetime.now(timezone.utc).date().isoformat()
