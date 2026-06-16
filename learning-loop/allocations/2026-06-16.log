@@ -42,3 +42,22 @@
 [00:11:00 WARN]     order check failed: LTCUSD:EXIT — LTCUSD not on risk_officer whitelist
 [00:11:00 INFO] ── Step 8: plan complete ──
 [00:11:00 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[18:18:40 INFO] ============================================================
+[18:18:40 INFO] execute_orders() — auto-execute path
+[18:18:40 INFO] ============================================================
+[18:18:40 INFO]   market_status: open=True reason=open
+[18:18:41 INFO]   bp_guard: requested $76025 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
+[18:18:41 INFO]     AMD BUY: derived qty=31 from target=$16,291 @ $518.50 (no prior position)
+[18:18:42 ERR ]     AMD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:42 INFO]     SMH BUY: derived qty=25 from target=$16,291 @ $627.47 (no prior position)
+[18:18:43 ERR ]     SMH BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:43 INFO]     PANW BUY: derived qty=58 from target=$16,291 @ $277.68 (no prior position)
+[18:18:43 ERR ]     PANW BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:44 INFO]     SPY BUY: derived qty=12 from target=$9,051 @ $751.97 (no prior position)
+[18:18:44 ERR ]     SPY BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:44 INFO]     QQQ BUY: derived qty=12 from target=$9,051 @ $733.51 (no prior position)
+[18:18:45 ERR ]     QQQ BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:45 INFO]     GLD BUY: derived qty=22 from target=$9,051 @ $398.31 (no prior position)
+[18:18:46 ERR ]     GLD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[18:18:46 INFO]   execution complete: 0 placed, 0 skipped, 6 failed, 0 deferred_bp
