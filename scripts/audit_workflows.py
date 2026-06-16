@@ -158,6 +158,74 @@ CONTENTS_WRITE_ALLOWLIST: set[str] = {
     # + learning-loop/position_reconciliation/latest.json may be
     # committed. NEVER imports shared/alpaca_orders.py.
     "signal-shadow-evidence.yml",
+    # v3.27 (2026-06-15) — daily-reporters runs 22 read-only reporter /
+    # seeder scripts at 04:30 UTC. All 10 broker/live flags hard-pinned
+    # false + refusal gate; AST-verified zero alpaca_orders imports;
+    # invokes verify_manual_broker_repair.py only with --dry-run. Allowed
+    # write scope = narrow allow-list of reporter artefacts:
+    # learning-loop/*_latest.json (heartbeat / evidence / gate / near_miss
+    # / monitor_runtime / confidence_precal / real_market / throughput /
+    # threshold / replay / backfill / variant_quarantine / shadow_queue /
+    # density / equity_gap / manual_broker_repair_verify / safe_mode /
+    # broker_repair_backfill / system_activation / trigger_watchlist /
+    # universe_opportunity), learning-loop/{backfill_snapshots,near_miss}/,
+    # and corresponding docs/*_STATUS.md / docs/*_REVIEW.md. NEVER writes
+    # config/, scripts/, shared/, .github/, or operator_markers/.
+    "daily-reporters.yml",
+    # v3.29 ETAP 6 (2026-06-15) — LLM advisory mesh schedule-gated by
+    # vars.LLM_AGENTS_V329_SCHEDULED (default off). Authority bounded to
+    # L0_ADVISORY_ONLY / L1_VETO_RECOMMEND_ONLY; FORBIDDEN_OUTPUTS
+    # enforced via assert_no_execution_intent (rejects EXECUTE_ORDER /
+    # PLACE_ORDER / CLEAR_SAFE_MODE / FLIP_BROKER_FLAG / MUTATE_THRESHOLD
+    # / PROMOTE_VARIANT / OVERRIDE_GATE). All 7 broker-execution env
+    # flags hard-pinned false + runtime refusal gate. shared/
+    # llm_advisory_mesh.py NEVER imports alpaca_orders. LLM_FREE_ONLY=
+    # true (Gemini free-tier only). Allowed write scope = learning-loop/
+    # llm_advisory/ (per-role <role>_latest.json) + docs/LLM_ADVISORY_
+    # MESH_STATUS.md + docs/LLM_AUTHORITY_MODEL.md + docs/LLM_PROVIDER_
+    # HEALTH_STATUS.md + journal/autonomy/<date>.jsonl (audit emits) —
+    # enforced by in-workflow commit-path allow-list (exit 1 on
+    # unauthorized staged paths before commit).
+    "llm-advisory-mesh-v329.yml",
+    # v3.29 ETAP 7 (2026-06-15) — daily operator brief generator. Runs
+    # 05:00 UTC after daily-reporters. Read-only artefact aggregator
+    # (reads briefs/, docs/, learning-loop/{status,activation}_latest
+    # JSONs + learning-loop/operator_markers/avaxusd_repair_confirmed.json
+    # for citation only). NEVER imports shared/alpaca_orders.py (AST-
+    # asserted in tests). All 10 broker/live flags hard-pinned false +
+    # pre-execution refusal step. Allowed write scope = briefs/<date>.md
+    # + docs/SYSTEM_ACTIVATION_STATUS.md + learning-loop/system_
+    # activation_status_latest.json — enforced by in-workflow path
+    # allow-list (rejects everything else as REFUSED: unauthorized paths).
+    "daily-operational-brief-v329etap7.yml",
+    # v3.29 (2026-06-15) — daily operator brief (sibling to v329etap7;
+    # different schedule + slightly different output set). Runs 05:15
+    # UTC. Same hard-safety posture: all 10 broker/live flags hard-
+    # pinned false + pre-execution refusal gate, invoked scripts never
+    # import alpaca_orders (only read alpaca_orders.py source text via
+    # static guard probe), no config/threshold writes, no operator_
+    # markers writes. Allowed write scope = learning-loop/system_
+    # activation_status_latest.json + learning-loop/daily_operational_
+    # brief_latest.json + docs/SYSTEM_ACTIVATION_STATUS.md + docs/
+    # DAILY_OPERATIONAL_BRIEF.md — enforced by narrow git add allow-list.
+    "daily-operational-brief.yml",
+    # v3.30.1 (2026-06-15) — LLM quality calibration runner. Cron 10
+    # 0 * * 1-5 (Mon-Fri 00:10 UTC, 10 min after Gemini daily budget
+    # rolls over). Self-gated precheck exits early on 7 skip statuses
+    # (already-calibrated / budget-exhausted / no-key / production-
+    # schedule-on / etc.). Pre-execution test step runs v3.30 safety
+    # subset (test_llm_quality_calibration_workflow_v3300 + test_canary_
+    # pre_executor_no_orders_v3300 + test_observation_records_do_not_
+    # unlock_v3300) before any LLM call. All 7 broker/live flags hard-
+    # pinned false + refuse-on-truthy gate. Scripts NEVER import
+    # alpaca_orders (AST-asserted). LLM_FREE_ONLY=true, LLM_AGENTS_
+    # SCHEDULED=false. Allowed write scope = learning-loop/llm_advisory/
+    # + docs/LLM_ADVISORY_MESH_LATEST.md + docs/LLM_ADVISORY_QUALITY_
+    # REVIEW.md + docs/GEMINI_PROVIDER_STATUS.md + docs/LLM_QUALITY_
+    # CALIBRATION_STATUS.md + docs/LLM_QUALITY_HISTORY_REPAIR_STATUS.md
+    # + learning-loop/position_reconciliation/latest.json — enforced by
+    # in-workflow commit-path allow-list (exit 1 on unauthorized paths).
+    "llm-quality-calibration.yml",
 }
 
 # Workflows allowed to create PRs.
