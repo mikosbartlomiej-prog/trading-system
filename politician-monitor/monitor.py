@@ -92,6 +92,28 @@ except Exception:
         DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
         DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Fail-soft.
+try:
+    from watchlist_diag import (  # type: ignore
+        load_watchlist_cache_for_scan as _watchlist_load,
+        diag_watchlist_scan_started as _watchlist_started,
+        diag_watchlist_scan_finished as _watchlist_finished,
+    )
+except Exception:
+    try:
+        from shared.watchlist_diag import (  # type: ignore
+            load_watchlist_cache_for_scan as _watchlist_load,
+            diag_watchlist_scan_started as _watchlist_started,
+            diag_watchlist_scan_finished as _watchlist_finished,
+        )
+    except Exception:
+        def _watchlist_load(*_a, **_kw):  # type: ignore
+            return {}
+        def _watchlist_started(*_a, **_kw):  # type: ignore
+            return False
+        def _watchlist_finished(*_a, **_kw):  # type: ignore
+            return None
+
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
@@ -711,6 +733,29 @@ def run_scan() -> dict[str, Any]:
     _diag("politician-monitor", DIAG_SIGNAL_DETECTED,
           {"djt": len(djt_candidates), "ptr": len(ptr_candidates),
            "clusters": len(clusters)})
+    # v3.27 — watchlist-aware: emit trigger-crossed for each unique
+    # symbol surfaced in DJT/PTR candidates or sector-cluster ETFs
+    # (fail-soft, observation-only).
+    try:
+        _wl_cache_pol = _watchlist_load()
+        _pol_syms: set[str] = set()
+        for _c in (djt_candidates + ptr_candidates):
+            _s = (_c or {}).get("symbol") or (_c or {}).get("ticker")
+            if isinstance(_s, str) and _s:
+                _pol_syms.add(_s)
+        for _cl in clusters:
+            _s = (_cl or {}).get("etf") or (_cl or {}).get("symbol")
+            if isinstance(_s, str) and _s:
+                _pol_syms.add(_s)
+        for _sym in _pol_syms:
+            _watchlist_started("politician-monitor", _sym, _wl_cache_pol)
+            _watchlist_finished(
+                "politician-monitor", _sym, _wl_cache_pol,
+                signal_detected=True,
+                strategy_id_override="politician-tracker",
+            )
+    except Exception:
+        pass
 
     # ── Curator LLM call ─────────────────────────────────────────────────
     ctx = build_account_context()

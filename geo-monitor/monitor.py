@@ -50,6 +50,28 @@ except Exception:
         DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
         DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Fail-soft.
+try:
+    from watchlist_diag import (  # type: ignore
+        load_watchlist_cache_for_scan as _watchlist_load,
+        diag_watchlist_scan_started as _watchlist_started,
+        diag_watchlist_scan_finished as _watchlist_finished,
+    )
+except Exception:
+    try:
+        from shared.watchlist_diag import (  # type: ignore
+            load_watchlist_cache_for_scan as _watchlist_load,
+            diag_watchlist_scan_started as _watchlist_started,
+            diag_watchlist_scan_finished as _watchlist_finished,
+        )
+    except Exception:
+        def _watchlist_load(*_a, **_kw):  # type: ignore
+            return {}
+        def _watchlist_started(*_a, **_kw):  # type: ignore
+            return False
+        def _watchlist_finished(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from risk_guards import vix_guard, daily_drawdown_guard, get_account_status, has_open_position, concentration_ok
@@ -638,6 +660,32 @@ def run_scan():
         return
     _diag("geo-monitor", DIAG_SIGNAL_DETECTED,
           {"relevant": len(relevant)})
+    # v3.27 — watchlist-aware: emit started/finished for each candidate
+    # symbol surfaced by the news classification (SPY proxy if no
+    # explicit ticker).
+    try:
+        _wl_cache_geo = _watchlist_load()
+        _geo_syms: set[str] = set()
+        for _item in relevant[:10]:
+            _t = (_item or {}).get("tickers") or []
+            if isinstance(_t, list):
+                for _s in _t:
+                    if isinstance(_s, str):
+                        _geo_syms.add(_s)
+            elif isinstance(_t, str):
+                _geo_syms.add(_t)
+        # Fallback: if no explicit tickers extracted, use SPY as proxy.
+        if not _geo_syms:
+            _geo_syms.add("SPY")
+        for _sym in _geo_syms:
+            _watchlist_started("geo-monitor", _sym, _wl_cache_geo)
+            _watchlist_finished(
+                "geo-monitor", _sym, _wl_cache_geo,
+                signal_detected=True,
+                strategy_id_override="geo-news",
+            )
+    except Exception:
+        pass
 
     # Określ ogólny priorytet
     max_score  = relevant[0]["score"]

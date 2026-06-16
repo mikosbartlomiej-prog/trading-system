@@ -1620,3 +1620,72 @@ python3 scripts/build_opportunity_density_plan.py
 
 HEAD at v3.27 FINAL-PHASE refresh: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
 (pre-v3.27 baseline; v3.27 commit follows in this push).
+
+## v3.28 — INCIDENT CONTAINMENT (AVAXUSD P13 retry storm, 2026-06-16)
+
+Generated: 2026-06-16T10:35:00Z
+HEAD pre-commit: `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+
+### Status flags (hard-pinned)
+
+- `EDGE_GATE_ENABLED=false`
+- `ALLOW_BROKER_PAPER=false`
+- `LIVE_TRADING_UNSUPPORTED`
+- `NO_ORDER_PLACEMENT`
+- `NO_AUTO_BROKER_ACTION`
+
+### What landed in v3.28
+
+Incident containment for the AVAX/USD P13 `bracket_interlock_blocked_close`
+retry storm seen on 2026-06-15. The system **did NOT** take any broker
+action. No safe_mode was auto-cleared. No order was cancelled. No
+position was auto-closed. No allocator capital was deployed. Operator
+markers were NOT committed by Claude.
+
+The containment is **defence in depth**:
+
+1. `shared/broker_repair_required.py` — per-symbol quarantine state.
+2. `shared/retry_storm_containment.py` — auto-marks at the third
+   failed `safe_close` and stops the retry storm.
+3. `shared/allocator_incident_gate.py` — fail-CLOSED gate. Default
+   verdict is `BLOCK_UNKNOWN`. Allocator wired to abort on anything
+   other than `ALLOW_ALLOCATOR`.
+4. `.github/workflows/morning-allocator.yml` — pins 10 forbidden
+   flags to `"false"` at workflow-level env, then refuses the run if
+   any becomes truthy before the allocator executes.
+5. `scripts/verify_manual_broker_repair.py` — operator verifier.
+   `--dry-run=true` default. AST scan confirms it never imports
+   `alpaca_orders` and never calls any broker mutator.
+6. `scripts/reconcile_equity_gap.py` — read-only equity-gap reporter.
+7. `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` — operator runbook.
+
+### Operator runbook entry
+
+The operator-facing runbook for this incident is
+`docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md`. Follow it step by step.
+Never skip the verifier. Never clear `broker_repair_required` without
+the marker. Never re-enable the allocator until the verifier returns
+`SAFE_TO_CLEAR`.
+
+### What v3.28 did NOT do
+
+- Did NOT enable live trading.
+- Did NOT call `submit_order`, `place_order`, `safe_close`,
+  `cancel_order`, `cancel_all_orders`, `close_position`, or
+  `close_all_positions` in any new code.
+- Did NOT import `shared/alpaca_orders.py` from any new module.
+- Did NOT auto-clear safe_mode.
+- Did NOT auto-cancel broker orders.
+- Did NOT auto-close positions.
+- Did NOT deploy allocator capital.
+- Did NOT fabricate market data or P/L.
+- Did NOT reduce risk thresholds.
+- Did NOT lower strategy thresholds.
+- Did NOT add paid APIs or services.
+- Did NOT add LLM to the runtime trading path.
+- Did NOT commit secrets or `operator_markers/`.
+- Did NOT force-push.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`.

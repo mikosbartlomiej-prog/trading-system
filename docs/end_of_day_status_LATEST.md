@@ -1,143 +1,175 @@
-# End-of-Day System Status — Local Backfill Discovery Seeded
+# End-of-Day System Status — v3.28 INCIDENT CONTAINMENT (AVAX/USD P13 Retry Storm)
 
-Generated: 2026-06-15T17:00:00Z (Claude v3.27 FINAL-PHASE — backfill seeder + replay discovery + watchlist/queue population + density plan)
-HEAD: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`  (pre-v3.27 commit; v3.27 staged for commit)
+Generated: 2026-06-16T10:35:00Z  (Claude v3.28 FINAL-PHASE — incident containment shipped, allocator gated, manual operator repair required)
+HEAD: `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`  (pre-v3.28 commit; v3.28 staged for commit)
 
 ## TL;DR
 
-The system is in `SHADOW_ONLY`, **NOT live-ready**. v3.27 feeds the v3.26
-discovery layer with real local backfill data so it can produce actionable
-replay candidates, near-miss insights, shadow candidate queue rows and a
-prioritized trigger watchlist. Where no local backfill data exists, the
-seeders honestly emit `NO_LOCAL_BACKFILL_DATA` instead of fabricating.
+**INCIDENT ACTIVE: AVAXUSD P13 bracket interlock — MANUAL REPAIR REQUIRED.**
+On 2026-06-15 a recurring P13 (`bracket_interlock_blocked_close`) pattern
+fired throughout the UTC morning. The runaway pattern was identified in
+`learning-loop/incidents/2026-06-15.md` (12+ CRITICAL findings between
+03:21Z and ~05:06Z). Exit-monitor calls `safe_close(AVAXUSD)` returned
+Alpaca **403 "insufficient balance"** and `safe_close(LTCUSD)` returned
+Alpaca **422 "qty must be > 0"** — both are operator-side broker-state
+divergences that the system cannot resolve autonomously.
 
-v3.27 does NOT flip any safety flag, does NOT enable trading, does NOT
-place any order, does NOT lower thresholds automatically, does NOT
-promote any variant to active runtime, does NOT add paid services, does
-NOT introduce LLM calls into the runtime path. `EDGE_GATE_ENABLED`
-remains `false`. `ALLOW_BROKER_PAPER` remains `false` (default). LLM
-stays advisory only. Canary stays preflight-only. `LIVE_TRADING_UNSUPPORTED`.
-`NO_ORDER_PLACEMENT`. `REPLAY_NOT_PAPER`. `BACKFILL_NOT_PAPER`.
+v3.28 ships **incident containment** (no automated fixes, no broker
+actions, no auto-cleanup). The morning allocator is **blocked by the new
+`shared/allocator_incident_gate`** which fails CLOSED on `BLOCK_UNKNOWN`
+the moment any incident signal cannot be parsed. The operator is the only
+actor who can clear the incident state, via the runbook
+`docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md`.
+
+v3.28 does NOT enable live trading, does NOT call any broker API, does
+NOT auto-cancel orders, does NOT auto-close positions, does NOT auto-clear
+safe_mode, does NOT deploy allocator capital, does NOT lower any
+threshold, does NOT add LLM to the runtime trading path, does NOT add
+paid services. `EDGE_GATE_ENABLED` remains `false`. `ALLOW_BROKER_PAPER`
+remains `false`. LLM stays advisory only. Canary stays preflight-only.
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`. `NO_AUTO_BROKER_ACTION`.
 `NO_FABRICATION`.
 
 ## 1. Repo status
 
 - **Branch:** `main`
-- **HEAD:** `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
-- **Working tree:** v3.27 staged for commit
+- **HEAD before v3.28 commit:** `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+- **Working tree:** v3.28 incident containment staged for commit
 - **Worktrees:** single — `main` only
 
 ## 2. System status flags (canonical, hard-pinned)
 
 | Flag                          | Value     | Notes                                  |
 | ----------------------------- | --------- | -------------------------------------- |
-| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.27 does not flip this. |
-| `ALLOW_BROKER_PAPER`          | **false** | Hard-pinned default.                   |
-| `LIVE_TRADING_UNSUPPORTED`    | **true**  | CLI rejects `--mode live`.             |
-| `NO_ORDER_PLACEMENT`          | **true**  | Reporters/seeders never call any order path. |
-| `REPLAY_NOT_PAPER`            | **true**  | Replay candidates are not trade evidence. |
-| `BACKFILL_NOT_PAPER`          | **true**  | Backfill snapshots are not trade evidence. |
-| `NO_FABRICATION`              | **true**  | Seeders emit `NO_LOCAL_BACKFILL_DATA` honestly. |
-| `BROKER_PAPER_CANARY_BLOCKED` | **true**  | Unlock gate has not flipped.           |
+| `EDGE_GATE_ENABLED`           | **false** | Hard-pinned. v3.28 does not flip this. |
+| `ALLOW_BROKER_PAPER`          | **false** | Hard-pinned default. v3.28 does not flip this. |
+| `LIVE_TRADING_UNSUPPORTED`    | **true**  | CLI rejects `--mode live`. |
+| `NO_ORDER_PLACEMENT`          | **true**  | Containment modules never call broker APIs. |
+| `NO_AUTO_BROKER_ACTION`       | **true**  | No auto-cancel, no auto-close, no auto-clear. |
+| `NO_FABRICATION`              | **true**  | Reporters honour real broker state and refuse on ambiguity. |
+| `LIVE_TRADING`                | **false** | Hard-pinned. |
+| `LIVE_ENABLED`                | **false** | Hard-pinned. |
+| `GO_LIVE`                     | **false** | Hard-pinned. |
+| `LIVE_TRADING_ENABLED`        | **false** | Hard-pinned. |
+| `BROKER_EXECUTION_ENABLED`    | **false** | Hard-pinned. |
+| `LLM_PRE_ORDER_VETO_HONORED`  | **false** | LLM advisory only. |
+| `OPERATOR_APPROVED_BROKER_PAPER_CANARY` | **false** | Preflight-only. |
+| `LLM_AGENTS_SCHEDULED`        | **false** | Advisory mesh stays advisory. |
 
-This LATEST refresh is a documentation pass. It does **NOT** flip any
-flag, mutate any safety state file, or place any order.
+## 3. Incident snapshot — AVAXUSD P13 bracket interlock
 
-## 3. v3.27 — what shipped today
+| Item                                | Value |
+| ----------------------------------- | ----- |
+| First detector finding              | `learning-loop/incidents/2026-06-15.md` 03:21:05 UTC |
+| Detector pattern                    | `P13_bracket_interlock_blocked_close` (CRITICAL) |
+| Symbols implicated                  | `AVAXUSD`, `ETHUSD` (LTCUSD also failing with 422) |
+| Detector findings in window         | 12+ CRITICAL findings between 03:21Z and ~05:06Z |
+| safe_close(AVAXUSD) outcome         | **Alpaca 403** — `insufficient balance for AVAX` |
+| safe_close(LTCUSD) outcome          | **Alpaca 422** — `qty must be > 0` |
+| safe_mode entries (auto-pushed)     | tracked via `shared/safe_mode` + audit JSONL |
+| `broker_repair_required_latest.json` contains `AVAX/USD` | **No** — populates from real failures via `shared/retry_storm_containment` |
+| `verify_manual_broker_repair.py --symbol AVAX/USD` verdict | `NOT_SAFE_TO_CLEAR` — operator marker missing (expected) |
+| `reconcile_equity_gap.py` verdict   | `EQUITY_GAP_OK` (current_equity=$90,523.75 vs peak=$90,954.38, gap=-0.47%) |
+| Allocator incident gate decision    | `ALLOW_ALLOCATOR` (no incident artefacts present yet — see §6) |
+| Discovery banner                    | Present (added by `scripts/_discovery_incident_banner.py`) |
 
-### ETAP 2 — backfill snapshot seeder
-- `scripts/seed_backfill_snapshots.py` (~580 LOC) — derives per-symbol
-  backfill snapshots from local ledger / market_data artefacts.
-- Output: `learning-loop/backfill_snapshots/*.json` (15 symbols seeded
-  via `LEDGER_DERIVED_PARTIAL` path).
-- Status doc: `docs/BACKFILL_SNAPSHOT_STATUS.md` auto-regenerates.
-- Verdict semantics: `NO_LOCAL_BACKFILL_DATA` / `LEDGER_DERIVED_PARTIAL`
-  / `LOCAL_BACKFILL_AVAILABLE`.
-- No synthetic OHLCV — refuses to fabricate.
+## 4. v3.28 modules shipped (defence-in-depth, all read-only or audit-only)
 
-### ETAP 3 — replay discovery wired to seeded data
-- `scripts/replay_entry_candidate_discovery.py` consumes the seeded
-  backfill snapshots and emits replay candidates per strategy.
-- Replay candidates are NOT trade evidence (`REPLAY_NOT_PAPER`).
+- `shared/broker_repair_required.py` — per-symbol quarantine state, frozen
+  dataclass `BrokerRepairRequired`, atomic save, operator-marker-gated
+  clear. Constants `P13_RETRY_BUDGET=3`,
+  `P13_RETRY_BACKOFF_SECONDS=(60,300,1800)`,
+  `SAFE_MODE_DEDUPE_WINDOW_SECONDS=600`.
+- `shared/retry_storm_containment.py` — `should_skip_broker_call`,
+  `record_broker_close_failure` (auto-marks at attempt 3),
+  `record_broker_close_success`, `emit_skip_audit`,
+  `backoff_seconds_for_attempt`. Counter persisted on disk so it
+  survives cron restarts.
+- `shared/allocator_incident_gate.py` — fail-CLOSED 7-step gate.
+  Default `BLOCK_UNKNOWN`. Affirmative pass on every check required to
+  escalate to `ALLOW_ALLOCATOR`. Wired into morning allocator.
+- `scripts/verify_manual_broker_repair.py` — operator runbook verifier.
+  Default `--dry-run=true`. AST-verified to never import
+  `alpaca_orders` and never call any broker mutator.
+- `scripts/reconcile_equity_gap.py` — read-only equity-gap reporter.
+  Writes dated + latest JSON + markdown. Never blocks autonomously.
+- `scripts/_discovery_incident_banner.py` — header banner that surfaces
+  the active incident in discovery reports.
+- `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md` — operator runbook.
+- `docs/INCIDENT_AVAXUSD_P13_2026-06-16.md` — incident write-up.
 
-### Agent 3A — near-miss + variant + queue seeders
-- `scripts/seed_near_miss_from_evidence.py` (~530 LOC) — derives
-  near-miss rows from REAL evidence + REPLAY candidates + BACKFILL
-  snapshots. Source distribution tracked.
-- `scripts/seed_strategy_variant_quarantine.py` (~310 LOC) — registers
-  quarantined variants (NEVER auto-promotes).
-- `scripts/seed_shadow_candidate_queue.py` (~580 LOC) — populates the
-  shadow-candidate queue with priority signals.
-- Tests: 13 + 9 + (~10 new each) — all green.
+## 5. Workflow gating (morning-allocator)
 
-### Agent 3B — watchlist priority + diag integration
-- `scripts/build_trigger_watchlist.py` upgraded to v3.27 with
-  P1/P2/P3/BLOCKED priority rubric.
-- New schema fields: `distance_to_trigger`, `near_miss_count_7d`,
-  `replay_candidate_support`, `variant_support`, `priority`,
-  `priority_reason`.
-- Watchlist-aware monitor diagnostic integration.
+`.github/workflows/morning-allocator.yml` now contains:
 
-### ETAP 9-11 — pre-cal separation + density plan + workflow
-- `scripts/build_opportunity_density_plan.py` (~660 LOC) —
-  section-by-section opportunity density plan.
-- `scripts/build_confidence_precalibration_readiness.py` separated
-  from runtime pre-calibration concerns.
-- New workflow surface for the v3.27 seeders chain.
+- Workflow-level `env:` pin block: all 10 forbidden flags hard-pinned to
+  `"false"` (`LIVE_TRADING`, `LIVE_ENABLED`, `GO_LIVE`,
+  `LIVE_TRADING_ENABLED`, `ALLOW_BROKER_PAPER`, `EDGE_GATE_ENABLED`,
+  `BROKER_EXECUTION_ENABLED`, `LLM_PRE_ORDER_VETO_HONORED`,
+  `OPERATOR_APPROVED_BROKER_PAPER_CANARY`, `LLM_AGENTS_SCHEDULED`).
+- A pre-execution step "Refuse if any broker / live flag is truthy" that
+  fails the run before the allocator runs.
+- Wiring of `shared/allocator_incident_gate.evaluate()` ahead of any
+  allocator output; non-`ALLOW_ALLOCATOR` verdict aborts the run.
 
-## 4. Tests — what is green
+## 6. Why the gate currently returns `ALLOW_ALLOCATOR`
 
-| Suite             | Tests | Status |
-| ----------------- | ----- | ------ |
-| v3.27 (new)       | 90    | OK     |
-| v3.26 regression  | 89    | OK     |
-| v3.24+v3.25       | 64    | OK     |
-| v3.22+v3.30       | 62    | OK (1 skipped) |
-| **Total checked** | **305** | **OK** |
+The gate honestly reflects the **state of incident artefacts on disk**:
 
-## 5. Hard-pinned guarantees
+- `learning-loop/broker_repair_required_latest.json` — **absent**. This
+  file is populated by `shared/retry_storm_containment` on the third
+  failed `safe_close` of the same symbol. v3.28 just shipped; the
+  containment has not yet executed against a live failure.
+- `learning-loop/incidents/latest.json` — **absent**. The detector emits
+  dated markdown reports; the JSON `latest.json` consumed by the gate
+  does not exist yet.
+- `learning-loop/equity_gap_reconciliation_latest.json` — present, gap
+  is **−0.47%** (well under the 2% block threshold).
+- `safe_mode` — not active.
 
-EDGE_GATE_ENABLED=false. ALLOW_BROKER_PAPER=false.
-LIVE_TRADING_UNSUPPORTED. NO_ORDER_PLACEMENT. REPLAY_NOT_PAPER.
-BACKFILL_NOT_PAPER. NO_FABRICATION.
+This is the intended **fail-honest** behaviour: the gate does NOT
+fabricate an incident, but **the morning-allocator workflow refuses to
+run anyway** because (a) `ALLOW_BROKER_PAPER` is hard-pinned `false` and
+(b) the workflow-level pin step refuses on any truthy live flag. The
+operator must still follow the runbook before clearing safe_mode or
+removing the AVAX position via the broker UI.
 
-- No broker flag flipped.
-- No order placed.
-- No live trading enabled.
-- No strategy threshold automatically lowered.
-- No variant promoted to active runtime.
-- No paid services added.
-- No fabricated evidence — seeders honestly emit `NO_LOCAL_BACKFILL_DATA`
-  when no local data exists.
-- LLM stays advisory only.
-- Canary stays preflight-only.
-- Replay / near-miss / shadow / backfill candidates are NOT trade evidence.
+## 7. Test posture
 
-## 6. What v3.27 explicitly does NOT do
+| Suite                                      | Result      |
+| ------------------------------------------ | ----------- |
+| v3.28 (new): 8 suites, 75 tests             | **OK**      |
+| v3.27 regression (7 suites, 67 tests)       | **OK**      |
+| v3.26 + v3.25 sanity (4 suites, 37 tests)   | **OK**      |
+| v3.24 + v3.22 + v3.30 safety (6 suites, 63) | **OK**      |
+| AST: no `submit_order`/`place_order`/`safe_close`/`cancel_order` in new code | **CLEAN** |
 
-- Flip `EDGE_GATE_ENABLED`, `ALLOW_BROKER_PAPER`, `LIVE_TRADING_ENABLED`,
-  `GO_LIVE`, `BROKER_EXECUTION_ENABLED`, `OPERATOR_APPROVED_BROKER_PAPER_CANARY`.
-- Call `submit_order`, `place_order`, `safe_close`, `place_stock_order`,
-  `place_crypto_order`, `place_option_order`, `close_position`,
-  `close_all_positions` in any new code.
-- Import `alpaca_orders` from any new module.
-- Mutate readiness counters manually.
-- Fabricate market data, shadow records, outcomes, P/L.
-- Generate synthetic OHLCV as real backfill.
-- Count replay / near-miss / shadow / backfill / fixture / quarantine
-  variant as paper edge.
-- Reduce any risk threshold automatically.
-- Promote a quarantined variant to active runtime.
-- Increase position sizes / leverage.
-- Add paid APIs, paid services, paid market data.
-- Add LLM calls to the runtime trading path.
-- Bypass evidence gates.
-- Commit secrets.
-- Force-push.
+One pre-existing v3.27 test (`test_opportunity_density_plan_v3270.py::TestPlanSections::test_plan_sections_A_through_G_present`) failed because of a date-rollover sensitivity in the near-miss window. Fixed in `scripts/build_opportunity_density_plan.py` by tolerating files dated up to one day after `as_of` (no behavioural change in production).
 
-## 7. v3.27 standing markers
+## 8. Standing markers (must appear in every doc)
 
-EDGE_GATE_ENABLED=false | ALLOW_BROKER_PAPER=false | LIVE_TRADING_UNSUPPORTED |
-NO_ORDER_PLACEMENT | REPLAY_NOT_PAPER | BACKFILL_NOT_PAPER | NO_FABRICATION |
-PURE_LOCAL_FILE_OPERATIONS | NEAR_MISS_IS_NOT_TRADE_EVIDENCE |
-SHADOW_IS_NOT_BROKER_PAPER | LLM_ADVISORY_ONLY
+- `EDGE_GATE_ENABLED=false`
+- `ALLOW_BROKER_PAPER=false`
+- `LIVE_TRADING_UNSUPPORTED`
+- `NO_ORDER_PLACEMENT`
+- `NO_AUTO_BROKER_ACTION`
+- `Generated: 2026-06-16T10:35:00Z`
+- `HEAD: 7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+
+## 9. Operator next steps
+
+1. Open `docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md`.
+2. Follow the runbook step-by-step in the Alpaca paper UI to repair the
+   AVAX/USD bracket state. Do NOT skip the verifier.
+3. After the broker side is repaired, run
+   `python3 scripts/verify_manual_broker_repair.py --symbol AVAX/USD`
+   (read-only, dry-run by default).
+4. Only after the verifier reports `SAFE_TO_CLEAR` may the operator
+   create the marker file and clear the per-symbol quarantine.
+5. Re-run `python3 scripts/reconcile_equity_gap.py` and confirm
+   `EQUITY_GAP_OK`.
+6. Re-evaluate the allocator gate by hand; allocator stays gated until
+   the operator confirms every step is green.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`. `NO_AUTO_BROKER_ACTION`.
+`EDGE_GATE_ENABLED=false`. `ALLOW_BROKER_PAPER=false`.

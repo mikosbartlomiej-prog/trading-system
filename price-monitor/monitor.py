@@ -49,6 +49,28 @@ except Exception:
         DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
         DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Fail-soft.
+try:
+    from watchlist_diag import (  # type: ignore
+        load_watchlist_cache_for_scan as _watchlist_load,
+        diag_watchlist_scan_started as _watchlist_started,
+        diag_watchlist_scan_finished as _watchlist_finished,
+    )
+except Exception:
+    try:
+        from shared.watchlist_diag import (  # type: ignore
+            load_watchlist_cache_for_scan as _watchlist_load,
+            diag_watchlist_scan_started as _watchlist_started,
+            diag_watchlist_scan_finished as _watchlist_finished,
+        )
+    except Exception:
+        def _watchlist_load(*_a, **_kw):  # type: ignore
+            return {}
+        def _watchlist_started(*_a, **_kw):  # type: ignore
+            return False
+        def _watchlist_finished(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary
@@ -550,11 +572,22 @@ def run_checks():
 
     # Process top picks: only those above min_score get full check
     print(f"  [LONG] Processing top picks with score >= {min_score:.2f}...")
+    # v3.27 ETAP 8 — load watchlist cache once per run.
+    _watchlist_cache = _watchlist_load()
     for s in top_picks:
         if s["score"] < min_score:
             continue
         ticker = s["ticker"]
+        # v3.27 — watchlist-aware diag: notify scan started (no-op when
+        # symbol is not on the watchlist).
+        _watchlist_started("price-monitor", ticker, _watchlist_cache)
         signal = check_long_signal(ticker)
+        if not signal:
+            _watchlist_finished(
+                "price-monitor", ticker, _watchlist_cache,
+                signal_detected=False,
+                distance=(1.0 - max(0.0, min(1.0, s["score"]))),
+            )
         if signal:
             if has_open_position(ticker):
                 print(f"    >>> SYGNAL LONG {ticker} pominiety (otwarta pozycja)")
@@ -575,6 +608,14 @@ def run_checks():
             signals_found += 1
             _diag("price-monitor", DIAG_SIGNAL_DETECTED,
                   {"symbol": ticker, "side": "long", "score": s.get("score")})
+            # v3.27 — watchlist-aware diag: trigger crossed (no-op when
+            # symbol is not on the watchlist).
+            _watchlist_finished(
+                "price-monitor", ticker, _watchlist_cache,
+                signal_detected=True,
+                signal_id=signal.get("client_order_id"),
+                strategy_id_override=signal.get("strategy", "momentum-long"),
+            )
             _diag("price-monitor", DIAG_EMIT_ATTEMPTED,
                   {"symbol": ticker, "strategy": "momentum-long"})
             # v3.22.0 — observability emit BEFORE alert dispatch so the

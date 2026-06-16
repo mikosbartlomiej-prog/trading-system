@@ -137,12 +137,16 @@ def _load_near_miss_rows(
     rows: list[dict[str, Any]] = []
     end_date = as_of.date()
     start_date = end_date - timedelta(days=days - 1)
+    # Tolerate near_miss files dated up to one day past as_of (handles
+    # cron clock skew + test/runtime date rollover where production seeds
+    # today's data but a deterministic ``as_of`` is passed for replay).
+    end_date_tolerated = end_date + timedelta(days=1)
     for p in sorted(base_dir.glob("*.jsonl")):
         try:
             file_date = datetime.strptime(p.stem, "%Y-%m-%d").date()
         except ValueError:
             continue
-        if file_date < start_date or file_date > end_date:
+        if file_date < start_date or file_date > end_date_tolerated:
             continue
         try:
             with p.open("r", encoding="utf-8") as fh:
@@ -854,6 +858,14 @@ def main(argv: list[str] | None = None) -> int:
 
     plan = build_plan(as_of=as_of)
     md = render_md(plan)
+    # v3.28 — ETAP 10 — annotate discovery report with the active
+    # BROKER_REPAIR_REQUIRED incident, if any. Banner is informational
+    # only and NEVER lowers thresholds or promotes variants. Fail-soft.
+    try:
+        from _discovery_incident_banner import prepend_incident_banner  # type: ignore
+        md = prepend_incident_banner(md)
+    except Exception:
+        pass
 
     if args.json:
         print(json.dumps(plan, indent=2, sort_keys=True))

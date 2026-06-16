@@ -50,6 +50,28 @@ except Exception:
         DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
         DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Fail-soft.
+try:
+    from watchlist_diag import (  # type: ignore
+        load_watchlist_cache_for_scan as _watchlist_load,
+        diag_watchlist_scan_started as _watchlist_started,
+        diag_watchlist_scan_finished as _watchlist_finished,
+    )
+except Exception:
+    try:
+        from shared.watchlist_diag import (  # type: ignore
+            load_watchlist_cache_for_scan as _watchlist_load,
+            diag_watchlist_scan_started as _watchlist_started,
+            diag_watchlist_scan_finished as _watchlist_finished,
+        )
+    except Exception:
+        def _watchlist_load(*_a, **_kw):  # type: ignore
+            return {}
+        def _watchlist_started(*_a, **_kw):  # type: ignore
+            return False
+        def _watchlist_finished(*_a, **_kw):  # type: ignore
+            return None
+
 # Email notifications (optional)
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
@@ -870,6 +892,19 @@ def run_scan():
         _diag("defense-monitor", DIAG_SIGNAL_DETECTED,
               {"symbol": signal.get("symbol"),
                "score": signal.get("score")})
+        # v3.27 — watchlist trigger crossed for this news-driven symbol.
+        try:
+            _wl_cache_def = _watchlist_load()
+            _sym_def = signal.get("symbol")
+            if _sym_def:
+                _watchlist_started("defense-monitor", _sym_def, _wl_cache_def)
+                _watchlist_finished(
+                    "defense-monitor", _sym_def, _wl_cache_def,
+                    signal_detected=True,
+                    strategy_id_override=signal.get("strategy", "defense-news"),
+                )
+        except Exception:
+            pass
         _diag("defense-monitor", DIAG_EMIT_ATTEMPTED,
               {"symbol": signal.get("symbol"),
                "strategy": signal.get("strategy", "defense-news")})

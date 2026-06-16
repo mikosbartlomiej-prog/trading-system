@@ -63,6 +63,28 @@ except Exception:
         DIAG_EMIT_ATTEMPTED = "EMIT_ATTEMPTED"
         DIAG_EMIT_SUCCESS = "EMIT_SUCCESS"; DIAG_EMIT_FAILED = "EMIT_FAILED"
 
+# v3.27 — watchlist-aware diagnostics (ETAP 8). Fail-soft.
+try:
+    from watchlist_diag import (  # type: ignore
+        load_watchlist_cache_for_scan as _watchlist_load,
+        diag_watchlist_scan_started as _watchlist_started,
+        diag_watchlist_scan_finished as _watchlist_finished,
+    )
+except Exception:
+    try:
+        from shared.watchlist_diag import (  # type: ignore
+            load_watchlist_cache_for_scan as _watchlist_load,
+            diag_watchlist_scan_started as _watchlist_started,
+            diag_watchlist_scan_finished as _watchlist_finished,
+        )
+    except Exception:
+        def _watchlist_load(*_a, **_kw):  # type: ignore
+            return {}
+        def _watchlist_started(*_a, **_kw):  # type: ignore
+            return False
+        def _watchlist_finished(*_a, **_kw):  # type: ignore
+            return None
+
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
     from notify import notify_signal, notify_summary, notify_order_executed
@@ -774,8 +796,17 @@ def run_scan():
     proposals = []
     skipped_by_bias = 0
     skipped_by_side_cap = 0
+    # v3.27 ETAP 8 — load watchlist cache once for this scan.
+    _watchlist_cache = _watchlist_load()
     for ticker in TICKERS:
+        # v3.27 — watchlist scan started (no-op when not on watchlist).
+        _watchlist_started("options-monitor", ticker, _watchlist_cache)
         proposal = build_proposal(ticker)
+        if not proposal:
+            _watchlist_finished(
+                "options-monitor", ticker, _watchlist_cache,
+                signal_detected=False,
+            )
         if proposal:
             # Learning side_bias filter: skip CALL when bias=short, skip PUT when bias=long
             if learning_bias == "short" and proposal.get("option_type") == "call":
@@ -796,6 +827,12 @@ def run_scan():
                 continue
             proposal["size_usd"] = round(proposal["size_usd"] * combined_size_mult)
             proposals.append(proposal)
+            # v3.27 — watchlist trigger crossed.
+            _watchlist_finished(
+                "options-monitor", ticker, _watchlist_cache,
+                signal_detected=True,
+                strategy_id_override=proposal.get("strategy", "options-momentum"),
+            )
         time.sleep(0.5)
 
     if skipped_by_bias:

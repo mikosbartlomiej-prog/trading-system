@@ -662,3 +662,58 @@ What v3.27 adds to the contract:
 
 HEAD at v3.27 FINAL-PHASE refresh: `1b2a7b9825753d2e05fc7f218fafdc168709dce2`
 (pre-v3.27 baseline; v3.27 commit follows in this push).
+
+## v3.28 — INCIDENT CONTAINMENT contract (AVAXUSD P13)
+
+Generated: 2026-06-16T10:35:00Z
+HEAD pre-commit: `7cbe74139c8d8ada43bfda120b59755ae9d4cd48`
+
+### Standing markers (every doc)
+
+`EDGE_GATE_ENABLED=false`. `ALLOW_BROKER_PAPER=false`.
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`.
+
+### v3.28 invariants (new)
+
+1. **No automated broker repair.** The system cannot auto-fix a broker
+   3xx/4xx response. When `safe_close` fails three times for the same
+   symbol, the symbol is marked
+   `broker_repair_required` and is taken out of the close-retry path
+   until an operator clears it through the runbook.
+2. **Allocator incident gate is fail-CLOSED.** Default verdict is
+   `BLOCK_UNKNOWN`. Allocator workflow aborts on anything other than
+   `ALLOW_ALLOCATOR`. Any check raising an exception → `BLOCK_UNKNOWN`.
+3. **Operator-marker-gated clear.** `broker_repair_required` quarantine
+   can only be cleared after the operator places a marker file. Claude
+   never creates the marker.
+4. **Verify before clear.** `scripts/verify_manual_broker_repair.py`
+   default is `--dry-run=true`. AST scan confirms it does not import
+   `alpaca_orders` and does not call any broker mutator.
+5. **No broker call in containment code.** The new modules
+   (`shared/broker_repair_required.py`,
+   `shared/retry_storm_containment.py`,
+   `shared/allocator_incident_gate.py`) and the new scripts
+   (`scripts/verify_manual_broker_repair.py`,
+   `scripts/reconcile_equity_gap.py`,
+   `scripts/_discovery_incident_banner.py`) NEVER call
+   `submit_order`, `place_order`, `safe_close`, `cancel_order`,
+   `cancel_all_orders`, `close_position`, or `close_all_positions`.
+   This is enforced by a grep-based pre-commit gate.
+6. **Workflow-level flag pin.** `.github/workflows/morning-allocator.yml`
+   hard-pins 10 broker / live flags to `"false"` and refuses the run
+   when any becomes truthy.
+7. **LLM stays advisory.** No LLM in the runtime trading path. No
+   `LLM_PRE_ORDER_VETO_HONORED`. No `LLM_AGENTS_SCHEDULED`.
+8. **Canary stays preflight-only.**
+   `OPERATOR_APPROVED_BROKER_PAPER_CANARY` remains `false`.
+
+### What v3.28 changed for autonomy
+
+- v3.28 did NOT enable live. It hardened the boundary between the
+  system and the broker by adding more `BLOCK_UNKNOWN` paths and by
+  making the operator the only actor that can clear an incident.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`.

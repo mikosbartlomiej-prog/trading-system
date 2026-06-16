@@ -1,0 +1,29 @@
+{
+  "components": {
+    "cash": 0.0,
+    "crypto_positions": 11780.918732548651,
+    "equity_unrealized": 40737.788,
+    "fees_slippage": 0.0,
+    "held_for_orders": 0.0,
+    "realized_pl_today": 0.0,
+    "unexplained": 38005.04326745135
+  },
+  "current_equity": 90523.75,
+  "gap_pct": -0.4734571331254247,
+  "peak_equity": 90954.38,
+  "schema_version": "v3.28",
+  "standing_markers": [
+    "EDGE_GATE_ENABLED=false",
+    "ALLOW_BROKER_PAPER=false",
+    "LIVE_TRADING_UNSUPPORTED",
+    "NO_ORDER_PLACEMENT",
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_SCRIPT"
+  ],
+  "thresholds": {
+    "blocks_allocator_pct": 2.0,
+    "ok_pct": 0.5,
+    "warn_upper_pct": 2.0
+  },
+  "ts_iso": "2026-06-16T08:29:50.555052+00:00",
+  "verdict": "EQUITY_GAP_OK"
+}
