@@ -33,9 +33,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-16T15:51:17.869466+00:00",
+      "last_seen_iso": "2026-06-16T16:11:15.760452+00:00",
       "last_status": "ok",
-      "pings_today": 130
+      "pings_today": 131
     },
     "geo-monitor": {
       "last_message": "",
@@ -100,7 +100,7 @@
     "intraday_peak_pnl": 902.5970097626414,
     "intraday_peak_pnl_pct": 0.009975298292441415,
     "last_action": "noop",
-    "last_update_at": "2026-06-16T15:51:16.796663+00:00",
+    "last_update_at": "2026-06-16T16:11:15.256421+00:00",
     "max_gross_target": 0.25,
     "options_first_reduction": true,
     "peak_at": "2026-06-16T07:41:06.555387+00:00",
@@ -177,7 +177,7 @@
     "LTCUSD": {
       "first_seen_at": "2026-06-13T02:35:45.965387+00:00",
       "last_pct": 0.0,
-      "last_seen_at": "2026-06-16T15:51:17.821000+00:00",
+      "last_seen_at": "2026-06-16T16:11:15.712656+00:00",
       "peak_pct": 0.0
     },
     "PANW": {
@@ -286,14 +286,14 @@
       "entry_price": 44.21,
       "entry_qty": 1.83e-07,
       "intent": "swing",
-      "last_eval_at_iso": "2026-06-16T15:51:17.859309+00:00",
+      "last_eval_at_iso": "2026-06-16T16:11:15.750306+00:00",
       "lifecycle": "TIME_EXPIRED",
       "opened_at_iso": "2026-06-13T02:35:46.175369+00:00",
       "peak_pl_pct": 0.043270753223252585,
       "peak_price": 46.123,
       "profile_quality_now": null,
       "symbol": "LTCUSD",
-      "time_at_eval_hours": 85.25880109444445,
+      "time_at_eval_hours": 85.59154859361111,
       "time_stop_hours": 48.0,
       "trough_pl_pct": -0.024833748020809832,
       "trough_price": 43.1121,
