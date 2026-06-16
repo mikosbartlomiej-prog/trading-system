@@ -210,6 +210,7 @@ class TestBackfillBehaviour(_IsolatedEnv):
         self.assertNotIn("shared.alpaca_orders", sys.modules)
 
     def test_06_avaxusd_backfilled_when_no_marker(self):
+        # v3.30 (2026-06-16): AVAXUSD canonicalizes to AVAX/USD on backfill.
         ts = _now() - timedelta(hours=2)
         rows = [_close_fail_row("AVAXUSD", ts + timedelta(seconds=i * 60))
                 for i in range(5)]
@@ -217,9 +218,9 @@ class TestBackfillBehaviour(_IsolatedEnv):
         # No marker.
         self.assertFalse(self.ors.has_repair_confirmation("AVAXUSD"))
         self.script.run_backfill(lookback_days=2, dry_run=False)
-        # AVAXUSD must now be in the entries.
+        # AVAXUSD input canonicalizes to AVAX/USD entry key.
         entries = json.loads(self._brr_path.read_text()).get("entries", {})
-        self.assertIn("AVAXUSD", entries)
+        self.assertIn("AVAX/USD", entries)
 
     def test_07_ast_no_alpaca_orders_import(self):
         path = _REPO_ROOT / "scripts" / "backfill_broker_repair_from_incidents.py"

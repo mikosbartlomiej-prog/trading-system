@@ -1,127 +1,39 @@
 {
-  "components": {
-    "backfill_snapshot_status": {
-      "source": "learning-loop/backfill_snapshot_status_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "status=LOCAL_BACKFILL_AVAILABLE",
-      "verdict": "LOCAL_BACKFILL_AVAILABLE"
-    },
-    "broker_repair_required": {
-      "source": "learning-loop/broker_repair_required_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "entries=5",
-      "verdict": null
-    },
-    "confidence_precalibration_readiness": {
-      "source": "learning-loop/confidence_precalibration_readiness_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "verdict=NOT_READY_NO_POSITIVE_ROWS",
-      "verdict": "NOT_READY_NO_POSITIVE_ROWS"
-    },
-    "equity_gap_reconciliation": {
-      "source": "learning-loop/equity_gap_reconciliation_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "verdict=EQUITY_GAP_OK",
-      "verdict": "EQUITY_GAP_OK"
-    },
-    "evidence_throughput_sla": {
-      "source": "learning-loop/evidence_throughput_sla_latest.json",
-      "status": "MISSING",
-      "summary": "no artefact present (cron may not have run yet, or this reporter is not configured)"
-    },
-    "gate_distribution": {
-      "source": "learning-loop/gate_distribution_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "heartbeat_freshness": {
-      "source": "learning-loop/heartbeat_freshness_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "stale_components=0",
-      "verdict": null
-    },
-    "llm_advisory_activation": {
-      "source": "learning-loop/llm_advisory/activation_status_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "llm_advisory_quality_review": {
-      "source": "learning-loop/llm_advisory/quality_review_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "monitor_runtime_diag": {
-      "source": "learning-loop/monitor_runtime_diag_status_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "near_miss_seed_status": {
-      "source": "learning-loop/near_miss_seed_status_latest.json",
-      "status": "MISSING",
-      "summary": "no artefact present (cron may not have run yet, or this reporter is not configured)"
-    },
-    "near_miss_status": {
-      "source": "learning-loop/near_miss_status_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "opportunity_density_plan": {
-      "source": "learning-loop/opportunity_density_plan_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "real_market_evidence_status": {
-      "source": "learning-loop/shadow_evidence/real_market_evidence_status_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "replay_discovery": {
-      "source": "learning-loop/replay_discovery_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "safe_mode_consistency": {
-      "source": "learning-loop/safe_mode_consistency_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "verdict=INCONSISTENT_ENTERED_NOT_PERSISTED",
-      "verdict": "INCONSISTENT_ENTERED_NOT_PERSISTED"
-    },
-    "shadow_candidate_queue": {
-      "source": "learning-loop/shadow_candidate_queue_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "strategy_threshold_reality": {
-      "source": "learning-loop/strategy_threshold_reality_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    },
-    "strategy_variant_quarantine": {
-      "source": "learning-loop/strategy_variant_quarantine_latest.json",
-      "status": "OK_PRESENT",
-      "summary": "present",
-      "verdict": null
-    }
+  "as_of": "2026-06-16",
+  "audit_event_count_24h": 987,
+  "flags": {
+    "ALLOCATOR_ALLOWED": false,
+    "BLOCKERS": [
+      "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED"
+    ],
+    "BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE": true,
+    "LLM_ADVISORY_ON": true,
+    "LLM_EXECUTION_AUTHORITY": false,
+    "LLM_PROVIDER_MODE": "UNAVAILABLE",
+    "NEXT_OPERATOR_ACTIONS": [
+      "Investigate runtime_state vs audit safe_mode mismatch (see docs/RUNBOOK.md scenario 5a); do NOT auto-clear safe_mode.",
+      "For each broker-repair symbol: review Alpaca dashboard, manually fix orphaned OCO legs / dust positions, then run `python3 scripts/record_operator_repair_confirmation.py --operator-confirmed`. See docs/OPERATOR_REPAIR_CONFIRMATION.md."
+    ],
+    "OPERATOR_ACTION_REASON": "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED",
+    "OPERATOR_ACTION_REQUIRED": true,
+    "RETRY_STORM_SUPPRESSION_ACTIVE": true,
+    "SAFE_MODE_CONSISTENCY_CHECK_ACTIVE": true,
+    "SHADOW_ONLY_ALLOWED": true,
+    "TRADING_EXECUTION_ON": false,
+    "WHOLE_SAFE_STACK_ON": true,
+    "WHOLE_SOLUTION_SAFE_ON": true
   },
-  "generated_at_iso": "2026-06-16T09:18:11.013344+00:00",
+  "generated_at_iso": "2026-06-16T12:15:10.422013+00:00",
   "module": "scripts.generate_daily_operational_brief",
-  "schema_version": "v3.29",
+  "schema_version": "v3.30",
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
     "ALLOW_BROKER_PAPER=false",
     "LIVE_TRADING_UNSUPPORTED",
     "NO_ORDER_PLACEMENT",
-    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER"
+    "NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER",
+    "LLM_ADVISORY_ONLY",
+    "TRADING_EXECUTION_ON=false"
   ],
   "system_activation": {
     "audit_row": {
@@ -141,76 +53,45 @@
       "llm_status": "unavailable",
       "reason": "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED",
       "reversible": true,
+      "shadow_only_allowed": true,
       "snapshot": {
         "broker_repair_blocked": [
-          "AVAX",
-          "AVAXUSD",
-          "ETH",
-          "ETHUSD",
-          "LTCUSD"
+          "AVAX/USD",
+          "ETH/USD",
+          "LTC/USD"
         ],
         "broker_repair_state": {
-          "AVAX": {
+          "AVAX/USD": {
             "allowed_next_actions": [
               "operator_marker_required"
             ],
             "broker_calls_blocked_until_iso": null,
-            "failed_attempts": 1,
+            "failed_attempts": 2,
             "first_seen_iso": "2026-06-16T09:01:51.511973+00:00",
-            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "last_error": "backfill from audit on 2026-06-15: 104 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-            "last_seen_iso": "2026-06-16T09:01:51.511973+00:00",
-            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-            "retry_after_iso": null,
-            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "symbol": "AVAX"
-          },
-          "AVAXUSD": {
-            "allowed_next_actions": [
-              "operator_marker_required"
-            ],
-            "broker_calls_blocked_until_iso": null,
-            "failed_attempts": 1,
-            "first_seen_iso": "2026-06-16T09:01:51.513062+00:00",
             "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
             "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
             "last_seen_iso": "2026-06-16T09:01:51.513062+00:00",
             "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
             "retry_after_iso": null,
             "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "symbol": "AVAXUSD"
+            "symbol": "AVAX/USD"
           },
-          "ETH": {
+          "ETH/USD": {
             "allowed_next_actions": [
               "operator_marker_required"
             ],
             "broker_calls_blocked_until_iso": null,
-            "failed_attempts": 1,
+            "failed_attempts": 2,
             "first_seen_iso": "2026-06-16T09:01:51.513738+00:00",
-            "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "last_error": "backfill from audit on 2026-06-08: 152 failed closes, 152 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-            "last_seen_iso": "2026-06-16T09:01:51.513738+00:00",
-            "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-            "retry_after_iso": null,
-            "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "symbol": "ETH"
-          },
-          "ETHUSD": {
-            "allowed_next_actions": [
-              "operator_marker_required"
-            ],
-            "broker_calls_blocked_until_iso": null,
-            "failed_attempts": 1,
-            "first_seen_iso": "2026-06-16T09:01:51.514307+00:00",
             "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
             "last_error": "backfill from audit on 2026-06-08: 304 failed closes, 171 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
             "last_seen_iso": "2026-06-16T09:01:51.514307+00:00",
             "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
             "retry_after_iso": null,
             "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "symbol": "ETHUSD"
+            "symbol": "ETH/USD"
           },
-          "LTCUSD": {
+          "LTC/USD": {
             "allowed_next_actions": [
               "operator_marker_required"
             ],
@@ -223,7 +104,7 @@
             "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
             "retry_after_iso": null,
             "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-            "symbol": "LTCUSD"
+            "symbol": "LTC/USD"
           }
         },
         "equity_gap_report": {
@@ -278,11 +159,15 @@
           "ts_iso": "2026-06-16T09:03:00.260149+00:00",
           "verdict": "EQUITY_GAP_OK"
         },
-        "evaluated_at": "2026-06-16T09:18:11.019714+00:00",
+        "evaluated_at": "2026-06-16T12:15:10.410568+00:00",
+        "fresh_p13_count_last_hour": 0,
+        "fresh_p13_in_window": false,
         "is_market_hours": false,
         "kill_switch_armed": false,
         "llm_status": "unavailable",
-        "position_recon_age_s": 573491.022013,
+        "position_recon_age_s": 584110.412913,
+        "retry_storm_active": false,
+        "retry_storm_count_last_hour": 0,
         "safe_mode_active": false,
         "safe_mode_consistency": {
           "audit_enters": 46,
@@ -316,7 +201,7 @@
         "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE"
       ],
       "status": "skipped",
-      "ts_iso": "2026-06-16T09:18:11.022266+00:00"
+      "ts_iso": "2026-06-16T12:15:10.421480+00:00"
     },
     "blockers": [
       "safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED"
@@ -328,82 +213,51 @@
       "outcome_tracker",
       "operator_dashboard"
     ],
-    "evaluated_at_iso": "2026-06-16T09:18:11.022275+00:00",
+    "evaluated_at_iso": "2026-06-16T12:15:10.421490+00:00",
     "llm_status": "unavailable",
     "module": "shared.system_activation_gate",
     "reason": "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED",
-    "schema_version": "v3.29",
+    "schema_version": "v3.30",
+    "shadow_only_allowed": true,
     "shadow_permitted": false,
     "snapshot": {
       "broker_repair_blocked": [
-        "AVAX",
-        "AVAXUSD",
-        "ETH",
-        "ETHUSD",
-        "LTCUSD"
+        "AVAX/USD",
+        "ETH/USD",
+        "LTC/USD"
       ],
       "broker_repair_state": {
-        "AVAX": {
+        "AVAX/USD": {
           "allowed_next_actions": [
             "operator_marker_required"
           ],
           "broker_calls_blocked_until_iso": null,
-          "failed_attempts": 1,
+          "failed_attempts": 2,
           "first_seen_iso": "2026-06-16T09:01:51.511973+00:00",
-          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "last_error": "backfill from audit on 2026-06-15: 104 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-          "last_seen_iso": "2026-06-16T09:01:51.511973+00:00",
-          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-          "retry_after_iso": null,
-          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "symbol": "AVAX"
-        },
-        "AVAXUSD": {
-          "allowed_next_actions": [
-            "operator_marker_required"
-          ],
-          "broker_calls_blocked_until_iso": null,
-          "failed_attempts": 1,
-          "first_seen_iso": "2026-06-16T09:01:51.513062+00:00",
           "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
           "last_error": "backfill from audit on 2026-06-15: 208 failed closes, 104 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
           "last_seen_iso": "2026-06-16T09:01:51.513062+00:00",
           "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
           "retry_after_iso": null,
           "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "symbol": "AVAXUSD"
+          "symbol": "AVAX/USD"
         },
-        "ETH": {
+        "ETH/USD": {
           "allowed_next_actions": [
             "operator_marker_required"
           ],
           "broker_calls_blocked_until_iso": null,
-          "failed_attempts": 1,
+          "failed_attempts": 2,
           "first_seen_iso": "2026-06-16T09:01:51.513738+00:00",
-          "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "last_error": "backfill from audit on 2026-06-08: 152 failed closes, 152 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
-          "last_seen_iso": "2026-06-16T09:01:51.513738+00:00",
-          "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
-          "retry_after_iso": null,
-          "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "symbol": "ETH"
-        },
-        "ETHUSD": {
-          "allowed_next_actions": [
-            "operator_marker_required"
-          ],
-          "broker_calls_blocked_until_iso": null,
-          "failed_attempts": 1,
-          "first_seen_iso": "2026-06-16T09:01:51.514307+00:00",
           "incident_type": "P13_BRACKET_INTERLOCK_BACKFILLED",
           "last_error": "backfill from audit on 2026-06-08: 304 failed closes, 171 403s, 0 SAFE_MODE_ENTERED (no SAFE_MODE_EXITED in 30d window)",
           "last_seen_iso": "2026-06-16T09:01:51.514307+00:00",
           "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
           "retry_after_iso": null,
           "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "symbol": "ETHUSD"
+          "symbol": "ETH/USD"
         },
-        "LTCUSD": {
+        "LTC/USD": {
           "allowed_next_actions": [
             "operator_marker_required"
           ],
@@ -416,7 +270,7 @@
           "manual_action_required": "Run scripts/record_operator_repair_confirmation.py --operator-confirmed then clear via shared/broker_repair_required.clear_repair(symbol, marker_path).",
           "retry_after_iso": null,
           "safe_mode_reason": "P13_BRACKET_INTERLOCK_BACKFILLED",
-          "symbol": "LTCUSD"
+          "symbol": "LTC/USD"
         }
       },
       "equity_gap_report": {
@@ -471,11 +325,15 @@
         "ts_iso": "2026-06-16T09:03:00.260149+00:00",
         "verdict": "EQUITY_GAP_OK"
       },
-      "evaluated_at": "2026-06-16T09:18:11.019714+00:00",
+      "evaluated_at": "2026-06-16T12:15:10.410568+00:00",
+      "fresh_p13_count_last_hour": 0,
+      "fresh_p13_in_window": false,
       "is_market_hours": false,
       "kill_switch_armed": false,
       "llm_status": "unavailable",
-      "position_recon_age_s": 573491.022013,
+      "position_recon_age_s": 584110.412913,
+      "retry_storm_active": false,
+      "retry_storm_count_last_hour": 0,
       "safe_mode_active": false,
       "safe_mode_consistency": {
         "audit_enters": 46,

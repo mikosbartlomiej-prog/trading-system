@@ -1518,6 +1518,72 @@ def safe_close(
         from shared.autonomy import assert_paper_only as _assert_paper  # type: ignore
     _assert_paper(ALPACA_BASE_URL)
 
+    # ── v3.30 HARD-WIRE: broker-repair-required precondition. ─────────────
+    # Production retry-storm leak diagnosed 2026-06-16: 5 callsites
+    # invoke ``safe_close`` but only ONE (exit-monitor lifecycle path)
+    # checked ``retry_storm_containment.should_skip_broker_call`` before
+    # the call. The other 4 callsites (exit-monitor POST fallback,
+    # options-exit-monitor, allocator REDUCE, allocator EXIT) leaked
+    # straight through to Alpaca even when ``broker_repair_required``
+    # had quarantined the symbol. This is the single point that
+    # protects ALL callsites at once.
+    #
+    # Behavior: refuse-and-return BEFORE the existing position fetch /
+    # cancel-brackets / submit-order calls below. NO new broker call
+    # is placed; we simply skip the broker call that would have
+    # otherwise happened on the next line.
+    #
+    # Fail-soft: import failure or runtime exception does NOT crash
+    # safe_close — we want a missing guard to fail OPEN (audit-only
+    # absence) rather than fail CLOSED (block every close including
+    # safe ones).
+    try:
+        try:
+            from broker_repair_required import is_repair_required as _v3300_is_repair  # type: ignore
+            from broker_repair_required import mark_repair_required as _v3300_mark_repair  # type: ignore
+        except ImportError:
+            from shared.broker_repair_required import is_repair_required as _v3300_is_repair  # type: ignore
+            from shared.broker_repair_required import mark_repair_required as _v3300_mark_repair  # type: ignore
+        if _v3300_is_repair(symbol):
+            # Audit row — operator must see what we just refused. We bypass
+            # ``make_decision`` here because the autonomy module's
+            # whitelist enforces the union of allowed decision_types and
+            # ``REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE`` is a containment-
+            # layer signal (same shape as ``retry_storm_containment.
+            # emit_skip_audit``). We append a raw JSONL row directly so
+            # the row format stays consistent with the other v3.28
+            # containment audit rows.
+            try:
+                try:
+                    from retry_storm_containment import emit_skip_audit as _v3300_emit_skip  # type: ignore
+                except ImportError:
+                    from shared.retry_storm_containment import emit_skip_audit as _v3300_emit_skip  # type: ignore
+                _v3300_emit_skip(symbol, incident_type="P13_BRACKET_INTERLOCK")
+            except Exception:
+                pass
+            return {
+                "status":           "REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE",
+                "reason":           (
+                    f"broker_repair_required quarantine for {symbol} — "
+                    f"operator must clear via marker file"
+                ),
+                "alpaca_order_id":  None,
+                "live_qty":         None,
+                "intent_qty":       float(intent_qty),
+                "actual_qty":       None,
+                "broker_called":    False,
+                "brackets_canceled": [],
+                "brackets_failed":   [],
+                "brackets_checked":  0,
+                "symbol":           symbol,
+            }
+    except Exception:
+        # Fail-soft per contract: guard absence must not crash closes.
+        # Set the mark helper to a no-op so the 403 handler below
+        # cannot trip a NameError; the call still proceeds.
+        def _v3300_mark_repair(*a, **kw):  # type: ignore
+            return None
+
     result: dict = {
         "status": "failed",
         "reason": "init",
@@ -1669,6 +1735,41 @@ def safe_close(
     else:
         result["status"] = "failed"
         result["reason"] = f"safe_close: Alpaca {r.status_code}: {r.text[:120]}"
+        # ── v3.30 HARD-WIRE: on broker-side state divergence, mark the ────
+        # symbol repair-required so the next call from any caller is
+        # short-circuited by the precondition guard above. Triggers:
+        # 403 insufficient balance / held_for_orders, 422 qty must
+        # be > 0 (live qty already drained), 422 insufficient qty.
+        # Fail-soft: mark error never blocks the close result return.
+        try:
+            _text_lc = (r.text or "").lower()
+            _is_state_divergence = (
+                r.status_code == 403 and (
+                    "insufficient" in _text_lc or "held_for_orders" in _text_lc
+                )
+            ) or (
+                r.status_code == 422 and (
+                    "qty must be" in _text_lc or "insufficient" in _text_lc
+                )
+            )
+            if _is_state_divergence:
+                _v3300_mark_repair(
+                    symbol,
+                    incident_type="P13_BRACKET_INTERLOCK",
+                    error=f"safe_close Alpaca {r.status_code}: {r.text[:160]}",
+                    manual_action_required=(
+                        "Operator must (1) reconcile broker-side position "
+                        "vs internal state, (2) cancel any orphan brackets, "
+                        "(3) create operator marker, (4) call "
+                        "broker_repair_required.clear_repair()."
+                    ),
+                    safe_mode_reason=(
+                        f"safe_close({symbol}) returned {r.status_code} "
+                        f"state-divergence — quarantine until operator clears"
+                    ),
+                )
+        except Exception:
+            pass
 
     # --- Emit audit JSONL event (Layer 5 visibility) ---
     try:

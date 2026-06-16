@@ -67,11 +67,15 @@ env:
   LLM_AGENT_PER_RUN_BUDGET:    ${{ vars.LLM_AGENT_PER_RUN_BUDGET || '5' }}
   LLM_AGENT_MAX_COST_USD_PER_DAY: ${{ vars.LLM_AGENT_MAX_COST_USD_PER_DAY || '1.00' }}
   GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
-  # Provider keys — only forwarded if the secret exists. The runner
-  # is safe when these are empty (deterministic fallback).
+  # v3.30 (2026-06-16) — per-call timeout + minimum gap + per-agent cap.
+  LLM_AGENT_PER_CALL_TIMEOUT_SECONDS:   ${{ vars.LLM_AGENT_PER_CALL_TIMEOUT_SECONDS || '60' }}
+  LLM_AGENT_MIN_SECONDS_BETWEEN_CALLS:  ${{ vars.LLM_AGENT_MIN_SECONDS_BETWEEN_CALLS || '6' }}
+  LLM_AGENT_DAILY_PER_AGENT_BUDGET:     ${{ vars.LLM_AGENT_DAILY_PER_AGENT_BUDGET || '10' }}
+  # Provider key — only forwarded if the secret exists. The runner is
+  # safe when this is empty (deterministic fallback).
+  # v3.30 — only GEMINI_API_KEY is forwarded (the v3.29 mesh is the
+  # free-tier path; paid providers stay BLOCKED via LLM_FREE_ONLY).
   GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
 
 jobs:
   advise:
@@ -147,6 +151,7 @@ jobs:
           git add learning-loop/llm_advisory/ \
                   docs/LLM_ADVISORY_MESH_STATUS.md \
                   docs/LLM_AUTHORITY_MODEL.md \
+                  docs/LLM_PROVIDER_HEALTH_STATUS.md \
                   "journal/autonomy/${TODAY}.jsonl" \
                   || true
           CHANGED=$(git diff --cached --name-only)
@@ -158,6 +163,7 @@ jobs:
               learning-loop/llm_advisory/*) ;;
               docs/LLM_ADVISORY_MESH_STATUS.md) ;;
               docs/LLM_AUTHORITY_MODEL.md) ;;
+              docs/LLM_PROVIDER_HEALTH_STATUS.md) ;;
               journal/autonomy/*) ;;
               *) BAD="$BAD $f" ;;
             esac

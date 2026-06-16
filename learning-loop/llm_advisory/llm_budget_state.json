@@ -4,7 +4,7 @@
     "2026-06-10": 11,
     "2026-06-12": 11,
     "2026-06-15": 11,
-    "2026-06-16": 11
+    "2026-06-16": 20
   },
   "daily_cost_usd": {
     "2026-06-09": 0.0,
@@ -13,7 +13,25 @@
     "2026-06-15": 0.0,
     "2026-06-16": 0.0
   },
+  "per_agent_daily_calls": {
+    "2026-06-16": {
+      "DAILY_BRIEF": 2,
+      "FINAL_ARBITER": 2,
+      "INCIDENT_REVIEW": 3,
+      "RISK_REVIEW": 1,
+      "STRATEGY_REVIEW": 1
+    }
+  },
   "run_calls": {
+    "mesh-24ae2fc175c4": 1,
+    "mesh-287b7d60c3d0": 1,
+    "mesh-36e3966eebd2": 1,
+    "mesh-510fb19ca22f": 1,
+    "mesh-699784305de5": 1,
+    "mesh-870f33dcf003": 1,
+    "mesh-98037881c951": 1,
+    "mesh-c003b80963f7": 1,
+    "mesh-ef8564aea597": 1,
     "v3282-gemini-activation-20260609T194951": 5,
     "v3283-gemini-quality-20260609T200651Z": 11,
     "v329-gemini-recovery-postreqs-20260609T203552Z": 4,

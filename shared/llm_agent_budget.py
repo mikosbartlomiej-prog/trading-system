@@ -41,6 +41,8 @@ ALL_BUDGET_STATUSES: frozenset[str] = frozenset({
     LLM_BUDGET_ALLOWED, LLM_BUDGET_DISABLED,
     LLM_BUDGET_EXHAUSTED_DAILY, LLM_BUDGET_EXHAUSTED_RUN,
     LLM_PROVIDER_KEY_MISSING, LLM_FAIL_SOFT,
+    # v3.30 (2026-06-16) — per-agent per-day cap.
+    "LLM_BUDGET_EXHAUSTED_PER_AGENT",
 })
 
 # Statuses that DO NOT permit a provider call.
@@ -48,6 +50,8 @@ SKIPPED_STATUSES: frozenset[str] = frozenset({
     LLM_BUDGET_DISABLED, LLM_BUDGET_EXHAUSTED_DAILY,
     LLM_BUDGET_EXHAUSTED_RUN, LLM_PROVIDER_KEY_MISSING,
     LLM_FAIL_SOFT,
+    # v3.30 (2026-06-16) — per-agent per-day cap.
+    "LLM_BUDGET_EXHAUSTED_PER_AGENT",
 })
 
 
@@ -169,12 +173,19 @@ class BudgetState:
     daily_calls: dict[str, int]    = field(default_factory=dict)
     daily_cost_usd: dict[str, float] = field(default_factory=dict)
     run_calls: dict[str, int]      = field(default_factory=dict)
+    # v3.30 (2026-06-16) — per-agent per-day call counter.
+    # Shape: {"YYYY-MM-DD": {"INCIDENT_REVIEW": 3, ...}}.
+    # Default cap is 10 calls/agent/day (configurable via env
+    # ``LLM_AGENT_DAILY_PER_AGENT_BUDGET``).
+    per_agent_daily_calls: dict[str, dict[str, int]] = field(
+        default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
             "daily_calls":     self.daily_calls,
             "daily_cost_usd":  self.daily_cost_usd,
             "run_calls":       self.run_calls,
+            "per_agent_daily_calls": self.per_agent_daily_calls,
         }
 
     @classmethod
@@ -185,6 +196,8 @@ class BudgetState:
             daily_calls    =dict(raw.get("daily_calls") or {}),
             daily_cost_usd =dict(raw.get("daily_cost_usd") or {}),
             run_calls      =dict(raw.get("run_calls") or {}),
+            per_agent_daily_calls=dict(
+                raw.get("per_agent_daily_calls") or {}),
         )
 
 
@@ -258,21 +271,80 @@ def record_call(
     now: datetime | None = None,
     state: BudgetState | None = None,
     state_path: Path | None = None,
+    agent_name: str | None = None,
 ) -> BudgetState:
-    """Mutate state to reflect a single completed provider call."""
+    """Mutate state to reflect a single completed provider call.
+
+    v3.30 (2026-06-16) — also increments the per-agent counter when
+    ``agent_name`` is provided.
+    """
     st = state if state is not None else load_state(state_path)
     today = _today(now)
     st.daily_calls[today]    = int(st.daily_calls.get(today, 0)) + 1
     st.daily_cost_usd[today] = float(
         st.daily_cost_usd.get(today, 0.0)) + float(cost_usd)
     st.run_calls[run_id]     = int(st.run_calls.get(run_id, 0)) + 1
+    if agent_name:
+        bucket = st.per_agent_daily_calls.setdefault(today, {})
+        bucket[agent_name] = int(bucket.get(agent_name, 0)) + 1
     save_state(st, state_path)
     return st
+
+
+# ─── v3.30 per-agent budget + rate limit ───────────────────────────────────
+
+LLM_BUDGET_EXHAUSTED_PER_AGENT = "LLM_BUDGET_EXHAUSTED_PER_AGENT"
+
+
+def daily_per_agent_budget() -> int:
+    """v3.30 — per-agent per-day cap. Default 10."""
+    return _env_int("LLM_AGENT_DAILY_PER_AGENT_BUDGET", 10)
+
+
+def per_call_timeout_seconds() -> float:
+    """v3.30 — per-call wall-clock cap (seconds). Default 60.0."""
+    return _env_float("LLM_AGENT_PER_CALL_TIMEOUT_SECONDS", 60.0)
+
+
+def min_seconds_between_calls() -> float:
+    """v3.30 — minimum seconds between consecutive provider calls.
+
+    Default 6.0 (≤10 calls / minute). Allows operator override via
+    ``LLM_AGENT_MIN_SECONDS_BETWEEN_CALLS``.
+    """
+    return _env_float("LLM_AGENT_MIN_SECONDS_BETWEEN_CALLS", 6.0)
+
+
+def check_per_agent_budget(
+    *,
+    agent_name: str,
+    now: datetime | None = None,
+    state: BudgetState | None = None,
+) -> tuple[str, str]:
+    """Pure check — does this agent have remaining per-day budget?
+
+    Returns ``(LLM_BUDGET_ALLOWED, "ok")`` when remaining > 0, else
+    ``(LLM_BUDGET_EXHAUSTED_PER_AGENT, "<rationale>")``. NEVER raises.
+    """
+    try:
+        st = state if state is not None else load_state()
+        today = _today(now)
+        bucket = st.per_agent_daily_calls.get(today) or {}
+        used = int(bucket.get(agent_name, 0))
+        cap = daily_per_agent_budget()
+        if used >= cap:
+            return (LLM_BUDGET_EXHAUSTED_PER_AGENT,
+                    f"per-agent calls {used} >= cap {cap} for "
+                    f"{agent_name}")
+        return LLM_BUDGET_ALLOWED, "ok"
+    except Exception as e:
+        return LLM_FAIL_SOFT, f"fail-soft: {type(e).__name__}: {e}"
 
 
 __all__ = [
     "LLM_BUDGET_ALLOWED", "LLM_BUDGET_DISABLED",
     "LLM_BUDGET_EXHAUSTED_DAILY", "LLM_BUDGET_EXHAUSTED_RUN",
+    "LLM_BUDGET_EXHAUSTED_PER_AGENT",
     "LLM_PROVIDER_KEY_MISSING", "LLM_FAIL_SOFT",
     "ALL_BUDGET_STATUSES", "SKIPPED_STATUSES",
     "llm_agents_enabled", "daily_call_budget",
@@ -280,4 +352,6 @@ __all__ = [
     "provider", "provider_key_env_name", "provider_key_present",
     "BudgetState", "load_state", "save_state",
     "check_budget", "record_call",
+    "daily_per_agent_budget", "per_call_timeout_seconds",
+    "min_seconds_between_calls", "check_per_agent_budget",
 ]

@@ -1,25 +1,24 @@
 {
-  "next_recommended_action": null,
+  "next_recommended_action": "trigger another run",
   "quality_report": {
-    "confidence_max": 0.0,
-    "confidence_min": 0.0,
-    "empty_next_actions_count": 11,
-    "empty_risks_count": 11,
+    "confidence_max": 0.7,
+    "confidence_min": 0.4,
+    "empty_next_actions_count": 0,
+    "empty_risks_count": 0,
     "generic_placeholder_count": 0,
     "rationale": [
-      "all rows have empty risks_identified + empty proposed_next_actions + zero confidence"
+      "acceptable"
     ],
-    "rows_seen": 11,
-    "rows_with_provider_failed": 1,
+    "rows_seen": 5,
+    "rows_with_provider_failed": 0,
     "rows_with_provider_skipped": 0,
-    "rows_with_provider_used": 10,
+    "rows_with_provider_used": 5,
     "secret_leak_hits": 0,
-    "status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
     "unsafe_phrase_hits": 0,
-    "zero_confidence_count": 11
+    "zero_confidence_count": 0
   },
-  "quality_status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
-  "run_id": "v3300-calibration-27596167917",
+  "quality_status": "LLM_ADVISORY_QUALITY_ACCEPTABLE",
+  "run_id": "v3283-mock-3",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,

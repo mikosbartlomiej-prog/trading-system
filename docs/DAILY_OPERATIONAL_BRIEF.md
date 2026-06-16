@@ -1,44 +1,67 @@
-# Daily Operational Brief (v3.29)
+========================================================================
+# Daily Operational Brief — 2026-06-16
+========================================================================
 
-_Generated:_ `2026-06-16T09:18:11.013344+00:00`
+## TOP BANNER: ORANGE
+
+**BROKER_REPAIR_REQUIRED — allocator blocked until operator confirmation**
+
+Symbols requiring manual repair: AVAX/USD, ETH/USD, LTC/USD. See docs/OPERATOR_REPAIR_CONFIRMATION.md.
+
+_The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
 
 ## Master verdict
 
-- System activation decision: `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT`
-- Reason: `safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED`
-- Shadow simulator permitted: `NO`
+- Decision: `ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
+- Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
+- Reason: `safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED` [source: `system_activation_gate.reason`]
 
-## Component reporters
+## Top blockers
 
-| Component | Status | Verdict / Summary | Source |
-|-----------|--------|-------------------|--------|
-| `backfill_snapshot_status` | `OK_PRESENT` | `LOCAL_BACKFILL_AVAILABLE` / status=LOCAL_BACKFILL_AVAILABLE | `learning-loop/backfill_snapshot_status_latest.json` |
-| `broker_repair_required` | `OK_PRESENT` | `` / entries=5 | `learning-loop/broker_repair_required_latest.json` |
-| `confidence_precalibration_readiness` | `OK_PRESENT` | `NOT_READY_NO_POSITIVE_ROWS` / verdict=NOT_READY_NO_POSITIVE_ROWS | `learning-loop/confidence_precalibration_readiness_latest.json` |
-| `equity_gap_reconciliation` | `OK_PRESENT` | `EQUITY_GAP_OK` / verdict=EQUITY_GAP_OK | `learning-loop/equity_gap_reconciliation_latest.json` |
-| `evidence_throughput_sla` | `MISSING` | `` / no artefact present (cron may not have run yet, or this reporter is not configured) | `learning-loop/evidence_throughput_sla_latest.json` |
-| `gate_distribution` | `OK_PRESENT` | `` / present | `learning-loop/gate_distribution_latest.json` |
-| `heartbeat_freshness` | `OK_PRESENT` | `` / stale_components=0 | `learning-loop/heartbeat_freshness_latest.json` |
-| `llm_advisory_activation` | `OK_PRESENT` | `` / present | `learning-loop/llm_advisory/activation_status_latest.json` |
-| `llm_advisory_quality_review` | `OK_PRESENT` | `` / present | `learning-loop/llm_advisory/quality_review_latest.json` |
-| `monitor_runtime_diag` | `OK_PRESENT` | `` / present | `learning-loop/monitor_runtime_diag_status_latest.json` |
-| `near_miss_seed_status` | `MISSING` | `` / no artefact present (cron may not have run yet, or this reporter is not configured) | `learning-loop/near_miss_seed_status_latest.json` |
-| `near_miss_status` | `OK_PRESENT` | `` / present | `learning-loop/near_miss_status_latest.json` |
-| `opportunity_density_plan` | `OK_PRESENT` | `` / present | `learning-loop/opportunity_density_plan_latest.json` |
-| `real_market_evidence_status` | `OK_PRESENT` | `` / present | `learning-loop/shadow_evidence/real_market_evidence_status_latest.json` |
-| `replay_discovery` | `OK_PRESENT` | `` / present | `learning-loop/replay_discovery_latest.json` |
-| `safe_mode_consistency` | `OK_PRESENT` | `INCONSISTENT_ENTERED_NOT_PERSISTED` / verdict=INCONSISTENT_ENTERED_NOT_PERSISTED | `learning-loop/safe_mode_consistency_latest.json` |
-| `shadow_candidate_queue` | `OK_PRESENT` | `` / present | `learning-loop/shadow_candidate_queue_latest.json` |
-| `strategy_threshold_reality` | `OK_PRESENT` | `` / present | `learning-loop/strategy_threshold_reality_latest.json` |
-| `strategy_variant_quarantine` | `OK_PRESENT` | `` / present | `learning-loop/strategy_variant_quarantine_latest.json` |
+- `safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED`
 
-## Operator action checklist
+_Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
 
-- [ ] Master verdict is NOT in {ALLOCATOR_ALLOWED, SYSTEM_ACTIVE_SHADOW_ONLY}; investigate the component(s) above before flipping any flag.
-- [ ] Do NOT enable broker paper. `ALLOW_BROKER_PAPER=false` stays pinned.
-- [ ] Do NOT enable live trading. `LIVE_TRADING_UNSUPPORTED`.
-- [ ] Do NOT auto-clear safe_mode.
-- [ ] Do NOT let any LLM mutate state, flip flags, or place orders.
+## What changed since yesterday
+
+- No prior brief sidecar found on disk. First brief or history not persisted — nothing to diff against.
+
+## What operator must do
+
+1. Investigate runtime_state vs audit safe_mode mismatch (see docs/RUNBOOK.md scenario 5a); do NOT auto-clear safe_mode.
+2. For each broker-repair symbol: review Alpaca dashboard, manually fix orphaned OCO legs / dust positions, then run `python3 scripts/record_operator_repair_confirmation.py --operator-confirmed`. See docs/OPERATOR_REPAIR_CONFIRMATION.md.
+
+## Equity reconciliation
+
+- verdict: `EQUITY_GAP_OK` [source: `learning-loop/equity_gap_reconciliation_latest.json::verdict`]
+- gap_amount: `-6.639999999999418` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_amount`]
+- gap_pct: `-0.007336081933428169` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_pct`]
+- block_allocator: `False` [source: `learning-loop/equity_gap_reconciliation_latest.json::block_allocator`]
+
+## Broker repair queue
+
+- Quarantined symbols: `3` [source: `learning-loop/broker_repair_required_latest.json::entries`]
+  - `AVAX/USD`
+  - `ETH/USD`
+  - `LTC/USD`
+
+## Safe-mode consistency
+
+- verdict: `INCONSISTENT_ENTERED_NOT_PERSISTED` [source: `learning-loop/safe_mode_consistency_latest.json::verdict`]
+- audit_enters: `46` [source: `learning-loop/safe_mode_consistency_latest.json::audit_enters`]
+- audit_exits: `0` [source: `learning-loop/safe_mode_consistency_latest.json::audit_exits`]
+
+## LLM advisory
+
+- Provider mode: `UNAVAILABLE`
+- **LLM advisory only — does not override deterministic gates.** Any recommendation surfaced below is informational. LLM has zero execution authority (`LLM_EXECUTION_AUTHORITY=false`).
+- Mesh status: `CLAIM_UNSUPPORTED` [source: `learning-loop/llm_advisory_mesh_status_latest.json` missing]
+
+## Unverified claims
+
+- The earlier narrative claim of ``92 % readiness`` is `CLAIM_UNSUPPORTED` unless an artefact backs it up.
+- The claim of ``18 LLM agents`` is `CLAIM_UNSUPPORTED` unless an artefact backs it up.
+- The claim of ``80-day failure`` window is `CLAIM_UNSUPPORTED`. The deterministic LLM provider mode above is the only authoritative status.
 
 ## Standing markers
 - `EDGE_GATE_ENABLED=false`
@@ -46,7 +69,9 @@ _Generated:_ `2026-06-16T09:18:11.013344+00:00`
 - `LIVE_TRADING_UNSUPPORTED`
 - `NO_ORDER_PLACEMENT`
 - `NO_AUTO_BROKER_ACTION_FROM_THIS_REPORTER`
+- `LLM_ADVISORY_ONLY`
+- `TRADING_EXECUTION_ON=false`
 
 ---
 
-_This brief is built by aggregating already-on-disk reporter artefacts. It never opens a network connection, never submits an order, never cancels an order, never closes a position, never mutates state.json or runtime_state.json._
+_This brief is built by aggregating already-on-disk reporter artefacts. It never opens a network connection, never submits an order, never cancels an order, never closes a position, never mutates state.json or runtime_state.json, and never lets the LLM advisory output override the deterministic master gate._

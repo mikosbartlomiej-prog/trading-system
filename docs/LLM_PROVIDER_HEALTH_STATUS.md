@@ -1,6 +1,6 @@
-# LLM Provider Health Audit (v3.29)
+# LLM Provider Health Audit (v3.30)
 
-_Generated:_ `2026-06-16T09:21:05.605936+00:00`
+_Generated:_ `2026-06-16T12:17:17.042885+00:00`
 
 ## Providers
 
@@ -46,9 +46,23 @@ _Generated:_ `2026-06-16T09:21:05.605936+00:00`
 - spent_today_usd: `None`
 - max_cost_usd_per_day: `None`
 
+## v3.30 quality counts (per-agent latest rows)
+
+- total rows scanned: `15`
+- acceptable: `0`
+- low_quality: `0`
+- empty: `1`
+- low_quality_ratio: `0.0`
+- flagged: `False` (threshold > 0.5)
+
+## v3.30 smoke test
+
+- status: `SKIPPED_NO_KEY`
+- reason: `GEMINI_API_KEY not set in current shell`
+
 ## Proposed fixes (operator action — DO NOT auto-apply)
 
-- [PROPOSED-FIX] LLM provider may be DEGRADED/UNKNOWN because GEMINI_API_KEY env not configured in workflow context — operator should add the secret in GitHub repo settings (Settings → Secrets and variables → Actions → New repository secret). Do NOT auto-apply.
+- [PROPOSED-FIX] LLM provider may be DEGRADED/UNKNOWN because GEMINI_API_KEY env not configured in workflow context — operator should set GEMINI_API_KEY in GitHub repo secrets at Settings → Secrets and variables → Actions → New repository secret. Do NOT auto-apply.
 
 ## Standing markers
 - `EDGE_GATE_ENABLED=false`

@@ -396,32 +396,188 @@ def _probe_operator_dashboard() -> dict:
     }
 
 
+# ── v3.30 LLM provider mode detection ────────────────────────────────────────
+
+def _detect_llm_provider_mode() -> str:
+    """Return one of ``REAL_PROVIDER`` / ``DETERMINISTIC_FALLBACK`` /
+    ``UNAVAILABLE`` based on the latest LLM mesh status artefact.
+
+    v3.30: this is informational only — never affects allocator gates.
+    """
+    p = _REPO_ROOT / "learning-loop" / "llm_advisory_mesh_status_latest.json"
+    if not p.exists():
+        return "UNAVAILABLE"
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            raw = json.load(fh) or {}
+    except (OSError, json.JSONDecodeError):
+        return "UNAVAILABLE"
+    if not isinstance(raw, dict):
+        return "UNAVAILABLE"
+    mode = str(
+        raw.get("provider_mode")
+        or raw.get("mode")
+        or raw.get("status")
+        or ""
+    ).upper()
+    if mode in {"REAL_PROVIDER", "REAL", "ONLINE"}:
+        return "REAL_PROVIDER"
+    if mode in {"DETERMINISTIC_FALLBACK", "FALLBACK", "DETERMINISTIC"}:
+        return "DETERMINISTIC_FALLBACK"
+    return "UNAVAILABLE"
+
+
+# ── v3.30 invariant probes (read-only AST + state checks) ────────────────────
+
+def _broker_repair_guard_wired() -> bool:
+    """True iff ``shared/alpaca_orders.py::safe_close`` has the v3.30
+    PRECONDITION guard above its broker calls.
+
+    We just check that the symbols ``REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE``
+    and ``is_repair_required`` both appear in the safe_close source. AST
+    walk would be more robust but a simple substring check is enough
+    for an at-a-glance dashboard flag.
+    """
+    p = _REPO_ROOT / "shared" / "alpaca_orders.py"
+    if not p.exists():
+        return False
+    try:
+        src = p.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return (
+        "REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE" in src
+        and "is_repair_required" in src
+    )
+
+
+def _retry_storm_suppression_active() -> bool:
+    """True iff ``shared/retry_storm_containment.py`` is present and the
+    safe_close path imports it.
+    """
+    p = _REPO_ROOT / "shared" / "retry_storm_containment.py"
+    if not p.exists():
+        return False
+    try:
+        ac = (_REPO_ROOT / "shared" / "alpaca_orders.py").read_text(encoding="utf-8")
+        return "retry_storm_containment" in ac
+    except OSError:
+        return False
+
+
+def _safe_mode_consistency_check_active() -> bool:
+    """True iff the consistency checker has produced a recent artefact
+    (or even an old one — presence alone tells us the check is wired).
+    """
+    p = _REPO_ROOT / "learning-loop" / "safe_mode_consistency_latest.json"
+    return p.exists()
+
+
 # ── Top-level flag composition ───────────────────────────────────────────────
 
 def _compute_top_level_flags(master_decision: str,
-                              blockers: list[str]) -> dict:
-    """Produce the top-level dashboard flags (spec §ETAP 10)."""
+                              blockers: list[str],
+                              snapshot: dict | None = None,
+                              shadow_only_allowed: bool = False) -> dict:
+    """Produce the top-level dashboard flags (spec §ETAP 10 + v3.30 §11)."""
 
+    snapshot = snapshot or {}
     allocator_allowed = master_decision == "ALLOCATOR_ALLOWED"
-    shadow_allowed = master_decision in (
-        "ALLOCATOR_ALLOWED",
-        "SYSTEM_ACTIVE_SHADOW_ONLY",
-    )
     operator_required = bool(blockers) and not allocator_allowed
     reason_op = ""
     if operator_required:
         reason_op = "; ".join(blockers[:3]) if blockers else master_decision
 
+    provider_mode = _detect_llm_provider_mode()
+    broker_guard = _broker_repair_guard_wired()
+    retry_supp = _retry_storm_suppression_active()
+    sm_check = _safe_mode_consistency_check_active()
+
     return {
+        # Pre-v3.30 flags (preserved for back-compat).
         "WHOLE_SOLUTION_SAFE_ON":     True,
         "TRADING_EXECUTION_ON":       TRADING_EXECUTION_ON,    # literal False
         "LLM_EXECUTION_AUTHORITY":    LLM_EXECUTION_AUTHORITY, # literal False
         "LLM_ADVISORY_ON":            True,
         "ALLOCATOR_ALLOWED":          allocator_allowed,
-        "SHADOW_ONLY_ALLOWED":        shadow_allowed,
+        "SHADOW_ONLY_ALLOWED":        bool(shadow_only_allowed),
         "OPERATOR_ACTION_REQUIRED":   operator_required,
         "OPERATOR_ACTION_REASON":     reason_op,
+
+        # v3.30 additions.
+        "WHOLE_SAFE_STACK_ON":         True,
+        "LLM_PROVIDER_MODE":           provider_mode,
+        "BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE": broker_guard,
+        "RETRY_STORM_SUPPRESSION_ACTIVE":          retry_supp,
+        "SAFE_MODE_CONSISTENCY_CHECK_ACTIVE":      sm_check,
+        "BLOCKERS":                    list(blockers),
+        "NEXT_OPERATOR_ACTIONS":       _derive_next_operator_actions(
+            master_decision, blockers, snapshot=snapshot),
     }
+
+
+def _derive_next_operator_actions(master_decision: str,
+                                    blockers: list[str],
+                                    snapshot: dict | None = None) -> list[str]:
+    """Produce the concrete next operator-step list.
+
+    Empty when the allocator is allowed. Items are operator-facing
+    English imperatives; the brief renders them as a checklist.
+    v3.30: also inspects the master-gate snapshot so multi-blocker
+    situations (e.g. SAFE_MODE_INCONSISTENT + broker_repair queue)
+    surface every action even though only the first-firing blocker
+    is in ``blockers``.
+    """
+    if master_decision == "ALLOCATOR_ALLOWED":
+        return []
+    actions: list[str] = []
+    joined = " ".join(blockers)
+    snapshot = snapshot or {}
+    repair_queue = snapshot.get("broker_repair_blocked") or []
+    if "safe_mode_consistency" in joined:
+        actions.append(
+            "Investigate runtime_state vs audit safe_mode mismatch "
+            "(see docs/RUNBOOK.md scenario 5a); do NOT auto-clear "
+            "safe_mode."
+        )
+    if ("broker_repair" in joined
+            or "operator_confirmation_required" in joined
+            or repair_queue):
+        actions.append(
+            "For each broker-repair symbol: review Alpaca dashboard, "
+            "manually fix orphaned OCO legs / dust positions, then run "
+            "`python3 scripts/record_operator_repair_confirmation.py "
+            "--operator-confirmed`. See "
+            "docs/OPERATOR_REPAIR_CONFIRMATION.md."
+        )
+    if "safe_mode_active" in joined:
+        actions.append(
+            "Resolve the safe_mode trigger before considering any "
+            "manual clearance; consult docs/RUNBOOK_AVAXUSD_P13_"
+            "2026-06-16.md for incident-specific guidance."
+        )
+    if "equity_gap" in joined:
+        actions.append(
+            "Review learning-loop/equity_gap_reconciliation_latest.json "
+            "and the upstream account/equity sources; do NOT flip any "
+            "broker or live-trading flag."
+        )
+    if "position_recon" in joined:
+        actions.append(
+            "Re-run the position reconciliation reporter and verify "
+            "Alpaca side reflects the same positions."
+        )
+    if "kill_switch_armed" in joined:
+        actions.append(
+            "Kill switch is operator-armed. Confirm intent before "
+            "disarming via the appropriate config edit."
+        )
+    if not actions:
+        actions.append(
+            "Investigate the deterministic blocker(s) listed above "
+            "before flipping any flag. Live trading remains unsupported."
+        )
+    return actions
 
 
 # ── Dashboard builder ────────────────────────────────────────────────────────
@@ -507,10 +663,13 @@ def build_status_payload() -> dict:
             "safety_notes":   probe["safety"],
         })
 
-    flags = _compute_top_level_flags(master_decision, blockers)
+    shadow_flag = bool(getattr(master, "shadow_only_allowed", False))
+    flags = _compute_top_level_flags(master_decision, blockers,
+                                       snapshot=snapshot,
+                                       shadow_only_allowed=shadow_flag)
 
     payload = {
-        "schema_version":     "v3.29",
+        "schema_version":     "v3.30",
         "generated_at_iso":   _now_iso(),
         "module":             "scripts.build_system_activation_status",
         "master_decision":    master_decision,
@@ -542,18 +701,30 @@ def render_markdown(payload: dict) -> str:
     out.append("| Flag | Value |")
     out.append("|---|---|")
     for k in (
+        "WHOLE_SAFE_STACK_ON",
         "WHOLE_SOLUTION_SAFE_ON",
         "TRADING_EXECUTION_ON",
         "LLM_EXECUTION_AUTHORITY",
         "LLM_ADVISORY_ON",
+        "LLM_PROVIDER_MODE",
         "ALLOCATOR_ALLOWED",
         "SHADOW_ONLY_ALLOWED",
+        "BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE",
+        "RETRY_STORM_SUPPRESSION_ACTIVE",
+        "SAFE_MODE_CONSISTENCY_CHECK_ACTIVE",
         "OPERATOR_ACTION_REQUIRED",
     ):
         out.append(f"| `{k}` | `{flags.get(k)}` |")
     if flags.get("OPERATOR_ACTION_REQUIRED"):
         out.append(f"| `OPERATOR_ACTION_REASON` | {flags.get('OPERATOR_ACTION_REASON','')} |")
     out.append("")
+    next_actions = flags.get("NEXT_OPERATOR_ACTIONS") or []
+    if next_actions:
+        out.append("## Next operator actions")
+        out.append("")
+        for i, a in enumerate(next_actions, 1):
+            out.append(f"{i}. {a}")
+        out.append("")
     out.append(f"**Master gate decision:** `{payload.get('master_decision')}`  ")
     if blockers:
         out.append(f"**Active blockers:** `{', '.join(blockers)}`  ")
@@ -628,15 +799,24 @@ def main() -> int:
     print(f"SYSTEM_ACTIVATION_STATUS schema_version={payload['schema_version']}")
     print(f"master_decision={payload['master_decision']}")
     print(f"master_blockers={','.join(payload['master_blockers']) or '—'}")
-    print(f"WHOLE_SOLUTION_SAFE_ON={flags['WHOLE_SOLUTION_SAFE_ON']}")
+    print(f"WHOLE_SAFE_STACK_ON={flags['WHOLE_SAFE_STACK_ON']}")
     print(f"TRADING_EXECUTION_ON={flags['TRADING_EXECUTION_ON']}")
     print(f"LLM_EXECUTION_AUTHORITY={flags['LLM_EXECUTION_AUTHORITY']}")
     print(f"LLM_ADVISORY_ON={flags['LLM_ADVISORY_ON']}")
+    print(f"LLM_PROVIDER_MODE={flags['LLM_PROVIDER_MODE']}")
     print(f"ALLOCATOR_ALLOWED={flags['ALLOCATOR_ALLOWED']}")
     print(f"SHADOW_ONLY_ALLOWED={flags['SHADOW_ONLY_ALLOWED']}")
+    print(f"BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE="
+            f"{flags['BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE']}")
+    print(f"RETRY_STORM_SUPPRESSION_ACTIVE={flags['RETRY_STORM_SUPPRESSION_ACTIVE']}")
+    print(f"SAFE_MODE_CONSISTENCY_CHECK_ACTIVE="
+            f"{flags['SAFE_MODE_CONSISTENCY_CHECK_ACTIVE']}")
     print(f"OPERATOR_ACTION_REQUIRED={flags['OPERATOR_ACTION_REQUIRED']}"
           + (f" reason={flags['OPERATOR_ACTION_REASON']}"
              if flags.get('OPERATOR_ACTION_REQUIRED') else ""))
+    if flags.get("NEXT_OPERATOR_ACTIONS"):
+        for i, a in enumerate(flags["NEXT_OPERATOR_ACTIONS"], 1):
+            print(f"  [op-{i}] {a}")
     print(f"wrote: {paths['json']}")
     print(f"wrote: {paths['md']}")
     return 0

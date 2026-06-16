@@ -1786,3 +1786,100 @@ The v3.29 dashboard and mesh:
 `LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
 `NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
 `ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
+
+## Scenario AA.5 — v3.30 Production-path closure (broker-repair guard)
+
+Generated: 2026-06-16T12:30:00Z (v3.30 FINAL-PHASE)
+
+### What was broken
+
+Between 2026-06-15 03:21Z and 2026-06-16 09:31Z, AVAXUSD logged ≥12
+`safe_close: Alpaca 403 insufficient balance` events. The incident
+pattern detector fired P13_BRACKET_INTERLOCK and the safe_mode
+transition was recorded; v3.28 containment marked the symbol in
+`broker_repair_required_latest.json`. But four of five `safe_close`
+callsites did NOT consult the quarantine before invoking the broker,
+so the retry storm continued.
+
+### What v3.30 changes
+
+A precondition guard at the TOP of `shared/alpaca_orders.py::safe_close`
+reads `broker_repair_required.is_repair_required(symbol)`. On `True`,
+`safe_close` returns `REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE` with an audit
+row, and the broker is never reached. This single choke point covers
+all five callsites at once.
+
+### How to verify after deploy
+
+1. **No broker call on quarantined symbols.** Run:
+   ```bash
+   python3 -m unittest tests.test_safe_close_guard_v3300 -v
+   python3 -m unittest tests.test_e2e_production_path_v3300 -v
+   ```
+   All assertions verify zero broker calls when symbol is quarantined.
+
+2. **Symbol normalization.** Run:
+   ```bash
+   python3 -m unittest tests.test_symbol_normalization_v3300 -v
+   ```
+   Confirms `AVAX`, `AVAXUSD`, `AVAX/USD` all resolve to the same
+   canonical key.
+
+3. **Audit-row consistency.** After any safe_close attempt on a
+   quarantined symbol, inspect:
+   ```bash
+   tail -n 50 journal/autonomy/$(date -u +%Y-%m-%d).jsonl | \
+     grep REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE
+   ```
+   Each refusal should write a row.
+
+4. **Clearance proposal path.** With operator marker present and clean
+   ancillary state, the clearance proposal can be generated:
+   ```bash
+   python3 scripts/propose_clear_broker_repair_and_safe_mode.py \
+     --symbol AVAX/USD --dry-run
+   ```
+   The script never auto-applies the clearance — the operator must
+   manually move the proposal file into place.
+
+### Operator workflow when broker_repair flagged
+
+1. Reconcile broker dashboard vs `broker_repair_required_latest.json`.
+2. Cancel any orphan brackets manually in Alpaca paper UI.
+3. Close the position manually (or confirm it is already flat).
+4. Run `scripts/record_operator_repair_confirmation.py --symbol <S>
+   --operator-confirmed` to write the operator marker.
+5. Run `scripts/propose_clear_broker_repair_and_safe_mode.py
+   --symbol <S>` to produce the clearance proposal markered file.
+6. Inspect the proposal file. If correct, manually apply it (the
+   script never auto-applies).
+7. Re-run `scripts/build_system_activation_status.py` and confirm the
+   dashboard returns `ALLOCATOR_ALLOWED` (assuming safe_mode is also
+   consistent and equity gap is OK).
+
+### What v3.30 did NOT do
+
+- Did NOT enable live trading.
+- Did NOT add NEW broker callsites in new code.
+- Did NOT call `submit_order`, `place_order`, `cancel_order`,
+  `close_position`, or `close_all_positions` in any v3.30-authored file.
+- Did NOT auto-cancel broker orders.
+- Did NOT auto-close positions.
+- Did NOT auto-clear safe_mode.
+- Did NOT auto-clear broker_repair_required.
+- Did NOT deploy allocator capital.
+- Did NOT let LLM mutate runtime state.
+- Did NOT let LLM place orders.
+- Did NOT let LLM override any deterministic gate.
+- Did NOT let LLM flip any flag.
+- Did NOT count LLM output as evidence.
+- Did NOT add paid APIs or services.
+- Did NOT commit secrets or `operator_markers/`.
+- Did NOT force-push.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
+`BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
+`NO_FABRICATION`.
+

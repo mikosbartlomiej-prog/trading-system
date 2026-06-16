@@ -1,4 +1,4 @@
-"""v3.29 ETAP 5 (2026-06-16) — System Activation Master Gate.
+"""v3.29 ETAP 5 + v3.30 ETAP 6 (2026-06-16) — System Activation Master Gate.
 
 CONTAINMENT MODULE — read this before changing anything.
 
@@ -30,20 +30,37 @@ CONTRACT (do not loosen)
 
 CHECKS (in order, first BLOCK wins)
 -----------------------------------
-1. ``safe_mode.read_state`` → if active → ``ALLOCATOR_BLOCKED_SAFE_MODE``.
-2. ``safe_mode_consistency_latest.json`` →
+1. ``safe_mode_consistency_latest.json`` →
    ``INCONSISTENT_ENTERED_NOT_PERSISTED`` →
-   ``ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT``.
+   ``ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT`` (v3.29 precedence: this
+   check fires BEFORE safe_mode itself because audit-vs-runtime
+   mismatch is a strictly worse signal than safe_mode being inactive).
+2. ``safe_mode.read_state`` → if active → ``ALLOCATOR_BLOCKED_SAFE_MODE``.
 3. ``broker_repair_required.load_state`` blocked symbols →
    ``ALLOCATOR_BLOCKED_OPERATOR_CONFIRMATION_REQUIRED`` if ANY symbol
    lacks an operator-confirmation marker, otherwise
-   ``ALLOCATOR_BLOCKED_BROKER_REPAIR``.
+   ``ALLOCATOR_BLOCKED_BROKER_REPAIR``. (v3.30: symbols are canonical
+   per ``shared.symbol_normalization``; ``AVAX``, ``AVAXUSD`` and
+   ``AVAX/USD`` all resolve to the same canonical key.)
 4. ``equity_gap_reconciliation_latest.json`` top-level →
    ``ALLOCATOR_BLOCKED_EQUITY_GAP`` (also handles SCHEMA_INVALID / STALE).
 5. Position reconciliation timestamp stale during US market hours →
    ``ALLOCATOR_BLOCKED_POSITION_RECONCILIATION``.
 6. Kill-switch armed → ``ALLOCATOR_BLOCKED_KILL_SWITCH``.
 7. Everything clear → ``ALLOCATOR_ALLOWED``.
+
+v3.30 ADDITIONS
+---------------
+* ``shadow_only_allowed`` flag on the result. True iff the verdict is
+  ``ALLOCATOR_ALLOWED`` OR (the verdict is BLOCKING but the system is
+  quiet — no fresh retry storm and no fresh P13 in the configured
+  look-back window). LLM availability NEVER affects this flag.
+* ``retry_storm_active`` + ``fresh_p13_count`` exposed in the snapshot
+  so the dashboard and brief can answer "is the broker quiet?" without
+  re-scanning the audit themselves.
+* Broker-repair lookups canonicalize every symbol via
+  ``shared.symbol_normalization`` so a state file written with
+  ``AVAX`` still matches an operator marker written for ``AVAX/USD``.
 
 USAGE
 -----
@@ -70,7 +87,7 @@ import enum
 import json
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -95,6 +112,12 @@ EQUITY_GAP_STALE_SECONDS = 24 * 3600
 
 # Position reconciliation staleness during market hours (seconds).
 POSITION_RECON_STALE_SECONDS = 2 * 3600
+
+# v3.30 — Quiet-broker windows for ``shadow_only_allowed`` computation.
+# Shadow simulation is permitted while the system is blocked SO LONG AS the
+# broker has been quiet during these windows. Both default to 1h.
+RETRY_STORM_LOOKBACK_SECONDS = 3600
+FRESH_P13_LOOKBACK_SECONDS   = 3600
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -164,6 +187,11 @@ class SystemActivationResult:
     reason:             str = ""
     standing_markers:   tuple[str, ...] = field(
         default_factory=lambda: STANDING_MARKERS)
+    # v3.30 — shadow simulator permission. True iff the verdict is
+    # ALLOCATOR_ALLOWED OR (verdict is BLOCKING but no fresh retry
+    # storm AND no fresh P13 in the look-back windows). Always
+    # independent of LLM availability.
+    shadow_only_allowed: bool = False
 
     @property
     def diagnostics(self) -> dict:
@@ -181,7 +209,8 @@ class SystemActivationResult:
             "audit_row":          self.audit_row,
             "standing_markers":   list(self.standing_markers),
             "shadow_permitted":   self.decision in SHADOW_PERMITTED_DECISIONS,
-            "schema_version":     "v3.29",
+            "shadow_only_allowed": self.shadow_only_allowed,
+            "schema_version":     "v3.30",
             "evaluated_at_iso":   _now_iso(),
             "module":             "shared.system_activation_gate",
         }
@@ -251,18 +280,132 @@ def _read_broker_repair() -> tuple[Optional[set[str]], dict]:
 
 
 def _operator_confirmed_for(symbol: str) -> bool:
-    """Best-effort: ``True`` iff a fresh operator-confirmation marker exists."""
+    """Best-effort: ``True`` iff a fresh operator-confirmation marker exists.
+
+    v3.30: tries every alias of ``symbol`` so a marker written under any
+    of {``AVAX``, ``AVAXUSD``, ``AVAX/USD``} satisfies a quarantine
+    against the canonical ``AVAX/USD``.
+    """
     try:
         try:
             from operator_repair_state import has_repair_confirmation  # type: ignore
+            from symbol_normalization import aliases_for  # type: ignore
         except ImportError:
             from shared.operator_repair_state import has_repair_confirmation  # type: ignore
-        return bool(has_repair_confirmation(symbol))
+            from shared.symbol_normalization import aliases_for  # type: ignore
+        for alias in aliases_for(symbol) or {symbol}:
+            if has_repair_confirmation(alias):
+                return True
+        return False
     except Exception:
         # Failing the operator-confirmation check fails CLOSED — treat
         # as "no confirmation" so the gate stays on the more-specific
         # ``ALLOCATOR_BLOCKED_OPERATOR_CONFIRMATION_REQUIRED`` decision.
         return False
+
+
+# ── v3.30 audit-scan helpers (read-only, fail-soft) ───────────────────────────
+
+def _scan_audit_for_patterns(
+    *,
+    lookback_seconds: float,
+    decision_types: tuple[str, ...] = (),
+    reason_substrings: tuple[str, ...] = (),
+    now: Optional[datetime] = None,
+) -> int:
+    """Count audit JSONL rows in the last ``lookback_seconds`` that match.
+
+    A row matches when EITHER:
+
+    * its ``decision_type`` is in ``decision_types``, OR
+    * its ``reason`` field contains any string in ``reason_substrings``.
+
+    Fail-soft: any I/O / parse error returns ``0``. Only the last two
+    daily JSONL files are inspected, which keeps cost bounded even if
+    the journal grows large.
+    """
+    if not decision_types and not reason_substrings:
+        return 0
+    n = now or _now()
+    cutoff = n.timestamp() - max(0.0, float(lookback_seconds))
+
+    files: list[Path] = []
+    try:
+        d = _audit_dir()
+        today = _today_iso_date()
+        files.append(d / f"{today}.jsonl")
+        # Previous day for lookbacks that span midnight.
+        prev = (n - timedelta(days=1)).date().isoformat()
+        files.append(d / f"{prev}.jsonl")
+    except Exception:
+        return 0
+
+    matches = 0
+    for path in files:
+        if not path.exists():
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(row, dict):
+                        continue
+                    ts_iso = row.get("timestamp") or row.get("ts_iso") or ""
+                    try:
+                        ts = datetime.fromisoformat(
+                            str(ts_iso).replace("Z", "+00:00"))
+                        if ts.timestamp() < cutoff:
+                            continue
+                    except (TypeError, ValueError):
+                        # Row without a parseable timestamp — skip silently.
+                        continue
+                    dt = str(row.get("decision_type") or "")
+                    if decision_types and dt in decision_types:
+                        matches += 1
+                        continue
+                    if reason_substrings:
+                        reason = str(row.get("reason") or "")
+                        if any(s in reason for s in reason_substrings):
+                            matches += 1
+        except OSError:
+            continue
+    return matches
+
+
+def _retry_storm_count(now: Optional[datetime] = None) -> int:
+    """Number of retry-storm / 403-on-quarantined-symbol events recently."""
+    return _scan_audit_for_patterns(
+        lookback_seconds=RETRY_STORM_LOOKBACK_SECONDS,
+        decision_types=(
+            "REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE",
+            "RETRY_STORM_DETECTED",
+        ),
+        reason_substrings=(
+            "Alpaca 403",
+            "insufficient balance",
+            "held_for_orders",
+            "retry storm",
+        ),
+        now=now,
+    )
+
+
+def _fresh_p13_count(now: Optional[datetime] = None) -> int:
+    """Number of P13 bracket-interlock detections in the lookback window."""
+    return _scan_audit_for_patterns(
+        lookback_seconds=FRESH_P13_LOOKBACK_SECONDS,
+        reason_substrings=(
+            "P13_bracket_interlock",
+            "P13_BRACKET_INTERLOCK",
+        ),
+        now=now,
+    )
 
 
 def _read_equity_gap_report() -> dict:
@@ -415,6 +558,20 @@ def _make_snapshot() -> dict:
         snap["kill_switch_error"] = f"{type(e).__name__}: {e}"
 
     snap["llm_status"] = _read_llm_status()
+
+    # v3.30 — quiet-broker telemetry. Fail-soft helpers, so any audit
+    # I/O issue just degrades to 0 (read as "we don't know it's noisy").
+    try:
+        snap["retry_storm_count_last_hour"] = _retry_storm_count()
+    except Exception:
+        snap["retry_storm_count_last_hour"] = 0
+    try:
+        snap["fresh_p13_count_last_hour"] = _fresh_p13_count()
+    except Exception:
+        snap["fresh_p13_count_last_hour"] = 0
+    snap["retry_storm_active"] = bool(snap.get("retry_storm_count_last_hour", 0) > 0)
+    snap["fresh_p13_in_window"] = bool(snap.get("fresh_p13_count_last_hour", 0) > 0)
+
     return snap
 
 
@@ -445,7 +602,22 @@ def evaluate(as_of: Optional[datetime] = None) -> SystemActivationResult:
         llm_status = str(snapshot.get("llm_status") or "unknown")
         reason = ""
 
-        # 1. safe_mode (runtime-operational)
+        # 1. safe_mode consistency (audit vs persisted runtime).
+        #    v3.30 precedence: this fires BEFORE the safe_mode itself,
+        #    because an audit-vs-runtime mismatch is a strictly worse
+        #    signal than safe_mode being inactive — it means we know
+        #    SAFE_MODE_ENTERED events fired but persistence dropped them.
+        sm_consistency = snapshot.get("safe_mode_consistency") or {}
+        verdict = (str(sm_consistency.get("verdict", ""))
+                   if isinstance(sm_consistency, dict) else "")
+        if verdict == "INCONSISTENT_ENTERED_NOT_PERSISTED":
+            blockers.append("safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED")
+            reason = "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED"
+            decision = SystemActivationDecision.ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT
+            return _finalize(decision, blockers, enabled_subsystems,
+                             llm_status, snapshot, reason)
+
+        # 2. safe_mode (runtime-operational).
         sm_active = snapshot.get("safe_mode_active")
         if sm_active is None:
             blockers.append("safe_mode_read_error")
@@ -457,17 +629,6 @@ def evaluate(as_of: Optional[datetime] = None) -> SystemActivationResult:
             blockers.append("safe_mode_active")
             reason = f"safe_mode_active: {snapshot.get('safe_mode_reason', '')}"
             decision = SystemActivationDecision.ALLOCATOR_BLOCKED_SAFE_MODE
-            return _finalize(decision, blockers, enabled_subsystems,
-                             llm_status, snapshot, reason)
-
-        # 2. safe_mode consistency (audit vs persisted runtime)
-        sm_consistency = snapshot.get("safe_mode_consistency") or {}
-        verdict = (str(sm_consistency.get("verdict", ""))
-                   if isinstance(sm_consistency, dict) else "")
-        if verdict == "INCONSISTENT_ENTERED_NOT_PERSISTED":
-            blockers.append("safe_mode_consistency=INCONSISTENT_ENTERED_NOT_PERSISTED")
-            reason = "safe_mode_consistency_INCONSISTENT_ENTERED_NOT_PERSISTED"
-            decision = SystemActivationDecision.ALLOCATOR_BLOCKED_SAFE_MODE_INCONSISTENT
             return _finalize(decision, blockers, enabled_subsystems,
                              llm_status, snapshot, reason)
 
@@ -563,6 +724,27 @@ def _finalize(decision: SystemActivationDecision,
               llm_status: str,
               snapshot: dict,
               reason: str = "") -> SystemActivationResult:
+    # v3.30: shadow simulator is permitted under one of two conditions —
+    #   (a) verdict is ALLOCATOR_ALLOWED (clean path), OR
+    #   (b) verdict is a SPECIFIC BLOCKING decision (not the catch-all
+    #       UNKNOWN) AND the broker has been quiet (no retry storm, no
+    #       fresh P13) for the configured window.
+    # UNKNOWN_BLOCK_FAIL_CLOSED denies shadow because by definition the
+    # gate could not verify its own state. Crucially this flag is
+    # INDEPENDENT of LLM availability.
+    quiet_broker = (
+        not bool(snapshot.get("retry_storm_active"))
+        and not bool(snapshot.get("fresh_p13_in_window"))
+    )
+    is_specific_block = (
+        decision in BLOCKING_DECISIONS
+        and decision is not SystemActivationDecision.UNKNOWN_BLOCK_FAIL_CLOSED
+    )
+    shadow_only_allowed = (
+        decision is SystemActivationDecision.ALLOCATOR_ALLOWED
+        or (is_specific_block and quiet_broker)
+    )
+
     audit_row = {
         "decision_type":          "SYSTEM_ACTIVATION_GATE_DECISION",
         "actor":                  "system_activation_gate",
@@ -572,6 +754,7 @@ def _finalize(decision: SystemActivationDecision,
         "llm_status":             llm_status,
         "reason":                 reason,
         "snapshot":               snapshot,
+        "shadow_only_allowed":    shadow_only_allowed,
         "ts_iso":                 _now_iso(),
         "reversible":             True,
         "status":                 ("placed"
@@ -588,6 +771,7 @@ def _finalize(decision: SystemActivationDecision,
         snapshot=snapshot,
         audit_row=audit_row,
         reason=reason,
+        shadow_only_allowed=shadow_only_allowed,
     )
 
 

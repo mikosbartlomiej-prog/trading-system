@@ -72,6 +72,11 @@ VERDICT_FAILED             = "FAILED"
 VERDICT_UNKNOWN            = "UNKNOWN"
 VERDICT_CLAIM_UNSUPPORTED  = "CLAIM_UNSUPPORTED"
 VERDICT_BUDGET_EXHAUSTED   = "BUDGET_EXHAUSTED"
+# v3.30 (2026-06-16) — quality verdicts surfaced from advisory rows.
+QUALITY_ACCEPTABLE         = "LLM_ADVISORY_QUALITY_ACCEPTABLE"
+QUALITY_LOW_QUALITY        = "LLM_ADVISORY_LOW_QUALITY"
+QUALITY_EMPTY              = "LLM_ADVISORY_QUALITY_EMPTY"
+QUALITY_THRESHOLD_LOW_QUALITY_RATIO = 0.50  # flag if > 50% LOW_QUALITY
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────
@@ -200,6 +205,136 @@ def _budget_summary() -> dict:
         "spent_today_usd":       data.get("spent_today_usd"),
         "max_cost_usd_per_day":  data.get("max_cost_usd_per_day"),
     }
+
+
+# ─── v3.30 quality counters ──────────────────────────────────────────
+
+
+def _quality_counts_from_advisory_rows(max_rows_per_file: int = 50
+                                         ) -> dict:
+    """v3.30 (2026-06-16) — count recent advisory rows by quality.
+
+    Scans every ``learning-loop/llm_advisory/*_latest.json`` file
+    (per-agent latest snapshot) and counts verdicts. Each per-agent
+    file holds the most recent row, so this is a per-agent quality
+    snapshot rather than a historical sweep. NEVER raises.
+    """
+    base = REPO_ROOT / "learning-loop" / "llm_advisory"
+    if not base.exists() or not base.is_dir():
+        return {
+            "available":        False,
+            "total_rows":       0,
+            "acceptable":       0,
+            "low_quality":      0,
+            "empty":            0,
+            "low_quality_ratio": 0.0,
+            "flagged":          False,
+        }
+    n_acc = 0
+    n_low = 0
+    n_emp = 0
+    n_other = 0
+    rows_seen = 0
+    for p in sorted(base.glob("*_latest.json")):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        verdict = str(data.get("quality_verdict") or "").upper()
+        rows_seen += 1
+        if verdict == QUALITY_ACCEPTABLE.upper():
+            n_acc += 1
+        elif verdict == QUALITY_LOW_QUALITY.upper():
+            n_low += 1
+        elif verdict == QUALITY_EMPTY.upper():
+            n_emp += 1
+        else:
+            n_other += 1
+    denom = max(1, n_acc + n_low + n_emp)
+    low_ratio = float(n_low) / float(denom)
+    return {
+        "available":         True,
+        "total_rows":        rows_seen,
+        "acceptable":        n_acc,
+        "low_quality":       n_low,
+        "empty":             n_emp,
+        "other":             n_other,
+        "low_quality_ratio": round(low_ratio, 4),
+        "flagged":           bool(
+            low_ratio > QUALITY_THRESHOLD_LOW_QUALITY_RATIO),
+        "threshold":         QUALITY_THRESHOLD_LOW_QUALITY_RATIO,
+    }
+
+
+# ─── v3.30 smoke test (deterministic prompt, fail-soft) ──────────────
+
+
+def _gemini_smoke_test(env_present: bool) -> dict:
+    """v3.30 (2026-06-16) — best-effort deterministic smoke test.
+
+    Skipped when ``GEMINI_API_KEY`` is missing locally. NEVER prints
+    the key value. NEVER persists raw provider responses. Returns a
+    dict with one of three statuses: ``SKIPPED_NO_KEY``,
+    ``SMOKE_OK``, or ``SMOKE_FAILED``.
+    """
+    if not env_present:
+        return {
+            "status": "SKIPPED_NO_KEY",
+            "reason": "GEMINI_API_KEY not set in current shell",
+        }
+    # Honour the same offline-safety contract as the mesh: only attempt
+    # the call when LLM_PROVIDER=gemini AND LLM_FREE_ONLY=true (default).
+    # The audit MUST NOT trigger a paid-provider call.
+    prov = os.environ.get("LLM_PROVIDER", "offline_mock").strip().lower()
+    if prov not in ("gemini",):
+        return {
+            "status": "SKIPPED_OFFLINE_MOCK",
+            "reason": f"LLM_PROVIDER={prov!r}; smoke skipped to avoid "
+                       "making a real network call from a read-only "
+                       "audit",
+        }
+    try:
+        try:
+            from llm_provider_client import call_provider  # type: ignore
+        except ImportError:
+            from shared.llm_provider_client import call_provider  # type: ignore
+        # Deterministic prompt so the smoke is reproducible.
+        prompt = (
+            "Reply with the literal JSON {\"ok\": true} and nothing "
+            "else. This is a deterministic smoke test from the v3.30 "
+            "LLM provider health audit. You are ADVISORY ONLY. You "
+            "CANNOT execute orders or change risk thresholds.")
+        resp = call_provider(prompt=prompt, max_tokens=64,
+                                timeout_seconds=10.0)
+        ok = False
+        try:
+            text = _try_redact(str(resp.text or ""))[:200]
+            ok = bool(text) and "ok" in text.lower()
+        except Exception:
+            text = ""
+        if str(resp.status) != "LLM_PROVIDER_CALL_OK":
+            return {
+                "status": "SMOKE_FAILED",
+                "reason": f"provider returned {resp.status}",
+            }
+        if not ok:
+            return {
+                "status": "SMOKE_FAILED",
+                "reason": "provider returned non-empty response that "
+                          "did not include the 'ok' token",
+            }
+        return {
+            "status": "SMOKE_OK",
+            "reason": "provider produced an acceptable response",
+        }
+    except Exception as e:
+        return {
+            "status": "SMOKE_FAILED",
+            "reason": _try_redact(f"smoke exception: "
+                                    f"{type(e).__name__}: {e}")[:200],
+        }
 
 
 # ─── Verdict logic ───────────────────────────────────────────────────
@@ -333,14 +468,18 @@ def build_status() -> dict:
 
     claim_verdict, claim_reason = _classify_80_day_claim(history)
 
+    # v3.30 — quality counts + best-effort smoke test.
+    quality_counts = _quality_counts_from_advisory_rows()
+    smoke = _gemini_smoke_test(gemini_env["present"])
+
     proposed_fixes: list[str] = []
     if not gemini_env["present"]:
         proposed_fixes.append(
             "[PROPOSED-FIX] LLM provider may be DEGRADED/UNKNOWN because "
             "GEMINI_API_KEY env not configured in workflow context — "
-            "operator should add the secret in GitHub repo settings "
-            "(Settings → Secrets and variables → Actions → New "
-            "repository secret). Do NOT auto-apply.")
+            "operator should set GEMINI_API_KEY in GitHub repo secrets "
+            "at Settings → Secrets and variables → Actions → New "
+            "repository secret. Do NOT auto-apply.")
     if budget.get("available") and budget.get("remaining") is not None:
         try:
             if float(budget.get("remaining") or 0) <= 0:
@@ -350,10 +489,22 @@ def build_status() -> dict:
                     "auto-bump the budget.")
         except Exception:
             pass
+    # v3.30 — quality flag.
+    if quality_counts.get("flagged"):
+        proposed_fixes.append(
+            "[PROPOSED-FIX] More than "
+            f"{int(QUALITY_THRESHOLD_LOW_QUALITY_RATIO * 100)}% of "
+            "recent advisory rows are LOW_QUALITY — investigate "
+            "per-agent prompt templates and provider response "
+            "structure. Do NOT auto-edit prompts.")
+    if smoke.get("status") == "SMOKE_FAILED":
+        proposed_fixes.append(
+            "[PROPOSED-FIX] Smoke test FAILED — verify GEMINI_API_KEY "
+            "quota / endpoint reachability. Do NOT auto-rotate the key.")
 
     payload = {
         "module":           "scripts.audit_llm_provider_health",
-        "schema_version":   "v3.29",
+        "schema_version":   "v3.30",
         "generated_at_iso": _now_iso(),
         "providers":        {
             "gemini": {
@@ -376,6 +527,9 @@ def build_status() -> dict:
         "quality_review_snapshot_present": bool(quality_review),
         "history":          history,
         "budget":           budget,
+        # v3.30 — quality + smoke.
+        "quality_counts":   quality_counts,
+        "smoke_test":       smoke,
         "eighty_day_claim_verdict": claim_verdict,
         "eighty_day_claim_reason":  claim_reason,
         "proposed_fixes":   proposed_fixes,
@@ -386,7 +540,7 @@ def build_status() -> dict:
 
 def render_md(status: dict) -> str:
     lines: list[str] = []
-    lines.append("# LLM Provider Health Audit (v3.29)")
+    lines.append("# LLM Provider Health Audit (v3.30)")
     lines.append("")
     lines.append(f"_Generated:_ `{status.get('generated_at_iso', '')}`")
     lines.append("")
@@ -436,6 +590,29 @@ def render_md(status: dict) -> str:
                      f"`{b.get('max_cost_usd_per_day')}`")
     else:
         lines.append("- budget snapshot absent")
+    lines.append("")
+    # v3.30 — quality counts + smoke test.
+    q = status.get("quality_counts") or {}
+    lines.append("## v3.30 quality counts (per-agent latest rows)")
+    lines.append("")
+    if q.get("available"):
+        lines.append(f"- total rows scanned: `{q.get('total_rows')}`")
+        lines.append(f"- acceptable: `{q.get('acceptable')}`")
+        lines.append(f"- low_quality: `{q.get('low_quality')}`")
+        lines.append(f"- empty: `{q.get('empty')}`")
+        lines.append(
+            f"- low_quality_ratio: `{q.get('low_quality_ratio')}`")
+        lines.append(
+            f"- flagged: `{bool(q.get('flagged'))}` "
+            f"(threshold > {q.get('threshold')})")
+    else:
+        lines.append("- (no quality snapshots present)")
+    lines.append("")
+    smoke = status.get("smoke_test") or {}
+    lines.append("## v3.30 smoke test")
+    lines.append("")
+    lines.append(f"- status: `{smoke.get('status', 'UNKNOWN')}`")
+    lines.append(f"- reason: `{smoke.get('reason', '')}`")
     lines.append("")
     lines.append("## Proposed fixes (operator action — DO NOT auto-apply)")
     lines.append("")

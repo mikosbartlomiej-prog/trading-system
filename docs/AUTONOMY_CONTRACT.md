@@ -803,3 +803,93 @@ exception captured in `blockers[]`.
 `LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
 `NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
 `ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
+
+## v3.30 — PRODUCTION-PATH CLOSURE (2026-06-16)
+
+### What the production-path closure adds
+
+v3.30 closes the retry-storm leak that survived v3.28 and v3.29. The
+fix is **a precondition guard added ABOVE existing broker calls** —
+it never adds new broker callsites. The guard makes
+`shared/alpaca_orders.py::safe_close` refuse-and-return when the
+symbol is `broker_repair_required` quarantined, BEFORE any position
+fetch, bracket cancel, or `submit_order` call.
+
+This single choke point protects all five `safe_close` callsites
+(exit-monitor lifecycle, exit-monitor POST fallback, options-exit-monitor,
+allocator REDUCE, allocator EXIT) at once — closing the leak that v3.28
+left open in four of them.
+
+### New invariants (v3.30)
+
+1. **Broker-repair guard wired into `safe_close`.** Every close path
+   reads `broker_repair_required.is_repair_required(symbol)` BEFORE
+   any broker call. A `True` verdict returns
+   `REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE` with an audit row; the broker
+   is never reached. `BROKER_REPAIR_GUARD_ACTIVE`.
+2. **Symbol normalization.** `shared/symbol_normalization.py` resolves
+   `AVAX`, `AVAXUSD`, and `AVAX/USD` to the same canonical key, so a
+   single quarantine entry blocks every alias.
+3. **Auto-mark on 403/422 state-divergence.** If the broker responds
+   with 403 insufficient balance, 403 held_for_orders, 422 qty must
+   be > 0, or 422 insufficient qty, `safe_close` marks the symbol for
+   the next call. The leak cannot reopen.
+4. **Retry budget inside existing retry loops.** Default 3 attempts
+   then forced quarantine — eliminates the 12+ failed-close storm.
+   `RETRY_STORM_SUPPRESSION_ACTIVE`.
+5. **Canonical safe-mode state.** `shared/safe_mode_state.py` writes
+   `runtime_state.safe_mode` atomically (temp-file + rename), runs the
+   audit-vs-runtime consistency check on every read, and emits an
+   audit row on every transition.
+6. **Operator clearance proposal.** `scripts/propose_clear_broker_repair_and_safe_mode.py`
+   writes a markered proposal file that the operator manually applies.
+   The script NEVER auto-clears safe_mode, NEVER auto-clears
+   `broker_repair_required`, NEVER mutates any persisted state without
+   operator confirmation.
+7. **Real LLM provider activation ready.** `shared/llm_advisory_quality_v3300.py`
+   enforces quality requirements on real-provider outputs. When the
+   provider secret is absent, deterministic fallback engages — no paid
+   services are added without operator approval.
+
+### Production-path closure assertions
+
+`tests/test_e2e_production_path_v3300.py` simulates four production
+scenarios end-to-end with every broker function patched to raise
+`AssertionError` on invocation:
+
+- **A. Active broker repair.** Quarantined symbol → `safe_close`
+  refuses-and-returns; allocator gate stays BLOCKED; LLM ALLOW
+  recommendation does NOT override the deterministic verdict.
+- **B. Operator repaired.** Marker present + clean ancillary state
+  → clearance proposal CAN be written; the proposal does NOT
+  auto-apply; once operator-applied, allocator allows.
+- **C. LLM says ALLOW during deterministic BLOCK.** Gate ignores
+  the LLM recommendation; deterministic decision unchanged.
+- **D. LLM says BLOCK during deterministic ALLOW.** Gate ignores
+  the LLM recommendation; deterministic decision unchanged.
+
+All four scenarios verify zero broker calls; every order function in
+`alpaca_orders` is patched to raise `AssertionError` on invocation.
+
+### Invariants re-asserted under v3.30
+
+1. **No live execution.** `EDGE_GATE_ENABLED=false`,
+   `ALLOW_BROKER_PAPER=false`, `LIVE_TRADING_UNSUPPORTED`.
+2. **No NEW broker callsites in new code.** AST-verified.
+3. **No LLM execution authority.** `LLM_EXECUTION_AUTHORITY=false`,
+   `LLM_PRE_ORDER_VETO_HONORED=false`.
+4. **No LLM state mutation.** `NO_LLM_STATE_MUTATION`.
+5. **No safe_mode auto-clear.** Only the operator clearance proposal
+   path can produce a clearance file, and only the operator can
+   apply it.
+6. **No paid services added.** LLM real provider stays in fallback
+   when secret absent.
+7. **No fabricated evidence.** E2E scenarios use synthetic state
+   only; production behavior is verified through deterministic
+   replay.
+
+`LIVE_TRADING_UNSUPPORTED`. `NO_ORDER_PLACEMENT`.
+`NO_AUTO_BROKER_ACTION`. `EDGE_GATE_ENABLED=false`.
+`ALLOW_BROKER_PAPER=false`. `LLM_ADVISORY_ONLY`.
+`BROKER_REPAIR_GUARD_ACTIVE`. `RETRY_STORM_SUPPRESSION_ACTIVE`.
+

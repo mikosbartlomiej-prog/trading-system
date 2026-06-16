@@ -43,12 +43,13 @@ class _IsolatedStateMixin:
 
 class TestBrokerRepairRequired(_IsolatedStateMixin, unittest.TestCase):
     def test_01_mark_creates_entry(self):
+        # v3.30 (2026-06-16): symbol is canonicalized — AVAXUSD → AVAX/USD.
         entry = brr.mark_repair_required(
             "AVAXUSD",
             incident_type="P13_BRACKET_INTERLOCK",
             error="Alpaca 403 insufficient balance",
         )
-        self.assertEqual(entry.symbol, "AVAXUSD")
+        self.assertEqual(entry.symbol, "AVAX/USD")
         self.assertEqual(entry.failed_attempts, 1)
         self.assertTrue(os.path.exists(self._state_path))
 
@@ -134,11 +135,13 @@ class TestBrokerRepairRequired(_IsolatedStateMixin, unittest.TestCase):
 
     def test_12_get_blocked_symbols_returns_set(self):
         self.assertEqual(brr.get_blocked_symbols(), set())
+        # v3.30 (2026-06-16): AVAXUSD and ETHUSD canonicalize to
+        # AVAX/USD and ETH/USD respectively.
         brr.mark_repair_required("AVAXUSD", incident_type="P13", error="e")
         brr.mark_repair_required("ETHUSD", incident_type="P13", error="e")
         s = brr.get_blocked_symbols()
         self.assertIsInstance(s, set)
-        self.assertEqual(s, {"AVAXUSD", "ETHUSD"})
+        self.assertEqual(s, {"AVAX/USD", "ETH/USD"})
 
 
 if __name__ == "__main__":  # pragma: no cover

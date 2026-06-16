@@ -212,6 +212,37 @@ def place_emergency_close(ep: dict) -> dict | None:
     if qty <= 0 or not symbol:
         return None
 
+    # ── v3.30 HARD-WIRE (2026-06-16): broker_repair_required precondition. ────
+    # If the symbol is quarantined, skip the DELETE / safe_close paths
+    # entirely. This complements the in-safe_close guard so that the
+    # DELETE call (which is ALSO a broker call) also short-circuits.
+    # Fail-soft: missing module does not crash the close.
+    try:
+        try:
+            from retry_storm_containment import (  # type: ignore
+                should_skip_broker_call as _v3300_should_skip,
+                emit_skip_audit as _v3300_emit_skip,
+            )
+        except ImportError:
+            from shared.retry_storm_containment import (  # type: ignore
+                should_skip_broker_call as _v3300_should_skip,
+                emit_skip_audit as _v3300_emit_skip,
+            )
+        if _v3300_should_skip(symbol):
+            try:
+                _v3300_emit_skip(symbol, incident_type="P13_BRACKET_INTERLOCK")
+            except Exception:
+                pass
+            print(f"  emergency-close {symbol}: SKIP "
+                  f"(broker_repair_required quarantine — operator must clear)")
+            return {"deferred": True,
+                    "reason": "broker_repair_required",
+                    "symbol": symbol,
+                    "broker_called": False}
+    except Exception:
+        # Fail-soft: guard absence must not crash the close.
+        pass
+
     # v3.8.7 (2026-05-16): pre-market emergency close defer.
     # Options pre-market: Alpaca rejects with "market closed for options"
     # (paper). Equity pre-market MARKET orders queue but may slip widely
@@ -840,23 +871,76 @@ def apply_position_lifecycle(positions: list[dict], orders: list[dict], *,
             sc_result = None
             sc_status = "not_attempted"
             sc_reason = ""
+
+            # ── v3.28 ETAP 4 (2026-06-16): retry-storm precondition. ──────
+            # Before calling safe_close, check whether the symbol is
+            # currently quarantined. If True, skip the broker call,
+            # emit a REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE audit row,
+            # and move on. This is what prevents the 2026-06-15 AVAX
+            # 67-retry storm from recurring.
+            _rsc = None
             try:
-                sc_result = _safe_close(
-                    symbol=symbol,
-                    intent_qty=float(exit_qty),
-                    intent_side=close_side,
-                    reason_tag=reason_tag,
-                    order_type="market",
-                    time_in_force="gtc" if is_crypto else "day",
-                    is_crypto=is_crypto,
-                    allow_market=True,
+                from retry_storm_containment import (  # type: ignore
+                    should_skip_broker_call,
+                    emit_skip_audit,
+                    record_broker_close_failure,
+                    record_broker_close_success,
                 )
-                sc_status = sc_result.get("status", "unknown")
-                sc_reason = sc_result.get("reason", "")
-            except Exception as e:
-                sc_status = "exception"
-                sc_reason = f"{type(e).__name__}: {e}"
-                print(f"  [pos-lifecycle] safe_close exception {symbol}: {sc_reason}")
+                _rsc = True
+            except ImportError:
+                try:
+                    from shared.retry_storm_containment import (  # type: ignore
+                        should_skip_broker_call,
+                        emit_skip_audit,
+                        record_broker_close_failure,
+                        record_broker_close_success,
+                    )
+                    _rsc = True
+                except ImportError:
+                    _rsc = False
+
+            if _rsc and should_skip_broker_call(symbol):
+                try:
+                    emit_skip_audit(symbol, incident_type="P13_BRACKET_INTERLOCK")
+                except Exception:
+                    pass
+                sc_status = "skipped_repair_required"
+                sc_reason = "broker_repair_required quarantine — operator must clear"
+                print(f"  [pos-lifecycle] {symbol} SKIP (broker_repair_required quarantine)")
+            else:
+                try:
+                    sc_result = _safe_close(
+                        symbol=symbol,
+                        intent_qty=float(exit_qty),
+                        intent_side=close_side,
+                        reason_tag=reason_tag,
+                        order_type="market",
+                        time_in_force="gtc" if is_crypto else "day",
+                        is_crypto=is_crypto,
+                        allow_market=True,
+                    )
+                    sc_status = sc_result.get("status", "unknown")
+                    sc_reason = sc_result.get("reason", "")
+                except Exception as e:
+                    sc_status = "exception"
+                    sc_reason = f"{type(e).__name__}: {e}"
+                    print(f"  [pos-lifecycle] safe_close exception {symbol}: {sc_reason}")
+
+                # v3.28 ETAP 4: count consecutive failures vs reset on success.
+                # 3 consecutive failures → quarantine via broker_repair_required.
+                if _rsc:
+                    try:
+                        if sc_status == "placed":
+                            record_broker_close_success(symbol)
+                        elif sc_status in ("failed", "exception"):
+                            record_broker_close_failure(
+                                symbol,
+                                error=sc_reason or sc_status,
+                                incident_type="P13_BRACKET_INTERLOCK",
+                            )
+                    except Exception as e:
+                        # Fail-soft: counter persistence MUST NOT crash the loop.
+                        print(f"  [pos-lifecycle] retry-storm bookkeeping failed (non-fatal): {e}")
 
             if sc_status == "placed":
                 stats["actions_placed"] += 1

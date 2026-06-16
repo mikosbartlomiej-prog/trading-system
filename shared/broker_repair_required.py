@@ -64,6 +64,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+# v3.30 (2026-06-16) — Canonical symbol normalization. Closes the leak
+# where ``is_repair_required("AVAX/USD")`` returned False while the on-disk
+# state had ``AVAX`` / ``AVAXUSD`` entries. Import is leaf-safe:
+# ``shared.symbol_normalization`` itself imports nothing from this module.
+try:
+    from symbol_normalization import (  # type: ignore
+        canonical_for as _canonical_for,
+        aliases_for as _aliases_for,
+    )
+except ImportError:
+    from shared.symbol_normalization import (  # type: ignore
+        canonical_for as _canonical_for,
+        aliases_for as _aliases_for,
+    )
+
 
 # ── Module constants (spec §TASK 1) ───────────────────────────────────────────
 
@@ -172,6 +187,70 @@ class BrokerRepairRequired:
 
 # ── State I/O ─────────────────────────────────────────────────────────────────
 
+def _merge_alias_entries(
+    out: dict[str, BrokerRepairRequired],
+    canonical_key: str,
+    new_entry: BrokerRepairRequired,
+    original_alias: str,
+    alias_log: dict[str, set[str]],
+) -> None:
+    """v3.30: merge a legacy alias entry into its canonical bucket.
+
+    Preserves the earliest ``first_seen_iso``, the latest
+    ``last_seen_iso``, the sum of ``failed_attempts``, and the most
+    recent ``last_error`` / ``incident_type``. Aliases that were
+    merged are tracked in ``alias_log[canonical_key]`` so they can be
+    surfaced on next ``save_state()``.
+    """
+    alias_log.setdefault(canonical_key, set()).add(original_alias)
+    prev = out.get(canonical_key)
+    if prev is None:
+        # Rewrite the symbol field to the canonical key so callers
+        # see "AVAX/USD" instead of the legacy alias they read in.
+        out[canonical_key] = BrokerRepairRequired(
+            symbol=canonical_key,
+            incident_type=new_entry.incident_type,
+            first_seen_iso=new_entry.first_seen_iso,
+            last_seen_iso=new_entry.last_seen_iso,
+            failed_attempts=new_entry.failed_attempts,
+            last_error=new_entry.last_error,
+            manual_action_required=new_entry.manual_action_required,
+            allowed_next_actions=new_entry.allowed_next_actions,
+            safe_mode_reason=new_entry.safe_mode_reason,
+            retry_after_iso=new_entry.retry_after_iso,
+            broker_calls_blocked_until_iso=new_entry.broker_calls_blocked_until_iso,
+        )
+        return
+
+    # Merge: keep earliest first_seen, latest last_seen, sum attempts,
+    # prefer the newer entry's last_error / incident_type only when
+    # the new last_seen is newer than the previous one.
+    first_seen = min(prev.first_seen_iso, new_entry.first_seen_iso) \
+        if prev.first_seen_iso and new_entry.first_seen_iso \
+        else (prev.first_seen_iso or new_entry.first_seen_iso)
+    last_seen = max(prev.last_seen_iso, new_entry.last_seen_iso) \
+        if prev.last_seen_iso and new_entry.last_seen_iso \
+        else (prev.last_seen_iso or new_entry.last_seen_iso)
+    failed_attempts = int(prev.failed_attempts) + int(new_entry.failed_attempts)
+    use_new = bool(new_entry.last_seen_iso) and new_entry.last_seen_iso >= prev.last_seen_iso
+    out[canonical_key] = BrokerRepairRequired(
+        symbol=canonical_key,
+        incident_type=new_entry.incident_type if use_new else prev.incident_type,
+        first_seen_iso=first_seen,
+        last_seen_iso=last_seen,
+        failed_attempts=failed_attempts,
+        last_error=new_entry.last_error if use_new else prev.last_error,
+        manual_action_required=new_entry.manual_action_required or prev.manual_action_required,
+        allowed_next_actions=prev.allowed_next_actions or new_entry.allowed_next_actions,
+        safe_mode_reason=new_entry.safe_mode_reason if use_new else prev.safe_mode_reason,
+        retry_after_iso=new_entry.retry_after_iso if use_new else prev.retry_after_iso,
+        broker_calls_blocked_until_iso=(
+            new_entry.broker_calls_blocked_until_iso if use_new
+            else prev.broker_calls_blocked_until_iso
+        ),
+    )
+
+
 def load_state() -> dict[str, BrokerRepairRequired]:
     """Read the on-disk state.
 
@@ -179,6 +258,12 @@ def load_state() -> dict[str, BrokerRepairRequired]:
     parse error returns ``{}`` (NEVER raises) so a corrupted state
     cannot crash the trading loop — callers will fall back to "no
     quarantine" which the allocator gate fails CLOSED on anyway.
+
+    v3.30: keys are canonicalized via ``symbol_normalization``. Legacy
+    alias entries (``AVAX`` + ``AVAXUSD``) are MERGED into the
+    canonical key (``AVAX/USD``) on read. The merge is in-memory only
+    here; ``save_state()`` writes the canonicalized form back to disk
+    on the next persistence cycle.
     """
     path = _state_path()
     if not path.exists():
@@ -193,6 +278,7 @@ def load_state() -> dict[str, BrokerRepairRequired]:
         return {}
 
     out: dict[str, BrokerRepairRequired] = {}
+    alias_log: dict[str, set[str]] = {}
     entries = raw.get("entries") if "entries" in raw else raw
     if not isinstance(entries, dict):
         return {}
@@ -200,10 +286,13 @@ def load_state() -> dict[str, BrokerRepairRequired]:
         if not isinstance(entry, dict):
             continue
         try:
-            out[str(sym)] = BrokerRepairRequired.from_dict(entry)
+            parsed = BrokerRepairRequired.from_dict(entry)
         except Exception:
             # Per-entry parse failure — skip this symbol but keep loading.
             continue
+        canonical = _canonical_for(sym) or str(sym)
+        _merge_alias_entries(out, canonical, parsed, str(sym), alias_log)
+
     return out
 
 
@@ -281,7 +370,11 @@ def mark_repair_required(
     if not symbol:
         raise ValueError("mark_repair_required: symbol cannot be empty")
 
-    sym = str(symbol)
+    # v3.30: store under the canonical key so ``AVAX``, ``AVAXUSD`` and
+    # ``AVAX/USD`` all map to a single entry. Without this normalization,
+    # ``is_repair_required("AVAX/USD")`` would return False while AVAX
+    # was already quarantined, and the broker call would leak through.
+    sym = _canonical_for(symbol) or str(symbol)
     state = load_state()
     now = _now_iso()
     prev = state.get(sym)
@@ -326,10 +419,23 @@ def mark_repair_required(
 
 
 def is_repair_required(symbol: str) -> bool:
-    """Cheap point-check used by the retry path before calling the broker."""
+    """Cheap point-check used by the retry path before calling the broker.
+
+    v3.30: ``symbol`` is canonicalized before lookup. Any of
+    ``AVAX``, ``AVAXUSD``, ``AVAX/USD`` resolves to the same canonical
+    bucket ``AVAX/USD``. Closes the leak where the broker call still
+    fired for ``AVAX/USD`` because the on-disk state had only
+    ``AVAX`` / ``AVAXUSD``.
+    """
     if not symbol:
         return False
-    return str(symbol) in load_state()
+    state = load_state()
+    canonical = _canonical_for(symbol) or str(symbol)
+    if canonical in state:
+        return True
+    # Defensive: if normalization failed (unknown crypto base), also
+    # check the raw string so we never under-report containment.
+    return str(symbol) in state
 
 
 def get_blocked_symbols() -> set[str]:
@@ -377,17 +483,22 @@ def clear_repair(symbol: str, marker_path: str) -> bool:
         return False
 
     state = load_state()
-    sym = str(symbol)
-    if sym not in state:
+    # v3.30: clear under the canonical key as well as any raw alias.
+    sym_canon = _canonical_for(symbol) or str(symbol)
+    sym_raw = str(symbol)
+    if sym_canon in state:
+        del state[sym_canon]
+    elif sym_raw in state:
+        del state[sym_raw]
+    else:
         return False
-
-    del state[sym]
     save_state(state)
 
     _append_audit({
         "decision_type":  "REPAIR_REQUIRED_CLEARED",
         "actor":          "broker_repair_required",
-        "symbol":         sym,
+        "symbol":         sym_canon,
+        "raw_symbol":     sym_raw,
         "marker_path":    marker_path,
         "ts_iso":         _now_iso(),
         "reversible":     True,
