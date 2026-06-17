@@ -1,24 +1,25 @@
 {
-  "next_recommended_action": "trigger another run",
+  "next_recommended_action": null,
   "quality_report": {
-    "confidence_max": 0.7,
-    "confidence_min": 0.4,
-    "empty_next_actions_count": 0,
-    "empty_risks_count": 0,
+    "confidence_max": 0.0,
+    "confidence_min": 0.0,
+    "empty_next_actions_count": 11,
+    "empty_risks_count": 11,
     "generic_placeholder_count": 0,
     "rationale": [
-      "acceptable"
+      "1 unsafe-action phrase(s) found"
     ],
-    "rows_seen": 5,
-    "rows_with_provider_failed": 0,
+    "rows_seen": 11,
+    "rows_with_provider_failed": 5,
     "rows_with_provider_skipped": 0,
-    "rows_with_provider_used": 5,
+    "rows_with_provider_used": 6,
     "secret_leak_hits": 0,
-    "unsafe_phrase_hits": 0,
-    "zero_confidence_count": 0
+    "status": "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED",
+    "unsafe_phrase_hits": 1,
+    "zero_confidence_count": 11
   },
-  "quality_status": "LLM_ADVISORY_QUALITY_ACCEPTABLE",
-  "run_id": "v3283-mock-3",
+  "quality_status": "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED",
+  "run_id": "v3300-calibration-27667066885",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,
