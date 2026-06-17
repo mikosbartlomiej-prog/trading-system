@@ -15,7 +15,11 @@
     },
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
+<<<<<<< Updated upstream
       "last_seen_iso": "2026-06-17T01:41:14.699272+00:00",
+=======
+      "last_seen_iso": "2026-06-17T01:41:38.540788+00:00",
+>>>>>>> Stashed changes
       "last_status": "ok",
       "pings_today": 20
     },
