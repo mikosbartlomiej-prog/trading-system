@@ -3,29 +3,29 @@
   "cumulative": {
     "total_trades": 0,
     "total_pnl_usd": 0,
-    "starting_equity": 90483.20995539216
+    "starting_equity": 90504.88
   },
   "daily_peak": {
     "date": "2026-06-17",
-    "peak_pl_usd": 21.67004460784665,
-    "peak_pl_pct": 0.00023949243863618331,
-    "peak_at": "2026-06-17T01:51:10.571263+00:00",
+    "peak_pl_usd": 0.0,
+    "peak_pl_pct": 0.0,
+    "peak_at": "2026-06-17T17:40:22.151318+00:00",
     "peak_equity": 90504.88,
-    "current_pl_usd": 21.67004460784665,
+    "current_pl_usd": 0.0,
     "current_equity": 90504.88,
     "retrace_from_peak": 0.0,
-    "verdict": "GREEN",
-    "verdict_at": "2026-06-17T02:01:06.392844+00:00",
+    "verdict": "FLAT",
+    "verdict_at": "2026-06-17T22:25:22.386846+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 82,
+  "days_tracked": 83,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-06-17T02:01:37.393850+00:00",
+  "last_updated": "2026-06-17T22:28:12.669538+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
