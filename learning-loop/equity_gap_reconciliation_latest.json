@@ -2,18 +2,18 @@
   "block_allocator": false,
   "components": {
     "cash": 0.0,
-    "crypto_positions": 11763.205880877927,
-    "equity_unrealized": 40737.788,
+    "crypto_positions": 0.0,
+    "equity_unrealized": 0.0,
     "fees_slippage": 0.0,
     "held_for_orders": 0.0,
     "realized_pl_today": 0.0,
-    "unexplained": 38003.89611912207
+    "unexplained": 90504.88
   },
-  "confidence": "MEDIUM",
-  "current_equity": 90504.89,
+  "confidence": "LOW",
+  "current_equity": 90504.88,
   "evidence": {
     "audit_realized_pl": {
-      "path": "journal/autonomy/2026-06-16.jsonl",
+      "path": "journal/autonomy/2026-06-17.jsonl",
       "realized_pl_today_usd": 0.0
     },
     "dashboard_snapshot": {
@@ -21,7 +21,7 @@
       "present": false
     },
     "positions_snapshot": {
-      "count": 7,
+      "count": 0,
       "path": "learning-loop/runtime_state.json::positions"
     },
     "runtime_state": {
@@ -29,10 +29,10 @@
       "peak_equity_source": "intraday_governor"
     }
   },
-  "gap_amount": -6.639999999999418,
-  "gap_pct": -0.007336081933428169,
-  "generated_at_iso": "2026-06-16T09:40:08.568204+00:00",
-  "peak_equity": 90511.53,
+  "gap_amount": 0.0,
+  "gap_pct": 0.0,
+  "generated_at_iso": "2026-06-17T09:18:45.226348+00:00",
+  "peak_equity": 90504.88,
   "schema_version": "v3.29",
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
@@ -47,6 +47,6 @@
     "ok_pct": 0.5,
     "warn_upper_pct": 2.0
   },
-  "ts_iso": "2026-06-16T09:40:08.568204+00:00",
+  "ts_iso": "2026-06-17T09:18:45.226348+00:00",
   "verdict": "EQUITY_GAP_OK"
 }

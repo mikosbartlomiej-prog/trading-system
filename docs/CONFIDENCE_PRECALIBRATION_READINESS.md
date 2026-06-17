@@ -1,30 +1,23 @@
-> INCIDENT ACTIVE: `AVAX` (and 4 more) in BROKER_REPAIR_REQUIRED state.
->
-> Blocked symbols: `AVAX`, `AVAXUSD`, `ETH`, `ETHUSD`, `LTCUSD`
-> Discovery layer remains active for analysis but trading is BLOCKED until manual repair.
-> Status: DISCOVERY_ACTIVE_BUT_TRADING_BLOCKED_BY_P13
-> See: [docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md](docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md)
-
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-06-16T09:40:08.009215+00:00`
-**As of:** `2026-06-16T09:40:07.204131+00:00`
-**Git HEAD:** `5d493ee95ba682d032a8c55b16cb9b0f321c2280`
+**Generated:** `2026-06-17T09:18:44.650558+00:00`
+**As of:** `2026-06-17T09:18:44.417120+00:00`
+**Git HEAD:** `1a0461ac0edb43b3a43a119e8b4f5776516f74c2`
 **Window:** last 7 days
-**Rows total:** `16128`
-**Positive rows (non-null confidence_score):** `0`
+**Rows total:** `15766`
+**Positive rows (non-null confidence_score):** `12`
 
 ## v3.27 Source separation
 
-**Verdict (v3.27):** `READY_FOR_COMPONENT_VARIANCE_REVIEW`
+**Verdict (v3.27):** `NOT_READY_NO_OUTCOMES`
 
-0 replay row(s) and 12332 near-miss row(s) available for component-variance review. NO production positive rows yet — calibration MUST NOT be attempted; operator may proceed only to variance review.
+12 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle.
 
 | Source | Count | Counts as production? |
 |---|---|---|
-| PRODUCTION_POSITIVE_ROWS | `0` | yes |
+| PRODUCTION_POSITIVE_ROWS | `12` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `12332` | NO (advisory) |
+| NEAR_MISS_ROWS           | `16486` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -35,20 +28,20 @@
 
 ## Verdict (v3.26, retained for back-compat)
 
-**`NOT_READY_NO_POSITIVE_ROWS`**
+**`NEEDS_MORE_ENTRY_CANDIDATES`**
 
-No entry-capable ledger row carries a non-null confidence_score yet. Verify Phase-2 wiring once monitors begin emitting positive-path rows.
+Only 12 positive row(s); need >= 30 to begin pre-calibration.
 
 ## Confidence-score distribution
 
 | Stat | Value |
 |---|---|
-| `count` | 0 |
-| `min` | None |
-| `median` | None |
-| `p95` | None |
-| `max` | None |
-| `mean` | None |
+| `count` | 12 |
+| `min` | 0.1081 |
+| `median` | 0.5483 |
+| `p95` | 0.59 |
+| `max` | 0.59 |
+| `mean` | 0.4158 |
 
 ## Builder completeness
 
@@ -61,13 +54,24 @@ No entry-capable ledger row carries a non-null confidence_score yet. Verify Phas
 
 ## Per-component variance
 
-Total components observed: `0`
-Varying components: `0`
-Default-only components: `0`
+Total components observed: `12`
+Varying components: `3`
+Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| (none) | | | | | | |
+| `anomaly_penalty` | 12 | 0.2 | 1.0 | 0.7333 | 0.155152 | yes |
+| `data_quality` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `edge_evidence` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `event_risk_penalty` | 12 | 1.0 | 1.0 | 1.0 | 0.0 | no |
+| `liquidity_quality` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `paper_sample_size_score` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `recent_strategy_health` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `regime_alignment` | 12 | 0.7 | 0.7 | 0.7 | 0.0 | no |
+| `risk_state` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `signal_strength` | 12 | 0.6 | 0.8 | 0.6667 | 0.009697 | yes |
+| `slippage_risk` | 12 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `system_health` | 12 | 0.3636 | 0.4545 | 0.447 | 0.000689 | yes |
 
 ## Confidence decision counts
 

@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-16T09:40:07.204131+00:00",
+  "as_of": "2026-06-17T09:18:44.417120+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -7,21 +7,118 @@
     "min": null
   },
   "components": {
-    "default_only_components": 0,
-    "per_component": {},
-    "total_components_seen": 0,
-    "varying_components": 0
+    "default_only_components": 9,
+    "per_component": {
+      "anomaly_penalty": {
+        "max": 1.0,
+        "mean": 0.7333,
+        "min": 0.2,
+        "samples": 12,
+        "variance": 0.155152,
+        "varying": true
+      },
+      "data_quality": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "edge_evidence": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "event_risk_penalty": {
+        "max": 1.0,
+        "mean": 1.0,
+        "min": 1.0,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "liquidity_quality": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "paper_sample_size_score": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "recent_strategy_health": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "regime_alignment": {
+        "max": 0.7,
+        "mean": 0.7,
+        "min": 0.7,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "risk_state": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "signal_strength": {
+        "max": 0.8,
+        "mean": 0.6667,
+        "min": 0.6,
+        "samples": 12,
+        "variance": 0.009697,
+        "varying": true
+      },
+      "slippage_risk": {
+        "max": 0.5,
+        "mean": 0.5,
+        "min": 0.5,
+        "samples": 12,
+        "variance": 0.0,
+        "varying": false
+      },
+      "system_health": {
+        "max": 0.4545,
+        "mean": 0.447,
+        "min": 0.3636,
+        "samples": 12,
+        "variance": 0.000689,
+        "varying": true
+      }
+    },
+    "total_components_seen": 12,
+    "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-06-16T09:40:08.009215+00:00",
-  "git_head": "5d493ee95ba682d032a8c55b16cb9b0f321c2280",
+  "generated_at_iso": "2026-06-17T09:18:44.650558+00:00",
+  "git_head": "1a0461ac0edb43b3a43a119e8b4f5776516f74c2",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
-  "positive_rows": 0,
-  "rows_total": 16128,
+  "positive_rows": 12,
+  "rows_total": 15766,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -36,22 +133,22 @@
     "replay_counted_as_production": false
   },
   "score_summary": {
-    "count": 0,
-    "max": null,
-    "mean": null,
-    "median": null,
-    "min": null,
-    "p95": null
+    "count": 12,
+    "max": 0.59,
+    "mean": 0.4158,
+    "median": 0.5483,
+    "min": 0.1081,
+    "p95": 0.59
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 12332,
+    "near_miss_rows": 16486,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
-    "production_positive_rows": 0,
+    "production_positive_rows": 12,
     "replay_positive_rows": 0,
-    "verdict_v327": "READY_FOR_COMPONENT_VARIANCE_REVIEW",
-    "verdict_v327_reason": "0 replay row(s) and 12332 near-miss row(s) available for component-variance review. NO production positive rows yet \u2014 calibration MUST NOT be attempted; operator may proceed only to variance review."
+    "verdict_v327": "NOT_READY_NO_OUTCOMES",
+    "verdict_v327_reason": "12 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle."
   },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
@@ -67,8 +164,8 @@
     "FIXTURE_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
     "CALIBRATION_NEVER_RECOMMENDED_WITHOUT_OUTCOMES"
   ],
-  "verdict": "NOT_READY_NO_POSITIVE_ROWS",
-  "verdict_reason": "No entry-capable ledger row carries a non-null confidence_score yet. Verify Phase-2 wiring once monitors begin emitting positive-path rows.",
+  "verdict": "NEEDS_MORE_ENTRY_CANDIDATES",
+  "verdict_reason": "Only 12 positive row(s); need >= 30 to begin pre-calibration.",
   "version": "v3.27.0",
   "window_days": 7
 }
