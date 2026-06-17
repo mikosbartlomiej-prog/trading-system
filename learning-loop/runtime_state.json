@@ -15,9 +15,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-17T01:51:10.577806+00:00",
+      "last_seen_iso": "2026-06-17T02:01:06.397191+00:00",
       "last_status": "ok",
-      "pings_today": 2
+      "pings_today": 3
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -39,8 +39,8 @@
     "intraday_peak_equity": 90504.88,
     "intraday_peak_pnl": 21.67004460784665,
     "intraday_peak_pnl_pct": 0.00023949243863618331,
-    "last_action": "transition_FLAT_to_GREEN",
-    "last_update_at": "2026-06-17T01:51:10.571263+00:00",
+    "last_action": "noop",
+    "last_update_at": "2026-06-17T02:01:06.392844+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-06-17T01:51:10.571263+00:00",
