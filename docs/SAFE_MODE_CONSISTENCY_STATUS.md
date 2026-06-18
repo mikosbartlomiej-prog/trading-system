@@ -1,21 +1,21 @@
-# Safe-mode consistency status — 2026-06-17T09:18:45.341254+00:00
+# Safe-mode consistency status — 2026-06-18T09:01:02.590046+00:00
 
-## Verdict: **INCONSISTENT_EXIT_WITHOUT_ENTER**
+## Verdict: **CONSISTENT**
 
 **Blocker:** _none_
 
 ## Detail
 
-SAFE_MODE_EXITED at 2026-06-16T16:06:49.182418+00:00 without a matching prior SAFE_MODE_ENTERED in the lookback window
+audit and runtime agree (enters=0, exits=0, runtime_active=False)
 
 ## Counts
 
-- audit events in last 24h: 1
+- audit events in last 24h: 0
 - SAFE_MODE_ENTERED: 0
-- SAFE_MODE_EXITED:  1
+- SAFE_MODE_EXITED:  0
 - runtime_active:    False
 - runtime_trigger:   
-- last_event_iso:    2026-06-16T16:06:49.182418+00:00
+- last_event_iso:    None
 
 ## Standing markers
 

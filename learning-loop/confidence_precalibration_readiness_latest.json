@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-17T09:18:44.417120+00:00",
+  "as_of": "2026-06-18T09:01:01.488373+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -11,17 +11,17 @@
     "per_component": {
       "anomaly_penalty": {
         "max": 1.0,
-        "mean": 0.7333,
+        "mean": 0.8,
         "min": 0.2,
-        "samples": 12,
-        "variance": 0.155152,
+        "samples": 48,
+        "variance": 0.122553,
         "varying": true
       },
       "data_quality": {
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -29,7 +29,7 @@
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -37,7 +37,7 @@
         "max": 1.0,
         "mean": 1.0,
         "min": 1.0,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -45,7 +45,7 @@
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -53,7 +53,7 @@
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -61,7 +61,7 @@
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -69,7 +69,7 @@
         "max": 0.7,
         "mean": 0.7,
         "min": 0.7,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
@@ -77,32 +77,32 @@
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
       "signal_strength": {
         "max": 0.8,
-        "mean": 0.6667,
+        "mean": 0.7,
         "min": 0.6,
-        "samples": 12,
-        "variance": 0.009697,
+        "samples": 48,
+        "variance": 0.010213,
         "varying": true
       },
       "slippage_risk": {
         "max": 0.5,
         "mean": 0.5,
         "min": 0.5,
-        "samples": 12,
+        "samples": 48,
         "variance": 0.0,
         "varying": false
       },
       "system_health": {
-        "max": 0.4545,
-        "mean": 0.447,
+        "max": 0.7273,
+        "mean": 0.4867,
         "min": 0.3636,
-        "samples": 12,
-        "variance": 0.000689,
+        "samples": 48,
+        "variance": 0.007206,
         "varying": true
       }
     },
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-06-17T09:18:44.650558+00:00",
-  "git_head": "1a0461ac0edb43b3a43a119e8b4f5776516f74c2",
+  "generated_at_iso": "2026-06-18T09:01:01.732740+00:00",
+  "git_head": "e9545b98a138e72e7525cac3b5a48e392b179e91",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
-  "positive_rows": 12,
-  "rows_total": 15766,
+  "positive_rows": 48,
+  "rows_total": 15810,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -133,22 +133,22 @@
     "replay_counted_as_production": false
   },
   "score_summary": {
-    "count": 12,
-    "max": 0.59,
-    "mean": 0.4158,
-    "median": 0.5483,
+    "count": 48,
+    "max": 0.6127,
+    "mean": 0.4623,
+    "median": 0.5691,
     "min": 0.1081,
-    "p95": 0.59
+    "p95": 0.61
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 16486,
+    "near_miss_rows": 19804,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
-    "production_positive_rows": 12,
+    "production_positive_rows": 48,
     "replay_positive_rows": 0,
     "verdict_v327": "NOT_READY_NO_OUTCOMES",
-    "verdict_v327_reason": "12 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle."
+    "verdict_v327_reason": "48 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle."
   },
   "standing_markers": [
     "EDGE_GATE_ENABLED=false",
@@ -164,8 +164,8 @@
     "FIXTURE_ROW_NEVER_COUNTS_AS_PRODUCTION_POSITIVE",
     "CALIBRATION_NEVER_RECOMMENDED_WITHOUT_OUTCOMES"
   ],
-  "verdict": "NEEDS_MORE_ENTRY_CANDIDATES",
-  "verdict_reason": "Only 12 positive row(s); need >= 30 to begin pre-calibration.",
+  "verdict": "NEEDS_COMPONENT_VARIANCE",
+  "verdict_reason": "3/8 components show meaningful variance; need >= 4.",
   "version": "v3.27.0",
   "window_days": 7
 }

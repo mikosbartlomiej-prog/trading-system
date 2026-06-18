@@ -1,82 +1,78 @@
 {
   "actionable_next_fix": [
     {
-      "hint": "61 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate.",
+      "hint": "49 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate.",
       "priority": "P1"
     },
     {
-      "hint": "3880 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
+      "hint": "6760 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
       "priority": "P2"
-    },
-    {
-      "hint": "8188/15766 rows REJECTed. Check top blocker per strategy \u2014 fix data-quality or filter criteria, NOT risk thresholds.",
-      "priority": "P3"
     },
     {
       "hint": "1 rows halted by drawdown guard (expected protective behaviour).",
       "priority": "INFO"
     }
   ],
-  "as_of": "2026-06-17T09:18:38.353055+00:00",
+  "as_of": "2026-06-18T09:00:52.688405+00:00",
   "dominant_explanation": [
     {
       "explanation": "confidence_score is NULL \u2014 emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field.",
       "factor": "confidence_decision=NULL",
-      "share_pct": 75.3
+      "share_pct": 56.9
     },
     {
-      "explanation": "8188/15766 rows blocked at the risk gate (REJECT)",
+      "explanation": "6326/15810 rows blocked at the risk gate (REJECT)",
       "factor": "risk_decision=REJECT",
-      "share_pct": 51.9
+      "share_pct": 40.0
     },
     {
-      "explanation": "1/15766 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD)",
+      "explanation": "1/15810 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD)",
       "factor": "risk_decision=HALTED_BY_DRAWDOWN_GUARD",
       "share_pct": 0.0
     },
     {
-      "explanation": "3492/15766 rows blocked at the risk gate (NO_SIGNAL)",
+      "explanation": "2494/15810 rows blocked at the risk gate (NO_SIGNAL)",
       "factor": "risk_decision=NO_SIGNAL",
-      "share_pct": 22.1
+      "share_pct": 15.8
     },
     {
-      "explanation": "4/15766 rows blocked at the confidence gate (BLOCK)",
+      "explanation": "12/15810 rows blocked at the confidence gate (BLOCK)",
       "factor": "confidence_decision=BLOCK",
-      "share_pct": 0.0
+      "share_pct": 0.1
     }
   ],
-  "generated_at_iso": "2026-06-17T09:18:38.550936+00:00",
-  "git_head": "1a0461ac0edb43b3a43a119e8b4f5776516f74c2",
+  "generated_at_iso": "2026-06-18T09:00:52.919092+00:00",
+  "git_head": "e9545b98a138e72e7525cac3b5a48e392b179e91",
   "rows_by_confidence_decision": {
-    "ALERT_ONLY": 8,
-    "BLOCK": 4,
-    "NULL": 11874,
-    "OBSERVE_ONLY_SKIP": 3880
+    "ALERT_ONLY": 36,
+    "BLOCK": 12,
+    "NULL": 9002,
+    "OBSERVE_ONLY_SKIP": 6760
   },
   "rows_by_data_failure_token": {},
   "rows_by_gate_blocker": {
-    "NO_BLOCKER": 4085,
+    "NO_BLOCKER": 6989,
     "alpaca_reject_or_deferred": 23,
-    "alt_cap": 37,
+    "alt_cap": 25,
     "drawdown_halt": 1,
-    "no_setup": 3492,
-    "predator_bracket": 8042,
-    "short_disabled": 86
+    "no_setup": 2494,
+    "predator_bracket": 6204,
+    "short_disabled": 74
   },
   "rows_by_monitor": {
-    "crypto-monitor": 15766
+    "crypto-monitor": 15810
   },
   "rows_by_risk_decision": {
-    "DETECTED": 61,
+    "DETECTED": 49,
     "HALTED_BY_DRAWDOWN_GUARD": 1,
-    "NO_SIGNAL": 3492,
-    "REJECT": 8188,
-    "UNKNOWN": 4024
+    "NO_SIGNAL": 2494,
+    "REJECT": 6326,
+    "UNKNOWN": 6940
   },
   "rows_by_strategy": {
-    "crypto-breakdown": 86,
-    "crypto-momentum": 15610,
-    "crypto-oversold-bounce": 70
+    "crypto-breakdown": 98,
+    "crypto-momentum": 15594,
+    "crypto-oversold-bounce": 118
   },
   "safety": {
     "allow_broker_paper": false,
@@ -85,8 +81,8 @@
     "modifies_state_json": false
   },
   "shadow_eligibility_distribution": {
-    "conf_null": 61,
-    "risk_blocked": 15705
+    "conf_null": 49,
+    "risk_blocked": 15761
   },
   "shadow_eligible_count": 0,
   "standing_markers": [
@@ -100,29 +96,29 @@
   ],
   "top_blocker_per_monitor": {
     "crypto-monitor": {
-      "count": 8042,
-      "share_pct": 51.0,
-      "top_blocker": "predator_bracket"
+      "count": 6989,
+      "share_pct": 44.2,
+      "top_blocker": "NO_BLOCKER"
     }
   },
   "top_blocker_per_strategy": {
     "crypto-breakdown": {
-      "count": 86,
-      "share_pct": 100.0,
+      "count": 74,
+      "share_pct": 75.5,
       "top_blocker": "short_disabled"
     },
     "crypto-momentum": {
-      "count": 8042,
-      "share_pct": 51.5,
-      "top_blocker": "predator_bracket"
+      "count": 6858,
+      "share_pct": 44.0,
+      "top_blocker": "NO_BLOCKER"
     },
     "crypto-oversold-bounce": {
-      "count": 47,
-      "share_pct": 67.1,
+      "count": 107,
+      "share_pct": 90.7,
       "top_blocker": "NO_BLOCKER"
     }
   },
-  "total_rows": 15766,
+  "total_rows": 15810,
   "version": "v3.24.0",
   "window_days": 7
 }
