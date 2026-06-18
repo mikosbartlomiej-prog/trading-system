@@ -1,5 +1,5 @@
 ========================================================================
-# Daily Operational Brief — 2026-06-17
+# Daily Operational Brief — 2026-06-18
 ========================================================================
 
 ## TOP BANNER: GREEN
@@ -35,9 +35,9 @@ No deterministic blocker is gating the allocator. TRADING_EXECUTION_ON remains f
 
 ## Safe-mode consistency
 
-- verdict: `INCONSISTENT_EXIT_WITHOUT_ENTER` [source: `learning-loop/safe_mode_consistency_latest.json::verdict`]
+- verdict: `CONSISTENT` [source: `learning-loop/safe_mode_consistency_latest.json::verdict`]
 - audit_enters: `0` [source: `learning-loop/safe_mode_consistency_latest.json::audit_enters`]
-- audit_exits: `1` [source: `learning-loop/safe_mode_consistency_latest.json::audit_exits`]
+- audit_exits: `0` [source: `learning-loop/safe_mode_consistency_latest.json::audit_exits`]
 
 ## LLM advisory
 
