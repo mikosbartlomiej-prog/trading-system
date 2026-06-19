@@ -1,12 +1,12 @@
 {
   "backtest_cache_seeded": 0,
-  "generated_at_iso": "2026-06-18T09:00:53.582204+00:00",
-  "git_head": "e9545b98a138e72e7525cac3b5a48e392b179e91",
+  "generated_at_iso": "2026-06-19T09:19:37.273299+00:00",
+  "git_head": "56533d2e160ff0d5e2fa5e3698168d86e83b7eb7",
   "ledger_derived_seeded": 10,
   "partial_bars_count": 10,
   "per_symbol_summary": [
     {
-      "bars_count": 2296,
+      "bars_count": 2590,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -14,7 +14,7 @@
       "symbol": "AAVE/USD"
     },
     {
-      "bars_count": 2283,
+      "bars_count": 2588,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -22,7 +22,7 @@
       "symbol": "AVAX/USD"
     },
     {
-      "bars_count": 2319,
+      "bars_count": 2613,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -30,7 +30,7 @@
       "symbol": "BCH/USD"
     },
     {
-      "bars_count": 2296,
+      "bars_count": 2590,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -38,7 +38,7 @@
       "symbol": "BTC/USD"
     },
     {
-      "bars_count": 2283,
+      "bars_count": 2577,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -46,7 +46,7 @@
       "symbol": "DOT/USD"
     },
     {
-      "bars_count": 2307,
+      "bars_count": 2601,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -54,7 +54,7 @@
       "symbol": "ETH/USD"
     },
     {
-      "bars_count": 2307,
+      "bars_count": 2601,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -62,7 +62,7 @@
       "symbol": "LINK/USD"
     },
     {
-      "bars_count": 2307,
+      "bars_count": 2601,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -70,7 +70,7 @@
       "symbol": "LTC/USD"
     },
     {
-      "bars_count": 2295,
+      "bars_count": 2589,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,
@@ -78,7 +78,7 @@
       "symbol": "SOL/USD"
     },
     {
-      "bars_count": 2283,
+      "bars_count": 2577,
       "data_quality": "PARTIAL_BARS",
       "minimum_fields_present": false,
       "partial_bars": true,

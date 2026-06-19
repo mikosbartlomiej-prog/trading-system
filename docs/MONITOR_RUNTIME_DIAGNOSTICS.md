@@ -29,4 +29,4 @@
 - v3.24 builder version stamped on confidence rows.
 - v3.25 SYNTHESIZED_VIEW marker active when diag dir empty.
 
-_Last generated: 2026-06-18T09:00:52.633283+00:00_
+_Last generated: 2026-06-19T09:19:36.372889+00:00_
