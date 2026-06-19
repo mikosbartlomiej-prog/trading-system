@@ -5,7 +5,7 @@
   "failure_category": "GEMINI_ENDPOINT_ERROR",
   "failure_http": 503,
   "free_only": true,
-  "generated_at_iso": "2026-06-18T04:55:35.910119+00:00",
+  "generated_at_iso": "2026-06-19T05:18:45.791241+00:00",
   "safe_to_schedule": false,
   "secret_values_logged": false,
   "selected_model": "gemini-flash-latest",
