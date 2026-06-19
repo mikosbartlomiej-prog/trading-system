@@ -49,3 +49,16 @@
 [13:00:37 WARN]     QQQ BUY: skipped — market not open
 [13:00:37 WARN]     GLD BUY: skipped — market not open
 [13:00:37 INFO]   execution complete: 0 placed, 6 skipped, 0 failed, 0 deferred_bp
+
+[16:19:24 INFO] ============================================================
+[16:19:24 INFO] execute_orders() — auto-execute path
+[16:19:24 INFO] ============================================================
+[16:19:24 INFO]   market_status: open=False reason=holiday
+[16:19:24 INFO]   bp_guard: requested $76024 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
+[16:19:24 WARN]     AMD BUY: skipped — market not open
+[16:19:24 WARN]     SMH BUY: skipped — market not open
+[16:19:24 WARN]     PANW BUY: skipped — market not open
+[16:19:24 WARN]     SPY BUY: skipped — market not open
+[16:19:24 WARN]     QQQ BUY: skipped — market not open
+[16:19:24 WARN]     GLD BUY: skipped — market not open
+[16:19:24 INFO]   execution complete: 0 placed, 6 skipped, 0 failed, 0 deferred_bp
