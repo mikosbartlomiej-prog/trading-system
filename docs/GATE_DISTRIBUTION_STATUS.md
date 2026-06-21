@@ -1,86 +1,77 @@
 # Gate Distribution Status (v3.24.0)
 
-**Generated:** `2026-06-20T08:02:32.408195+00:00`
-**As of:** `2026-06-20T08:02:32.195417+00:00`
-**Git HEAD:** `f742d0fa5ced85a4ae521a1d921d66a6b1134c00`
+**Generated:** `2026-06-21T08:45:59.246058+00:00`
+**As of:** `2026-06-21T08:45:59.004498+00:00`
+**Git HEAD:** `c9db3d52cabdda03692add3ade468528d9862ff9`
 **Window:** last 7 days
-**Total ledger rows:** `15667`
+**Total ledger rows:** `15809`
 **Shadow-eligible rows:** `0`
 
 ## Why `shadow_eligible_count = 0`
 
 | Factor | Share % | Explanation |
 |---|---|---|
-| `confidence_decision=NULL` | 19.8% | confidence_score is NULL — emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field. |
-| `risk_decision=REJECT` | 13.1% | 2047/15667 rows blocked at the risk gate (REJECT) |
-| `risk_decision=HALTED_BY_DRAWDOWN_GUARD` | 0.0% | 1/15667 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD) |
-| `risk_decision=NO_SIGNAL` | 5.8% | 903/15667 rows blocked at the risk gate (NO_SIGNAL) |
-| `confidence_decision=BLOCK` | 0.1% | 23/15667 rows blocked at the confidence gate (BLOCK) |
+| `confidence_decision=NULL` | 0.8% | confidence_score is NULL — emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field. |
+| `risk_decision=HALTED_BY_DRAWDOWN_GUARD` | 0.0% | 1/15809 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD) |
+| `confidence_decision=BLOCK` | 0.2% | 36/15809 rows blocked at the confidence gate (BLOCK) |
 
 ## Top 3 blockers overall
 
 | Blocker | Count |
 |---|---|
-| `NO_BLOCKER` | 12716 |
-| `predator_bracket` | 2023 |
-| `no_setup` | 903 |
+| `NO_BLOCKER` | 15808 |
+| `drawdown_halt` | 1 |
 
 ## Top blocker per monitor
 
 | Monitor | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-monitor` | `NO_BLOCKER` | 12716 | 81.2% |
+| `crypto-monitor` | `NO_BLOCKER` | 15808 | 100.0% |
 
 ## Top blocker per strategy
 
 | Strategy | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-momentum` | `NO_BLOCKER` | 12574 | 81.0% |
-| `crypto-oversold-bounce` | `NO_BLOCKER` | 118 | 100.0% |
-| `crypto-breakdown` | `NO_BLOCKER` | 24 | 100.0% |
+| `crypto-momentum` | `NO_BLOCKER` | 15580 | 100.0% |
+| `crypto-oversold-bounce` | `NO_BLOCKER` | 192 | 100.0% |
+| `crypto-breakdown` | `NO_BLOCKER` | 36 | 100.0% |
 
 ## Rows by monitor
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 15667 |
+| `crypto-monitor` | 15809 |
 
 ## Rows by strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 15525 |
-| `crypto-oversold-bounce` | 118 |
-| `crypto-breakdown` | 24 |
+| `crypto-momentum` | 15581 |
+| `crypto-oversold-bounce` | 192 |
+| `crypto-breakdown` | 36 |
 
 ## Rows by risk_decision
 
 | Risk decision | Count |
 |---|---|
-| `UNKNOWN` | 12691 |
-| `REJECT` | 2047 |
-| `NO_SIGNAL` | 903 |
-| `DETECTED` | 25 |
+| `UNKNOWN` | 15807 |
+| `DETECTED` | 1 |
 | `HALTED_BY_DRAWDOWN_GUARD` | 1 |
 
 ## Rows by confidence_decision
 
 | Confidence decision | Count |
 |---|---|
-| `OBSERVE_ONLY_SKIP` | 12500 |
-| `NULL` | 3108 |
-| `ALERT_ONLY` | 36 |
-| `BLOCK` | 23 |
+| `OBSERVE_ONLY_SKIP` | 15579 |
+| `NULL` | 134 |
+| `ALERT_ONLY` | 60 |
+| `BLOCK` | 36 |
 
 ## Rows by gate blocker
 
 | Gate blocker | Count |
 |---|---|
-| `NO_BLOCKER` | 12716 |
-| `predator_bracket` | 2023 |
-| `no_setup` | 903 |
-| `alt_cap` | 12 |
-| `alpaca_reject_or_deferred` | 12 |
+| `NO_BLOCKER` | 15808 |
 | `drawdown_halt` | 1 |
 
 ## Rows by data-failure token
@@ -93,15 +84,15 @@
 
 | Bucket | Count |
 |---|---|
-| `risk_blocked` | 15642 |
-| `conf_null` | 25 |
+| `risk_blocked` | 15808 |
+| `conf_null` | 1 |
 
 ## Actionable next-fix advice
 
 | Priority | Hint |
 |---|---|
-| `P1` | 25 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate. |
-| `P2` | 12500 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels). |
+| `P1` | 1 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate. |
+| `P2` | 15579 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels). |
 | `INFO` | 1 rows halted by drawdown guard (expected protective behaviour). |
 
 ## Standing markers

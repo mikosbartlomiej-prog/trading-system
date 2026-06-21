@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-06-20T08:02:45.700173+00:00",
-  "generated_at_iso": "2026-06-20T08:02:45.739387+00:00",
-  "git_head": "f742d0fa5ced85a4ae521a1d921d66a6b1134c00",
+  "as_of": "2026-06-21T08:46:15.096065+00:00",
+  "generated_at_iso": "2026-06-21T08:46:15.142077+00:00",
+  "git_head": "c9db3d52cabdda03692add3ade468528d9862ff9",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -17,7 +17,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2870,
+      "bars_total": 3178,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -29,7 +29,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2870,
+      "bars_total": 3178,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -41,7 +41,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2881,
+      "bars_total": 3202,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -53,7 +53,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2881,
+      "bars_total": 3202,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -65,7 +65,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2869,
+      "bars_total": 3177,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -77,7 +77,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2869,
+      "bars_total": 3177,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -89,7 +89,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2881,
+      "bars_total": 3189,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -101,7 +101,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2881,
+      "bars_total": 3189,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -113,7 +113,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2868,
+      "bars_total": 3176,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -125,7 +125,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 2868,
+      "bars_total": 3176,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
