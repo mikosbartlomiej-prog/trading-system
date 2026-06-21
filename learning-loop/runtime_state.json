@@ -1,5 +1,5 @@
 {
-  "_last_writer": "llm-availability",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -33,9 +33,9 @@
     },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-06-21T22:05:28.117641+00:00",
+      "last_seen_iso": "2026-06-21T22:10:23.259942+00:00",
       "last_status": "ok",
-      "pings_today": 220
+      "pings_today": 221
     },
     "politician-monitor": {
       "last_message": "emitted=0",
