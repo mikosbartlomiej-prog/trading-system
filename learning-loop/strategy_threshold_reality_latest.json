@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-06-21T08:46:14.994611+00:00",
+  "generated_at_iso": "2026-06-22T10:22:03.932041+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,57 +10,57 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 15773,
+  "row_count": 17884,
   "strategies": [
     {
-      "actual_signals_fired": 192,
-      "evaluations": 192,
+      "actual_signals_fired": 290,
+      "evaluations": 290,
       "metrics": [
         {
-          "actual_hits": 192,
-          "avg_distance_to_trigger": -5.738542,
+          "actual_hits": 266,
+          "avg_distance_to_trigger": -4.502069,
           "direction": "below",
-          "hit_rate": 1.0,
+          "hit_rate": 0.9172,
           "metric_name": "rsi",
-          "near_miss_rate": 0.0,
-          "near_misses": 0,
-          "sample_size": 192,
+          "near_miss_rate": 0.0828,
+          "near_misses": 24,
+          "sample_size": 290,
           "strategy_id": "crypto-oversold-bounce",
           "threshold": 30.0,
           "threshold_realism": "TOO_LOOSE"
         }
       ],
-      "near_misses": 0,
+      "near_misses": 24,
       "recommendation": "REPLAY_TEST_VARIANT",
       "strategy_id": "crypto-oversold-bounce",
       "threshold_realism": "TOO_LOOSE"
     },
     {
-      "actual_signals_fired": 2,
-      "evaluations": 15581,
+      "actual_signals_fired": 0,
+      "evaluations": 17594,
       "metrics": [
         {
-          "actual_hits": 5339,
-          "avg_distance_to_trigger": -7.055633,
+          "actual_hits": 5333,
+          "avg_distance_to_trigger": -9.195982,
           "direction": "above",
-          "hit_rate": 0.3427,
+          "hit_rate": 0.3031,
           "metric_name": "rsi",
-          "near_miss_rate": 0.0973,
-          "near_misses": 1516,
-          "sample_size": 15579,
+          "near_miss_rate": 0.088,
+          "near_misses": 1549,
+          "sample_size": 17594,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 3048,
-          "avg_distance_to_trigger": -2.53472,
+          "actual_hits": 3029,
+          "avg_distance_to_trigger": -3.23402,
           "direction": "between",
-          "hit_rate": 0.1957,
+          "hit_rate": 0.1722,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0252,
-          "near_misses": 392,
-          "sample_size": 15577,
+          "near_miss_rate": 0.0203,
+          "near_misses": 358,
+          "sample_size": 17594,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,8 +69,8 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 1908,
-      "recommendation": "KEEP",
+      "near_misses": 1907,
+      "recommendation": "SHADOW_VARIANT_REVIEW",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
     },

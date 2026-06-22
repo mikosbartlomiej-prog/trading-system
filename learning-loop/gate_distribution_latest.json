@@ -1,61 +1,39 @@
 {
   "actionable_next_fix": [
     {
-      "hint": "1 APPROVE/DETECTED rows lack numeric confidence_score. Wire post-decision confidence back-fill so eligible rows can accumulate.",
-      "priority": "P1"
-    },
-    {
-      "hint": "15579 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
+      "hint": "17859 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
       "priority": "P2"
-    },
-    {
-      "hint": "1 rows halted by drawdown guard (expected protective behaviour).",
-      "priority": "INFO"
     }
   ],
-  "as_of": "2026-06-21T08:45:59.004498+00:00",
+  "as_of": "2026-06-22T10:21:45.698105+00:00",
   "dominant_explanation": [
     {
-      "explanation": "confidence_score is NULL \u2014 emit path did not run, monitor missed back-fill, or downstream consumer did not persist the field.",
-      "factor": "confidence_decision=NULL",
-      "share_pct": 0.8
-    },
-    {
-      "explanation": "1/15809 rows blocked at the risk gate (HALTED_BY_DRAWDOWN_GUARD)",
-      "factor": "risk_decision=HALTED_BY_DRAWDOWN_GUARD",
-      "share_pct": 0.0
-    },
-    {
-      "explanation": "36/15809 rows blocked at the confidence gate (BLOCK)",
+      "explanation": "49/18004 rows blocked at the confidence gate (BLOCK)",
       "factor": "confidence_decision=BLOCK",
-      "share_pct": 0.2
+      "share_pct": 0.3
     }
   ],
-  "generated_at_iso": "2026-06-21T08:45:59.246058+00:00",
-  "git_head": "c9db3d52cabdda03692add3ade468528d9862ff9",
+  "generated_at_iso": "2026-06-22T10:21:45.966446+00:00",
+  "git_head": "8e6ad465f974797eaeff9ab7b916c9b56320ed4c",
   "rows_by_confidence_decision": {
-    "ALERT_ONLY": 60,
-    "BLOCK": 36,
-    "NULL": 134,
-    "OBSERVE_ONLY_SKIP": 15579
+    "ALERT_ONLY": 96,
+    "BLOCK": 49,
+    "OBSERVE_ONLY_SKIP": 17859
   },
   "rows_by_data_failure_token": {},
   "rows_by_gate_blocker": {
-    "NO_BLOCKER": 15808,
-    "drawdown_halt": 1
+    "NO_BLOCKER": 18004
   },
   "rows_by_monitor": {
-    "crypto-monitor": 15809
+    "crypto-monitor": 18004
   },
   "rows_by_risk_decision": {
-    "DETECTED": 1,
-    "HALTED_BY_DRAWDOWN_GUARD": 1,
-    "UNKNOWN": 15807
+    "UNKNOWN": 18004
   },
   "rows_by_strategy": {
-    "crypto-breakdown": 36,
-    "crypto-momentum": 15581,
-    "crypto-oversold-bounce": 192
+    "crypto-breakdown": 120,
+    "crypto-momentum": 17594,
+    "crypto-oversold-bounce": 290
   },
   "safety": {
     "allow_broker_paper": false,
@@ -64,8 +42,7 @@
     "modifies_state_json": false
   },
   "shadow_eligibility_distribution": {
-    "conf_null": 1,
-    "risk_blocked": 15808
+    "risk_blocked": 18004
   },
   "shadow_eligible_count": 0,
   "standing_markers": [
@@ -79,29 +56,29 @@
   ],
   "top_blocker_per_monitor": {
     "crypto-monitor": {
-      "count": 15808,
+      "count": 18004,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     }
   },
   "top_blocker_per_strategy": {
     "crypto-breakdown": {
-      "count": 36,
+      "count": 120,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     },
     "crypto-momentum": {
-      "count": 15580,
+      "count": 17594,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     },
     "crypto-oversold-bounce": {
-      "count": 192,
+      "count": 290,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     }
   },
-  "total_rows": 15809,
+  "total_rows": 18004,
   "version": "v3.24.0",
   "window_days": 7
 }

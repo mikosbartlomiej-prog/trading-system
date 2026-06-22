@@ -4,7 +4,7 @@
   "audit_exits": 0,
   "blocker": null,
   "detail": "audit and runtime agree (enters=0, exits=0, runtime_active=False)",
-  "evaluated_at_iso": "2026-06-21T08:46:15.612140+00:00",
+  "evaluated_at_iso": "2026-06-22T10:22:04.507176+00:00",
   "last_event_iso": null,
   "lookback_hours": 24,
   "runtime_active": false,
