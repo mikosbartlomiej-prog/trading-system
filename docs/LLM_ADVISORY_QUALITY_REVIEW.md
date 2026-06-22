@@ -1,21 +1,21 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3300-calibration-27667066885`
-- **Quality status:** `LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED`
+- **Run ID:** `v3300-calibration-27931455279`
+- **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
 - **Rows seen:** 11
-- **Rows with PROVIDER_USED:** **6**
+- **Rows with PROVIDER_USED:** **7**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
-- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 5
+- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 4
 - **generic_placeholder_count:** 0
 - **empty_risks_count:** 11
 - **empty_next_actions_count:** 11
 - **zero_confidence_count:** 11
 - **secret_leak_hits:** 0
-- **unsafe_phrase_hits:** 1
+- **unsafe_phrase_hits:** 0
 
 ## Rationale
 
-- 1 unsafe-action phrase(s) found
+- all rows have empty risks_identified + empty proposed_next_actions + zero confidence
 
 ## Safety invariants
 

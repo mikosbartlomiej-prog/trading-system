@@ -7,19 +7,19 @@
     "empty_risks_count": 11,
     "generic_placeholder_count": 0,
     "rationale": [
-      "1 unsafe-action phrase(s) found"
+      "all rows have empty risks_identified + empty proposed_next_actions + zero confidence"
     ],
     "rows_seen": 11,
-    "rows_with_provider_failed": 5,
+    "rows_with_provider_failed": 4,
     "rows_with_provider_skipped": 0,
-    "rows_with_provider_used": 6,
+    "rows_with_provider_used": 7,
     "secret_leak_hits": 0,
-    "status": "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED",
-    "unsafe_phrase_hits": 1,
+    "status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
+    "unsafe_phrase_hits": 0,
     "zero_confidence_count": 11
   },
-  "quality_status": "LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED",
-  "run_id": "v3300-calibration-27667066885",
+  "quality_status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
+  "run_id": "v3300-calibration-27931455279",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,
