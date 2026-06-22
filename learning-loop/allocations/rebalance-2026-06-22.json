@@ -1,0 +1,106 @@
+{
+  "date": "2026-06-22",
+  "generated_at": "2026-06-22T08:07:00Z",
+  "generator": "claude-rebalance-routine",
+  "branch": "claude/rebalance-2026-06-22",
+  "account": {
+    "equity": 90504.88,
+    "cash": 90504.88,
+    "cash_pct": 100.0,
+    "open_positions": 0
+  },
+  "target_allocation": {
+    "VOO":  0.40,
+    "QQQ":  0.20,
+    "VXUS": 0.15,
+    "VWO":  0.10,
+    "GLD":  0.10,
+    "CASH": 0.05
+  },
+  "deviation_threshold_pp": 3.0,
+  "rebalance_orders": [
+    {
+      "symbol": "VOO",
+      "action": "BUY",
+      "current_pct": 0.0,
+      "target_pct": 40.0,
+      "deviation_pp": 40.0,
+      "size_usd": 36201.95,
+      "est_entry": 530.0,
+      "stop_loss": 492.90,
+      "take_profit": 625.40,
+      "rr_ratio": 2.57,
+      "strategy": "rebalance-passive",
+      "risk_officer_verdict": "DEFER",
+      "risk_officer_reason": "account-data-unavailable (Alpaca API unreachable from remote container) — v3.10 intraday-first policy"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "current_pct": 0.0,
+      "target_pct": 20.0,
+      "deviation_pp": 20.0,
+      "size_usd": 18100.98,
+      "est_entry": 490.0,
+      "stop_loss": 455.70,
+      "take_profit": 578.20,
+      "rr_ratio": 2.57,
+      "strategy": "rebalance-passive",
+      "risk_officer_verdict": "DEFER",
+      "risk_officer_reason": "account-data-unavailable (Alpaca API unreachable from remote container) — v3.10 intraday-first policy"
+    },
+    {
+      "symbol": "VXUS",
+      "action": "BUY",
+      "current_pct": 0.0,
+      "target_pct": 15.0,
+      "deviation_pp": 15.0,
+      "size_usd": 13575.73,
+      "est_entry": 68.0,
+      "stop_loss": 63.24,
+      "take_profit": 80.24,
+      "rr_ratio": 2.57,
+      "strategy": "rebalance-passive",
+      "risk_officer_verdict": "DEFER",
+      "risk_officer_reason": "account-data-unavailable (Alpaca API unreachable from remote container) — v3.10 intraday-first policy"
+    },
+    {
+      "symbol": "VWO",
+      "action": "BUY",
+      "current_pct": 0.0,
+      "target_pct": 10.0,
+      "deviation_pp": 10.0,
+      "size_usd": 9050.49,
+      "est_entry": 47.0,
+      "stop_loss": 43.71,
+      "take_profit": 55.46,
+      "rr_ratio": 2.57,
+      "strategy": "rebalance-passive",
+      "risk_officer_verdict": "DEFER",
+      "risk_officer_reason": "account-data-unavailable (Alpaca API unreachable from remote container) — v3.10 intraday-first policy"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "current_pct": 0.0,
+      "target_pct": 10.0,
+      "deviation_pp": 10.0,
+      "size_usd": 9050.49,
+      "est_entry": 305.0,
+      "stop_loss": 283.65,
+      "take_profit": 359.90,
+      "rr_ratio": 2.57,
+      "strategy": "rebalance-passive",
+      "risk_officer_verdict": "DEFER",
+      "risk_officer_reason": "account-data-unavailable (Alpaca API unreachable from remote container) — v3.10 intraday-first policy"
+    }
+  ],
+  "execution_status": "DEFERRED_ALL",
+  "execution_blockers": [
+    "ALLOW_BROKER_PAPER=false (hard-pinned, v3.28 incident containment)",
+    "ALPACA_API_KEY not available in remote container (GitHub Secrets only accessible in Actions)",
+    "risk_officer v3.10: DEFER on missing account data (not fail-open)"
+  ],
+  "operator_action_required": true,
+  "operator_note": "Plan is ready. Trigger morning-allocator workflow manually via GitHub Actions to execute, or set ALLOW_BROKER_PAPER=true after completing v3.28 operator clearance procedure (see docs/RUNBOOK_AVAXUSD_P13_2026-06-16.md)."
+}
