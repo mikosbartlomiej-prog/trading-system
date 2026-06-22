@@ -15,17 +15,17 @@
     "current_equity": 90504.88,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-06-22T02:00:25.061432+00:00",
+    "verdict_at": "2026-06-22T22:22:01.014777+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 92,
+  "days_tracked": 93,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-06-22T02:02:12.460743+00:00",
+  "last_updated": "2026-06-22T22:29:29.068901+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
