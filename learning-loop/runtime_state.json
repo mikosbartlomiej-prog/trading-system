@@ -1,11 +1,11 @@
 {
-  "_last_writer": "pre-open-planner",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-22T17:25:30.053548+00:00",
+      "last_seen_iso": "2026-06-22T17:30:28.595121+00:00",
       "last_status": "ok",
-      "pings_today": 207
+      "pings_today": 208
     },
     "defense-monitor": {
       "last_message": "",
