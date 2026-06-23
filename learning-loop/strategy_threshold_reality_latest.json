@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-06-22T10:22:03.932041+00:00",
+  "generated_at_iso": "2026-06-23T08:03:50.202887+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 17884,
+  "row_count": 18602,
   "strategies": [
     {
       "actual_signals_fired": 290,
@@ -37,30 +37,30 @@
     },
     {
       "actual_signals_fired": 0,
-      "evaluations": 17594,
+      "evaluations": 18312,
       "metrics": [
         {
-          "actual_hits": 5333,
-          "avg_distance_to_trigger": -9.195982,
+          "actual_hits": 4895,
+          "avg_distance_to_trigger": -10.042595,
           "direction": "above",
-          "hit_rate": 0.3031,
+          "hit_rate": 0.2673,
           "metric_name": "rsi",
-          "near_miss_rate": 0.088,
-          "near_misses": 1549,
-          "sample_size": 17594,
+          "near_miss_rate": 0.0961,
+          "near_misses": 1760,
+          "sample_size": 18312,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 3029,
-          "avg_distance_to_trigger": -3.23402,
+          "actual_hits": 2931,
+          "avg_distance_to_trigger": -3.409803,
           "direction": "between",
-          "hit_rate": 0.1722,
+          "hit_rate": 0.1601,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0203,
-          "near_misses": 358,
-          "sample_size": 17594,
+          "near_miss_rate": 0.0183,
+          "near_misses": 336,
+          "sample_size": 18312,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 1907,
+      "near_misses": 2096,
       "recommendation": "SHADOW_VARIANT_REVIEW",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
