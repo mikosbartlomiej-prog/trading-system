@@ -1,6 +1,6 @@
 {
   "plan_date": "2026-06-23",
-  "executed_at": "2026-06-23T13:45:43Z",
+  "executed_at": "2026-06-23T16:12:04Z",
   "n_placed": 0,
   "n_skipped": 0,
   "n_failed": 5,
@@ -11,12 +11,12 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-23T13:45:40Z",
+      "attempted_at": "2026-06-23T16:12:04Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 15996.31,
-      "order_qty": 31
+      "order_notional": 15831.000000000002,
+      "order_qty": 30
     },
     {
       "symbol": "SMH",
@@ -24,12 +24,12 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-23T13:45:41Z",
+      "attempted_at": "2026-06-23T16:12:04Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 16272.88,
-      "order_qty": 26
+      "order_notional": 15734.125,
+      "order_qty": 25
     },
     {
       "symbol": "SPY",
@@ -37,11 +37,11 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-23T13:45:41Z",
+      "attempted_at": "2026-06-23T16:12:04Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8825.22,
+      "order_notional": 8850.66,
       "order_qty": 12
     },
     {
@@ -50,11 +50,11 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-23T13:45:42Z",
+      "attempted_at": "2026-06-23T16:12:04Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8606.22,
+      "order_notional": 8643.18,
       "order_qty": 12
     },
     {
@@ -63,12 +63,12 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-23T13:45:43Z",
+      "attempted_at": "2026-06-23T16:12:04Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8964.24,
-      "order_qty": 24
+      "order_notional": 8728.5,
+      "order_qty": 23
     }
   ]
 }
