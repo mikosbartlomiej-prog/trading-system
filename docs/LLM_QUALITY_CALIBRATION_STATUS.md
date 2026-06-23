@@ -10,8 +10,8 @@
 - **Broker flags safe:** true
 - **Gemini key present:** true
 - **Calibration disabled by operator:** false
-- **Latest quality status:** `LLM_ADVISORY_QUALITY_UNSAFE_BLOCKED`
-- **Latest run_id:** `v3300-calibration-27667066885`
+- **Latest quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
+- **Latest run_id:** `v3300-calibration-27931455279`
 - **Next action:** Proceed to Gemini smoke + bounded mesh run with per-run budget override = 11.
 
 ## Safety invariants
