@@ -428,12 +428,12 @@ def render_markdown(date_iso: str, generated_at: str,
     def fmt_pct(v):
         if v is None: return "—"
         try: return f"{float(v)*100:.2f}%"
-        except: return str(v)
+        except (TypeError, ValueError): return str(v)
 
     def fmt_usd(v):
         if v is None: return "—"
         try: return f"${float(v):,.2f}"
-        except: return str(v)
+        except (TypeError, ValueError): return str(v)
 
     lines = []
     lines.append(f"# Session Report — {date_iso}")
