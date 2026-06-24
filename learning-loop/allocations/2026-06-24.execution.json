@@ -1,0 +1,33 @@
+{
+  "plan_date": "2026-06-24",
+  "executed_at": "2026-06-24T13:00:56Z",
+  "n_placed": 0,
+  "n_skipped": 3,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-24T13:00:56Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-24T13:00:56Z"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-06-24T13:00:56Z"
+    }
+  ]
+}
