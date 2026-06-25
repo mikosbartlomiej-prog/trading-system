@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-24T07:59:16.909642+00:00",
+  "as_of": "2026-06-25T08:00:33.546867+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-06-24T07:59:17.217696+00:00",
-  "git_head": "0c52c40f416ba7ed79215add5d635d4a3080faf3",
+  "generated_at_iso": "2026-06-25T08:00:33.808872+00:00",
+  "git_head": "82faa5a91dc819aa0a0478773d18c63c45007b56",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 121,
-  "rows_total": 18657,
+  "rows_total": 18697,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -142,7 +142,7 @@
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 24376,
+    "near_miss_rows": 25839,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 121,
