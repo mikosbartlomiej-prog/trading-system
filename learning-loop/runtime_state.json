@@ -3,67 +3,9 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-06-25T17:50:36.517354+00:00",
+      "last_seen_iso": "2026-06-25T17:55:41.124118+00:00",
       "last_status": "ok",
-<<<<<<< Updated upstream
-      "pings_today": 217
-    },
-    "defense-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:45:33.412674+00:00",
-      "last_status": "ok",
-      "pings_today": 143
-    },
-    "doj-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-06-25T16:23:18.553188+00:00",
-      "last_status": "ok",
-      "pings_today": 5
-    },
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:40:25.564003+00:00",
-      "last_status": "ok",
-      "pings_today": 172
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:50:11.314164+00:00",
-      "last_status": "ok",
-      "pings_today": 30
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:45:26.677237+00:00",
-      "last_status": "ok",
-      "pings_today": 183
-    },
-    "options-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:40:36.425795+00:00",
-      "last_status": "ok",
-      "pings_today": 39
-    },
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-06-25T17:50:26.580421+00:00",
-      "last_status": "ok",
-      "pings_today": 8
-    },
-    "price-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:50:24.980897+00:00",
-      "last_status": "ok",
-      "pings_today": 48
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-06-25T17:47:38.202372+00:00",
-      "last_status": "ok",
-      "pings_today": 213
-=======
       "pings_today": 1
->>>>>>> Stashed changes
     }
   }
 }
