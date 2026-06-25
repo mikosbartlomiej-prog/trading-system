@@ -1,68 +1,38 @@
-[01:31:42 INFO] ============================================================
-[01:31:42 INFO] AccountAwareAllocator — daily plan 2026-06-25
-[01:31:42 INFO] ============================================================
-[01:31:42 INFO] ── Step 1: fetching account state ──
-[01:31:42 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
-[01:31:42 INFO] ── Step 2: fetching open positions ──
-[01:31:42 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
-[01:31:42 INFO]   PDT mode=OK  dt_remaining=3
-[01:31:42 INFO] ── Step 3: defensive mode check ──
-[01:31:42 INFO]   defensive_mode OFF → proceed with deployment
-[01:31:42 INFO] ── Step 4: regime detection ──
-[01:31:42 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[01:31:42 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[01:31:42 INFO] ── Step 5: scoring allowed universe ──
-[01:31:43 DBG ]     PANW     score=+0.267  bucket=software_quality
-[01:31:43 DBG ]     AMD      score=+0.186  bucket=ai_nasdaq_semis
-[01:31:43 DBG ]     SMH      score=+0.165  bucket=ai_nasdaq_semis
-[01:31:43 DBG ]     CRWD     score=+0.061  bucket=software_quality
-[01:31:43 DBG ]     AAPL     score=-0.033  bucket=ai_nasdaq_semis
-[01:31:43 INFO] ── Step 6: target weight construction ──
-[01:31:43 INFO]   reason: regime=NEUTRAL | primary_picks=0(0%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=70.00%
-[01:31:43 INFO]   target_invested_ratio_after_plan = 0.3000
-[01:31:43 DBG ]     SPY        target_weight=0.1000 ($9050.49)
-[01:31:43 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
-[01:31:43 DBG ]     GLD        target_weight=0.1000 ($9050.49)
-[01:31:43 INFO] ── Step 7: rebalance order generation ──
-[01:31:43 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[01:31:43 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[01:31:43 INFO]     GLD      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[01:31:43 INFO]   summary: 3 actionable + 0 hold; passed=3  failed=0
-[01:31:43 INFO] ── Step 8: plan complete ──
-[01:31:43 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
-
-[13:00:42 INFO] ============================================================
-[13:00:42 INFO] execute_orders() — auto-execute path
-[13:00:42 INFO] ============================================================
-[13:00:42 INFO]   market_status: open=False reason=pre_market
-[13:00:42 INFO]   bp_guard: requested $27151 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
-[13:00:42 WARN]     SPY BUY: skipped — market not open
-[13:00:42 WARN]     QQQ BUY: skipped — market not open
-[13:00:42 WARN]     GLD BUY: skipped — market not open
-[13:00:42 INFO]   execution complete: 0 placed, 3 skipped, 0 failed, 0 deferred_bp
-
-[13:45:39 INFO] ============================================================
-[13:45:39 INFO] execute_orders() — auto-execute path
-[13:45:39 INFO] ============================================================
-[13:45:39 INFO]   market_status: open=True reason=open
-[13:45:40 INFO]   bp_guard: requested $27151 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
-[13:45:40 INFO]     SPY BUY: derived qty=12 from target=$9,050 @ $733.89 (no prior position)
-[13:45:41 ERR ]     SPY BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[13:45:41 INFO]     QQQ BUY: derived qty=12 from target=$9,050 @ $715.73 (no prior position)
-[13:45:42 ERR ]     QQQ BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[13:45:42 INFO]     GLD BUY: derived qty=24 from target=$9,050 @ $368.00 (no prior position)
-[13:45:42 ERR ]     GLD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[13:45:42 INFO]   execution complete: 0 placed, 0 skipped, 3 failed, 0 deferred_bp
-
-[16:06:10 INFO] ============================================================
-[16:06:10 INFO] execute_orders() — auto-execute path
-[16:06:10 INFO] ============================================================
-[16:06:10 INFO]   market_status: open=True reason=open
-[16:06:11 INFO]   bp_guard: requested $27151 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
-[16:06:11 INFO]     SPY BUY: derived qty=12 from target=$9,050 @ $734.47 (no prior position)
-[16:06:11 ERR ]     SPY BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[16:06:12 INFO]     QQQ BUY: derived qty=12 from target=$9,050 @ $715.31 (no prior position)
-[16:06:12 ERR ]     QQQ BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[16:06:12 INFO]     GLD BUY: derived qty=24 from target=$9,050 @ $370.54 (no prior position)
-[16:06:13 ERR ]     GLD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
-[16:06:13 INFO]   execution complete: 0 placed, 0 skipped, 3 failed, 0 deferred_bp
+[22:14:20 INFO] ============================================================
+[22:14:20 INFO] AccountAwareAllocator — daily plan 2026-06-25
+[22:14:20 INFO] ============================================================
+[22:14:20 INFO] ── Step 1: fetching account state ──
+[22:14:20 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[22:14:20 INFO] ── Step 2: fetching open positions ──
+[22:14:20 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[22:14:20 INFO]   PDT mode=OK  dt_remaining=3
+[22:14:20 INFO] ── Step 3: defensive mode check ──
+[22:14:20 INFO]   defensive_mode OFF → proceed with deployment
+[22:14:20 INFO] ── Step 4: regime detection ──
+[22:14:20 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:14:20 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[22:14:20 INFO] ── Step 5: scoring allowed universe ──
+[22:14:21 DBG ]     PANW     score=+0.501  bucket=software_quality
+[22:14:21 DBG ]     AMD      score=+0.423  bucket=ai_nasdaq_semis
+[22:14:21 DBG ]     SMH      score=+0.357  bucket=ai_nasdaq_semis
+[22:14:21 DBG ]     CRWD     score=+0.134  bucket=software_quality
+[22:14:21 DBG ]     QQQ      score=+0.003  bucket=ai_nasdaq_semis
+[22:14:21 INFO] ── Step 6: target weight construction ──
+[22:14:21 INFO]   reason: regime=NEUTRAL | primary_picks=3(54%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=16.00%
+[22:14:21 INFO]   target_invested_ratio_after_plan = 0.8400
+[22:14:21 DBG ]     PANW       target_weight=0.1800 ($16290.88)
+[22:14:21 DBG ]     AMD        target_weight=0.1800 ($16290.88)
+[22:14:21 DBG ]     SMH        target_weight=0.1800 ($16290.88)
+[22:14:21 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[22:14:21 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[22:14:21 DBG ]     GLD        target_weight=0.1000 ($9050.49)
+[22:14:21 INFO] ── Step 7: rebalance order generation ──
+[22:14:21 INFO]     PANW     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:14:21 INFO]     AMD      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:14:21 INFO]     SMH      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:14:21 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[22:14:21 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[22:14:21 INFO]     GLD      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[22:14:21 INFO]   summary: 6 actionable + 0 hold; passed=6  failed=0
+[22:14:21 INFO] ── Step 8: plan complete ──
+[22:14:21 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
