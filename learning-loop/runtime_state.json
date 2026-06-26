@@ -1,6 +1,12 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+    "crypto-monitor": {
+      "last_message": "scanned 11 coins",
+      "last_seen_iso": "2026-06-26T09:55:27.208279+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-06-26T09:55:26.001042+00:00",
@@ -31,5 +37,16 @@
     "session_start_equity": 90504.88,
     "state_entered_at": "2026-06-26T09:50:26.131216+00:00",
     "top_giveback_symbols": []
+  },
+  "routine_budget": {
+    "by_routine": {
+      "crypto-curator": 1
+    },
+    "by_tier": {
+      "P2_optional": 1
+    },
+    "date": "2026-06-26",
+    "last_updated": "2026-06-26T09:55:26.852503+00:00",
+    "total": 1
   }
 }
