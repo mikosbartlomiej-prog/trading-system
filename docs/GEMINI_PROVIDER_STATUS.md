@@ -4,8 +4,8 @@
 - **Selected model:** `gemini-flash-latest`
 - **Configured model:** `gemini-flash-latest`
 - **Discovered models count:** 34
-- **Failure category:** `GEMINI_ENDPOINT_ERROR`
-- **Failure HTTP:** 503
+- **Failure category:** `None`
+- **Failure HTTP:** None
 - **Safe to schedule:** false
 
 ## Standing markers
