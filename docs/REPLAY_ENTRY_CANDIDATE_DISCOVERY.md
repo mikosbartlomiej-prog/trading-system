@@ -1,8 +1,8 @@
 # Replay entry-candidate discovery (v3.26.0)
 
-**Generated:** `2026-06-25T08:00:34.236814+00:00`
-**As of:** `2026-06-25T08:00:34.189715+00:00`
-**Git HEAD:** `82faa5a91dc819aa0a0478773d18c63c45007b56`
+**Generated:** `2026-06-26T08:07:59.140812+00:00`
+**As of:** `2026-06-26T08:07:59.077650+00:00`
+**Git HEAD:** `3bfaffb9279abc66f3685f44a2c01c6f27810afe`
 **Lookback days:** `7`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
@@ -30,16 +30,16 @@ These symbols have no cached bars at `learning-loop/backfill_snapshots`. Replay 
 
 | Strategy | Symbol | Asset | Bars | Replayed | Cands | Near | Cross | Diag |
 |---|---|---|---|---|---|---|---|---|
-| `crypto-momentum` | `BTC/USD` | crypto | 4348 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `BTC/USD` | crypto | 4348 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `ETH/USD` | crypto | 4361 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `ETH/USD` | crypto | 4361 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `SOL/USD` | crypto | 4348 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `SOL/USD` | crypto | 4348 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `LTC/USD` | crypto | 4361 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `LTC/USD` | crypto | 4361 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `AVAX/USD` | crypto | 4347 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 4347 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `BTC/USD` | crypto | 4646 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `BTC/USD` | crypto | 4646 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `ETH/USD` | crypto | 4672 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `ETH/USD` | crypto | 4672 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `SOL/USD` | crypto | 4646 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `SOL/USD` | crypto | 4646 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `LTC/USD` | crypto | 4659 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `LTC/USD` | crypto | 4659 | 7 | 0 | 0 | 0 | OK |
+| `crypto-momentum` | `AVAX/USD` | crypto | 4645 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 4645 | 7 | 0 | 0 | 0 | OK |
 
 ## Safety contract
 
