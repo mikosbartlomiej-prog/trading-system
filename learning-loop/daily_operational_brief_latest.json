@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-06-26",
-  "audit_event_count_24h": 23,
+  "as_of": "2026-06-27",
+  "audit_event_count_24h": 61,
   "flags": {
     "ALLOCATOR_ALLOWED": true,
     "BLOCKERS": [],
@@ -23,7 +23,7 @@
     "WHOLE_SAFE_STACK_ON": true,
     "WHOLE_SOLUTION_SAFE_ON": true
   },
-  "generated_at_iso": "2026-06-26T08:35:27.167204+00:00",
+  "generated_at_iso": "2026-06-27T08:06:03.116399+00:00",
   "module": "scripts.generate_daily_operational_brief",
   "schema_version": "v3.30",
   "standing_markers": [
@@ -107,13 +107,13 @@
           "ts_iso": "2026-06-26T08:07:59.413755+00:00",
           "verdict": "EQUITY_GAP_OK"
         },
-        "evaluated_at": "2026-06-26T08:35:27.163197+00:00",
+        "evaluated_at": "2026-06-27T08:06:03.112107+00:00",
         "fresh_p13_count_last_hour": 0,
         "fresh_p13_in_window": false,
         "is_market_hours": false,
         "kill_switch_armed": false,
         "llm_status": "unavailable",
-        "position_recon_age_s": 830237.942459,
+        "position_recon_age_s": 914873.891351,
         "retry_storm_active": false,
         "retry_storm_count_last_hour": 0,
         "safe_mode_active": false,
@@ -149,7 +149,7 @@
         "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE"
       ],
       "status": "placed",
-      "ts_iso": "2026-06-26T08:35:27.166956+00:00"
+      "ts_iso": "2026-06-27T08:06:03.116152+00:00"
     },
     "blockers": [],
     "decision": "ALLOCATOR_ALLOWED",
@@ -159,7 +159,7 @@
       "outcome_tracker",
       "operator_dashboard"
     ],
-    "evaluated_at_iso": "2026-06-26T08:35:27.166972+00:00",
+    "evaluated_at_iso": "2026-06-27T08:06:03.116166+00:00",
     "llm_status": "unavailable",
     "module": "shared.system_activation_gate",
     "reason": "all_gates_clear",
@@ -221,13 +221,13 @@
         "ts_iso": "2026-06-26T08:07:59.413755+00:00",
         "verdict": "EQUITY_GAP_OK"
       },
-      "evaluated_at": "2026-06-26T08:35:27.163197+00:00",
+      "evaluated_at": "2026-06-27T08:06:03.112107+00:00",
       "fresh_p13_count_last_hour": 0,
       "fresh_p13_in_window": false,
       "is_market_hours": false,
       "kill_switch_armed": false,
       "llm_status": "unavailable",
-      "position_recon_age_s": 830237.942459,
+      "position_recon_age_s": 914873.891351,
       "retry_storm_active": false,
       "retry_storm_count_last_hour": 0,
       "safe_mode_active": false,
