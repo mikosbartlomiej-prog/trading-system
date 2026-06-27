@@ -1,5 +1,5 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "llm-availability",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -94,27 +94,34 @@
   },
   "llm_availability": {
     "actions_enqueued_this_run": [],
-    "consecutive_failures": 1,
+    "consecutive_failures": 2,
     "history": [
       {
         "at": "2026-06-26T21:59:48.827222+00:00",
         "reason": "senior_pm_unavailable",
         "success": false
+      },
+      {
+        "at": "2026-06-27T01:28:40.598737+00:00",
+        "reason": "senior_pm_unavailable",
+        "success": false
       }
     ],
     "last_reason": "senior_pm_unavailable",
-    "last_run_at": "2026-06-26T21:59:48.827222+00:00",
+    "last_run_at": "2026-06-27T01:28:40.598737+00:00",
     "last_success": false
   },
   "routine_budget": {
     "by_routine": {
-      "crypto-curator": 4
+      "crypto-curator": 4,
+      "daily-learning-pm": 1
     },
     "by_tier": {
+      "P0_essential": 1,
       "P2_optional": 4
     },
     "date": "2026-06-27",
-    "last_updated": "2026-06-27T00:20:28.327818+00:00",
-    "total": 4
+    "last_updated": "2026-06-27T01:28:40.307357+00:00",
+    "total": 5
   }
 }
