@@ -1,12 +1,12 @@
 # Broker repair backfill status
 
-_Generated at 2026-06-26T08:07:59.643444+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
+_Generated at 2026-06-28T08:03:24.471417+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
 
 ## Summary
 
-- Total decisions: 24
+- Total decisions: 19
 - `MARKED`: 3
-- `SKIPPED_INSUFFICIENT`: 16
+- `SKIPPED_INSUFFICIENT`: 11
 - `SKIPPED_OPERATOR_MARKER`: 5
 
 ## Per-symbol/day decisions
@@ -24,17 +24,12 @@ _Generated at 2026-06-26T08:07:59.643444+00:00 by `scripts/backfill_broker_repai
 | ETH/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
 | ETHUSD | 2026-06-08 | `MARKED` | 304 | 0 | 0 | failed_close_count=304 >= 3 AND no SAFE_MODE_EXITED on day |
 | GLD | 2026-06-09 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| LMT | 2026-05-28 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | LTC/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
 | LTCUSD | 2026-06-15 | `MARKED` | 208 | 0 | 0 | failed_close_count=208 >= 3 AND no SAFE_MODE_EXITED on day |
 | NOW | 2026-06-03 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | ORCL | 2026-06-03 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | PANW | 2026-05-29 | `SKIPPED_INSUFFICIENT` | 2 | 0 | 0 | failed_close_count=2 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| QQQ | 2026-05-28 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| RTX | 2026-05-28 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| SMH | 2026-05-28 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | SOLUSD | 2026-06-14 | `SKIPPED_INSUFFICIENT` | 2 | 0 | 0 | failed_close_count=2 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| SPY | 2026-05-28 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | TSLA | 2026-05-29 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 | XOM | 2026-05-29 | `SKIPPED_INSUFFICIENT` | 1 | 0 | 0 | failed_close_count=1 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 
