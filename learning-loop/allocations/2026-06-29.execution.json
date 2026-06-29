@@ -1,6 +1,6 @@
 {
   "plan_date": "2026-06-29",
-  "executed_at": "2026-06-29T13:45:44Z",
+  "executed_at": "2026-06-29T16:46:02Z",
   "n_placed": 0,
   "n_skipped": 0,
   "n_failed": 4,
@@ -11,12 +11,12 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-29T13:45:42Z",
+      "attempted_at": "2026-06-29T16:46:01Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 16248.855000000001,
-      "order_qty": 51
+      "order_notional": 16265.305,
+      "order_qty": 49
     },
     {
       "symbol": "SPY",
@@ -24,11 +24,11 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-29T13:45:42Z",
+      "attempted_at": "2026-06-29T16:46:01Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8874.48,
+      "order_notional": 8862.72,
       "order_qty": 12
     },
     {
@@ -37,11 +37,11 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-29T13:45:43Z",
+      "attempted_at": "2026-06-29T16:46:02Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8617.68,
+      "order_notional": 8648.28,
       "order_qty": 12
     },
     {
@@ -50,11 +50,11 @@
       "asset_class": "us_equity",
       "status": "failed",
       "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
-      "attempted_at": "2026-06-29T13:45:43Z",
+      "attempted_at": "2026-06-29T16:46:02Z",
       "rejection_category": "UNKNOWN_BROKER_REJECTION",
       "http_status": null,
       "alpaca_message": null,
-      "order_notional": 8897.52,
+      "order_notional": 8854.08,
       "order_qty": 24
     }
   ]
