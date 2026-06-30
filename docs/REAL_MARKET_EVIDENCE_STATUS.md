@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-06-29T09:15:37.772557+00:00`
-**As of:** `2026-06-29T09:15:37.699767+00:00`
-**Git HEAD:** `9502482d296ec0c2c5728cfcd2b4c5b19a33fed5`
+**Generated:** `2026-06-30T08:06:27.459173+00:00`
+**As of:** `2026-06-30T08:06:27.373327+00:00`
+**Git HEAD:** `f15f947b9efb1ec840a6bbf71b45fa3038cad0b8`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1110` |
+| Total ledger rows today | `990` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,28 +17,28 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1110 |
+| `crypto-monitor` | 990 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 1110 |
+| `crypto-momentum` | 990 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 111 |
-| `ETH/USD` | 111 |
-| `SOL/USD` | 111 |
-| `AVAX/USD` | 111 |
-| `LINK/USD` | 111 |
-| `DOT/USD` | 111 |
-| `LTC/USD` | 111 |
-| `BCH/USD` | 111 |
-| `UNI/USD` | 111 |
-| `AAVE/USD` | 111 |
+| `BTC/USD` | 99 |
+| `ETH/USD` | 99 |
+| `SOL/USD` | 99 |
+| `AVAX/USD` | 99 |
+| `LINK/USD` | 99 |
+| `DOT/USD` | 99 |
+| `LTC/USD` | 99 |
+| `BCH/USD` | 99 |
+| `UNI/USD` | 99 |
+| `AAVE/USD` | 99 |
 
 ## Confidence-score distribution
 
@@ -48,13 +48,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1110 |
+| `null` | 990 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1110 |
+| `UNKNOWN` | 990 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `28263040711` |
+| Last workflow run id | `28402882558` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
