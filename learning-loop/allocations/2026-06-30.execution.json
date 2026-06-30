@@ -1,49 +1,74 @@
 {
   "plan_date": "2026-06-30",
-  "executed_at": "2026-06-30T13:00:50Z",
+  "executed_at": "2026-06-30T13:45:38Z",
   "n_placed": 0,
-  "n_skipped": 5,
-  "n_failed": 0,
+  "n_skipped": 0,
+  "n_failed": 5,
   "results": [
     {
       "symbol": "PANW",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-30T13:00:50Z"
+      "status": "failed",
+      "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
+      "attempted_at": "2026-06-30T13:45:37Z",
+      "rejection_category": "UNKNOWN_BROKER_REJECTION",
+      "http_status": null,
+      "alpaca_message": null,
+      "order_notional": 16286.16,
+      "order_qty": 48
     },
     {
       "symbol": "CRWD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-30T13:00:50Z"
+      "status": "failed",
+      "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
+      "attempted_at": "2026-06-30T13:45:37Z",
+      "rejection_category": "UNKNOWN_BROKER_REJECTION",
+      "http_status": null,
+      "alpaca_message": null,
+      "order_notional": 15838.41,
+      "order_qty": 21
     },
     {
       "symbol": "SPY",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-30T13:00:50Z"
+      "status": "failed",
+      "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
+      "attempted_at": "2026-06-30T13:45:38Z",
+      "rejection_category": "UNKNOWN_BROKER_REJECTION",
+      "http_status": null,
+      "alpaca_message": null,
+      "order_notional": 8905.26,
+      "order_qty": 12
     },
     {
       "symbol": "QQQ",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-30T13:00:50Z"
+      "status": "failed",
+      "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
+      "attempted_at": "2026-06-30T13:45:38Z",
+      "rejection_category": "UNKNOWN_BROKER_REJECTION",
+      "http_status": null,
+      "alpaca_message": null,
+      "order_notional": 8741.58,
+      "order_qty": 12
     },
     {
       "symbol": "GLD",
       "action": "BUY",
       "asset_class": "us_equity",
-      "status": "skipped",
-      "reason": "market not open",
-      "attempted_at": "2026-06-30T13:00:50Z"
+      "status": "failed",
+      "reason": "Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>",
+      "attempted_at": "2026-06-30T13:45:38Z",
+      "rejection_category": "UNKNOWN_BROKER_REJECTION",
+      "http_status": null,
+      "alpaca_message": null,
+      "order_notional": 8862.960000000001,
+      "order_qty": 24
     }
   ]
 }
