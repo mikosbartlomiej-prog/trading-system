@@ -34,3 +34,15 @@
 [01:40:29 INFO]   summary: 5 actionable + 0 hold; passed=5  failed=0
 [01:40:29 INFO] ── Step 8: plan complete ──
 [01:40:29 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+
+[13:00:51 INFO] ============================================================
+[13:00:51 INFO] execute_orders() — auto-execute path
+[13:00:51 INFO] ============================================================
+[13:00:51 INFO]   market_status: open=False reason=pre_market
+[13:00:52 INFO]   bp_guard: requested $59733 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
+[13:00:52 WARN]     PANW BUY: skipped — market not open
+[13:00:52 WARN]     AMD BUY: skipped — market not open
+[13:00:52 WARN]     SPY BUY: skipped — market not open
+[13:00:52 WARN]     QQQ BUY: skipped — market not open
+[13:00:52 WARN]     GLD BUY: skipped — market not open
+[13:00:52 INFO]   execution complete: 0 placed, 5 skipped, 0 failed, 0 deferred_bp

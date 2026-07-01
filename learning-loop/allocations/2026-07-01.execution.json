@@ -1,0 +1,49 @@
+{
+  "plan_date": "2026-07-01",
+  "executed_at": "2026-07-01T13:00:52Z",
+  "n_placed": 0,
+  "n_skipped": 5,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "PANW",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-01T13:00:52Z"
+    },
+    {
+      "symbol": "AMD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-01T13:00:52Z"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-01T13:00:52Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-01T13:00:52Z"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-01T13:00:52Z"
+    }
+  ]
+}
