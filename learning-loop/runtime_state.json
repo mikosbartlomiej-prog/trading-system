@@ -1,6 +1,12 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+    "geo-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-07-01T19:24:16.602543+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "options-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-07-01T19:21:56.840877+00:00",
