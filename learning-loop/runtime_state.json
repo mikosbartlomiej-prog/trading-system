@@ -1,7 +1,17 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+<<<<<<< Updated upstream
     "defense-monitor": {
+=======
+    "crypto-monitor": {
+      "last_message": "scanned 11 coins",
+      "last_seen_iso": "2026-07-01T19:25:33.988317+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "exit-monitor": {
+>>>>>>> Stashed changes
       "last_message": "",
       "last_seen_iso": "2026-07-01T19:25:29.291819+00:00",
       "last_status": "ok",
