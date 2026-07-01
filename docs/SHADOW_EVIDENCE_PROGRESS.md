@@ -269,7 +269,7 @@ between cron ticks to see the current waiting reason.
 
 ## Automated progress snapshot (v3.27)
 
-**Last auto-update:** `2026-07-01T18:26:42.284601+00:00`
+**Last auto-update:** `2026-07-01T20:26:48.235065+00:00`
 **Source:** `learning-loop/shadow_evidence/evidence_counters_latest.json`
 **Generator:** `scripts/update_shadow_evidence_progress.py`
 
@@ -289,8 +289,8 @@ between cron ticks to see the current waiting reason.
 | Metric | Current |
 |---|---:|
 | `scaffold_no_market_data_records_count` | 5 |
-| `halt_path_records_count` | 63 |
-| `halt_path_opportunities_count` | 64 |
+| `halt_path_records_count` | 64 |
+| `halt_path_opportunities_count` | 65 |
 | `normal_non_halt_opportunities_count` (legacy) | 0 |
 | `would_block_by_crypto_exposure_count` | 0 |
 | `would_block_by_drawdown_guard_count` | 0 |
@@ -323,6 +323,7 @@ between cron ticks to see the current waiting reason.
 - `drawdown_guard_lowered`: `false`
 
 <!-- v3.27 auto-progress-end -->
+
 
 
 
