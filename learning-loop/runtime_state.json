@@ -36,6 +36,12 @@
       "last_seen_iso": "2026-07-01T19:55:26.450281+00:00",
       "last_status": "ok",
       "pings_today": 7
+    },
+    "politician-monitor": {
+      "last_message": "emitted=0",
+      "last_seen_iso": "2026-07-01T19:59:04.996958+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
