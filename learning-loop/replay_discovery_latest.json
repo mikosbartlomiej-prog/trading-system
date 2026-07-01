@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-06-30T08:07:05.458373+00:00",
-  "generated_at_iso": "2026-06-30T08:07:05.529647+00:00",
-  "git_head": "f15f947b9efb1ec840a6bbf71b45fa3038cad0b8",
+  "as_of": "2026-07-01T08:36:21.575803+00:00",
+  "generated_at_iso": "2026-07-01T08:36:21.642190+00:00",
+  "git_head": "f5d3e51ab0d8827da688523be7a8bc21f5f4a3be",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -105,7 +105,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 0,
+      "near_misses": 2,
       "strategy": "crypto-oversold-bounce",
       "symbol": "LTC/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 0,
+    "near_misses": 2,
     "rows": 10,
     "threshold_crosses": 0
   },
