@@ -45,9 +45,9 @@
     },
     "politician-monitor": {
       "last_message": "emitted=0",
-      "last_seen_iso": "2026-07-02T03:46:37.199118+00:00",
+      "last_seen_iso": "2026-07-02T07:01:24.300029+00:00",
       "last_status": "ok",
-      "pings_today": 2
+      "pings_today": 3
     },
     "price-monitor": {
       "last_message": "",
