@@ -49,3 +49,22 @@
 [13:01:15 WARN]     QQQ BUY: skipped — market not open
 [13:01:15 WARN]     GLD BUY: skipped — market not open
 [13:01:15 INFO]   execution complete: 0 placed, 6 skipped, 0 failed, 0 deferred_bp
+
+[13:46:07 INFO] ============================================================
+[13:46:07 INFO] execute_orders() — auto-execute path
+[13:46:07 INFO] ============================================================
+[13:46:07 INFO]   market_status: open=True reason=open
+[13:46:07 INFO]   bp_guard: requested $76024 available $362020 open_exposure $0 | all BUYs fit available BP + exposure cap
+[13:46:08 INFO]     PANW BUY: derived qty=46 from target=$16,291 @ $352.09 (no prior position)
+[13:46:08 ERR ]     PANW BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:08 INFO]     CRWD BUY: derived qty=82 from target=$16,291 @ $196.31 (no prior position)
+[13:46:08 ERR ]     CRWD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:09 INFO]     META BUY: derived qty=27 from target=$16,291 @ $592.89 (no prior position)
+[13:46:09 ERR ]     META BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:09 INFO]     SPY BUY: derived qty=12 from target=$9,050 @ $750.06 (no prior position)
+[13:46:10 ERR ]     SPY BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:10 INFO]     QQQ BUY: derived qty=12 from target=$9,050 @ $727.05 (no prior position)
+[13:46:10 ERR ]     QQQ BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:11 INFO]     GLD BUY: derived qty=23 from target=$9,050 @ $379.57 (no prior position)
+[13:46:11 ERR ]     GLD BUY failed: Alpaca rejected: UNKNOWN_BROKER_REJECTION — <no message>
+[13:46:11 INFO]   execution complete: 0 placed, 0 skipped, 6 failed, 0 deferred_bp
