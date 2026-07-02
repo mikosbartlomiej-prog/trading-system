@@ -1,0 +1,57 @@
+{
+  "plan_date": "2026-07-02",
+  "executed_at": "2026-07-02T13:01:15Z",
+  "n_placed": 0,
+  "n_skipped": 6,
+  "n_failed": 0,
+  "results": [
+    {
+      "symbol": "PANW",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    },
+    {
+      "symbol": "CRWD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    },
+    {
+      "symbol": "META",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    },
+    {
+      "symbol": "SPY",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    },
+    {
+      "symbol": "QQQ",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    },
+    {
+      "symbol": "GLD",
+      "action": "BUY",
+      "asset_class": "us_equity",
+      "status": "skipped",
+      "reason": "market not open",
+      "attempted_at": "2026-07-02T13:01:15Z"
+    }
+  ]
+}
