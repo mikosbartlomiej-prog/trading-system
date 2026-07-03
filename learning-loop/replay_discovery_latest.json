@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-07-02T07:51:12.504565+00:00",
-  "generated_at_iso": "2026-07-02T07:51:12.570127+00:00",
-  "git_head": "f313f22b8bbc044bd8119b0b8758e4f5015ceb8a",
+  "as_of": "2026-07-03T07:46:27.873983+00:00",
+  "generated_at_iso": "2026-07-03T07:46:27.941992+00:00",
+  "git_head": "05143a538d8779d37e723037fd362094f07e857a",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -17,7 +17,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 4998,
+      "bars_total": 5000,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
@@ -29,7 +29,7 @@
     {
       "asset_class": "crypto",
       "bars_replayed": 7,
-      "bars_total": 4998,
+      "bars_total": 5000,
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
