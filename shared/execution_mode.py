@@ -447,6 +447,58 @@ def assert_can_mutate_broker(
     )
 
 
+def check_or_block(
+    intent: str,
+    *,
+    intended_notional_usd: float = 0.0,
+    idempotency_key: Optional[str] = None,
+    resolution: Optional[ExecutionModeResolution] = None,
+) -> Optional[dict]:
+    """Non-raising variant of ``assert_can_mutate_broker``.
+
+    Returns ``None`` when mutation is authorized (caller may proceed).
+    Returns a structured "blocked" dict when the guard fails — same shape
+    as other refuse-and-return paths in ``shared/alpaca_orders.py`` (see
+    ``safe_close``'s ``REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE`` return).
+
+    This variant exists so existing callers in ``shared/alpaca_orders.py``
+    can wire the gate in without changing their return contract from a
+    dict to an exception. The result dict is deterministic and audit-safe
+    — it contains no secrets and only redacted IDs.
+
+    Callers that WANT a hard exception should use
+    ``assert_can_mutate_broker`` directly or ``broker_mutation_guard``.
+    """
+    try:
+        assert_can_mutate_broker(
+            resolution,
+            intent=intent,
+            intended_notional_usd=intended_notional_usd,
+            idempotency_key=idempotency_key,
+        )
+        return None
+    except BrokerMutationBlocked as exc:
+        # Return a structured dict that mirrors the shape of
+        # safe_close's REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE branch. This
+        # allows callers to append it to their audit trail without
+        # special-casing.
+        key_tail = ""
+        if idempotency_key:
+            k = str(idempotency_key)
+            key_tail = "…" + (k[-6:] if len(k) > 6 else k)
+        return {
+            "status":            "EXECUTION_MODE_BLOCKED",
+            "reason":             str(exc),
+            "intent":             intent,
+            "intended_notional":  float(intended_notional_usd or 0.0),
+            "idempotency_key":    key_tail,
+            "broker_called":      False,
+            "alpaca_order_id":    None,
+            "http_status":        None,
+            "guard_decision":     "BLOCKED",
+        }
+
+
 class broker_mutation_guard:  # noqa: N801 — context manager, snake_case is fine
     """Context manager that raises ``BrokerMutationBlocked`` up-front.
 
