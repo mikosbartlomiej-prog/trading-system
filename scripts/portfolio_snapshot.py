@@ -24,6 +24,11 @@ import requests
 
 
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
+ALPACA_DATA_URL = "https://data.alpaca.markets"
+
+# Read-only quote symbols for the morning-routine playbook (VIXY as VIX proxy
+# per playbooks/morning-routine.md step 2, plus SPY/QQQ per step 3).
+QUOTE_SYMBOLS = ["SPY", "QQQ", "VIXY"]
 
 
 def _hdr() -> dict:
@@ -33,9 +38,9 @@ def _hdr() -> dict:
     }
 
 
-def _get(path: str, params: dict | None = None) -> tuple[object, str | None]:
+def _get(path: str, params: dict | None = None, base: str = ALPACA_BASE_URL) -> tuple[object, str | None]:
     try:
-        r = requests.get(f"{ALPACA_BASE_URL}{path}",
+        r = requests.get(f"{base}{path}",
                          headers=_hdr(), params=params or {}, timeout=15)
         if r.status_code != 200:
             return None, f"HTTP {r.status_code}: {r.text[:200]}"
@@ -126,11 +131,35 @@ def main() -> int:
             "client_order_id": o.get("client_order_id"),
         })
 
+    # Read-only market quotes (VIXY as VIX proxy, SPY, QQQ) — IEX feed, no
+    # broker calls, used for the morning-routine playbook.
+    quotes_raw, err = _get(
+        "/v2/stocks/quotes/latest",
+        {"symbols": ",".join(QUOTE_SYMBOLS), "feed": "iex"},
+        base=ALPACA_DATA_URL,
+    )
+    if err:
+        errors.append(f"quotes: {err}")
+        quotes_raw = {}
+    quotes = {}
+    for sym, q in (quotes_raw or {}).get("quotes", {}).items():
+        try:
+            quotes[sym] = {
+                "ask": q.get("ap"),
+                "bid": q.get("bp"),
+                "mid": round((float(q.get("ap") or 0) + float(q.get("bp") or 0)) / 2, 4)
+                       if q.get("ap") and q.get("bp") else None,
+                "timestamp": q.get("t"),
+            }
+        except (TypeError, ValueError):
+            continue
+
     snapshot = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "account":   account_norm,
         "positions": positions,
         "orders":    orders,
+        "quotes":    quotes,
         "errors":    errors,
     }
 
