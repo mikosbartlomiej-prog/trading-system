@@ -1,6 +1,6 @@
 # LLM Advisory Mesh — latest run (v3.28.3)
 
-- **Run ID:** `v3300-calibration-28840937021`
+- **Run ID:** `v3300-calibration-28915601503`
 - **Status:** `LLM_ADVISORY_MESH_RAN`
 - **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
 - **Selected provider:** `gemini`
