@@ -13,7 +13,7 @@
   "current_equity": 90504.88,
   "evidence": {
     "audit_realized_pl": {
-      "path": "journal/autonomy/2026-07-07.jsonl",
+      "path": "journal/autonomy/2026-07-08.jsonl",
       "realized_pl_today_usd": 0.0
     },
     "dashboard_snapshot": {
@@ -31,7 +31,7 @@
   },
   "gap_amount": 0.0,
   "gap_pct": 0.0,
-  "generated_at_iso": "2026-07-07T07:59:01.020980+00:00",
+  "generated_at_iso": "2026-07-08T07:04:29.817286+00:00",
   "peak_equity": 90504.88,
   "schema_version": "v3.29",
   "standing_markers": [
@@ -47,6 +47,6 @@
     "ok_pct": 0.5,
     "warn_upper_pct": 2.0
   },
-  "ts_iso": "2026-07-07T07:59:01.020980+00:00",
+  "ts_iso": "2026-07-08T07:04:29.817286+00:00",
   "verdict": "EQUITY_GAP_OK"
 }
