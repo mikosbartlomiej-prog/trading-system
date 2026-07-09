@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-07-08T07:03:52.579051+00:00`
-**As of:** `2026-07-08T07:03:52.507022+00:00`
-**Git HEAD:** `5cf79f0fdb7bc75312b5244db7e876d5928dd08a`
+**Generated:** `2026-07-09T08:01:27.647739+00:00`
+**As of:** `2026-07-09T08:01:27.593077+00:00`
+**Git HEAD:** `37515dd4c44df0778779df78b30f9b23f806a7f2`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `898` |
+| Total ledger rows today | `860` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,36 +17,35 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 898 |
+| `crypto-monitor` | 860 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 822 |
-| `crypto-oversold-bounce` | 76 |
+| `crypto-momentum` | 860 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `SOL/USD` | 99 |
-| `AVAX/USD` | 98 |
-| `UNI/USD` | 98 |
-| `BTC/USD` | 87 |
+| `BTC/USD` | 86 |
 | `ETH/USD` | 86 |
+| `SOL/USD` | 86 |
+| `AVAX/USD` | 86 |
 | `LINK/USD` | 86 |
 | `DOT/USD` | 86 |
 | `LTC/USD` | 86 |
 | `BCH/USD` | 86 |
+| `UNI/USD` | 86 |
 | `AAVE/USD` | 86 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 13 |
-| `0.5-0.65` | 25 |
+| `0.0-0.5` | 0 |
+| `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
 | `null` | 860 |
@@ -55,7 +54,7 @@
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 898 |
+| `UNKNOWN` | 860 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -77,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `28896418442` |
+| Last workflow run id | `28972070630` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
