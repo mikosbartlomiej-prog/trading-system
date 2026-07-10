@@ -3,9 +3,9 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-07-10T09:00:38.271873+00:00",
+      "last_seen_iso": "2026-07-10T09:05:40.255552+00:00",
       "last_status": "ok",
-      "pings_today": 110
+      "pings_today": 111
     },
     "defense-monitor": {
       "last_message": "",
@@ -1110,15 +1110,15 @@
   },
   "routine_budget": {
     "by_routine": {
-      "crypto-curator": 1,
+      "crypto-curator": 2,
       "daily-learning-pm": 1
     },
     "by_tier": {
       "P0_essential": 1,
-      "P2_optional": 1
+      "P2_optional": 2
     },
     "date": "2026-07-10",
-    "last_updated": "2026-07-10T09:00:37.908638+00:00",
-    "total": 2
+    "last_updated": "2026-07-10T09:05:39.731383+00:00",
+    "total": 3
   }
 }
