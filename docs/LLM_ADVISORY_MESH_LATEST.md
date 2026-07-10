@@ -1,6 +1,6 @@
 # LLM Advisory Mesh — latest run (v3.28.3)
 
-- **Run ID:** `v3300-calibration-28993273053`
+- **Run ID:** `v3300-calibration-29068277204`
 - **Status:** `LLM_ADVISORY_MESH_RAN`
 - **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
 - **Selected provider:** `gemini`
@@ -11,9 +11,9 @@
 
 ## Quality report (v3.28.3)
 
-- rows_with_provider_used: **7**
+- rows_with_provider_used: **9**
 - rows_with_provider_skipped: 0
-- rows_with_provider_failed: 4
+- rows_with_provider_failed: 2
 - generic_placeholder_count: 0
 - empty_risks_count: 11
 - empty_next_actions_count: 11
