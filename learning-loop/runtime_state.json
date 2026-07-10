@@ -3,9 +3,9 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-07-10T23:05:54.281624+00:00",
+      "last_seen_iso": "2026-07-10T23:10:53.795274+00:00",
       "last_status": "ok",
-      "pings_today": 286
+      "pings_today": 287
     },
     "defense-monitor": {
       "last_message": "",
