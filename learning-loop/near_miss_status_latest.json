@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-07-10T07:58:50.500084+00:00",
+  "as_of": "2026-07-11T06:35:39.503587+00:00",
   "flagged": [],
-  "generated_at_iso": "2026-07-10T07:58:50.675643+00:00",
-  "git_head": "38e5fb6447aeac4cb64c951b1dd3cb2d0f33624c",
+  "generated_at_iso": "2026-07-11T06:35:39.663934+00:00",
+  "git_head": "bee645ed13690140ef1600b75601d994542678e5",
   "pairs": [
     {
       "abs_distance_ratio": 0.1417,
@@ -11,17 +11,17 @@
       "median_threshold": 60.0,
       "metric_name": "rsi",
       "p95_abs_distance": 8.5,
-      "sample_size": 27721,
+      "sample_size": 28452,
       "strategy_id": "crypto-momentum"
     },
     {
-      "abs_distance_ratio": 0.1404,
+      "abs_distance_ratio": 0.1414,
       "advisory_flag": false,
       "advisory_reason": null,
       "median_threshold": 30.0,
       "metric_name": "rsi",
-      "p95_abs_distance": 4.210526,
-      "sample_size": 1061,
+      "p95_abs_distance": 4.243176,
+      "sample_size": 1057,
       "strategy_id": "crypto-oversold-bounce"
     },
     {
@@ -39,7 +39,7 @@
     "flag_distance_ratio": 0.4,
     "min_sample": 10
   },
-  "rows_total": 29214,
+  "rows_total": 29941,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
