@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-07-11T06:36:15.487253+00:00",
+  "as_of": "2026-07-12T07:07:35.097607+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -11,10 +11,10 @@
     "per_component": {
       "anomaly_penalty": {
         "max": 1.0,
-        "mean": 0.5305,
+        "mean": 0.632,
         "min": 0.2,
         "samples": 197,
-        "variance": 0.119297,
+        "variance": 0.121498,
         "varying": true
       },
       "data_quality": {
@@ -83,10 +83,10 @@
       },
       "signal_strength": {
         "max": 1.0,
-        "mean": 0.6614,
-        "min": 0.288,
+        "mean": 0.7005,
+        "min": 0.6,
         "samples": 197,
-        "variance": 0.027036,
+        "variance": 0.015357,
         "varying": true
       },
       "slippage_risk": {
@@ -99,10 +99,10 @@
       },
       "system_health": {
         "max": 0.7273,
-        "mean": 0.4485,
+        "mean": 0.4504,
         "min": 0.2727,
         "samples": 197,
-        "variance": 0.006331,
+        "variance": 0.006012,
         "varying": true
       }
     },
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-07-11T06:36:15.800161+00:00",
-  "git_head": "bee645ed13690140ef1600b75601d994542678e5",
+  "generated_at_iso": "2026-07-12T07:07:35.419880+00:00",
+  "git_head": "c99cf224c46a53558fe83fa29272d988585d8860",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 197,
-  "rows_total": 18337,
+  "rows_total": 18457,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -135,14 +135,14 @@
   "score_summary": {
     "count": 197,
     "max": 0.5975,
-    "mean": 0.2989,
-    "median": 0.239,
-    "min": 0.1015,
+    "mean": 0.3599,
+    "median": 0.3335,
+    "min": 0.1081,
     "p95": 0.59
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 34807,
+    "near_miss_rows": 34447,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 197,
