@@ -1554,3 +1554,5 @@
 - 2026-07-12 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 - 2026-07-12 · rsi-alert [overbought]: ETH/USD RSI=76.6 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
 
+- 2026-07-12 · WEEKLY RETRO: LLM unavailable — fallback report only
+
