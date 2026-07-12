@@ -1,5 +1,5 @@
 {
-  "_last_writer": "intraday-monitor",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -9,9 +9,9 @@
     },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-07-12T22:25:56.301990+00:00",
+      "last_seen_iso": "2026-07-12T22:40:56.399666+00:00",
       "last_status": "ok",
-      "pings_today": 124
+      "pings_today": 125
     },
     "doj-monitor": {
       "last_message": "emitted=0",
