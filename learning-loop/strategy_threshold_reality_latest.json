@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-07-12T07:07:35.763695+00:00",
+  "generated_at_iso": "2026-07-13T07:48:55.354594+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 18381,
+  "row_count": 18561,
   "strategies": [
     {
       "actual_signals_fired": 368,
@@ -37,30 +37,30 @@
     },
     {
       "actual_signals_fired": 26,
-      "evaluations": 18013,
+      "evaluations": 18193,
       "metrics": [
         {
-          "actual_hits": 5476,
-          "avg_distance_to_trigger": -9.145262,
+          "actual_hits": 5544,
+          "avg_distance_to_trigger": -8.974056,
           "direction": "above",
-          "hit_rate": 0.304,
+          "hit_rate": 0.3047,
           "metric_name": "rsi",
-          "near_miss_rate": 0.1566,
-          "near_misses": 2820,
-          "sample_size": 18013,
+          "near_miss_rate": 0.167,
+          "near_misses": 3039,
+          "sample_size": 18193,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 1953,
-          "avg_distance_to_trigger": -2.926242,
+          "actual_hits": 1814,
+          "avg_distance_to_trigger": -2.942571,
           "direction": "between",
-          "hit_rate": 0.1084,
+          "hit_rate": 0.0997,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0207,
-          "near_misses": 373,
-          "sample_size": 18013,
+          "near_miss_rate": 0.0193,
+          "near_misses": 352,
+          "sample_size": 18193,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 3193,
+      "near_misses": 3391,
       "recommendation": "KEEP",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
