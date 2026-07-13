@@ -1,15 +1,15 @@
 {
   "configured_model": "gemini-flash-latest",
   "discovered_models_count": 36,
-  "error_redacted": "",
+  "error_redacted": "ReadTimeout: HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=15.0)",
   "failure_category": null,
   "failure_http": null,
   "free_only": true,
-  "generated_at_iso": "2026-07-10T04:06:47.046937+00:00",
+  "generated_at_iso": "2026-07-13T03:49:50.492149+00:00",
   "safe_to_schedule": false,
   "secret_values_logged": false,
   "selected_model": "gemini-flash-latest",
-  "smoke_status": "GEMINI_SMOKE_OK",
+  "smoke_status": "GEMINI_SMOKE_FAILED",
   "standing_markers": [
     "BROKER_PAPER_CANARY_STILL_BLOCKED",
     "LIVE_TRADING_UNSUPPORTED",
