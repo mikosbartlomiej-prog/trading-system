@@ -1,5 +1,5 @@
 {
-  "_last_writer": "heartbeat",
+  "_last_writer": "pre-open-planner",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -99,6 +99,980 @@
     "last_reason": "senior_pm_unavailable",
     "last_run_at": "2026-07-14T00:53:00.425575+00:00",
     "last_success": false
+  },
+  "pre_open_plan": {
+    "confidence_caps_per_strategy": {},
+    "confidence_caps_per_symbol": {
+      "AAPL": 0.65,
+      "AMD": 0.0,
+      "AVGO": 0.65,
+      "AXON": 0.0,
+      "BA": 0.65,
+      "CRM": 0.0,
+      "CRWD": 0.0,
+      "CVX": 0.65,
+      "DFEN": 0.65,
+      "FAS": 0.0,
+      "FAZ": 0.0,
+      "GD": 0.65,
+      "GOOGL": 0.65,
+      "INTU": 0.0,
+      "ITA": 0.65,
+      "KTOS": 0.65,
+      "LDOS": 0.65,
+      "LMT": 0.65,
+      "META": 0.65,
+      "MSFT": 0.65,
+      "NOW": 0.0,
+      "ORCL": 0.65,
+      "OXY": 0.65,
+      "PANW": 0.0,
+      "PLTR": 0.0,
+      "RTX": 0.65,
+      "SAIC": 0.0,
+      "SMH": 0.65,
+      "SOXL": 0.0,
+      "SOXS": 0.0,
+      "SPXU": 0.65,
+      "TNA": 0.65,
+      "USO": 0.65,
+      "WDAY": 0.0,
+      "XLE": 0.65,
+      "XOM": 0.65
+    },
+    "daily_experiment_objectives": [
+      "validate fills against paper expectations",
+      "monitor for stale-data symbols flagged in plan",
+      "avoid entries on 14 gap-flagged symbols"
+    ],
+    "do_not_trade_list": [
+      "AMD",
+      "AXON",
+      "CRM",
+      "CRWD",
+      "FAS",
+      "FAZ",
+      "INTU",
+      "NOW",
+      "PANW",
+      "PLTR",
+      "SAIC",
+      "SOXL",
+      "SOXS",
+      "WDAY"
+    ],
+    "event_risk_warnings": [],
+    "expected_regime": "NEUTRAL",
+    "gap_warnings": [
+      "AAPL:GAP_DOWN_WEAK_PRE_OPEN",
+      "AMD:GAP_UP_STRONG_PRE_OPEN",
+      "AVGO:GAP_DOWN_WEAK_PRE_OPEN",
+      "AXON:GAP_DOWN_STRONG_PRE_OPEN",
+      "BA:GAP_DOWN_WEAK_PRE_OPEN",
+      "CRM:GAP_DOWN_STRONG_PRE_OPEN",
+      "CRWD:GAP_DOWN_STRONG_PRE_OPEN",
+      "CVX:GAP_UP_WEAK_PRE_OPEN",
+      "DFEN:GAP_DOWN_WEAK_PRE_OPEN",
+      "FAS:GAP_DOWN_STRONG_PRE_OPEN",
+      "FAZ:GAP_UP_STRONG_PRE_OPEN",
+      "GD:GAP_DOWN_WEAK_PRE_OPEN",
+      "GOOGL:GAP_DOWN_WEAK_PRE_OPEN",
+      "INTU:GAP_DOWN_STRONG_PRE_OPEN",
+      "ITA:GAP_DOWN_WEAK_PRE_OPEN",
+      "KTOS:GAP_DOWN_WEAK_PRE_OPEN",
+      "LDOS:GAP_DOWN_WEAK_PRE_OPEN",
+      "LMT:GAP_DOWN_WEAK_PRE_OPEN",
+      "META:GAP_DOWN_WEAK_PRE_OPEN",
+      "MSFT:GAP_DOWN_WEAK_PRE_OPEN",
+      "NOW:GAP_DOWN_STRONG_PRE_OPEN",
+      "ORCL:GAP_UP_WEAK_PRE_OPEN",
+      "OXY:GAP_UP_WEAK_PRE_OPEN",
+      "PANW:GAP_DOWN_STRONG_PRE_OPEN",
+      "PLTR:GAP_DOWN_STRONG_PRE_OPEN",
+      "RTX:GAP_DOWN_WEAK_PRE_OPEN",
+      "SAIC:GAP_DOWN_STRONG_PRE_OPEN",
+      "SMH:GAP_UP_WEAK_PRE_OPEN",
+      "SOXL:GAP_UP_STRONG_PRE_OPEN",
+      "SOXS:GAP_DOWN_STRONG_PRE_OPEN",
+      "SPXU:GAP_UP_WEAK_PRE_OPEN",
+      "TNA:GAP_UP_WEAK_PRE_OPEN",
+      "USO:GAP_UP_WEAK_PRE_OPEN",
+      "WDAY:GAP_DOWN_STRONG_PRE_OPEN",
+      "XLE:GAP_UP_WEAK_PRE_OPEN",
+      "XOM:GAP_UP_WEAK_PRE_OPEN"
+    ],
+    "generated_at": "2026-07-14T14:43:26Z",
+    "high_risk_symbols": [
+      "AAPL",
+      "AVGO",
+      "BA",
+      "CVX",
+      "DFEN",
+      "GD",
+      "GOOGL",
+      "ITA",
+      "KTOS",
+      "LDOS",
+      "LMT",
+      "META",
+      "MSFT",
+      "ORCL",
+      "OXY",
+      "RTX",
+      "SMH",
+      "SPXU",
+      "TNA",
+      "USO",
+      "XLE",
+      "XOM"
+    ],
+    "liquidity_warnings": [],
+    "observe_only_list": [],
+    "per_symbol": {
+      "AAPL": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.008114365337714187,
+        "generated_at": "2026-07-14T14:42:28Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.008 vwap=313.19333902994794 rel_vol=None direction_changes=35 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "AAPL",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "AAVE/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:29Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "AAVE/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "ADBE": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004980506542666429,
+        "generated_at": "2026-07-14T14:42:31Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.005 vwap=221.48999532063806 rel_vol=None direction_changes=32 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "ADBE",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "AMD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.027313330063120176,
+        "generated_at": "2026-07-14T14:42:31Z",
+        "label": "GAP_UP_STRONG_PRE_OPEN",
+        "rationale": "gap=+0.027 vwap=569.663330078125 rel_vol=None direction_changes=33 → GAP_UP_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "AMD",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "AMZN": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004557018495384521,
+        "generated_at": "2026-07-14T14:42:32Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.005 vwap=244.8816680908203 rel_vol=None direction_changes=27 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "AMZN",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "AVAX/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:32Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "AVAX/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "AVGO": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.006035845453924581,
+        "generated_at": "2026-07-14T14:42:35Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.006 vwap=392.2950032552083 rel_vol=None direction_changes=34 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "AVGO",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "AXON": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.041052273711218876,
+        "generated_at": "2026-07-14T14:42:35Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.041 vwap=531.0868937174479 rel_vol=None direction_changes=24 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "AXON",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "BA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.013738066236853834,
+        "generated_at": "2026-07-14T14:42:36Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.014 vwap=216.80500284830725 rel_vol=None direction_changes=41 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "BA",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "BCH/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:36Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "BCH/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "BTC/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:40Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "BTC/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "CACI": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.001975277175990839,
+        "generated_at": "2026-07-14T14:42:42Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.002 vwap=None rel_vol=None direction_changes=20 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "CACI",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "CRM": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.03226572814575097,
+        "generated_at": "2026-07-14T14:42:42Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.032 vwap=162.4433339436849 rel_vol=None direction_changes=27 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "CRM",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "CRWD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.06974246247969143,
+        "generated_at": "2026-07-14T14:42:43Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.070 vwap=190.68333943684897 rel_vol=None direction_changes=32 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "CRWD",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "CVX": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.005168513545905017,
+        "generated_at": "2026-07-14T14:42:43Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.005 vwap=182.9068349202474 rel_vol=None direction_changes=35 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "CVX",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "DFEN": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.01934623082054707,
+        "generated_at": "2026-07-14T14:42:44Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.019 vwap=73.33333333333333 rel_vol=None direction_changes=20 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "DFEN",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "DOT/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:44Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "DOT/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "ETH/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:48Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "ETH/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "FAS": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.04947798655923727,
+        "generated_at": "2026-07-14T14:42:52Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.049 vwap=163.66666666666666 rel_vol=None direction_changes=31 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "FAS",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "FAZ": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.05307772184310857,
+        "generated_at": "2026-07-14T14:42:53Z",
+        "label": "GAP_UP_STRONG_PRE_OPEN",
+        "rationale": "gap=+0.053 vwap=35.02670033772787 rel_vol=None direction_changes=23 → GAP_UP_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "FAZ",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "GD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.013864939271502919,
+        "generated_at": "2026-07-14T14:42:53Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.014 vwap=371.49998982747394 rel_vol=None direction_changes=15 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "GD",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "GLD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.0009884652767110996,
+        "generated_at": "2026-07-14T14:42:54Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.001 vwap=374.6666666666667 rel_vol=None direction_changes=32 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "GLD",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "GOOGL": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.010576075423708135,
+        "generated_at": "2026-07-14T14:42:54Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.011 vwap=352.8499959309895 rel_vol=None direction_changes=29 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "GOOGL",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "INTU": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.033525825492267666,
+        "generated_at": "2026-07-14T14:42:55Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.034 vwap=273.36500040690106 rel_vol=None direction_changes=28 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "INTU",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "ITA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.00978578633993724,
+        "generated_at": "2026-07-14T14:42:55Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.010 vwap=235.90666707356772 rel_vol=None direction_changes=25 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "ITA",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "KTOS": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.007503576826019426,
+        "generated_at": "2026-07-14T14:42:55Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.008 vwap=49.01343282063802 rel_vol=None direction_changes=40 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "KTOS",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "LDOS": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.016563146997929653,
+        "generated_at": "2026-07-14T14:42:56Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.017 vwap=104.33666737874348 rel_vol=None direction_changes=15 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "LDOS",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "LINK/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:56Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "LINK/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "LMT": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.006323692271195463,
+        "generated_at": "2026-07-14T14:42:58Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.006 vwap=519.2300211588541 rel_vol=None direction_changes=27 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "LMT",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "LTC/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:42:58Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "LTC/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "MATIC/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:43:00Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "MATIC/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "META": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.014319776309879682,
+        "generated_at": "2026-07-14T14:43:01Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.014 vwap=652.0050048828125 rel_vol=None direction_changes=39 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "META",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "MSFT": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.014400392269044672,
+        "generated_at": "2026-07-14T14:43:02Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.014 vwap=380.85350545247394 rel_vol=None direction_changes=32 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "MSFT",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "NOC": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.003217637788727286,
+        "generated_at": "2026-07-14T14:43:03Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.003 vwap=537.4466756184896 rel_vol=None direction_changes=20 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "NOC",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "NOW": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.026816681523419237,
+        "generated_at": "2026-07-14T14:43:04Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.027 vwap=103.43999989827473 rel_vol=None direction_changes=33 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "NOW",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "NVDA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.001283578604069228,
+        "generated_at": "2026-07-14T14:43:04Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.001 vwap=207.2233327229818 rel_vol=None direction_changes=32 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "NVDA",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "ORCL": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.017172029702970288,
+        "generated_at": "2026-07-14T14:43:05Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.017 vwap=131.5366668701172 rel_vol=None direction_changes=32 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "ORCL",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "OXY": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.010151792100257765,
+        "generated_at": "2026-07-14T14:43:05Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.010 vwap=55.1283327738444 rel_vol=None direction_changes=34 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "OXY",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "PANW": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.03933282032797652,
+        "generated_at": "2026-07-14T14:43:05Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.039 vwap=333.30333455403644 rel_vol=None direction_changes=36 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "PANW",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "PLTR": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.05881906259610376,
+        "generated_at": "2026-07-14T14:43:06Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.059 vwap=124.24666849772136 rel_vol=None direction_changes=33 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "PLTR",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "QQQ": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.00026422958472707166,
+        "generated_at": "2026-07-14T14:43:07Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.000 vwap=719.36865234375 rel_vol=None direction_changes=30 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "QQQ",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "RTX": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.007626234883009785,
+        "generated_at": "2026-07-14T14:43:09Z",
+        "label": "GAP_DOWN_WEAK_PRE_OPEN",
+        "rationale": "gap=-0.008 vwap=196.63833618164062 rel_vol=None direction_changes=26 → GAP_DOWN_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "RTX",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SAIC": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.021220360463948387,
+        "generated_at": "2026-07-14T14:43:10Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.021 vwap=111.16666666666669 rel_vol=None direction_changes=6 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SAIC",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SLV": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.001683212517131415,
+        "generated_at": "2026-07-14T14:43:11Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.002 vwap=53.561667124430336 rel_vol=None direction_changes=38 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SLV",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SMH": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.012445593969683578,
+        "generated_at": "2026-07-14T14:43:11Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.012 vwap=606.2220865885416 rel_vol=None direction_changes=32 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SMH",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SOL/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:43:12Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "SOL/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "SOXL": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.050715552628554775,
+        "generated_at": "2026-07-14T14:43:14Z",
+        "label": "GAP_UP_STRONG_PRE_OPEN",
+        "rationale": "gap=+0.051 vwap=185.878662109375 rel_vol=None direction_changes=27 → GAP_UP_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SOXL",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SOXS": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.05658197733326268,
+        "generated_at": "2026-07-14T14:43:15Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.057 vwap=4.047733306884766 rel_vol=None direction_changes=29 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SOXS",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SPXL": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004425732999324439,
+        "generated_at": "2026-07-14T14:43:15Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.004 vwap=274.3000081380208 rel_vol=None direction_changes=27 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SPXL",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SPXS": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.0039016764651062996,
+        "generated_at": "2026-07-14T14:43:15Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.004 vwap=26.143866221110027 rel_vol=None direction_changes=28 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SPXS",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SPXU": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.005764463070228871,
+        "generated_at": "2026-07-14T14:43:16Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.006 vwap=36.6458994547526 rel_vol=None direction_changes=23 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SPXU",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "SQQQ": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.0012903028918850807,
+        "generated_at": "2026-07-14T14:43:16Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.001 vwap=38.676666259765625 rel_vol=None direction_changes=28 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "SQQQ",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "TLT": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.0007121371939910979,
+        "generated_at": "2026-07-14T14:43:17Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.001 vwap=84.18666585286458 rel_vol=None direction_changes=37 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "TLT",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "TNA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.0075049777099816155,
+        "generated_at": "2026-07-14T14:43:17Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.008 vwap=71.14166768391927 rel_vol=None direction_changes=29 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "TNA",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "TQQQ": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.0012030681176166819,
+        "generated_at": "2026-07-14T14:43:18Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=+0.001 vwap=74.95300038655598 rel_vol=None direction_changes=26 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "TQQQ",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "TSLA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.0005276534270799992,
+        "generated_at": "2026-07-14T14:43:19Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.001 vwap=398.586669921875 rel_vol=None direction_changes=30 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "TSLA",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "TZA": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004975124378109347,
+        "generated_at": "2026-07-14T14:43:19Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.005 vwap=3.996666749318441 rel_vol=None direction_changes=22 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "TZA",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "UNI/USD": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": null,
+        "generated_at": "2026-07-14T14:43:20Z",
+        "label": "INSUFFICIENT_DATA",
+        "rationale": "pre_market_data_unavailable_normal_session",
+        "source": "unavailable",
+        "symbol": "UNI/USD",
+        "warnings": [
+          "yahoo_no_bars",
+          "nasdaq_no_summary",
+          "no_data"
+        ]
+      },
+      "UPRO": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004092132487927464,
+        "generated_at": "2026-07-14T14:43:21Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.004 vwap=143.56000264485678 rel_vol=None direction_changes=28 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "UPRO",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "USO": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.011546197505680306,
+        "generated_at": "2026-07-14T14:43:22Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.012 vwap=120.78333536783855 rel_vol=None direction_changes=29 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "USO",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "WDAY": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.02614028949473386,
+        "generated_at": "2026-07-14T14:43:23Z",
+        "label": "GAP_DOWN_STRONG_PRE_OPEN",
+        "rationale": "gap=-0.026 vwap=133.62332661946616 rel_vol=None direction_changes=28 → GAP_DOWN_STRONG_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "WDAY",
+        "warnings": [
+          "pre_market_gap_strong",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "XAR": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": -0.004047455977274567,
+        "generated_at": "2026-07-14T14:43:24Z",
+        "label": "FLAT_PRE_OPEN",
+        "rationale": "gap=-0.004 vwap=267.7966003417969 rel_vol=None direction_changes=7 → FLAT_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "XAR",
+        "warnings": [
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "XLE": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.006432295538841573,
+        "generated_at": "2026-07-14T14:43:25Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.006 vwap=57.1000010172526 rel_vol=None direction_changes=22 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "XLE",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      },
+      "XOM": {
+        "confidence_adjustment": 0.0,
+        "gap_pct": 0.006416895124208622,
+        "generated_at": "2026-07-14T14:43:26Z",
+        "label": "GAP_UP_WEAK_PRE_OPEN",
+        "rationale": "gap=+0.006 vwap=145.74166870117188 rel_vol=None direction_changes=26 → GAP_UP_WEAK_PRE_OPEN",
+        "source": "yahoo",
+        "symbol": "XOM",
+        "warnings": [
+          "pre_market_gap_weak",
+          "pre_market_choppy_direction_changes"
+        ]
+      }
+    },
+    "plan_date": "2026-07-14",
+    "stale_data_warnings": [
+      "AAVE/USD",
+      "AVAX/USD",
+      "BCH/USD",
+      "BTC/USD",
+      "DOT/USD",
+      "ETH/USD",
+      "LINK/USD",
+      "LTC/USD",
+      "MATIC/USD",
+      "SOL/USD",
+      "UNI/USD"
+    ],
+    "strategy_warnings": {},
+    "symbols_planned": 64,
+    "warnings": []
   },
   "routine_budget": {
     "by_routine": {
