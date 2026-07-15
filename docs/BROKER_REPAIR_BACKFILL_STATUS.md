@@ -1,12 +1,12 @@
 # Broker repair backfill status
 
-_Generated at 2026-07-14T06:35:02.512582+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
+_Generated at 2026-07-15T06:36:29.428401+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
 
 ## Summary
 
-- Total decisions: 10
+- Total decisions: 9
 - `MARKED`: 3
-- `SKIPPED_INSUFFICIENT`: 2
+- `SKIPPED_INSUFFICIENT`: 1
 - `SKIPPED_OPERATOR_MARKER`: 5
 
 ## Per-symbol/day decisions
@@ -22,7 +22,6 @@ _Generated at 2026-07-14T06:35:02.512582+00:00 by `scripts/backfill_broker_repai
 | ETHUSD | 2026-06-15 | `MARKED` | 48 | 3 | 0 | failed_close_count=48 >= 3 AND no SAFE_MODE_EXITED on day |
 | LTC/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
 | LTCUSD | 2026-06-15 | `MARKED` | 208 | 0 | 0 | failed_close_count=208 >= 3 AND no SAFE_MODE_EXITED on day |
-| SOLUSD | 2026-06-14 | `SKIPPED_INSUFFICIENT` | 2 | 0 | 0 | failed_close_count=2 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
 
 ## What this script does NOT do
 
