@@ -1,27 +1,25 @@
 # Broker repair backfill status
 
-_Generated at 2026-07-15T06:36:29.428401+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
+_Generated at 2026-07-16T06:43:40.654417+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
 
 ## Summary
 
-- Total decisions: 9
-- `MARKED`: 3
+- Total decisions: 7
+- `MARKED`: 2
 - `SKIPPED_INSUFFICIENT`: 1
-- `SKIPPED_OPERATOR_MARKER`: 5
+- `SKIPPED_OPERATOR_MARKER`: 4
 
 ## Per-symbol/day decisions
 
 | Symbol | Day | Action | FailedCloses | SafeModeEntered | SafeModeExited | Reason |
 |--------|-----|--------|--------------|-----------------|----------------|--------|
-| AVAX | 2026-06-15 | `SKIPPED_OPERATOR_MARKER` | 104 | 0 | 0 | operator marker exists |
+| AVAX | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 56 | 0 | 0 | operator marker exists |
 | AVAX/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
-| AVAXUSD | 2026-06-15 | `MARKED` | 208 | 0 | 0 | failed_close_count=208 >= 3 AND no SAFE_MODE_EXITED on day |
+| AVAXUSD | 2026-06-16 | `MARKED` | 112 | 0 | 0 | failed_close_count=112 >= 3 AND no SAFE_MODE_EXITED on day |
 | DELETE | 2026-06-16 | `SKIPPED_INSUFFICIENT` | 0 | 21 | 0 | failed_close_count=0 < 3 or SAFE_MODE_EXITED_count=0 > 0 |
-| ETH | 2026-06-15 | `SKIPPED_OPERATOR_MARKER` | 24 | 0 | 0 | operator marker exists |
 | ETH/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
-| ETHUSD | 2026-06-15 | `MARKED` | 48 | 3 | 0 | failed_close_count=48 >= 3 AND no SAFE_MODE_EXITED on day |
 | LTC/USD | 2026-06-16 | `SKIPPED_OPERATOR_MARKER` | 0 | 0 | 1 | operator marker exists |
-| LTCUSD | 2026-06-15 | `MARKED` | 208 | 0 | 0 | failed_close_count=208 >= 3 AND no SAFE_MODE_EXITED on day |
+| LTCUSD | 2026-06-16 | `MARKED` | 200 | 0 | 0 | failed_close_count=200 >= 3 AND no SAFE_MODE_EXITED on day |
 
 ## What this script does NOT do
 

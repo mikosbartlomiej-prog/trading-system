@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-07-15T06:35:44.408181+00:00`
-**As of:** `2026-07-15T06:35:44.341289+00:00`
-**Git HEAD:** `11d13f9fb7679213eceeb89ae1b8f5d814feada2`
+**Generated:** `2026-07-16T06:43:01.975710+00:00`
+**As of:** `2026-07-16T06:43:01.904605+00:00`
+**Git HEAD:** `d367c1756495dd550c381db72fd7a13091d567f2`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `822` |
+| Total ledger rows today | `830` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,45 +17,45 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 822 |
+| `crypto-monitor` | 830 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 798 |
-| `crypto-oversold-bounce` | 24 |
+| `crypto-breakdown` | 25 |
+| `crypto-momentum` | 805 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `DOT/USD` | 93 |
-| `BTC/USD` | 81 |
-| `ETH/USD` | 81 |
-| `SOL/USD` | 81 |
-| `AVAX/USD` | 81 |
-| `LINK/USD` | 81 |
-| `LTC/USD` | 81 |
-| `BCH/USD` | 81 |
-| `UNI/USD` | 81 |
-| `AAVE/USD` | 81 |
+| `BTC/USD` | 83 |
+| `ETH/USD` | 83 |
+| `SOL/USD` | 83 |
+| `AVAX/USD` | 83 |
+| `LINK/USD` | 83 |
+| `DOT/USD` | 83 |
+| `LTC/USD` | 83 |
+| `BCH/USD` | 83 |
+| `UNI/USD` | 83 |
+| `AAVE/USD` | 83 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 12 |
+| `0.0-0.5` | 0 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 810 |
+| `null` | 830 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 822 |
+| `UNKNOWN` | 830 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -77,7 +77,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `29366546342` |
+| Last workflow run id | `29448886577` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
