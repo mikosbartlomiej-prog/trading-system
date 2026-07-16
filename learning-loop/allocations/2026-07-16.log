@@ -1,40 +1,42 @@
-[00:56:14 INFO] ============================================================
-[00:56:14 INFO] AccountAwareAllocator — daily plan 2026-07-16
-[00:56:14 INFO] ============================================================
-[00:56:14 INFO] ── Step 1: fetching account state ──
-[00:56:14 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
-[00:56:14 INFO] ── Step 2: fetching open positions ──
-[00:56:14 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
-[00:56:14 INFO]   PDT mode=OK  dt_remaining=3
-[00:56:14 INFO] ── Step 3: defensive mode check ──
-[00:56:14 INFO]   defensive_mode OFF → proceed with deployment
-[00:56:14 INFO] ── Step 4: regime detection ──
-[00:56:14 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[00:56:14 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[00:56:14 INFO] ── Step 5: scoring allowed universe ──
-[00:56:15 DBG ]     META     score=+0.649  bucket=ai_nasdaq_semis
-[00:56:15 DBG ]     PANW     score=+0.562  bucket=software_quality
-[00:56:15 DBG ]     CRWD     score=+0.441  bucket=software_quality
-[00:56:15 DBG ]     AAPL     score=+0.437  bucket=ai_nasdaq_semis
-[00:56:15 DBG ]     ADBE     score=+0.353  bucket=software_quality
-[00:56:15 INFO] ── Step 6: target weight construction ──
-[00:56:15 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
-[00:56:15 INFO]   target_invested_ratio_after_plan = 1.0000
-[00:56:15 DBG ]     META       target_weight=0.1800 ($16290.88)
-[00:56:15 DBG ]     PANW       target_weight=0.1800 ($16290.88)
-[00:56:15 DBG ]     CRWD       target_weight=0.1800 ($16290.88)
-[00:56:15 DBG ]     AAPL       target_weight=0.1800 ($16290.88)
-[00:56:15 DBG ]     ADBE       target_weight=0.1800 ($16290.88)
-[00:56:15 DBG ]     SPY        target_weight=0.1000 ($9050.49)
-[00:56:15 DBG ]     QQQ        target_weight=0.0000 ($0.00)
-[00:56:15 INFO] ── Step 7: rebalance order generation ──
-[00:56:15 INFO]     META     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:56:15 INFO]     PANW     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:56:15 INFO]     CRWD     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:56:15 INFO]     AAPL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:56:15 INFO]     ADBE     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:56:15 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:56:15 INFO]     QQQ      HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- target $0 below min_order_value $100
-[00:56:15 INFO]   summary: 6 actionable + 1 hold; passed=6  failed=0
-[00:56:15 INFO] ── Step 8: plan complete ──
-[00:56:15 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+[21:53:17 INFO] ============================================================
+[21:53:17 INFO] AccountAwareAllocator — daily plan 2026-07-16
+[21:53:17 INFO] ============================================================
+[21:53:17 INFO] ── Step 1: fetching account state ──
+[21:53:17 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[21:53:17 INFO] ── Step 2: fetching open positions ──
+[21:53:18 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[21:53:18 INFO]   PDT mode=OK  dt_remaining=3
+[21:53:18 INFO] ── Step 3: defensive mode check ──
+[21:53:18 INFO]   defensive_mode OFF → proceed with deployment
+[21:53:18 INFO] ── Step 4: regime detection ──
+[21:53:18 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[21:53:18 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[21:53:18 INFO] ── Step 5: scoring allowed universe ──
+[21:53:25 DBG ]     ADBE     score=+0.471  bucket=software_quality
+[21:53:25 DBG ]     AAPL     score=+0.470  bucket=ai_nasdaq_semis
+[21:53:25 DBG ]     WDAY     score=+0.385  bucket=software_quality
+[21:53:25 DBG ]     INTU     score=+0.377  bucket=software_quality
+[21:53:25 DBG ]     PANW     score=+0.371  bucket=software_quality
+[21:53:25 INFO] ── Step 6: target weight construction ──
+[21:53:25 INFO]   reason: regime=NEUTRAL | primary_picks=5(73%) | fallback=['SPY', 'QQQ', 'GLD']
+[21:53:25 INFO]   target_invested_ratio_after_plan = 1.0000
+[21:53:25 DBG ]     ADBE       target_weight=0.1375 ($12444.42)
+[21:53:25 DBG ]     AAPL       target_weight=0.1800 ($16290.88)
+[21:53:25 DBG ]     WDAY       target_weight=0.1375 ($12444.42)
+[21:53:25 DBG ]     INTU       target_weight=0.1375 ($12444.42)
+[21:53:25 DBG ]     PANW       target_weight=0.1375 ($12444.42)
+[21:53:25 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[21:53:25 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[21:53:25 DBG ]     GLD        target_weight=0.0700 ($6335.34)
+[21:53:25 INFO] ── Step 7: rebalance order generation ──
+[21:53:25 INFO]     AAPL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[21:53:25 INFO]     ADBE     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[21:53:25 INFO]     WDAY     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[21:53:25 INFO]     INTU     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[21:53:25 INFO]     PANW     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[21:53:25 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[21:53:25 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[21:53:25 INFO]     GLD      BUY     current=$     0.00 target=$  6335.34 delta=$ +6335.34  -- new position at target 7.0%
+[21:53:25 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
+[21:53:25 INFO] ── Step 8: plan complete ──
+[21:53:25 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
