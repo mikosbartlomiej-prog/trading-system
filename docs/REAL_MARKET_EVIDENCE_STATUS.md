@@ -1,8 +1,8 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-07-16T06:43:01.975710+00:00`
-**As of:** `2026-07-16T06:43:01.904605+00:00`
-**Git HEAD:** `d367c1756495dd550c381db72fd7a13091d567f2`
+**Generated:** `2026-07-17T06:38:14.955468+00:00`
+**As of:** `2026-07-17T06:38:14.890405+00:00`
+**Git HEAD:** `94ffd271b643a9b405b16dbeb223ba58d59610ba`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
@@ -23,8 +23,7 @@
 
 | Strategy | Count |
 |---|---|
-| `crypto-breakdown` | 25 |
-| `crypto-momentum` | 805 |
+| `crypto-momentum` | 830 |
 
 ## By symbol (top 10)
 
@@ -77,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `29448886577` |
+| Last workflow run id | `29532210203` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
