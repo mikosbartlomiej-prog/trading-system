@@ -2,7 +2,7 @@
 
 *Paper trading only. This report summarises empirical edge evidence based on closed paper trades. No statement here is a recommendation for live trading.*
 
-Window: last 180 days. Generated: 2026-07-16T22:55:47+00:00.
+Window: last 180 days. Generated: 2026-07-17T22:48:09+00:00.
 
 | Strategy | n_closed | WR | PF | Expectancy | NetPnL | MaxDD | Regimes | Status |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
