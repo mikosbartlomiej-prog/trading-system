@@ -1662,3 +1662,13 @@
 - 2026-07-17 · crypto-oversold-bounce: PIPELINE_FAILURE_SUSPECTED — SILENT 143d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
 - 2026-07-17 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 
+- 2026-07-18 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-07-18 · crypto-momentum: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · geo-gold: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · options-momentum: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · crypto-oversold-bounce: PIPELINE_FAILURE_SUSPECTED — SILENT 144d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-07-18 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+
