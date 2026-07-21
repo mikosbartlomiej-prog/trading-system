@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-07-20T07:41:43.236546+00:00",
-  "generated_at_iso": "2026-07-20T07:41:43.303274+00:00",
-  "git_head": "f105607a56a8984ab59b7c2de813f39895c3b951",
+  "as_of": "2026-07-21T07:08:11.937525+00:00",
+  "generated_at_iso": "2026-07-21T07:08:12.004744+00:00",
+  "git_head": "df92d079c55672179d46c99b062af36b2442d73f",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -57,7 +57,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "ETH/USD",
       "threshold_crosses": 0
@@ -81,7 +81,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "SOL/USD",
       "threshold_crosses": 0
@@ -105,7 +105,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "LTC/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 3,
+    "near_misses": 0,
     "rows": 10,
     "threshold_crosses": 0
   },
