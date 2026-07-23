@@ -1,40 +1,32 @@
 ========================================================================
-# Daily Operational Brief — 2026-07-22
+# Daily Operational Brief — 2026-07-23
 ========================================================================
 
-## TOP BANNER: YELLOW
+## TOP BANNER: GREEN
 
-**ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_EQUITY_GAP**
+**ALLOCATOR_ALLOWED — deterministic gates green**
 
-Active blockers: equity_gap_stale_seconds=88467. No orders will be placed.
-
-_The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
+No deterministic blocker is gating the allocator. TRADING_EXECUTION_ON remains false; review LLM advisory (advisory-only) before any operator-driven change.
 
 ## Master verdict
 
-- Decision: `ALLOCATOR_BLOCKED_EQUITY_GAP` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
+- Decision: `ALLOCATOR_ALLOWED` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
 - Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
-- Reason: `equity_gap_stale_seconds=88467` [source: `system_activation_gate.reason`]
+- Reason: `all_gates_clear` [source: `system_activation_gate.reason`]
 
 ## Top blockers
 
-- `equity_gap_stale_seconds=88467`
-
-_Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
+- (No deterministic blocker found.)
 
 ## What changed since yesterday
 
 - No prior brief sidecar found on disk. First brief or history not persisted — nothing to diff against.
 
-## What operator must do
-
-1. Review learning-loop/equity_gap_reconciliation_latest.json and the upstream account/equity sources; do NOT flip any broker or live-trading flag.
-
 ## Equity reconciliation
 
 - verdict: `EQUITY_GAP_OK` [source: `learning-loop/equity_gap_reconciliation_latest.json::verdict`]
 - gap_amount: `0.0` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_amount`]
-- gap_pct: `0.0` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_pct`]
+- gap_pct: `CLAIM_UNSUPPORTED` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_pct` missing]
 - block_allocator: `False` [source: `learning-loop/equity_gap_reconciliation_latest.json::block_allocator`]
 
 ## Broker repair queue
