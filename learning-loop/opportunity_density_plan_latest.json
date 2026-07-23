@@ -1,12 +1,12 @@
 {
-  "as_of": "2026-07-21T07:08:12.069921+00:00",
-  "generated_at_iso": "2026-07-21T07:08:12.206810+00:00",
-  "git_head": "df92d079c55672179d46c99b062af36b2442d73f",
+  "as_of": "2026-07-23T07:06:24.955430+00:00",
+  "generated_at_iso": "2026-07-23T07:06:25.077374+00:00",
+  "git_head": "fca75c0cd5fba9f8ae61fbec4ac5b65ff2e2091b",
   "inputs_available": {
     "confidence_precalibration_readiness": true,
     "monitor_emission_status": true,
     "near_miss_dir_present": true,
-    "near_miss_rows_7d": 27109,
+    "near_miss_rows_7d": 21044,
     "replay_discovery": true,
     "shadow_candidate_queue": true,
     "strategy_threshold_reality": true,
@@ -35,14 +35,14 @@
       {
         "actual_signals_fired": 0,
         "advisory_note": "operator-review only; auto-threshold changes refused",
-        "near_miss_rate": 0.1256,
+        "near_miss_rate": 0.1417,
         "recommendation": "SHADOW_VARIANT_REVIEW",
         "replay_candidates": 0,
         "strategy_id": "crypto-momentum",
         "threshold_realism": "REALISTIC"
       },
       {
-        "actual_signals_fired": 240,
+        "actual_signals_fired": 142,
         "advisory_note": "operator-review only; auto-threshold changes refused",
         "near_miss_rate": 0.0,
         "recommendation": "REPLAY_TEST_VARIANT",
@@ -81,61 +81,61 @@
     "B_top_symbols_by_near_misses": [
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 3319,
-        "symbol": "UNI/USD",
-        "top_strategy": "crypto-momentum"
-      },
-      {
-        "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 3015,
-        "symbol": "ETH/USD",
-        "top_strategy": "crypto-momentum"
-      },
-      {
-        "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2864,
-        "symbol": "AVAX/USD",
-        "top_strategy": "crypto-momentum"
-      },
-      {
-        "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2745,
+        "near_miss_count": 2410,
         "symbol": "DOT/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2685,
-        "symbol": "BTC/USD",
+        "near_miss_count": 2351,
+        "symbol": "UNI/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2668,
+        "near_miss_count": 2309,
+        "symbol": "ETH/USD",
+        "top_strategy": "crypto-momentum"
+      },
+      {
+        "advisory_note": "observational; never auto-promotes",
+        "near_miss_count": 2279,
+        "symbol": "AVAX/USD",
+        "top_strategy": "crypto-momentum"
+      },
+      {
+        "advisory_note": "observational; never auto-promotes",
+        "near_miss_count": 2135,
         "symbol": "LTC/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2499,
+        "near_miss_count": 2034,
+        "symbol": "BTC/USD",
+        "top_strategy": "crypto-momentum"
+      },
+      {
+        "advisory_note": "observational; never auto-promotes",
+        "near_miss_count": 1878,
         "symbol": "BCH/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2428,
-        "symbol": "AAVE/USD",
-        "top_strategy": "crypto-momentum"
-      },
-      {
-        "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2360,
+        "near_miss_count": 1825,
         "symbol": "SOL/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2094,
+        "near_miss_count": 1773,
+        "symbol": "AAVE/USD",
+        "top_strategy": "crypto-momentum"
+      },
+      {
+        "advisory_note": "observational; never auto-promotes",
+        "near_miss_count": 1690,
         "symbol": "LINK/USD",
         "top_strategy": "crypto-momentum"
       }
@@ -223,7 +223,7 @@
         "hit_rate": 1.0,
         "metric_name": "rsi",
         "near_miss_rate": 0.0,
-        "sample_size": 240,
+        "sample_size": 142,
         "strategy_id": "crypto-oversold-bounce",
         "threshold": 30.0,
         "threshold_realism": "TOO_LOOSE"
@@ -231,28 +231,28 @@
     ],
     "G_data_collection_plan": {
       "global": {
-        "near_miss_rows": 27109,
+        "near_miss_rows": 21044,
         "outcomes_available": false,
-        "production_positive_rows": 120,
+        "production_positive_rows": 71,
         "replay_positive_rows": 0,
         "verdict_v327": "NOT_READY_NO_OUTCOMES"
       },
       "note": "Estimates only \u2014 calibration is NEVER recommended without real outcomes. Replay/near-miss never count as paper edge.",
       "per_strategy_eta": [
         {
-          "actual_signals_fired": 240,
+          "actual_signals_fired": 142,
           "advisory_note": "estimate based on current evaluation rate; NEVER auto-acts",
-          "current_sample": 240,
+          "current_sample": 142,
           "eta_band": "30d_full_review",
-          "evaluations": 240,
+          "evaluations": 142,
           "strategy_id": "crypto-oversold-bounce"
         },
         {
           "actual_signals_fired": 0,
           "advisory_note": "estimate based on current evaluation rate; NEVER auto-acts",
-          "current_sample": 14149,
+          "current_sample": 14260,
           "eta_band": "30d_full_review",
-          "evaluations": 14149,
+          "evaluations": 14260,
           "strategy_id": "crypto-momentum"
         },
         {

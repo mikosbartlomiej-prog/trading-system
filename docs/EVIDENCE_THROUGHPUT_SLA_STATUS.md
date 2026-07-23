@@ -1,14 +1,14 @@
 # Evidence Throughput SLA Status
 
-- Generated at: `2026-07-21T07:07:33.220988+00:00`
+- Generated at: `2026-07-23T07:05:46.858347+00:00`
 - Verdict: **FINDING_P0** (exit_code=3)
-- Consecutive zero cycles: `89`
-- History entries scanned: `89`
+- Consecutive zero cycles: `97`
+- History entries scanned: `97`
 - evidence_counters_latest total: `0`
 
 ## Latest cycle
 
-- appended_at: `2026-07-20T20:50:06.552069+00:00`
+- appended_at: `2026-07-22T20:41:40.261431+00:00`
 - signals+opportunities: `0`
 - collector_status: `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA`
 - workflow_conclusion: `success`

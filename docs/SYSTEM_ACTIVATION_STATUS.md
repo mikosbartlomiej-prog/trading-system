@@ -1,6 +1,6 @@
 # SYSTEM ACTIVATION STATUS
 
-_Generated at:_ `2026-07-22T07:42:39.281953+00:00`
+_Generated at:_ `2026-07-23T07:06:26.158924+00:00`
 
 ## Top-level flags
 
@@ -12,24 +12,18 @@ _Generated at:_ `2026-07-22T07:42:39.281953+00:00`
 | `LLM_EXECUTION_AUTHORITY` | `False` |
 | `LLM_ADVISORY_ON` | `True` |
 | `LLM_PROVIDER_MODE` | `UNAVAILABLE` |
-| `ALLOCATOR_ALLOWED` | `False` |
+| `ALLOCATOR_ALLOWED` | `True` |
 | `SHADOW_ONLY_ALLOWED` | `True` |
 | `BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE` | `True` |
 | `RETRY_STORM_SUPPRESSION_ACTIVE` | `True` |
 | `SAFE_MODE_CONSISTENCY_CHECK_ACTIVE` | `True` |
-| `OPERATOR_ACTION_REQUIRED` | `True` |
+| `OPERATOR_ACTION_REQUIRED` | `False` |
 | `CODE_WORK_REMAINING` | `False` |
 | `OPERATOR_WORK_REMAINING` | `False` |
 | `SECRET_WORK_REMAINING` | `True` |
 | `MARKET_DATA_WORK_REMAINING` | `True` |
-| `OPERATOR_ACTION_REASON` | equity_gap_stale_seconds=88466 |
 
-## Next operator actions
-
-1. Review learning-loop/equity_gap_reconciliation_latest.json and the upstream account/equity sources; do NOT flip any broker or live-trading flag.
-
-**Master gate decision:** `ALLOCATOR_BLOCKED_EQUITY_GAP`  
-**Active blockers:** `equity_gap_stale_seconds=88466`  
+**Master gate decision:** `ALLOCATOR_ALLOWED`  
 **LLM advisory status:** `unavailable`
 
 ## Subsystems
@@ -40,8 +34,8 @@ _Generated at:_ `2026-07-22T07:42:39.281953+00:00`
 | Safe mode | `AUTO` | `INACTIVE` | yes | — | auto on incident triggers; never auto-cleared |
 | Safe mode consistency checker | `ENFORCED` | `CONSISTENT` | yes | — | blocks allocator on audit-vs-runtime mismatch |
 | Equity reconciliation | `FRESH` | `EQUITY_GAP_OK` | yes | — | blocks allocator if unresolved, schema-invalid, or stale |
-| Allocator gate | `ENFORCED` | `ALLOCATOR_BLOCKED_EQUITY_GAP` | yes | equity_gap_stale_seconds=88466 | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
-| Position reconciliation | `FRESH` | `FRESH_AGE_S=3073469` | yes | — | informational outside market hours |
+| Allocator gate | `ENFORCED` | `ALLOCATOR_ALLOWED` | yes | — | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
+| Position reconciliation | `FRESH` | `FRESH_AGE_S=3157696` | yes | — | informational outside market hours |
 | Kill switch | `DISARMED` | `DISARMED` | yes | — | informational |
 | Discovery reporters | `READ_ONLY_ON` | `MISSING` | no | — | never places orders |
 | Trigger watchlist | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders |
@@ -66,10 +60,10 @@ _Generated at:_ `2026-07-22T07:42:39.281953+00:00`
 | Operator verify Alpaca dashboard for LTC/USD | `OPERATOR` | no | `docs/operator_repair_templates/LTC_USD_repair_marker_template.md` | `resolved` |
 | Operator record repair markers | `OPERATOR` | no | `scripts/record_operator_repair_confirmation.py` | `resolved` |
 | Operator run clearance proposal | `OPERATOR` | no | `scripts/run_operator_clearance_readiness.py` | `resolved` |
-| Operator reconcile safe_mode | `OPERATOR` | yes | `scripts/propose_safe_mode_reconciliation.py` | `pending` |
+| Operator reconcile safe_mode | `OPERATOR` | no | `scripts/propose_safe_mode_reconciliation.py` | `resolved` |
 | GitHub secret GEMINI_API_KEY | `GITHUB_SECRET` | no | `Settings -> Secrets and variables -> Actions` | `pending` |
 | Market trigger required for positive entry rows | `MARKET_TRIGGER` | no | `discovery layer` | `observing` |
-| Shadow-only requires deterministic gate clean | `SYSTEM (auto when operator clears)` | no | `system_activation_gate` | `pending` |
+| Shadow-only requires deterministic gate clean | `SYSTEM (auto when operator clears)` | no | `system_activation_gate` | `resolved` |
 
 ---
 
