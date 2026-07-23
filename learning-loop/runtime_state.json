@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-07-23T22:31:08.364561+00:00",
+      "last_seen_iso": "2026-07-23T22:36:05.037488+00:00",
       "last_status": "ok",
-      "pings_today": 222
+      "pings_today": 223
     },
     "geo-monitor": {
       "last_message": "",
@@ -82,7 +82,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "missing_last_equity_block_new_entries",
-    "last_update_at": "2026-07-23T22:31:08.359784+00:00",
+    "last_update_at": "2026-07-23T22:36:05.032647+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "",
