@@ -10,16 +10,16 @@
       "all rows have empty risks_identified + empty proposed_next_actions + zero confidence"
     ],
     "rows_seen": 11,
-    "rows_with_provider_failed": 4,
+    "rows_with_provider_failed": 6,
     "rows_with_provider_skipped": 0,
-    "rows_with_provider_used": 7,
+    "rows_with_provider_used": 5,
     "secret_leak_hits": 0,
     "status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
     "unsafe_phrase_hits": 0,
     "zero_confidence_count": 11
   },
   "quality_status": "LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS",
-  "run_id": "v3300-calibration-29888812822",
+  "run_id": "v3300-calibration-29977457634",
   "safety": {
     "allow_broker_paper": false,
     "broker_execution_enabled": false,
