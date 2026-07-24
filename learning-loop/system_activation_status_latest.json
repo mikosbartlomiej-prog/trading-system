@@ -22,7 +22,7 @@
     "WHOLE_SAFE_STACK_ON": true,
     "WHOLE_SOLUTION_SAFE_ON": true
   },
-  "generated_at_iso": "2026-07-23T07:44:12.205103+00:00",
+  "generated_at_iso": "2026-07-24T07:08:01.650463+00:00",
   "live_trading_unsupported": true,
   "llm_status": "unavailable",
   "master_blockers": [],
@@ -155,7 +155,7 @@
       "safety_notes": "fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED"
     },
     {
-      "actual_state": "FRESH_AGE_S=3159962",
+      "actual_state": "FRESH_AGE_S=3244191",
       "blockers": [],
       "desired_state": "FRESH",
       "enabled": true,

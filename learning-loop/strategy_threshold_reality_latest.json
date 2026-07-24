@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-07-23T07:06:24.711923+00:00",
+  "generated_at_iso": "2026-07-24T07:08:00.154958+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 14402,
+  "row_count": 14354,
   "strategies": [
     {
       "actual_signals_fired": 142,
@@ -36,31 +36,31 @@
       "threshold_realism": "TOO_LOOSE"
     },
     {
-      "actual_signals_fired": 0,
-      "evaluations": 14260,
+      "actual_signals_fired": 24,
+      "evaluations": 14212,
       "metrics": [
         {
-          "actual_hits": 4950,
-          "avg_distance_to_trigger": -6.411683,
+          "actual_hits": 4568,
+          "avg_distance_to_trigger": -7.502948,
           "direction": "above",
-          "hit_rate": 0.3471,
+          "hit_rate": 0.3214,
           "metric_name": "rsi",
-          "near_miss_rate": 0.1417,
-          "near_misses": 2020,
-          "sample_size": 14260,
+          "near_miss_rate": 0.1477,
+          "near_misses": 2099,
+          "sample_size": 14212,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 2139,
-          "avg_distance_to_trigger": -2.545399,
+          "actual_hits": 1651,
+          "avg_distance_to_trigger": -2.55896,
           "direction": "between",
-          "hit_rate": 0.15,
+          "hit_rate": 0.1162,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0236,
-          "near_misses": 337,
-          "sample_size": 14260,
+          "near_miss_rate": 0.0227,
+          "near_misses": 322,
+          "sample_size": 14212,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,8 +69,8 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 2357,
-      "recommendation": "SHADOW_VARIANT_REVIEW",
+      "near_misses": 2421,
+      "recommendation": "KEEP",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
     },

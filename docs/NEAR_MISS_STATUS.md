@@ -1,11 +1,11 @@
 # Near-Miss Status (v3.24.0)
 
-**Generated:** `2026-07-23T07:05:47.646871+00:00`
-**As of:** `2026-07-23T07:05:47.541941+00:00`
-**Git HEAD:** `fca75c0cd5fba9f8ae61fbec4ac5b65ff2e2091b`
+**Generated:** `2026-07-24T07:07:23.165794+00:00`
+**As of:** `2026-07-24T07:07:23.064659+00:00`
+**Git HEAD:** `2bf5953027a638e186a309dbed5f386289d4d1e7`
 **Window:** last 7 days
 **Tracker version:** `v3.24.0`
-**Total rows ingested:** `17172`
+**Total rows ingested:** `16301`
 
 ## Operator-review flagged pairs
 
@@ -20,8 +20,8 @@
 
 | Strategy | Metric | Sample | p95 |dist| | Median |threshold| | Ratio | Advisory |
 |---|---|---|---|---|---|---|
-| `crypto-momentum` | `rsi` | 16016 | 8.648649 | 60.0 | 14.4% | no |
-| `crypto-oversold-bounce` | `rsi` | 868 | 4.303794 | 30.0 | 14.3% | no |
+| `crypto-momentum` | `rsi` | 15106 | 8.6 | 60.0 | 14.3% | no |
+| `crypto-oversold-bounce` | `rsi` | 907 | 4.30605 | 30.0 | 14.3% | no |
 | `overbought-short` | `rsi` | 288 | 10.585278 | 72.0 | 14.7% | no |
 
 ## Safety contract
