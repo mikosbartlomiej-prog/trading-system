@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-07-23T23:56:23.792457+00:00",
+      "last_seen_iso": "2026-07-24T00:01:41.225079+00:00",
       "last_status": "ok",
-      "pings_today": 237
+      "pings_today": 1
     },
     "geo-monitor": {
       "last_message": "",
@@ -75,18 +75,18 @@
     "current_equity": 0.0,
     "current_intraday_pnl": 0.0,
     "current_intraday_pnl_pct": 0.0,
-    "date": "2026-07-23",
+    "date": "2026-07-24",
     "giveback_pct_of_peak": 0.0,
     "giveback_usd": 0.0,
     "intraday_peak_equity": 0.0,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "missing_last_equity_block_new_entries",
-    "last_update_at": "2026-07-23T23:56:23.783838+00:00",
+    "last_update_at": "2026-07-24T00:01:41.219342+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "",
-    "pnl_state": "FLAT",
+    "pnl_state": "NEW_DAY",
     "profit_floor_usd": 0.0,
     "session_start_equity": 0.0,
     "state_entered_at": "",
