@@ -1,5 +1,5 @@
 ========================================================================
-# Daily Operational Brief — 2026-07-23
+# Daily Operational Brief — 2026-07-24
 ========================================================================
 
 ## TOP BANNER: GREEN
@@ -26,7 +26,7 @@ No deterministic blocker is gating the allocator. TRADING_EXECUTION_ON remains f
 
 - verdict: `EQUITY_GAP_OK` [source: `learning-loop/equity_gap_reconciliation_latest.json::verdict`]
 - gap_amount: `0.0` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_amount`]
-- gap_pct: `CLAIM_UNSUPPORTED` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_pct` missing]
+- gap_pct: `0.0` [source: `learning-loop/equity_gap_reconciliation_latest.json::gap_pct`]
 - block_allocator: `False` [source: `learning-loop/equity_gap_reconciliation_latest.json::block_allocator`]
 
 ## Broker repair queue

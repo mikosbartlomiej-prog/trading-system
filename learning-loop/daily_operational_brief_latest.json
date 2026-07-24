@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-07-23",
+  "as_of": "2026-07-24",
   "audit_event_count_24h": 2,
   "flags": {
     "ALLOCATOR_ALLOWED": true,
@@ -23,7 +23,7 @@
     "WHOLE_SAFE_STACK_ON": true,
     "WHOLE_SOLUTION_SAFE_ON": true
   },
-  "generated_at_iso": "2026-07-23T07:44:12.340510+00:00",
+  "generated_at_iso": "2026-07-24T07:41:54.483847+00:00",
   "module": "scripts.generate_daily_operational_brief",
   "schema_version": "v3.30",
   "standing_markers": [
@@ -64,13 +64,13 @@
             "fees_slippage": 0.0,
             "held_for_orders": 0.0,
             "realized_pl_today": 0.0,
-            "unexplained": 0.0
+            "unexplained": 90504.88
           },
           "confidence": "LOW",
-          "current_equity": 0.0,
+          "current_equity": 90504.88,
           "evidence": {
             "audit_realized_pl": {
-              "path": "journal/autonomy/2026-07-23.jsonl",
+              "path": "journal/autonomy/2026-07-24.jsonl",
               "realized_pl_today_usd": 0.0
             },
             "dashboard_snapshot": {
@@ -87,9 +87,9 @@
             }
           },
           "gap_amount": 0.0,
-          "gap_pct": null,
-          "generated_at_iso": "2026-07-23T07:06:25.173849+00:00",
-          "peak_equity": 0.0,
+          "gap_pct": 0.0,
+          "generated_at_iso": "2026-07-24T07:08:00.607494+00:00",
+          "peak_equity": 90504.88,
           "schema_version": "v3.29",
           "standing_markers": [
             "EDGE_GATE_ENABLED=false",
@@ -104,16 +104,16 @@
             "ok_pct": 0.5,
             "warn_upper_pct": 2.0
           },
-          "ts_iso": "2026-07-23T07:06:25.173849+00:00",
+          "ts_iso": "2026-07-24T07:08:00.607494+00:00",
           "verdict": "EQUITY_GAP_OK"
         },
-        "evaluated_at": "2026-07-23T07:44:12.336658+00:00",
+        "evaluated_at": "2026-07-24T07:41:54.479993+00:00",
         "fresh_p13_count_last_hour": 0,
         "fresh_p13_in_window": false,
         "is_market_hours": false,
         "kill_switch_armed": false,
         "llm_status": "unavailable",
-        "position_recon_age_s": 3159963.116127,
+        "position_recon_age_s": 3246225.25945,
         "retry_storm_active": false,
         "retry_storm_count_last_hour": 0,
         "safe_mode_active": false,
@@ -123,7 +123,7 @@
           "audit_exits": 0,
           "blocker": null,
           "detail": "audit and runtime agree (enters=0, exits=0, runtime_active=False)",
-          "evaluated_at_iso": "2026-07-23T07:06:25.312455+00:00",
+          "evaluated_at_iso": "2026-07-24T07:08:00.753116+00:00",
           "last_event_iso": null,
           "lookback_hours": 24,
           "runtime_active": false,
@@ -149,7 +149,7 @@
         "NO_AUTO_BROKER_ACTION_FROM_THIS_MODULE"
       ],
       "status": "placed",
-      "ts_iso": "2026-07-23T07:44:12.340309+00:00"
+      "ts_iso": "2026-07-24T07:41:54.483653+00:00"
     },
     "blockers": [],
     "decision": "ALLOCATOR_ALLOWED",
@@ -159,7 +159,7 @@
       "outcome_tracker",
       "operator_dashboard"
     ],
-    "evaluated_at_iso": "2026-07-23T07:44:12.340322+00:00",
+    "evaluated_at_iso": "2026-07-24T07:41:54.483666+00:00",
     "llm_status": "unavailable",
     "module": "shared.system_activation_gate",
     "reason": "all_gates_clear",
@@ -178,13 +178,13 @@
           "fees_slippage": 0.0,
           "held_for_orders": 0.0,
           "realized_pl_today": 0.0,
-          "unexplained": 0.0
+          "unexplained": 90504.88
         },
         "confidence": "LOW",
-        "current_equity": 0.0,
+        "current_equity": 90504.88,
         "evidence": {
           "audit_realized_pl": {
-            "path": "journal/autonomy/2026-07-23.jsonl",
+            "path": "journal/autonomy/2026-07-24.jsonl",
             "realized_pl_today_usd": 0.0
           },
           "dashboard_snapshot": {
@@ -201,9 +201,9 @@
           }
         },
         "gap_amount": 0.0,
-        "gap_pct": null,
-        "generated_at_iso": "2026-07-23T07:06:25.173849+00:00",
-        "peak_equity": 0.0,
+        "gap_pct": 0.0,
+        "generated_at_iso": "2026-07-24T07:08:00.607494+00:00",
+        "peak_equity": 90504.88,
         "schema_version": "v3.29",
         "standing_markers": [
           "EDGE_GATE_ENABLED=false",
@@ -218,16 +218,16 @@
           "ok_pct": 0.5,
           "warn_upper_pct": 2.0
         },
-        "ts_iso": "2026-07-23T07:06:25.173849+00:00",
+        "ts_iso": "2026-07-24T07:08:00.607494+00:00",
         "verdict": "EQUITY_GAP_OK"
       },
-      "evaluated_at": "2026-07-23T07:44:12.336658+00:00",
+      "evaluated_at": "2026-07-24T07:41:54.479993+00:00",
       "fresh_p13_count_last_hour": 0,
       "fresh_p13_in_window": false,
       "is_market_hours": false,
       "kill_switch_armed": false,
       "llm_status": "unavailable",
-      "position_recon_age_s": 3159963.116127,
+      "position_recon_age_s": 3246225.25945,
       "retry_storm_active": false,
       "retry_storm_count_last_hour": 0,
       "safe_mode_active": false,
@@ -237,7 +237,7 @@
         "audit_exits": 0,
         "blocker": null,
         "detail": "audit and runtime agree (enters=0, exits=0, runtime_active=False)",
-        "evaluated_at_iso": "2026-07-23T07:06:25.312455+00:00",
+        "evaluated_at_iso": "2026-07-24T07:08:00.753116+00:00",
         "last_event_iso": null,
         "lookback_hours": 24,
         "runtime_active": false,
