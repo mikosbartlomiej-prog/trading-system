@@ -53,11 +53,21 @@ def setUpModule():
         Path(_BROKER_REPAIR_TMP) / "broker_repair_required_latest.json"
     )
 
+    # v3.32: these tests exercise safe_close / bracket-cancel behavior at
+    # the "what does the function return for X mock scenario" level. The
+    # canonical ExecutionMode gate blocks broker mutation whenever mode≠
+    # PAPER_CANARY. Since this test harness cannot (and MUST not) create
+    # PAPER_CANARY_APPROVED.marker, we set the documented test-only
+    # bypass. The bypass is scanned for by CI env audits to guarantee it
+    # never leaks into a real workflow.
+    os.environ["EXECUTION_MODE_GATE_TEST_BYPASS"] = "true"
+
 
 def tearDownModule():
     import shutil
     os.environ.pop("AUDIT_TRADING_DIR", None)
     os.environ.pop("BROKER_REPAIR_REQUIRED_PATH", None)
+    os.environ.pop("EXECUTION_MODE_GATE_TEST_BYPASS", None)
     try:
         shutil.rmtree(_AUDIT_TMP)
     except Exception:
