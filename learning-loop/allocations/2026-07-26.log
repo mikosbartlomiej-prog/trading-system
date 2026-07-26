@@ -1,0 +1,40 @@
+[01:07:10 INFO] ============================================================
+[01:07:10 INFO] AccountAwareAllocator — daily plan 2026-07-26
+[01:07:10 INFO] ============================================================
+[01:07:10 INFO] ── Step 1: fetching account state ──
+[01:07:11 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[01:07:11 INFO] ── Step 2: fetching open positions ──
+[01:07:11 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[01:07:11 INFO]   PDT mode=OK  dt_remaining=3
+[01:07:11 INFO] ── Step 3: defensive mode check ──
+[01:07:11 INFO]   defensive_mode OFF → proceed with deployment
+[01:07:11 INFO] ── Step 4: regime detection ──
+[01:07:11 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[01:07:11 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[01:07:11 INFO] ── Step 5: scoring allowed universe ──
+[01:07:14 DBG ]     USO      score=+0.602  bucket=inflation_energy
+[01:07:14 DBG ]     INTU     score=+0.454  bucket=software_quality
+[01:07:14 DBG ]     AAPL     score=+0.435  bucket=ai_nasdaq_semis
+[01:07:14 DBG ]     XOM      score=+0.367  bucket=inflation_energy
+[01:07:14 DBG ]     ADBE     score=+0.335  bucket=software_quality
+[01:07:14 INFO] ── Step 6: target weight construction ──
+[01:07:14 INFO]   reason: regime=NEUTRAL | primary_picks=4(72%) | fallback=['SPY', 'QQQ', 'GLD']
+[01:07:14 INFO]   target_invested_ratio_after_plan = 1.0000
+[01:07:14 DBG ]     USO        target_weight=0.1800 ($16290.88)
+[01:07:14 DBG ]     INTU       target_weight=0.1800 ($16290.88)
+[01:07:14 DBG ]     AAPL       target_weight=0.1800 ($16290.88)
+[01:07:14 DBG ]     XOM        target_weight=0.1800 ($16290.88)
+[01:07:14 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[01:07:14 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[01:07:14 DBG ]     GLD        target_weight=0.0800 ($7240.39)
+[01:07:14 INFO] ── Step 7: rebalance order generation ──
+[01:07:14 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[01:07:14 INFO]     INTU     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[01:07:14 INFO]     AAPL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[01:07:14 INFO]     XOM      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[01:07:14 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[01:07:14 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[01:07:14 INFO]     GLD      BUY     current=$     0.00 target=$  7240.39 delta=$ +7240.39  -- new position at target 8.0%
+[01:07:14 INFO]   summary: 7 actionable + 0 hold; passed=7  failed=0
+[01:07:14 INFO] ── Step 8: plan complete ──
+[01:07:14 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
