@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-07-25T06:38:40.462346+00:00",
-  "generated_at_iso": "2026-07-25T06:38:40.531134+00:00",
-  "git_head": "d9b96924b067c5e371ca2980db1b359e3d3a58e3",
+  "as_of": "2026-07-26T07:11:00.242429+00:00",
+  "generated_at_iso": "2026-07-26T07:11:00.299048+00:00",
+  "git_head": "b7246656db3e5641e278dc82f536720388ded0ae",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
