@@ -6,6 +6,12 @@
       "last_seen_iso": "2026-07-26T04:42:30.109775+00:00",
       "last_status": "ok",
       "pings_today": 1
+    },
+    "geo-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-07-26T04:44:24.760131+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   }
 }
