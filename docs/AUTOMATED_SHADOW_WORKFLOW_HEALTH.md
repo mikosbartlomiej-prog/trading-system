@@ -1,6 +1,6 @@
 # Automated Shadow Workflow Health (v3.27.1)
 
-**Generated:** `2026-07-27T20:06:27.240412+00:00`
+**Generated:** `2026-07-28T15:52:32.257938+00:00`
 **Source:** `learning-loop/shadow_evidence/workflow_health_latest.json`
 **Verdict:** **`AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET`**
 **Standing markers:** `BROKER_PAPER_CANARY_STILL_BLOCKED`, `LIVE_TRADING_UNSUPPORTED`
@@ -13,7 +13,7 @@
 
 | Field | Value |
 |---|---|
-| Last run id | `30301099515` |
+| Last run id | `30375416073` |
 | Last run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Last resolver status | `RESOLVED` |
