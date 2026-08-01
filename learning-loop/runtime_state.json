@@ -6,6 +6,12 @@
       "last_seen_iso": "2026-08-01T15:45:28.842376+00:00",
       "last_status": "ok",
       "pings_today": 1
+    },
+    "defense-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-01T15:46:18.286394+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   }
 }
