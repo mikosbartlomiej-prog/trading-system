@@ -13,6 +13,12 @@
       "last_status": "ok",
       "pings_today": 30
     },
+    "doj-monitor": {
+      "last_message": "emitted=0",
+      "last_seen_iso": "2026-08-03T12:48:20.973422+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-03T12:45:45.306240+00:00",
