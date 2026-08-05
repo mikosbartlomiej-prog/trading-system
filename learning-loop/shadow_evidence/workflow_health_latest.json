@@ -1,17 +1,17 @@
 {
   "counters_snapshot": {
     "completed_shadow_outcomes_count": 0,
-    "halt_path_records_count": 149,
+    "halt_path_records_count": 150,
     "real_market_opportunities_count": 0,
     "scaffold_no_market_data_records_count": 5
   },
   "diagnostic_token_counts": {},
-  "generated_at_iso": "2026-08-05T15:41:03.595622+00:00",
+  "generated_at_iso": "2026-08-05T18:07:48.602620+00:00",
   "last_collector_status": "SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA",
   "last_collector_summary": {},
   "last_resolver_status": "RESOLVED",
   "last_workflow_run_conclusion": "success",
-  "last_workflow_run_id": "31021431349",
+  "last_workflow_run_id": "31033155654",
   "rationale": [
     "real_market_opportunities_count=0; workflow + data path appear healthy"
   ],
