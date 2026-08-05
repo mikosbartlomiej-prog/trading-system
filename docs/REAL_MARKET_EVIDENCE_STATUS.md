@@ -1,8 +1,8 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-04T07:13:12.237538+00:00`
-**As of:** `2026-08-04T07:13:12.167670+00:00`
-**Git HEAD:** `d1d42afc3fccc6198db354ead8a9b1d7e34f657f`
+**Generated:** `2026-08-05T07:14:52.929917+00:00`
+**As of:** `2026-08-05T07:14:52.862562+00:00`
+**Git HEAD:** `413cc0dab303259282150c391da25c5ee7bc8e1a`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `30849261921` |
+| Last workflow run id | `30946573048` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
