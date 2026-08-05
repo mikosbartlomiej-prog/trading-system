@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-05T17:40:34.345858+00:00",
+      "last_seen_iso": "2026-08-05T17:45:37.609319+00:00",
       "last_status": "ok",
-      "pings_today": 6
+      "pings_today": 7
     },
     "geo-monitor": {
       "last_message": "",
@@ -37,15 +37,15 @@
       "last_status": "ok",
       "pings_today": 5
     },
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-05T17:40:31.727158+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
     "options-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-05T17:40:50.518916+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "politician-monitor": {
+      "last_message": "emitted=0",
+      "last_seen_iso": "2026-08-05T17:40:31.727158+00:00",
       "last_status": "ok",
       "pings_today": 1
     },
@@ -76,7 +76,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-08-05T17:40:34.342205+00:00",
+    "last_update_at": "2026-08-05T17:45:37.606091+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-08-05T17:10:44.956040+00:00",
