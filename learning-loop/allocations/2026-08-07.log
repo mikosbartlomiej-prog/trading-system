@@ -1,0 +1,40 @@
+[00:59:31 INFO] ============================================================
+[00:59:31 INFO] AccountAwareAllocator — daily plan 2026-08-07
+[00:59:31 INFO] ============================================================
+[00:59:31 INFO] ── Step 1: fetching account state ──
+[00:59:31 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[00:59:31 INFO] ── Step 2: fetching open positions ──
+[00:59:31 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[00:59:31 INFO]   PDT mode=OK  dt_remaining=3
+[00:59:31 INFO] ── Step 3: defensive mode check ──
+[00:59:31 INFO]   defensive_mode OFF → proceed with deployment
+[00:59:31 INFO] ── Step 4: regime detection ──
+[00:59:31 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:59:31 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[00:59:31 INFO] ── Step 5: scoring allowed universe ──
+[00:59:36 DBG ]     MSFT     score=+0.722  bucket=ai_nasdaq_semis
+[00:59:36 DBG ]     WDAY     score=+0.579  bucket=software_quality
+[00:59:36 DBG ]     ADBE     score=+0.450  bucket=software_quality
+[00:59:36 DBG ]     AMZN     score=+0.427  bucket=ai_nasdaq_semis
+[00:59:36 DBG ]     INTU     score=+0.394  bucket=software_quality
+[00:59:36 INFO] ── Step 6: target weight construction ──
+[00:59:36 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
+[00:59:36 INFO]   target_invested_ratio_after_plan = 1.0000
+[00:59:36 DBG ]     MSFT       target_weight=0.1800 ($16290.88)
+[00:59:36 DBG ]     WDAY       target_weight=0.1800 ($16290.88)
+[00:59:36 DBG ]     ADBE       target_weight=0.1800 ($16290.88)
+[00:59:36 DBG ]     AMZN       target_weight=0.1800 ($16290.88)
+[00:59:36 DBG ]     INTU       target_weight=0.1800 ($16290.88)
+[00:59:36 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[00:59:36 DBG ]     QQQ        target_weight=0.0000 ($0.00)
+[00:59:36 INFO] ── Step 7: rebalance order generation ──
+[00:59:36 INFO]     MSFT     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:59:36 INFO]     WDAY     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:59:36 INFO]     ADBE     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:59:36 INFO]     AMZN     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:59:36 INFO]     INTU     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:59:36 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:59:36 INFO]     QQQ      HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- target $0 below min_order_value $100
+[00:59:36 INFO]   summary: 6 actionable + 1 hold; passed=6  failed=0
+[00:59:36 INFO] ── Step 8: plan complete ──
+[00:59:36 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
