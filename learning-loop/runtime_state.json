@@ -3,9 +3,9 @@
   "heartbeat": {
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-07T18:11:44.880234+00:00",
+      "last_seen_iso": "2026-08-07T18:15:35.064956+00:00",
       "last_status": "ok",
-      "pings_today": 1
+      "pings_today": 2
     },
     "exit-monitor": {
       "last_message": "",
