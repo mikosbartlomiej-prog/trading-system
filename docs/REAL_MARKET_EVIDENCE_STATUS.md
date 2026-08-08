@@ -1,44 +1,44 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-07T05:56:13.240331+00:00`
-**As of:** `2026-08-07T05:56:13.179308+00:00`
-**Git HEAD:** `f9c9187a5108183a98115aef47b26945c975334b`
+**Generated:** `2026-08-08T05:20:47.943846+00:00`
+**As of:** `2026-08-08T05:20:47.885000+00:00`
+**Git HEAD:** `709519d800ce745a359825cfb6cb9258d1bf60f2`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `740` |
+| Total ledger rows today | `620` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
-| Observation records today (DO NOT count toward unlock) | `20` |
+| Observation records today (DO NOT count toward unlock) | `0` |
 
 ## By monitor
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 740 |
+| `crypto-monitor` | 620 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 740 |
+| `crypto-momentum` | 620 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 74 |
-| `ETH/USD` | 74 |
-| `SOL/USD` | 74 |
-| `AVAX/USD` | 74 |
-| `LINK/USD` | 74 |
-| `DOT/USD` | 74 |
-| `LTC/USD` | 74 |
-| `BCH/USD` | 74 |
-| `UNI/USD` | 74 |
-| `AAVE/USD` | 74 |
+| `BTC/USD` | 62 |
+| `ETH/USD` | 62 |
+| `SOL/USD` | 62 |
+| `AVAX/USD` | 62 |
+| `LINK/USD` | 62 |
+| `DOT/USD` | 62 |
+| `LTC/USD` | 62 |
+| `BCH/USD` | 62 |
+| `UNI/USD` | 62 |
+| `AAVE/USD` | 62 |
 
 ## Confidence-score distribution
 
@@ -48,13 +48,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 740 |
+| `null` | 620 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 740 |
+| `UNKNOWN` | 620 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `31134568295` |
+| Last workflow run id | `31214584062` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
