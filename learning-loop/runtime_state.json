@@ -1,75 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-08-08T05:25:32.250186+00:00",
-=======
-      "last_seen_iso": "2026-08-08T05:26:07.600452+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 64
-    },
-    "defense-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-08T05:26:03.683992+00:00",
-      "last_status": "ok",
-      "pings_today": 53
-    },
-    "doj-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-08T04:45:21.194621+00:00",
-      "last_status": "ok",
-      "pings_today": 3
-    },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-08T05:25:49.648352+00:00",
+      "last_seen_iso": "2026-08-08T05:30:52.643827+00:00",
       "last_status": "ok",
-      "pings_today": 58
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-08T05:16:03.495144+00:00",
-      "last_status": "ok",
-      "pings_today": 12
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-08T05:25:51.961432+00:00",
-      "last_status": "ok",
-      "pings_today": 49
-    },
-    "options-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-07T21:21:40.310746+00:00",
-      "last_status": "ok",
-      "pings_today": 19
-    },
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-08T04:58:52.199559+00:00",
-      "last_status": "ok",
-      "pings_today": 3
-    },
-    "price-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-07T21:23:49.481279+00:00",
-      "last_status": "ok",
-      "pings_today": 18
-    },
-    "reddit-monitor": {
-      "last_message": "sent=0",
-      "last_seen_iso": "2026-08-07T22:32:31.466098+00:00",
-      "last_status": "ok",
-      "pings_today": 3
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-08T05:26:58.991322+00:00",
-      "last_status": "ok",
-      "pings_today": 68
+      "pings_today": 1
     }
   },
   "intraday_governor": {
@@ -85,40 +21,15 @@
     "intraday_peak_equity": 90504.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
-    "last_action": "noop",
-    "last_update_at": "2026-08-08T05:25:49.644346+00:00",
+    "last_action": "transition_NEW_DAY_to_FLAT",
+    "last_update_at": "2026-08-08T05:30:52.635772+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
-    "peak_at": "2026-08-08T00:05:28.457646+00:00",
+    "peak_at": "2026-08-08T05:30:52.635772+00:00",
     "pnl_state": "FLAT",
     "profit_floor_usd": 0.0,
     "session_start_equity": 90504.88,
-    "state_entered_at": "2026-08-08T00:05:28.457646+00:00",
+    "state_entered_at": "2026-08-08T05:30:52.635772+00:00",
     "top_giveback_symbols": []
-  },
-  "llm_availability": {
-    "actions_enqueued_this_run": [],
-    "consecutive_failures": 1,
-    "history": [
-      {
-        "at": "2026-08-07T21:26:35.978661+00:00",
-        "reason": "senior_pm_unavailable",
-        "success": false
-      }
-    ],
-    "last_reason": "senior_pm_unavailable",
-    "last_run_at": "2026-08-07T21:26:35.978661+00:00",
-    "last_success": false
-  },
-  "routine_budget": {
-    "by_routine": {
-      "daily-learning-pm": 1
-    },
-    "by_tier": {
-      "P0_essential": 1
-    },
-    "date": "2026-08-07",
-    "last_updated": "2026-08-07T21:26:35.817551+00:00",
-    "total": 1
   }
 }
