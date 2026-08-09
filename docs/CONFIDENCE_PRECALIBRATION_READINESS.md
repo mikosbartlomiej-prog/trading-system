@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-08-08T05:21:25.980976+00:00`
-**As of:** `2026-08-08T05:21:25.669038+00:00`
-**Git HEAD:** `709519d800ce745a359825cfb6cb9258d1bf60f2`
+**Generated:** `2026-08-09T05:29:55.198543+00:00`
+**As of:** `2026-08-09T05:29:54.895174+00:00`
+**Git HEAD:** `467de6e74baea9d8b00d51aa1dc738604d708690`
 **Window:** last 7 days
-**Rows total:** `17613`
+**Rows total:** `17823`
 **Positive rows (non-null confidence_score):** `195`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `195` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `27828` | NO (advisory) |
+| NEAR_MISS_ROWS           | `28072` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 

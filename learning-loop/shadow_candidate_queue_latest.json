@@ -1,29 +1,10 @@
 {
   "active_risk_blockers": [],
-  "as_of": "2026-08-08T05:21:28.118856+00:00",
-  "generated_at_iso": "2026-08-08T05:21:28.119280+00:00",
-  "rows": [
-    {
-      "asset_class": "crypto",
-      "confidence_expectation": "0.50 - 0.75 (builder default)",
-      "data_requirements": "daily bars (us_equity) or H1 bars (crypto)",
-      "mode": "SHADOW_ONLY",
-      "near_miss_count": 3,
-      "reason": "near-miss replay count: 3",
-      "replay_candidate_count": 0,
-      "required_real_time_condition": "RSI(14) <= 30 on H1 close AND 3-bar stabilization AND volume >= 25% of avg",
-      "risk_blockers": [],
-      "source": "replay_discovery",
-      "status": "WAITING_FOR_REAL_MARKET_TRIGGER",
-      "strategy": "crypto-oversold-bounce",
-      "symbol": "ETH/USD",
-      "variant_id": null
-    }
-  ],
-  "rows_by_source": {
-    "replay_discovery": 1
-  },
-  "rows_total": 1,
+  "as_of": "2026-08-09T05:29:57.286221+00:00",
+  "generated_at_iso": "2026-08-09T05:29:57.286625+00:00",
+  "rows": [],
+  "rows_by_source": {},
+  "rows_total": 0,
   "safety": {
     "all_rows_mode_shadow_only": true,
     "all_rows_waiting_for_trigger": true,
