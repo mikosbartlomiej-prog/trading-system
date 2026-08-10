@@ -15,9 +15,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-10T16:30:48.760818+00:00",
+      "last_seen_iso": "2026-08-10T16:35:47.656547+00:00",
       "last_status": "ok",
-      "pings_today": 17
+      "pings_today": 18
     },
     "options-exit-monitor": {
       "last_message": "",
@@ -64,7 +64,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-08-10T16:30:48.757067+00:00",
+    "last_update_at": "2026-08-10T16:35:47.653287+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-08-10T15:15:50.783983+00:00",
