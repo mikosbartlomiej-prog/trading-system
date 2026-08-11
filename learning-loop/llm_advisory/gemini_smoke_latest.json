@@ -1,11 +1,11 @@
 {
   "configured_model": "gemini-flash-latest",
-  "discovered_models_count": 39,
+  "discovered_models_count": 33,
   "error_redacted": "",
   "failure_category": null,
   "failure_http": null,
   "free_only": true,
-  "generated_at_iso": "2026-08-10T02:27:49.036017+00:00",
+  "generated_at_iso": "2026-08-11T02:21:25.302571+00:00",
   "safe_to_schedule": false,
   "secret_values_logged": false,
   "selected_model": "gemini-flash-latest",
