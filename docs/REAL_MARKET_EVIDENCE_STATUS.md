@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-10T05:55:44.627983+00:00`
-**As of:** `2026-08-10T05:55:44.553221+00:00`
-**Git HEAD:** `3ff687882c584f5683a7c34bf66ce2389e824138`
+**Generated:** `2026-08-11T05:35:35.032262+00:00`
+**As of:** `2026-08-11T05:35:34.964258+00:00`
+**Git HEAD:** `c4653ce1639c2509bac7b37ffd7aeb686554e283`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `743` |
+| Total ledger rows today | `680` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,45 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 743 |
+| `crypto-monitor` | 680 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 717 |
-| `crypto-oversold-bounce` | 26 |
+| `crypto-momentum` | 680 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 86 |
-| `ETH/USD` | 73 |
-| `SOL/USD` | 73 |
-| `AVAX/USD` | 73 |
-| `LINK/USD` | 73 |
-| `DOT/USD` | 73 |
-| `LTC/USD` | 73 |
-| `BCH/USD` | 73 |
-| `UNI/USD` | 73 |
-| `AAVE/USD` | 73 |
+| `BTC/USD` | 68 |
+| `ETH/USD` | 68 |
+| `SOL/USD` | 68 |
+| `AVAX/USD` | 68 |
+| `LINK/USD` | 68 |
+| `DOT/USD` | 68 |
+| `LTC/USD` | 68 |
+| `BCH/USD` | 68 |
+| `UNI/USD` | 68 |
+| `AAVE/USD` | 68 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 13 |
+| `0.0-0.5` | 0 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 730 |
+| `null` | 680 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 743 |
+| `UNKNOWN` | 680 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -77,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `31214584062` |
+| Last workflow run id | `31428287770` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |

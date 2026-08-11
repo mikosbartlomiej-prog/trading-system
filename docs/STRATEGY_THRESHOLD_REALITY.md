@@ -1,8 +1,8 @@
 # Strategy threshold reality
 
 **Reporter version:** v3.26.0
-**Generated at (UTC):** `2026-08-10T05:56:23.942103+00:00`
-**Window:** last 7 days (`18092` ledger rows scanned)
+**Generated at (UTC):** `2026-08-11T05:36:13.611383+00:00`
+**Window:** last 7 days (`18190` ledger rows scanned)
 
 > Recommendations are **advisory only**. This module NEVER auto-adjusts a threshold, NEVER promotes a variant to active, NEVER makes a broker or network call.
 
@@ -10,8 +10,8 @@
 
 | Strategy | Evals | Fired | Near-misses | Realism | Recommendation |
 |----------|------:|------:|------------:|---------|----------------|
-| `crypto-oversold-bounce` | 440 | 440 | 0 | TOO_LOOSE | REPLAY_TEST_VARIANT |
-| `crypto-momentum` | 17652 | 0 | 2710 | REALISTIC | SHADOW_VARIANT_REVIEW |
+| `crypto-oversold-bounce` | 392 | 392 | 0 | TOO_LOOSE | REPLAY_TEST_VARIANT |
+| `crypto-momentum` | 17798 | 0 | 3010 | REALISTIC | SHADOW_VARIANT_REVIEW |
 | `momentum-long` | 0 | 0 | 0 | INSUFFICIENT_DATA | OBSERVE_MORE |
 | `momentum-long-loose` | 0 | 0 | 0 | INSUFFICIENT_DATA | OBSERVE_MORE |
 | `overbought-short` | 0 | 0 | 0 | INSUFFICIENT_DATA | OBSERVE_MORE |
@@ -20,9 +20,9 @@
 
 | Strategy | Metric | Threshold | Direction | Samples | Near-misses | Hits | Avg dist | Realism |
 |----------|--------|-----------|-----------|--------:|------------:|-----:|---------:|---------|
-| `crypto-oversold-bounce` | `rsi` | 30.0 | below | 440 | 0 | 440 | -6.2227 | TOO_LOOSE |
-| `crypto-momentum` | `rsi` | 60.0 | above | 17652 | 2568 | 4315 | -9.9226 | REALISTIC |
-| `crypto-momentum` | `move_24h_pct` | [3.0, 15.0] | between | 17652 | 142 | 1452 | -3.0629 | REALISTIC |
+| `crypto-oversold-bounce` | `rsi` | 30.0 | below | 392 | 0 | 392 | -5.7786 | TOO_LOOSE |
+| `crypto-momentum` | `rsi` | 60.0 | above | 17798 | 2857 | 4858 | -7.9207 | REALISTIC |
+| `crypto-momentum` | `move_24h_pct` | [3.0, 15.0] | between | 17798 | 153 | 1427 | -2.7082 | REALISTIC |
 
 ## Standing safety markers
 
