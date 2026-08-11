@@ -40,6 +40,62 @@ ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 ALPACA_DATA_URL = "https://data.alpaca.markets"
 
 
+# v3.32 (2026-07-04) — canonical ExecutionMode gate. Every broker-mutating
+# HTTP call in this module MUST be preceded by _execution_mode_precheck().
+# The AST test tests/architecture_vnext/test_alpaca_mutation_sites_gated.py
+# scans this file and fails if any requests.post/requests.delete to
+# /v2/orders or /v2/positions/* is not dominated by a call to this helper.
+#
+# Behavior contract:
+#   - returns None → caller MAY proceed (mode + preconditions passed)
+#   - returns dict → mutation is blocked; caller MUST return the dict as
+#     its result (backward-compat shape).
+#   - never raises to the caller — uses check_or_block internally, which
+#     converts BrokerMutationBlocked to a structured refuse-and-return dict.
+def _execution_mode_precheck(
+    intent: str,
+    intended_notional_usd: float = 0.0,
+    client_order_id: str | None = None,
+) -> dict | None:
+    """v3.32 canonical mutation-guard shim.
+
+    Called at the top of every mutation function BEFORE the broker HTTP
+    call. Delegates all authorization logic to shared/execution_mode.py.
+
+    Returns None if the mutation is authorized. Returns a structured
+    "blocked" dict if the guard denies — the caller should return that
+    dict verbatim (or serialize it into its result contract). The dict
+    contains no secrets and only redacted IDs.
+
+    Test hook: environment variable EXECUTION_MODE_GATE_TEST_BYPASS may
+    be set to a non-empty value ONLY inside a hermetic test's
+    setUpModule; production workflows never set it (verified by CI env
+    scan). Fails-closed if the variable is misspelled.
+    """
+    if os.environ.get("EXECUTION_MODE_GATE_TEST_BYPASS", "").strip():
+        # Explicit test-time bypass. NEVER read outside of tests.
+        return None
+    try:
+        try:
+            from execution_mode import check_or_block  # type: ignore
+        except ImportError:
+            from shared.execution_mode import check_or_block  # type: ignore
+    except Exception as e:
+        # Fail-closed: guard module unavailable → block.
+        return {
+            "status":         "EXECUTION_MODE_BLOCKED",
+            "reason":         f"execution_mode module unavailable ({type(e).__name__}) — fail closed",
+            "intent":         intent,
+            "guard_decision": "BLOCKED_FAIL_CLOSED",
+            "broker_called":  False,
+        }
+    return check_or_block(
+        intent=intent,
+        intended_notional_usd=intended_notional_usd,
+        idempotency_key=client_order_id,
+    )
+
+
 def _fetch_account() -> dict | None:
     """Best-effort /v2/account for portfolio-risk gate. Returns None on failure."""
     if not _headers()["APCA-API-KEY-ID"]:
@@ -860,6 +916,20 @@ def place_stock_bracket(symbol: str, side: str, qty: int,
         "stop_loss":      {"stop_price":  str(round(stop_loss, 2))},
         "client_order_id": _client_order_id(strategy, symbol),
     }
+    # v3.32 — canonical ExecutionMode gate. Blocks BEFORE the broker HTTP
+    # call unless mode=PAPER_CANARY and all 12 preconditions pass.
+    _gate = _execution_mode_precheck(
+        intent="place_stock_bracket",
+        intended_notional_usd=float(size_usd),
+        client_order_id=payload["client_order_id"],
+    )
+    if _gate is not None:
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"execution_mode blocked: {_gate.get('reason','')[:180]}",
+            risk_verdict=verdict,
+        )
+        return None
     try:
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
@@ -1057,6 +1127,19 @@ def place_crypto_order(symbol: str, side: str, qty: float,
         "time_in_force":  "gtc",   # crypto requires gtc
         "client_order_id": _client_order_id(strategy, symbol),
     }
+    # v3.32 — canonical ExecutionMode gate for crypto order path.
+    _gate = _execution_mode_precheck(
+        intent="place_crypto_order",
+        intended_notional_usd=float(size_usd),
+        client_order_id=payload["client_order_id"],
+    )
+    if _gate is not None:
+        _emit_entry_audit_event(
+            proposal=_proposal, result="failed",
+            result_reason=f"execution_mode blocked: {_gate.get('reason','')[:180]}",
+            risk_verdict=verdict,
+        )
+        return None
     try:
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
@@ -1210,6 +1293,18 @@ def place_simple_buy(symbol: str, qty: int, limit_price: float,
         "time_in_force":  "day",
         "client_order_id": _client_order_id(strategy, symbol),
     }
+    # v3.32 — canonical ExecutionMode gate for options simple-buy path.
+    _gate = _execution_mode_precheck(
+        intent="place_simple_buy",
+        intended_notional_usd=float(qty) * float(limit_price) * 100.0,
+        client_order_id=payload["client_order_id"],
+    )
+    if _gate is not None:
+        _emit_entry_audit_event(
+            proposal=_proposal_options, result="failed",
+            result_reason=f"execution_mode blocked: {_gate.get('reason','')[:180]}",
+        )
+        return None
     try:
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                           headers=_headers(), json=payload, timeout=15)
@@ -1293,6 +1388,15 @@ def place_oco_exit(symbol: str, qty: int, tp_price: float, sl_price: float,
         "client_order_id": coid,
     }
 
+    # v3.32 — canonical ExecutionMode gate for OCO exit path.
+    _gate = _execution_mode_precheck(
+        intent="place_oco_exit",
+        intended_notional_usd=float(qty) * float(tp_price),
+        client_order_id=coid,
+    )
+    if _gate is not None:
+        print(f"  OCO exit blocked by execution_mode: {_gate.get('reason','')[:150]}")
+        return None
     try:
         r = requests.post(f"{ALPACA_BASE_URL}/v2/orders",
                            headers=_headers(), json=payload, timeout=10)
@@ -1402,6 +1506,19 @@ def _cancel_open_orders_for_symbol(symbol: str) -> dict:
             seen.add(oid)
 
     result["checked"] = len(to_cancel)
+
+    # v3.32 — canonical ExecutionMode gate covers DELETE cancellations.
+    # The check runs once for the entire cancel batch. Idempotency key
+    # for cancel is per-symbol (deterministic).
+    if to_cancel:
+        _gate = _execution_mode_precheck(
+            intent="cancel_open_orders_for_symbol",
+            intended_notional_usd=0.0,
+            client_order_id=f"cancel-{symbol}-{len(to_cancel)}",
+        )
+        if _gate is not None:
+            result["error"] = f"execution_mode blocked: {_gate.get('reason','')[:180]}"
+            return result
 
     for oid in to_cancel:
         try:
@@ -1710,6 +1827,25 @@ def safe_close(
             return result
         payload["limit_price"] = str(round(limit_price, 4 if is_crypto else 2))
 
+    # v3.32 — canonical ExecutionMode gate at the SINGLE close entry point.
+    # This is the last-mile block: even if v3.30 broker_repair_required or
+    # the pre-execute broker-repair check passed, the ExecutionMode gate
+    # must still authorize before the POST fires. Fail-closed by design.
+    _gate_coid = payload.get("client_order_id") or _client_order_id(
+        "safe-close", str(symbol)
+    )
+    payload["client_order_id"] = _gate_coid
+    _gate = _execution_mode_precheck(
+        intent="safe_close",
+        intended_notional_usd=float(payload.get("qty", 0) or 0) *
+                              float(limit_price or 0.0 if order_type == "limit" else 0.0),
+        client_order_id=_gate_coid,
+    )
+    if _gate is not None:
+        result["status"] = "EXECUTION_MODE_BLOCKED"
+        result["reason"] = _gate.get("reason", "execution_mode denied safe_close")
+        result["broker_called"] = False
+        return result
     # --- Submit order ---
     try:
         r = requests.post(

@@ -1,0 +1,1593 @@
+{
+  "allocations": {
+    "executions_found": 16,
+    "logs_found": 18,
+    "orders": {
+      "total_failed": 56,
+      "total_placed": 0,
+      "total_skipped": 22
+    },
+    "per_day": {
+      "2026-06-16": {
+        "execution": {
+          "executed_at": "2026-06-16T18:18:46Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16073.5,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15686.75,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SMH"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16105.150000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 9023.64,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8802.119999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            }
+          ],
+          "n_failed": 6,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-16T22:45:48Z",
+          "n_rebalance_orders": 3,
+          "planned_notional_abs": 27151.47,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-17": {
+        "execution": {
+          "executed_at": "2026-06-17T16:47:18Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 9001.5,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8790.960000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8795.93,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 3,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-17T22:28:12Z",
+          "n_rebalance_orders": 4,
+          "planned_notional_abs": 43442.35,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-18": {
+        "execution": {
+          "executed_at": "2026-06-18T16:46:04Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16008.9,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8964.24,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8875.5,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8908.36,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 4,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-18T22:49:40Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-19": {
+        "execution": {
+          "executed_at": "2026-06-19T16:19:24Z",
+          "failure_samples": [],
+          "n_failed": 0,
+          "n_placed": 0,
+          "n_skipped": 6,
+          "skip_reasons": {
+            "market not open": 6
+          }
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-19T21:56:34Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-20": {
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-20T21:57:57Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-21": {
+        "execution": {
+          "executed_at": "2026-06-21T13:45:30Z",
+          "failure_samples": [],
+          "n_failed": 0,
+          "n_placed": 0,
+          "n_skipped": 6,
+          "skip_reasons": {
+            "market not open": 6
+          }
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-21T22:07:03Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-22": {
+        "execution": {
+          "executed_at": "2026-06-22T18:05:22Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15814.135000000002,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15957.36,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SMH"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16048.199999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8934.599999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8846.7,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            }
+          ],
+          "n_failed": 6,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-22T22:29:29Z",
+          "n_rebalance_orders": 5,
+          "planned_notional_abs": 59733.229999999996,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-23": {
+        "execution": {
+          "executed_at": "2026-06-23T16:12:04Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15831.000000000002,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15734.125,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SMH"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8850.66,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8643.18,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8728.5,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 5,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-23T22:06:54Z",
+          "n_rebalance_orders": 3,
+          "planned_notional_abs": 27151.47,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-24": {
+        "execution": {
+          "executed_at": "2026-06-24T15:56:14Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8865.539999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8603.28,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8817.72,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 3,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-24T22:04:56Z",
+          "n_rebalance_orders": 3,
+          "planned_notional_abs": 27151.47,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-25": {
+        "execution": {
+          "executed_at": "2026-06-25T16:06:13Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8813.64,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8583.66,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8892.960000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 3,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-25T22:14:20Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-26": {
+        "execution": {
+          "executed_at": "2026-06-26T15:56:28Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16123.524999999998,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15995.845,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16023.15,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SMH"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8823.119999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8558.76,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            }
+          ],
+          "n_failed": 6,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-26T21:59:48Z",
+          "n_rebalance_orders": 4,
+          "planned_notional_abs": 43442.35,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-27": {
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-27T21:51:09Z",
+          "n_rebalance_orders": 4,
+          "planned_notional_abs": 43442.35,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-28": {
+        "execution": {
+          "executed_at": "2026-06-28T13:45:34Z",
+          "failure_samples": [],
+          "n_failed": 0,
+          "n_placed": 0,
+          "n_skipped": 4,
+          "skip_reasons": {
+            "market not open": 4
+          }
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-28T21:51:39Z",
+          "n_rebalance_orders": 4,
+          "planned_notional_abs": 43442.35,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-29": {
+        "execution": {
+          "executed_at": "2026-06-29T16:46:02Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16265.305,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8862.72,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8648.28,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8854.08,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 4,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-29T22:01:57Z",
+          "n_rebalance_orders": 5,
+          "planned_notional_abs": 59733.229999999996,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-06-30": {
+        "execution": {
+          "executed_at": "2026-06-30T16:09:47Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16250.880000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16014.495,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "CRWD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8952.36,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8816.880000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8868.48,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 5,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-06-30T22:06:39Z",
+          "n_rebalance_orders": 5,
+          "planned_notional_abs": 59733.229999999996,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-07-01": {
+        "execution": {
+          "executed_at": "2026-07-01T16:08:47Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15981.074999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15956.815,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "AMD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8988.539999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8753.880000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 9000.599999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "GLD"
+            }
+          ],
+          "n_failed": 5,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-07-01T22:11:07Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-07-02": {
+        "execution": {
+          "executed_at": "2026-07-02T15:54:32Z",
+          "failure_samples": [
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16072.4,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "PANW"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 16213.039999999999,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "CRWD"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 15959.025000000001,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "META"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8933.94,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "SPY"
+            },
+            {
+              "action": "BUY",
+              "alpaca_message": null,
+              "http_status": null,
+              "order_notional": 8587.32,
+              "rejection_category": "UNKNOWN_BROKER_REJECTION",
+              "symbol": "QQQ"
+            }
+          ],
+          "n_failed": 6,
+          "n_placed": 0,
+          "n_skipped": 0,
+          "skip_reasons": {}
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-07-02T21:56:13Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      },
+      "2026-07-03": {
+        "execution": {
+          "executed_at": "2026-07-03T15:35:15Z",
+          "failure_samples": [],
+          "n_failed": 0,
+          "n_placed": 0,
+          "n_skipped": 6,
+          "skip_reasons": {
+            "market not open": 6
+          }
+        },
+        "plan": {
+          "account_equity": 90504.88,
+          "allowed_buckets": [
+            "ai_nasdaq_semis",
+            "software_quality",
+            "inflation_energy",
+            "crypto"
+          ],
+          "auto_execute": true,
+          "buying_power": 362019.52,
+          "cash": 316767.08,
+          "generated_at": "2026-07-03T01:10:06Z",
+          "n_rebalance_orders": 6,
+          "planned_notional_abs": 76024.11,
+          "regime": "NEUTRAL",
+          "target_invested_ratio": 1.0
+        }
+      }
+    },
+    "plans_found": 18,
+    "rejection_categories": {
+      "UNKNOWN_BROKER_REJECTION": 56
+    },
+    "total_planned_notional_abs": 1042616.3799999998
+  },
+  "alpaca_read_only": {
+    "attempted": false,
+    "reason": "ALPACA_API_KEY/ALPACA_SECRET_KEY not in local env \u2014 Alpaca GET verification skipped. Truth-of-record for broker state is CI, which has the secret."
+  },
+  "as_of_iso": "2026-07-03T17:46:30.849378+00:00",
+  "autonomy_journal": {
+    "broker_repair_events_count": 104,
+    "close_position_failed_count": 156,
+    "events_by_actor_top20": {
+      "alpaca_orders": 2,
+      "autonomous_remediation": 3,
+      "broker_repair_required": 10,
+      "exit-monitor": 205,
+      "incident-pattern-detector": 21,
+      "incident_pattern_detector": 21,
+      "intraday-governor": 33,
+      "operator": 1,
+      "operator_repair_state": 3,
+      "reconcile_equity_gap": 2,
+      "retry_storm_containment": 89,
+      "routine_budget": 1,
+      "run_operator_clearance_readiness": 7,
+      "safe_close": 156,
+      "signal_opportunity_ledger": 210,
+      "strategy-variant-quarantine": 13,
+      "unknown": 23,
+      "verify_manual_broker_repair": 2
+    },
+    "files_scanned": 18,
+    "per_day_decision_type_counts": {
+      "2026-06-16": {
+        "CLEANUP_STALE_ORDERS": 21,
+        "CLOSE_POSITION": 156,
+        "EQUITY_GAP_RECONCILIATION": 2,
+        "OPERATOR_CLEARANCE_READINESS_EVALUATED": 7,
+        "OPERATOR_REPAIR_MARKER_WRITTEN": 3,
+        "POSITION_LIFECYCLE": 205,
+        "RECREATE_EXIT_PLAN": 3,
+        "REPAIR_REQUIRED_CLEARED": 3,
+        "REPAIR_REQUIRED_MARK_SET": 7,
+        "REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE": 89,
+        "RESUME_STRATEGY": 13,
+        "SAFE_MODE_ENTERED": 21,
+        "SAFE_MODE_EXITED": 1,
+        "VERIFY_MANUAL_BROKER_REPAIR": 2,
+        "unknown": 31
+      },
+      "2026-06-17": {
+        "unknown": 25
+      },
+      "2026-06-18": {
+        "unknown": 1
+      },
+      "2026-06-19": {
+        "unknown": 12
+      },
+      "2026-06-20": {
+        "unknown": 1
+      },
+      "2026-06-21": {
+        "unknown": 1
+      },
+      "2026-06-22": {
+        "unknown": 1
+      },
+      "2026-06-23": {
+        "unknown": 1
+      },
+      "2026-06-24": {
+        "unknown": 22
+      },
+      "2026-06-25": {
+        "unknown": 22
+      },
+      "2026-06-26": {
+        "REJECT_ENTRY": 2,
+        "unknown": 58
+      },
+      "2026-06-27": {
+        "unknown": 1
+      },
+      "2026-06-28": {
+        "unknown": 33
+      },
+      "2026-06-29": {
+        "unknown": 1
+      },
+      "2026-06-30": {
+        "unknown": 1
+      },
+      "2026-07-01": {
+        "unknown": 54
+      },
+      "2026-07-02": {
+        "unknown": 1
+      },
+      "2026-07-03": {
+        "unknown": 1
+      }
+    },
+    "safe_mode_events_count": 22,
+    "total_decision_types": {
+      "CLEANUP_STALE_ORDERS": 21,
+      "CLOSE_POSITION": 156,
+      "EQUITY_GAP_RECONCILIATION": 2,
+      "OPERATOR_CLEARANCE_READINESS_EVALUATED": 7,
+      "OPERATOR_REPAIR_MARKER_WRITTEN": 3,
+      "POSITION_LIFECYCLE": 205,
+      "RECREATE_EXIT_PLAN": 3,
+      "REJECT_ENTRY": 2,
+      "REPAIR_REQUIRED_CLEARED": 3,
+      "REPAIR_REQUIRED_MARK_SET": 7,
+      "REPAIR_REQUIRED_SKIPPING_AUTO_CLOSE": 89,
+      "RESUME_STRATEGY": 13,
+      "SAFE_MODE_ENTERED": 21,
+      "SAFE_MODE_EXITED": 1,
+      "VERIFY_MANUAL_BROKER_REPAIR": 2,
+      "unknown": 267
+    }
+  },
+  "briefs_and_docs": {
+    "briefs_count_in_scope": 18,
+    "doc_freshness_all": [
+      {
+        "age_hours": 407.80745015111114,
+        "file": "position_reconciliation_LATEST.json",
+        "ts_iso": "2026-06-16T17:58:09.223617+00:00"
+      }
+    ],
+    "latest_docs": [
+      "LLM_ADVISORY_MESH_LATEST.md",
+      "edge_evidence_LATEST.md",
+      "end_of_day_status_LATEST.md",
+      "position_reconciliation_LATEST.json",
+      "position_reconciliation_LATEST.md",
+      "shadow_evidence_cycle_LATEST.md"
+    ],
+    "review_docs": [
+      "LLM_ADVISORY_QUALITY_REVIEW.md",
+      "UNIVERSE_OPPORTUNITY_REVIEW.md"
+    ],
+    "stale_docs_over_48h": [
+      {
+        "age_hours": 407.80745015111114,
+        "file": "position_reconciliation_LATEST.json",
+        "ts_iso": "2026-06-16T17:58:09.223617+00:00"
+      }
+    ],
+    "status_docs": [
+      "BACKFILL_SNAPSHOT_STATUS.md",
+      "BROKER_PAPER_CANARY_UNLOCK_STATUS.md",
+      "BROKER_REPAIR_BACKFILL_STATUS.md",
+      "EVIDENCE_QUALITY_STATUS.md",
+      "EVIDENCE_THROUGHPUT_SLA_STATUS.md",
+      "GATE_DISTRIBUTION_STATUS.md",
+      "GEMINI_PROVIDER_STATUS.md",
+      "GEO_MONITOR_HEALTH_STATUS.md",
+      "HEARTBEAT_FRESHNESS_STATUS.md",
+      "LLM_ADVISORY_ACTIVATION_STATUS.md",
+      "LLM_ADVISORY_MESH_STATUS.md",
+      "LLM_PROVIDER_HEALTH_STATUS.md",
+      "LLM_QUALITY_CALIBRATION_STATUS.md",
+      "LLM_QUALITY_HISTORY_REPAIR_STATUS.md",
+      "MONITOR_EMISSION_STATUS.md",
+      "NEAR_MISS_STATUS.md",
+      "REAL_MARKET_EVIDENCE_STATUS.md",
+      "SAFE_MODE_CONSISTENCY_STATUS.md",
+      "SHADOW_ELIGIBILITY_STATUS.md",
+      "SHADOW_OUTCOME_STATUS.md",
+      "STRATEGY_COVERAGE_STATUS.md",
+      "SYSTEM_ACTIVATION_STATUS.md"
+    ]
+  },
+  "git": {
+    "commits_by_day": {
+      "2026-06-16": 426,
+      "2026-06-17": 1537,
+      "2026-06-18": 1581,
+      "2026-06-19": 1553,
+      "2026-06-20": 1443,
+      "2026-06-21": 1429,
+      "2026-06-22": 1530,
+      "2026-06-23": 1564,
+      "2026-06-24": 1552,
+      "2026-06-25": 1558,
+      "2026-06-26": 1532,
+      "2026-06-27": 1481,
+      "2026-06-28": 1459,
+      "2026-06-29": 1557,
+      "2026-06-30": 1569,
+      "2026-07-01": 1500,
+      "2026-07-02": 1589,
+      "2026-07-03": 1125
+    },
+    "head": "ec421f464bf76ea6480680fad8ac314210d67040",
+    "origin_main": "ec421f464bf76ea6480680fad8ac314210d67040",
+    "scope_start": "2026-06-16",
+    "total_commits": 25985
+  },
+  "llm_advisory": {
+    "provider_status": {
+      "dry_run": true,
+      "gemini_key_present": false,
+      "smoke_test_executed": false,
+      "verdict": "DETERMINISTIC_FALLBACK_UNTIL_SECRET_SET"
+    },
+    "role_files_found": 17,
+    "roles": [
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.100107+00:00",
+        "recommendation": "ALLOW",
+        "role": "ALLOCATOR_PLAN_CRITIC"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.101157+00:00",
+        "recommendation": "ALLOW",
+        "role": "DAILY_BRIEF"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.101638+00:00",
+        "recommendation": "ALLOW",
+        "role": "EQUITY_RECONCILIATION_CRITIC"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.102101+00:00",
+        "recommendation": "ALLOW",
+        "role": "FINAL_ARBITER"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.102811+00:00",
+        "recommendation": "ALLOW",
+        "role": "INCIDENT_REVIEW"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.103422+00:00",
+        "recommendation": "ALLOW",
+        "role": "NO_SIGNAL_DIAGNOSTIC"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.103944+00:00",
+        "recommendation": "ALLOW",
+        "role": "RISK_REVIEW"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.104524+00:00",
+        "recommendation": "ALLOW",
+        "role": "SHADOW_CANDIDATE_REVIEW"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.105057+00:00",
+        "recommendation": "ALLOW",
+        "role": "STRATEGY_REVIEW"
+      },
+      {
+        "authority": null,
+        "confidence": "LOW",
+        "generated_at": "2026-06-16T13:11:13.105482+00:00",
+        "recommendation": "ALLOW",
+        "role": "TRIGGER_WATCHLIST_REVIEW"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-06-16T12:17:28.921025+00:00",
+        "recommendation": null,
+        "role": "activation_status"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-07-03T04:02:19.476194+00:00",
+        "recommendation": null,
+        "role": "calibration_status"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-07-03T04:02:19.545917+00:00",
+        "recommendation": null,
+        "role": "gemini_smoke"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-06-16T13:11:17.186898+00:00",
+        "recommendation": null,
+        "role": "output_quality"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-06-16T13:11:22.091314+00:00",
+        "recommendation": "DETERMINISTIC_FALLBACK_UNTIL_SECRET_SET",
+        "role": "provider_activation"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": "2026-06-15T15:19:18.848053+00:00",
+        "recommendation": null,
+        "role": "quality_history_repair"
+      },
+      {
+        "authority": null,
+        "confidence": null,
+        "generated_at": null,
+        "recommendation": null,
+        "role": "quality_review"
+      }
+    ]
+  },
+  "opportunity_ledger": {
+    "entry_capable_rows": 0,
+    "files_scanned": 18,
+    "per_day_row_count": {
+      "2026-06-16": 1900,
+      "2026-06-17": 2968,
+      "2026-06-18": 2910,
+      "2026-06-19": 2941,
+      "2026-06-20": 3002,
+      "2026-06-21": 3030,
+      "2026-06-22": 2903,
+      "2026-06-23": 2921,
+      "2026-06-24": 2930,
+      "2026-06-25": 2976,
+      "2026-06-26": 3101,
+      "2026-06-27": 2971,
+      "2026-06-28": 3003,
+      "2026-06-29": 2920,
+      "2026-06-30": 2930,
+      "2026-07-01": 2973,
+      "2026-07-02": 2973,
+      "2026-07-03": 2221
+    },
+    "strategies_top10": {
+      "crypto-breakdown": 520,
+      "crypto-momentum": 50049,
+      "crypto-oversold-bounce": 1004
+    },
+    "total_rows": 51573
+  },
+  "scope": {
+    "start_date": "2026-06-16"
+  },
+  "shadow_evidence": {
+    "acceleration_latest_top_fields": {
+      "generated_at_iso": "2026-07-02T23:04:06.918962+00:00",
+      "opportunities_recorded": null,
+      "shadow_fills": null,
+      "shadow_outcomes": null,
+      "signals_seen": null,
+      "status": null,
+      "verdict": null
+    },
+    "file_count": 34,
+    "file_type_counts": {
+      ".json": 13,
+      ".jsonl": 21
+    },
+    "jsonl_total_rows": 2081,
+    "observation_row_count": 0,
+    "outcomes_files": 0,
+    "outcomes_row_count": 0,
+    "root_exists": true
+  },
+  "state": {
+    "learning-loop/broker_repair_required_latest.json": {
+      "age_hours": 409.5634421052778,
+      "key_fields": {
+        "entries": {}
+      },
+      "ts": "2026-06-16T16:12:48.005104+00:00"
+    },
+    "learning-loop/operator_clearance_readiness_latest.json": {
+      "age_hours": 407.8075245261111,
+      "key_fields": {},
+      "ts": "2026-06-16T17:58:09.308389+00:00"
+    },
+    "learning-loop/position_reconciliation_latest.json": {
+      "age_hours": 407.8075480738889,
+      "key_fields": {},
+      "ts": "2026-06-16T17:58:09.223617+00:00"
+    },
+    "learning-loop/post_repair_activation_path_latest.json": {
+      "age_hours": 407.8074859816666,
+      "key_fields": {},
+      "ts": "2026-06-16T17:58:09.447149+00:00"
+    },
+    "learning-loop/runtime_state.json": {
+      "age_hours": null,
+      "key_fields": {},
+      "ts": null
+    },
+    "learning-loop/safe_mode_consistency_latest.json": {
+      "age_hours": 10.002227908055556,
+      "key_fields": {
+        "runtime_active": false,
+        "verdict": "CONSISTENT"
+      },
+      "ts": "2026-07-03T07:46:28.376214+00:00"
+    },
+    "learning-loop/safe_mode_state.json": {
+      "age_hours": null,
+      "key_fields": {
+        "active": false
+      },
+      "ts": null
+    },
+    "learning-loop/system_activation_status_latest.json": {
+      "age_hours": 9.327347664722222,
+      "key_fields": {
+        "flags": {
+          "ALLOCATOR_ALLOWED": true,
+          "BLOCKERS": [],
+          "BROKER_REPAIR_GUARD_WIRED_IN_SAFE_CLOSE": true,
+          "CODE_WORK_REMAINING": false,
+          "CODE_WORK_REMAINING_ITEMS": [],
+          "LLM_ADVISORY_ON": true,
+          "LLM_EXECUTION_AUTHORITY": false,
+          "LLM_PROVIDER_MODE": "UNAVAILABLE",
+          "MARKET_DATA_WORK_REMAINING": true,
+          "NEXT_OPERATOR_ACTIONS": [],
+          "OPERATOR_ACTION_REASON": "",
+          "OPERATOR_ACTION_REQUIRED": false,
+          "OPERATOR_WORK_REMAINING": false,
+          "RETRY_STORM_SUPPRESSION_ACTIVE": true,
+          "SAFE_MODE_CONSISTENCY_CHECK_ACTIVE": true,
+          "SECRET_WORK_REMAINING": true,
+          "SHADOW_ONLY_ALLOWED": true,
+          "TRADING_EXECUTION_ON": false,
+          "WHOLE_SAFE_STACK_ON": true,
+          "WHOLE_SOLUTION_SAFE_ON": true
+        },
+        "master_blockers": [],
+        "master_decision": "ALLOCATOR_ALLOWED"
+      },
+      "ts": "2026-07-03T08:26:57.945090+00:00"
+    }
+  },
+  "workflows": {
+    "failed_runs_count": 2,
+    "failed_runs_in_scope": [
+      {
+        "conclusion": "failure",
+        "createdAt": "2026-07-03T17:15:22Z",
+        "id": 28674604910,
+        "name": "Crypto Monitor \u2014 11 coins predator scan (24/7)"
+      },
+      {
+        "conclusion": "cancelled",
+        "createdAt": "2026-07-03T16:45:12Z",
+        "id": 28673360714,
+        "name": "Price Monitor \u2014 Momentum Breakout"
+      }
+    ],
+    "workflow_count": 44,
+    "workflow_run_health": {
+      "Autonomous Remediation \u2014 health-driven self-heal": {
+        "conclusions": {
+          "success": 1
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T16:44:01Z",
+        "runs_in_scope": 1
+      },
+      "Crypto Monitor \u2014 11 coins predator scan (24/7)": {
+        "conclusions": {
+          "failure": 1,
+          "success": 19
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "Defense Market Monitor \u2014 5min scan 24/7": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "Emergency Close \u2014 autonomous position closer": {
+        "conclusions": {
+          "success": 1
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:50Z",
+        "runs_in_scope": 1
+      },
+      "Entry Monitors \u2014 Watchdog (re-trigger if missed)": {
+        "conclusions": {
+          "success": 8
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 8
+      },
+      "Exit Monitor \u2014 dual cron (market 5min + off-hours 15min)": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "Geopolitical News Monitor \u2014 15min scan 24/7": {
+        "conclusions": {
+          "success": 8
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 8
+      },
+      "Incident Pattern Detector \u2014 Layer 1 real-time anomaly watcher": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "Monitor Health \u2014 workflow runs introspection": {
+        "conclusions": {
+          "success": 8
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 8
+      },
+      "Options Exit Monitor \u2014 TP/SL polling + governor-driven options-first close": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "Options Monitor \u2014 CALL/PUT proposals": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:23Z",
+        "runs_in_scope": 20
+      },
+      "Price Monitor \u2014 Momentum Breakout": {
+        "conclusions": {
+          "cancelled": 1,
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:23Z",
+        "runs_in_scope": 21
+      },
+      "Reddit Monitor \u2014 sentiment + tracked-user scan": {
+        "conclusions": {
+          "success": 8
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 8
+      },
+      "Signal Shadow Evidence (v3.27)": {
+        "conclusions": {
+          "success": 1
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:00:48Z",
+        "runs_in_scope": 1
+      },
+      "Sync Workflow Templates \u2192 .github/workflows": {
+        "conclusions": {
+          "success": 1
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T16:50:50Z",
+        "runs_in_scope": 1
+      },
+      "Twitter Monitor \u2014 Bluesky social-graph 24/7": {
+        "conclusions": {
+          "success": 20
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:45:22Z",
+        "runs_in_scope": 20
+      },
+      "doj-monitor": {
+        "conclusions": {
+          "success": 1
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:10:16Z",
+        "runs_in_scope": 1
+      },
+      "politician-monitor": {
+        "conclusions": {
+          "success": 2
+        },
+        "last_conclusion": "success",
+        "last_run_at": "2026-07-03T17:27:11Z",
+        "runs_in_scope": 2
+      }
+    },
+    "workflows": [
+      "auto-merge.yml",
+      "autonomous-code-loop.yml",
+      "autonomous-remediation.yml",
+      "backtest.yml",
+      "broker-paper-canary-unlock-evaluator.yml",
+      "cancel-stale-emergency-orders.yml",
+      "cover-now-short-20260528.yml",
+      "crypto-monitor.yml",
+      "daily-learning-watchdog.yml",
+      "daily-learning.yml",
+      "daily-operational-brief-v329etap7.yml",
+      "daily-operational-brief.yml",
+      "daily-reporters.yml",
+      "defense-monitor.yml",
+      "doj-monitor.yml",
+      "e2e-system-tests.yml",
+      "emergency-close-positions.yml",
+      "entry-monitors-watchdog.yml",
+      "exit-monitor.yml",
+      "forensic-position-origin.yml",
+      "geo-monitor.yml",
+      "incident-pattern-detector.yml",
+      "learning-loop-ci.yml",
+      "llm-advisory-mesh-v329.yml",
+      "llm-advisory-mesh.yml",
+      "llm-quality-calibration.yml",
+      "monitor-health.yml",
+      "morning-allocator.yml",
+      "options-exit-monitor.yml",
+      "options-monitor.yml",
+      "paper-experiment-update.yml",
+      "politician-monitor.yml",
+      "pre-open-planner.yml",
+      "price-monitor.yml",
+      "real-market-evidence-accelerator.yml",
+      "reddit-monitor.yml",
+      "security-audit.yml",
+      "shadow-evidence-cycle.yml",
+      "signal-shadow-evidence.yml",
+      "snapshot.yml",
+      "sync-workflows.yml",
+      "system-consistency-audit.yml",
+      "twitter-monitor.yml",
+      "weekly-retro.yml"
+    ]
+  }
+}
