@@ -2147,3 +2147,16 @@
 - 2026-08-12 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
 - 2026-08-12 · rsi-alert [overbought]: SPY RSI=75.6 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
 
+- 2026-08-13 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-08-13 · options_side_bias reset to null (zero supporting data in 7d window — proposal 2026-05-09)
+- 2026-08-13 · options_side_bias=short via macro fallback — SPY RSI=75.6 >= 72 -- extended market; PUT-side statistically favored
+- 2026-08-13 · crypto-momentum: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · geo-gold: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · crypto-oversold-bounce: PIPELINE_FAILURE_SUSPECTED — SILENT 191d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-13 · options-momentum: SPY-overbought gate · SPY RSI 75.6 > 75 — overbought regime, options-momentum pause extended
+- 2026-08-13 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+- 2026-08-13 · rsi-alert [overbought]: SPY RSI=75.6 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
+
