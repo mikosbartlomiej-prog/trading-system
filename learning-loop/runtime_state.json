@@ -13,6 +13,12 @@
       "last_status": "ok",
       "pings_today": 1
     },
+    "options-exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-13T20:22:54.319674+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "price-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-13T20:18:26.018440+00:00",
