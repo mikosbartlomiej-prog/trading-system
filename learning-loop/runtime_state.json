@@ -7,6 +7,12 @@
       "last_status": "ok",
       "pings_today": 1
     },
+    "geo-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-13T09:19:42.174049+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "politician-monitor": {
       "last_message": "emitted=0",
       "last_seen_iso": "2026-08-13T09:14:18.543147+00:00",
