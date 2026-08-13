@@ -1,9 +1,9 @@
 # Trigger watchlist (v3.27.0)
 
-**Generated:** `2026-08-12T05:56:16.208652+00:00`
-**As of:** `2026-08-12T05:56:16.064678+00:00`
+**Generated:** `2026-08-13T05:58:05.716112+00:00`
+**As of:** `2026-08-13T05:58:05.563492+00:00`
 **Top-N:** 30
-**Total rows:** 28
+**Total rows:** 27
 
 ## Rows by priority
 
@@ -11,7 +11,7 @@
 |---|---|
 | `P1` | 23 |
 | `P2` | 4 |
-| `P3` | 1 |
+| `P3` | 0 |
 | `BLOCKED` | 0 |
 
 ## Rows by strategy
@@ -19,41 +19,40 @@
 | Strategy | Count |
 |---|---|
 | `crypto-momentum` | 11 |
-| `crypto-oversold-bounce` | 11 |
+| `crypto-oversold-bounce` | 10 |
 | `overbought-short` | 6 |
 
 ## Watchlist (sorted by priority)
 
 | Pri | Strategy | Symbol | Asset | Distance | NM_7d | ReplaySup | VariantSup | Required movement | Mode | Status |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **P1** | `crypto-momentum` | `ETH/USD` | crypto | 0.0005 | 3863 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `SOL/USD` | crypto | 0.0005 | 3654 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `BTC/USD` | crypto | 0.0006 | 3549 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `AAVE/USD` | crypto | 0.0007 | 2930 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `DOT/USD` | crypto | 0.0007 | 2942 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `LTC/USD` | crypto | 0.0007 | 3007 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `BCH/USD` | crypto | 0.0008 | 2646 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `LINK/USD` | crypto | 0.0009 | 2305 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `AVAX/USD` | crypto | 0.0010 | 1907 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-momentum` | `UNI/USD` | crypto | 0.0010 | 1932 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `LINK/USD` | crypto | 0.0083 | 238 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `BTC/USD` | crypto | 0.0005 | 3696 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `ETH/USD` | crypto | 0.0005 | 3928 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `SOL/USD` | crypto | 0.0005 | 3718 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `LTC/USD` | crypto | 0.0006 | 3126 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `AAVE/USD` | crypto | 0.0007 | 3022 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `BCH/USD` | crypto | 0.0007 | 2857 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `DOT/USD` | crypto | 0.0007 | 2764 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `LINK/USD` | crypto | 0.0008 | 2449 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `UNI/USD` | crypto | 0.0009 | 2183 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-momentum` | `AVAX/USD` | crypto | 0.0011 | 1741 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `LINK/USD` | crypto | 0.0089 | 223 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
 | **P1** | `overbought-short` | `AAPL` | us_equity | 0.0091 | 217 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `UNI/USD` | crypto | 0.0098 | 203 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `ETH/USD` | crypto | 0.0102 | 194 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `BCH/USD` | crypto | 0.0125 | 158 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `AAVE/USD` | crypto | 0.0127 | 156 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `AVAX/USD` | crypto | 0.0146 | 135 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `ETH/USD` | crypto | 0.0104 | 190 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `UNI/USD` | crypto | 0.0105 | 188 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `AAVE/USD` | crypto | 0.0132 | 149 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `BCH/USD` | crypto | 0.0133 | 148 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `AVAX/USD` | crypto | 0.0137 | 144 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `SOL/USD` | crypto | 0.0152 | 130 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
 | **P1** | `overbought-short` | `META` | us_equity | 0.0156 | 126 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `LTC/USD` | crypto | 0.0160 | 123 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `SOL/USD` | crypto | 0.0165 | 119 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P1** | `crypto-oversold-bounce` | `BTC/USD` | crypto | 0.0168 | 117 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `LTC/USD` | crypto | 0.0174 | 113 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P1** | `crypto-oversold-bounce` | `BTC/USD` | crypto | 0.0182 | 108 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
 | **P1** | `overbought-short` | `AMZN` | us_equity | 0.0278 | 70 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
 | **P1** | `overbought-short` | `NVDA` | us_equity | 0.0278 | 70 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
 | **P2** | `overbought-short` | `MSFT` | us_equity | 0.0870 | 21 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
-| **P2** | `crypto-oversold-bounce` | `UNSPECIFIED` | us_equity | 0.1364 | 1259 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
-| **P2** | `crypto-momentum` | `UNSPECIFIED` | us_equity | 0.1433 | 24384 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
+| **P2** | `crypto-oversold-bounce` | `UNSPECIFIED` | us_equity | 0.1340 | 1200 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
+| **P2** | `crypto-momentum` | `UNSPECIFIED` | us_equity | 0.1433 | 24787 | no | — | 24h move in [3%, 15%] | **SHADOW_ONLY** | **WATCHING** |
 | **P2** | `overbought-short` | `UNSPECIFIED` | us_equity | 0.1470 | 432 | no | — | RSI(14) > 72 + visible weakening | **SHADOW_ONLY** | **WATCHING** |
-| **P3** | `crypto-oversold-bounce` | `DOT/USD` | crypto | 0.5000 | 2 | no | — | RSI(14) <= 30 + 3-bar stabilization | **SHADOW_ONLY** | **WATCHING** |
 
 ## Priority rubric
 
