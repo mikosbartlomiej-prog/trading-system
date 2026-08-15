@@ -6,30 +6,32 @@
     "starting_equity": 90504.88
   },
   "daily_peak": {
-    "date": "2026-08-14",
+    "date": "2026-08-15",
     "peak_pl_usd": 0.0,
     "peak_pl_pct": 0.0,
-    "peak_at": "2026-08-14T16:46:13.320186+00:00",
+    "peak_at": "2026-08-15T15:17:21.355980+00:00",
     "peak_equity": 90504.88,
     "current_pl_usd": 0.0,
     "current_equity": 90504.88,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-08-14T21:11:17.475769+00:00",
+    "verdict_at": "2026-08-15T21:06:11.539533+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 194,
+  "days_tracked": 195,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": "short"
   },
-  "last_updated": "2026-08-14T21:13:58.590362+00:00",
+  "last_updated": "2026-08-15T21:09:51.137749+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
-  "next_actions": [],
+  "next_actions": [
+    "options-momentum: paused_until -> 2026-08-16 (SPY-overbought gate)"
+  ],
   "peak_equity": 98446.36,
   "pending_emergency_close": {
     "prior_pending": {
@@ -316,7 +318,7 @@
       "enabled": false,
       "enabled_at": "2026-05-30",
       "evidence": "exit-reports/2026-05-13-14.md + exit-reports/emergency_close_20260513_pm-2026-05-13_1522.log",
-      "paused_until": "2026-08-15",
+      "paused_until": "2026-08-16",
       "pnl_usd_7d": -0.6,
       "pnl_usd_lifetime": -0.6,
       "rationale": "HOLD: 1 trade lifetime, 0% WR — za mała próba. SPY RSI 48.6 = neutral, brak silnego directional bias. 0.5× ostrożny i właściwy.",
