@@ -9,9 +9,9 @@
     },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-16T06:11:07.203578+00:00",
+      "last_seen_iso": "2026-08-16T06:21:16.945519+00:00",
       "last_status": "ok",
-      "pings_today": 35
+      "pings_today": 36
     },
     "doj-monitor": {
       "last_message": "emitted=0",
