@@ -13,6 +13,12 @@
       "last_status": "ok",
       "pings_today": 1
     },
+    "defense-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-16T11:41:24.417275+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "twitter-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-16T11:38:46.817305+00:00",
