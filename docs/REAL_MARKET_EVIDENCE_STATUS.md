@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-15T04:57:17.837514+00:00`
-**As of:** `2026-08-15T04:57:17.776895+00:00`
-**Git HEAD:** `08a1ff56cd9e948a3ff91111c2c805374f637778`
+**Generated:** `2026-08-16T05:01:21.072743+00:00`
+**As of:** `2026-08-16T05:01:20.994882+00:00`
+**Git HEAD:** `f531d2232b7603b945fa46164e2c206d083a5653`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `660` |
+| Total ledger rows today | `630` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,28 +17,28 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 660 |
+| `crypto-monitor` | 630 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 660 |
+| `crypto-momentum` | 630 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 66 |
-| `ETH/USD` | 66 |
-| `SOL/USD` | 66 |
-| `AVAX/USD` | 66 |
-| `LINK/USD` | 66 |
-| `DOT/USD` | 66 |
-| `LTC/USD` | 66 |
-| `BCH/USD` | 66 |
-| `UNI/USD` | 66 |
-| `AAVE/USD` | 66 |
+| `BTC/USD` | 63 |
+| `ETH/USD` | 63 |
+| `SOL/USD` | 63 |
+| `AVAX/USD` | 63 |
+| `LINK/USD` | 63 |
+| `DOT/USD` | 63 |
+| `LTC/USD` | 63 |
+| `BCH/USD` | 63 |
+| `UNI/USD` | 63 |
+| `AAVE/USD` | 63 |
 
 ## Confidence-score distribution
 
@@ -48,13 +48,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 660 |
+| `null` | 630 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 660 |
+| `UNKNOWN` | 630 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
