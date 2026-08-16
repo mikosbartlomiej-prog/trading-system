@@ -1,57 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-08-16T09:35:52.495444+00:00",
-=======
-      "last_seen_iso": "2026-08-16T09:36:10.811866+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 99
-    },
-    "defense-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-16T09:37:18.036732+00:00",
-      "last_status": "ok",
-      "pings_today": 64
-    },
-    "doj-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-16T08:15:32.596612+00:00",
-      "last_status": "ok",
-      "pings_today": 4
-    },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-16T09:35:48.797956+00:00",
+      "last_seen_iso": "2026-08-16T09:40:52.639440+00:00",
       "last_status": "ok",
-      "pings_today": 83
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-16T09:16:04.066390+00:00",
-      "last_status": "ok",
-      "pings_today": 29
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-16T09:36:03.576734+00:00",
-      "last_status": "ok",
-      "pings_today": 69
-    },
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-16T08:31:32.769113+00:00",
-      "last_status": "ok",
-      "pings_today": 4
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-16T09:36:00.895787+00:00",
-      "last_status": "ok",
-      "pings_today": 92
+      "pings_today": 1
     }
   },
   "intraday_governor": {
@@ -67,15 +21,15 @@
     "intraday_peak_equity": 90504.88,
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
-    "last_action": "noop",
-    "last_update_at": "2026-08-16T09:35:48.793794+00:00",
+    "last_action": "transition_NEW_DAY_to_FLAT",
+    "last_update_at": "2026-08-16T09:40:52.618731+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
-    "peak_at": "2026-08-16T02:15:41.354428+00:00",
+    "peak_at": "2026-08-16T09:40:52.618731+00:00",
     "pnl_state": "FLAT",
     "profit_floor_usd": 0.0,
     "session_start_equity": 90504.88,
-    "state_entered_at": "2026-08-16T02:15:41.354428+00:00",
+    "state_entered_at": "2026-08-16T09:40:52.618731+00:00",
     "top_giveback_symbols": []
   }
 }
