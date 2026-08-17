@@ -39,9 +39,9 @@
     },
     "politician-monitor": {
       "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-17T08:45:45.260100+00:00",
+      "last_seen_iso": "2026-08-17T10:34:13.148211+00:00",
       "last_status": "ok",
-      "pings_today": 5
+      "pings_today": 6
     },
     "reddit-monitor": {
       "last_message": "sent=0",
