@@ -1,9 +1,15 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+<<<<<<< Updated upstream
     "options-exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-17T21:15:49.457006+00:00",
+=======
+    "crypto-monitor": {
+      "last_message": "scanned 11 coins",
+      "last_seen_iso": "2026-08-17T21:15:58.457181+00:00",
+>>>>>>> Stashed changes
       "last_status": "ok",
       "pings_today": 1
     },
@@ -30,13 +36,15 @@
   },
   "routine_budget": {
     "by_routine": {
+      "crypto-curator": 1,
       "daily-learning-pm": 1
     },
     "by_tier": {
-      "P0_essential": 1
+      "P0_essential": 1,
+      "P2_optional": 1
     },
     "date": "2026-08-17",
-    "last_updated": "2026-08-17T21:14:48.338725+00:00",
-    "total": 1
+    "last_updated": "2026-08-17T21:15:56.864868+00:00",
+    "total": 2
   }
 }
