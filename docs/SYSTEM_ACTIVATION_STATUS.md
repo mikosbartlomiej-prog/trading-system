@@ -1,6 +1,6 @@
 # SYSTEM ACTIVATION STATUS
 
-_Generated at:_ `2026-08-16T05:41:55.826449+00:00`
+_Generated at:_ `2026-08-17T05:09:34.958236+00:00`
 
 ## Top-level flags
 
@@ -35,7 +35,7 @@ _Generated at:_ `2026-08-16T05:41:55.826449+00:00`
 | Safe mode consistency checker | `ENFORCED` | `CONSISTENT` | yes | — | blocks allocator on audit-vs-runtime mismatch |
 | Equity reconciliation | `FRESH` | `EQUITY_GAP_OK` | yes | — | blocks allocator if unresolved, schema-invalid, or stale |
 | Allocator gate | `ENFORCED` | `ALLOCATOR_ALLOWED` | yes | — | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
-| Position reconciliation | `FRESH` | `FRESH_AGE_S=5226225` | yes | — | informational outside market hours |
+| Position reconciliation | `FRESH` | `FRESH_AGE_S=5310684` | yes | — | informational outside market hours |
 | Kill switch | `DISARMED` | `DISARMED` | yes | — | informational |
 | Discovery reporters | `READ_ONLY_ON` | `MISSING` | no | — | never places orders |
 | Trigger watchlist | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders |

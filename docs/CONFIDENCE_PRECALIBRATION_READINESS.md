@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-08-16T05:02:02.135011+00:00`
-**As of:** `2026-08-16T05:02:01.773764+00:00`
-**Git HEAD:** `f531d2232b7603b945fa46164e2c206d083a5653`
+**Generated:** `2026-08-17T05:09:32.537164+00:00`
+**As of:** `2026-08-17T05:09:32.125244+00:00`
+**Git HEAD:** `ec5b641f4a25cd0098052a912f45d60c408b308e`
 **Window:** last 7 days
-**Rows total:** `19155`
+**Rows total:** `19505`
 **Positive rows (non-null confidence_score):** `247`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `247` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `32473` | NO (advisory) |
+| NEAR_MISS_ROWS           | `32420` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -41,7 +41,7 @@
 | `median` | 0.3631 |
 | `p95` | 0.6051 |
 | `max` | 0.6127 |
-| `mean` | 0.3526 |
+| `mean` | 0.3594 |
 
 ## Builder completeness
 
@@ -60,7 +60,7 @@ Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 247 | 0.2 | 1.0 | 0.6119 | 0.135985 | yes |
+| `anomaly_penalty` | 247 | 0.2 | 1.0 | 0.6198 | 0.140885 | yes |
 | `data_quality` | 247 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `edge_evidence` | 247 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `event_risk_penalty` | 247 | 1.0 | 1.0 | 1.0 | 0.0 | no |
@@ -69,9 +69,9 @@ Default-only components: `9`
 | `recent_strategy_health` | 247 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `regime_alignment` | 247 | 0.7 | 0.7 | 0.7 | 0.0 | no |
 | `risk_state` | 247 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 247 | 0.6 | 1.0 | 0.7166 | 0.013341 | yes |
+| `signal_strength` | 247 | 0.6 | 1.0 | 0.7271 | 0.012879 | yes |
 | `slippage_risk` | 247 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 247 | 0.0 | 0.7273 | 0.4947 | 0.021867 | yes |
+| `system_health` | 247 | 0.0 | 0.7273 | 0.4983 | 0.021557 | yes |
 
 ## Confidence decision counts
 

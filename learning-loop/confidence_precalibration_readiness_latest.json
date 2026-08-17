@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-08-16T05:02:01.773764+00:00",
+  "as_of": "2026-08-17T05:09:32.125244+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -11,10 +11,10 @@
     "per_component": {
       "anomaly_penalty": {
         "max": 1.0,
-        "mean": 0.6119,
+        "mean": 0.6198,
         "min": 0.2,
         "samples": 247,
-        "variance": 0.135985,
+        "variance": 0.140885,
         "varying": true
       },
       "data_quality": {
@@ -83,10 +83,10 @@
       },
       "signal_strength": {
         "max": 1.0,
-        "mean": 0.7166,
+        "mean": 0.7271,
         "min": 0.6,
         "samples": 247,
-        "variance": 0.013341,
+        "variance": 0.012879,
         "varying": true
       },
       "slippage_risk": {
@@ -99,10 +99,10 @@
       },
       "system_health": {
         "max": 0.7273,
-        "mean": 0.4947,
+        "mean": 0.4983,
         "min": 0.0,
         "samples": 247,
-        "variance": 0.021867,
+        "variance": 0.021557,
         "varying": true
       }
     },
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-08-16T05:02:02.135011+00:00",
-  "git_head": "f531d2232b7603b945fa46164e2c206d083a5653",
+  "generated_at_iso": "2026-08-17T05:09:32.537164+00:00",
+  "git_head": "ec5b641f4a25cd0098052a912f45d60c408b308e",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 247,
-  "rows_total": 19155,
+  "rows_total": 19505,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -135,14 +135,14 @@
   "score_summary": {
     "count": 247,
     "max": 0.6127,
-    "mean": 0.3526,
+    "mean": 0.3594,
     "median": 0.3631,
     "min": 0.1066,
     "p95": 0.6051
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 32473,
+    "near_miss_rows": 32420,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 247,
