@@ -1,15 +1,9 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-<<<<<<< Updated upstream
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-08-18T14:35:41.370815+00:00",
-=======
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-08-18T14:36:02.480003+00:00",
->>>>>>> Stashed changes
+      "last_seen_iso": "2026-08-18T14:36:35.542640+00:00",
       "last_status": "ok",
       "pings_today": 1
     }
