@@ -6,6 +6,12 @@
       "last_seen_iso": "2026-08-19T13:05:48.671626+00:00",
       "last_status": "ok",
       "pings_today": 1
+    },
+    "twitter-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-19T13:09:59.980088+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
