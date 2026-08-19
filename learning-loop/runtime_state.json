@@ -1,69 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-08-19T11:55:13.187194+00:00",
-=======
-      "last_seen_iso": "2026-08-19T11:55:41.126006+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 5
-    },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-19T11:56:11.524350+00:00",
-      "last_status": "ok",
-      "pings_today": 6
-    },
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-19T11:55:48.412720+00:00",
-      "last_status": "ok",
-      "pings_today": 6
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-19T11:32:31.112385+00:00",
+      "last_seen_iso": "2026-08-19T11:59:36.567859+00:00",
       "last_status": "ok",
       "pings_today": 1
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-19T11:55:47.805314+00:00",
-      "last_status": "ok",
-      "pings_today": 4
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-08-19T11:56:19.271795+00:00",
-      "last_status": "ok",
-      "pings_today": 4
     }
-  },
-  "intraday_governor": {
-    "account_unavailable": false,
-    "alerts_sent": {},
-    "block_new_entries": false,
-    "current_equity": 90504.88,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
-    "date": "2026-08-19",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
-    "intraday_peak_equity": 90504.88,
-    "intraday_peak_pnl": 0.0,
-    "intraday_peak_pnl_pct": 0.0,
-    "last_action": "noop",
-    "last_update_at": "2026-08-19T11:55:48.409482+00:00",
-    "max_gross_target": 1.5,
-    "options_first_reduction": false,
-    "peak_at": "2026-08-19T11:35:48.941861+00:00",
-    "pnl_state": "FLAT",
-    "profit_floor_usd": 0.0,
-    "session_start_equity": 90504.88,
-    "state_entered_at": "2026-08-19T11:35:48.941861+00:00",
-    "top_giveback_symbols": []
   }
 }
