@@ -1,12 +1,12 @@
 ========================================================================
-# Daily Operational Brief — 2026-08-19
+# Daily Operational Brief — 2026-08-20
 ========================================================================
 
 ## TOP BANNER: YELLOW
 
 **ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_EQUITY_GAP**
 
-Active blockers: equity_gap_stale_seconds=88927. No orders will be placed.
+Active blockers: equity_gap_stale_seconds=175346. No orders will be placed.
 
 _The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
 
@@ -14,11 +14,11 @@ _The banner reflects the deterministic gate state only. LLM advisory output is i
 
 - Decision: `ALLOCATOR_BLOCKED_EQUITY_GAP` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
 - Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
-- Reason: `equity_gap_stale_seconds=88927` [source: `system_activation_gate.reason`]
+- Reason: `equity_gap_stale_seconds=175346` [source: `system_activation_gate.reason`]
 
 ## Top blockers
 
-- `equity_gap_stale_seconds=88927`
+- `equity_gap_stale_seconds=175346`
 
 _Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
 
