@@ -1,14 +1,14 @@
 # Real-Market Evidence Acceleration (v3.29.1)
 
 - **Acceleration status:** `REAL_MARKET_EVIDENCE_HEALTHY`
-- **Successful runs observed:** 188
+- **Successful runs observed:** 195
 - **Dominant diagnostic token:** `None`
 
 ## Counters snapshot
 
 - `completed_shadow_outcomes_count`: **0**
 - `first_real_market_record_seen`: **False**
-- `halt_path_records_count`: **208**
+- `halt_path_records_count`: **215**
 - `latest_workflow_verdict`: **AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET**
 - `real_market_opportunities_count`: **0**
 - `scaffold_no_market_data_records_count`: **5**
