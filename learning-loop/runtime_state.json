@@ -1,5 +1,5 @@
 {
-  "_last_writer": "llm-availability",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-08-23T21:10:54.299501+00:00",
+      "last_seen_iso": "2026-08-23T21:15:46.944398+00:00",
       "last_status": "ok",
-      "pings_today": 75
+      "pings_today": 76
     },
     "geo-monitor": {
       "last_message": "",
@@ -64,7 +64,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-08-23T21:10:54.295734+00:00",
+    "last_update_at": "2026-08-23T21:15:46.940721+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-08-23T14:40:48.347997+00:00",
