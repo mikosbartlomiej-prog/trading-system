@@ -1,8 +1,8 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-22T05:00:14.225150+00:00`
-**As of:** `2026-08-22T05:00:14.163008+00:00`
-**Git HEAD:** `6424725902035c4cefe30be380b792218ea2ee0b`
+**Generated:** `2026-08-23T05:01:54.555313+00:00`
+**As of:** `2026-08-23T05:01:54.499989+00:00`
+**Git HEAD:** `e93136a9df69c3025afdbba82b46ea2ec035fcd5`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
