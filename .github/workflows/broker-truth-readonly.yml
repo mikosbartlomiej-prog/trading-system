@@ -1,0 +1,99 @@
+name: Broker Truth (read-only)
+
+# READ-ONLY: only GET calls to paper-api.alpaca.markets. This workflow
+# has no ability to submit, cancel, or modify orders. See
+# scripts/broker_truth_readonly.py for the invariant enforcement.
+
+on:
+  workflow_dispatch: {}
+  # No schedule by default — operator-triggered.
+  # Once fully validated, add a daily schedule with hard flag pins.
+
+concurrency:
+  group: broker-truth-readonly-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  broker-truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Hard-pin every broker/live/mutation flag to false. This job cannot
+      # authorize mutation regardless of any repo variable.
+      ALLOW_BROKER_PAPER: "false"
+      TRADING_EXECUTION_ON: "false"
+      EDGE_GATE_ENABLED: "false"
+      BROKER_EXECUTION_ENABLED: "false"
+      LIVE_TRADING_ENABLED: "false"
+      LIVE_TRADING: "false"
+      LIVE_ENABLED: "false"
+      GO_LIVE: "false"
+      LLM_PRE_ORDER_VETO_HONORED: "false"
+      OPERATOR_APPROVED_BROKER_PAPER_CANARY: "false"
+      LLM_AGENTS_SCHEDULED: "false"
+      # Endpoint whitelist. The script refuses any other value.
+      ALPACA_BASE_URL: "https://paper-api.alpaca.markets"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install --quiet requests
+
+      - name: Refuse if any broker/live/mutation env flag is truthy
+        run: |
+          set -e
+          for f in ALLOW_BROKER_PAPER TRADING_EXECUTION_ON EDGE_GATE_ENABLED \
+                   BROKER_EXECUTION_ENABLED LIVE_TRADING_ENABLED LIVE_TRADING \
+                   LIVE_ENABLED GO_LIVE LLM_PRE_ORDER_VETO_HONORED \
+                   OPERATOR_APPROVED_BROKER_PAPER_CANARY LLM_AGENTS_SCHEDULED; do
+            v="${!f}"
+            case "$v" in
+              1|true|TRUE|True|yes|YES|on|ON)
+                echo "REFUSED: env $f=$v is truthy — this workflow is READ-ONLY"
+                exit 1 ;;
+            esac
+          done
+          if [ "$ALPACA_BASE_URL" != "https://paper-api.alpaca.markets" ]; then
+            echo "REFUSED: ALPACA_BASE_URL=$ALPACA_BASE_URL is not paper endpoint"
+            exit 1
+          fi
+
+      - name: Verify secrets present (names only, no values)
+        run: |
+          if [ -z "${{ secrets.ALPACA_API_KEY }}" ]; then
+            echo "ALPACA_API_KEY secret missing"; exit 1
+          fi
+          if [ -z "${{ secrets.ALPACA_SECRET_KEY }}" ]; then
+            echo "ALPACA_SECRET_KEY secret missing"; exit 1
+          fi
+          echo "ALPACA_API_KEY: present"
+          echo "ALPACA_SECRET_KEY: present"
+
+      - name: Run broker truth reporter
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          python3 scripts/broker_truth_readonly.py --output-dir reports
+
+      - name: Upload broker-truth reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: broker-truth-latest
+          path: |
+            reports/broker_truth_latest.json
+            reports/broker_truth_latest.md
+          retention-days: 30
