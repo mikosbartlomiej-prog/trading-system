@@ -31,6 +31,12 @@
       "last_status": "ok",
       "pings_today": 5
     },
+    "options-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-24T15:25:57.315992+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "price-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-24T15:21:10.784103+00:00",
