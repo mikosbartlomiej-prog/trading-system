@@ -19,6 +19,12 @@
       "last_status": "ok",
       "pings_today": 3
     },
+    "price-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-08-26T14:16:08.740763+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "twitter-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-08-26T14:11:18.449082+00:00",
