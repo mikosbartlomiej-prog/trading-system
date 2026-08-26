@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-25T05:05:33.287432+00:00`
-**As of:** `2026-08-25T05:05:33.232016+00:00`
-**Git HEAD:** `00c49b8e30e8dbda04c93ffa0ba482d067924746`
+**Generated:** `2026-08-26T05:05:52.839281+00:00`
+**As of:** `2026-08-26T05:05:52.772287+00:00`
+**Git HEAD:** `ae8b8a2cb495791804280b3db2d1c7ab03d83c61`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `630` |
+| Total ledger rows today | `620` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,28 +17,29 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 630 |
+| `crypto-monitor` | 620 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 630 |
+| `crypto-breakdown` | 13 |
+| `crypto-momentum` | 607 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 63 |
-| `ETH/USD` | 63 |
-| `SOL/USD` | 63 |
-| `AVAX/USD` | 63 |
-| `LINK/USD` | 63 |
-| `DOT/USD` | 63 |
-| `LTC/USD` | 63 |
-| `BCH/USD` | 63 |
-| `UNI/USD` | 63 |
-| `AAVE/USD` | 63 |
+| `BTC/USD` | 62 |
+| `ETH/USD` | 62 |
+| `SOL/USD` | 62 |
+| `AVAX/USD` | 62 |
+| `LINK/USD` | 62 |
+| `DOT/USD` | 62 |
+| `LTC/USD` | 62 |
+| `BCH/USD` | 62 |
+| `UNI/USD` | 62 |
+| `AAVE/USD` | 62 |
 
 ## Confidence-score distribution
 
@@ -48,13 +49,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 630 |
+| `null` | 620 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 630 |
+| `UNKNOWN` | 620 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +77,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `32771026356` |
+| Last workflow run id | `32892424985` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
