@@ -1,0 +1,36 @@
+[00:19:37 INFO] ============================================================
+[00:19:37 INFO] AccountAwareAllocator — daily plan 2026-08-27
+[00:19:37 INFO] ============================================================
+[00:19:37 INFO] ── Step 1: fetching account state ──
+[00:19:37 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[00:19:37 INFO] ── Step 2: fetching open positions ──
+[00:19:37 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[00:19:37 INFO]   PDT mode=OK  dt_remaining=3
+[00:19:37 INFO] ── Step 3: defensive mode check ──
+[00:19:37 INFO]   defensive_mode OFF → proceed with deployment
+[00:19:37 INFO] ── Step 4: regime detection ──
+[00:19:37 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:19:37 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[00:19:37 INFO] ── Step 5: scoring allowed universe ──
+[00:19:43 DBG ]     MSFT     score=+0.430  bucket=ai_nasdaq_semis
+[00:19:43 DBG ]     ORCL     score=+0.428  bucket=software_quality
+[00:19:43 DBG ]     WDAY     score=+0.183  bucket=software_quality
+[00:19:43 DBG ]     TSLA     score=+0.168  bucket=ai_nasdaq_semis
+[00:19:43 DBG ]     CRM      score=+0.156  bucket=software_quality
+[00:19:43 INFO] ── Step 6: target weight construction ──
+[00:19:43 INFO]   reason: regime=NEUTRAL | primary_picks=2(36%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=34.00%
+[00:19:43 INFO]   target_invested_ratio_after_plan = 0.6600
+[00:19:43 DBG ]     MSFT       target_weight=0.1800 ($16290.88)
+[00:19:43 DBG ]     ORCL       target_weight=0.1800 ($16290.88)
+[00:19:43 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[00:19:43 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[00:19:43 DBG ]     GLD        target_weight=0.1000 ($9050.49)
+[00:19:43 INFO] ── Step 7: rebalance order generation ──
+[00:19:43 INFO]     MSFT     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:19:43 INFO]     ORCL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:19:43 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:19:43 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:19:43 INFO]     GLD      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:19:43 INFO]   summary: 5 actionable + 0 hold; passed=5  failed=0
+[00:19:43 INFO] ── Step 8: plan complete ──
+[00:19:43 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
