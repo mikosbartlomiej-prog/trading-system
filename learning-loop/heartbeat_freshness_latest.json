@@ -1,94 +1,94 @@
 {
   "components": [
     {
-      "age_seconds": 291.692019,
+      "age_seconds": 525.930452,
       "component": "crypto-monitor",
-      "last_seen_iso": "2026-08-26T05:01:00.947971+00:00",
+      "last_seen_iso": "2026-08-27T15:15:53.980744+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 289.511747,
+      "age_seconds": 219.796577,
       "component": "defense-monitor",
-      "last_seen_iso": "2026-08-26T05:01:03.128243+00:00",
+      "last_seen_iso": "2026-08-27T15:21:00.114619+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 273.092927,
+      "age_seconds": 201.641649,
       "component": "twitter-monitor",
-      "last_seen_iso": "2026-08-26T05:01:19.547063+00:00",
+      "last_seen_iso": "2026-08-27T15:21:18.269547+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 24110.541888,
+      "age_seconds": 45012.503905,
       "component": "reddit-monitor",
-      "last_seen_iso": "2026-08-25T22:24:02.098102+00:00",
-      "status": "FRESH",
-      "threshold_seconds": 86400
+      "last_seen_iso": "2026-08-27T02:54:27.407291+00:00",
+      "status": "STALE",
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 502.633149,
+      "age_seconds": 513.449336,
       "component": "geo-monitor",
-      "last_seen_iso": "2026-08-26T04:57:30.006841+00:00",
+      "last_seen_iso": "2026-08-27T15:16:06.461860+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 1454.580433,
+      "age_seconds": 3159.952292,
       "component": "politician-monitor",
-      "last_seen_iso": "2026-08-26T04:41:38.059557+00:00",
+      "last_seen_iso": "2026-08-27T14:31:59.958904+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 29075.545154,
+      "age_seconds": 229.93682,
       "component": "options-monitor",
-      "last_seen_iso": "2026-08-25T21:01:17.094836+00:00",
+      "last_seen_iso": "2026-08-27T15:20:49.974376+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 304.101869,
+      "age_seconds": 228.414389,
       "component": "options-exit-monitor",
-      "last_seen_iso": "2026-08-26T05:00:48.538121+00:00",
+      "last_seen_iso": "2026-08-27T15:20:51.496807+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 28420.114728,
+      "age_seconds": 211.756583,
       "component": "price-monitor",
-      "last_seen_iso": "2026-08-25T21:12:12.525262+00:00",
+      "last_seen_iso": "2026-08-27T15:21:08.154613+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
-      "age_seconds": 94.381933,
+      "age_seconds": 224.822617,
       "component": "exit-monitor",
-      "last_seen_iso": "2026-08-26T05:04:18.258057+00:00",
+      "last_seen_iso": "2026-08-27T15:20:55.088579+00:00",
       "status": "FRESH",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     },
     {
       "age_seconds": null,
       "component": "incident-pattern-detector",
       "last_seen_iso": null,
       "status": "MISSING",
-      "threshold_seconds": 86400
+      "threshold_seconds": 7200
     }
   ],
-  "exit_code": 0,
-  "generated_at_iso": "2026-08-26T05:05:52.639990+00:00",
-  "market_open": false,
-  "market_reason": "closed",
+  "exit_code": 3,
+  "generated_at_iso": "2026-08-27T15:24:39.911196+00:00",
+  "market_open": true,
+  "market_reason": "open",
   "summary": {
-    "fresh": 10,
+    "fresh": 9,
     "missing": 1,
-    "stale": 0,
+    "stale": 1,
     "total": 11
   },
-  "threshold_seconds": 86400,
+  "threshold_seconds": 7200,
   "thresholds": {
     "market_session_stale_seconds": 7200,
     "non_market_stale_seconds": 86400

@@ -1,8 +1,8 @@
 # Replay entry-candidate discovery (v3.26.0)
 
-**Generated:** `2026-08-26T05:06:35.552682+00:00`
-**As of:** `2026-08-26T05:06:35.480407+00:00`
-**Git HEAD:** `ae8b8a2cb495791804280b3db2d1c7ab03d83c61`
+**Generated:** `2026-08-27T15:25:15.544906+00:00`
+**As of:** `2026-08-27T15:25:15.490239+00:00`
+**Git HEAD:** `7e103b427312cd70b87d7081fba6cd084d587aca`
 **Lookback days:** `7`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
