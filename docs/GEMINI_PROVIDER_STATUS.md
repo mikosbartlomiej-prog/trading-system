@@ -3,9 +3,9 @@
 - **Smoke status:** `GEMINI_SMOKE_FAILED`
 - **Selected model:** `gemini-flash-latest`
 - **Configured model:** `gemini-flash-latest`
-- **Discovered models count:** 35
-- **Failure category:** `None`
-- **Failure HTTP:** None
+- **Discovered models count:** 36
+- **Failure category:** `GEMINI_ENDPOINT_ERROR`
+- **Failure HTTP:** 503
 - **Safe to schedule:** false
 
 ## Standing markers
