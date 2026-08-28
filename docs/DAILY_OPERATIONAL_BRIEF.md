@@ -1,24 +1,24 @@
 ========================================================================
-# Daily Operational Brief — 2026-08-27
+# Daily Operational Brief — 2026-08-28
 ========================================================================
 
 ## TOP BANNER: YELLOW
 
-**ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_POSITION_RECONCILIATION**
+**ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_EQUITY_GAP**
 
-Active blockers: position_recon_stale_s=6215535.626224. No orders will be placed.
+Active blockers: equity_gap_stale_seconds=93680. No orders will be placed.
 
 _The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
 
 ## Master verdict
 
-- Decision: `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
+- Decision: `ALLOCATOR_BLOCKED_EQUITY_GAP` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
 - Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
-- Reason: `position_recon_stale_s=6215535` [source: `system_activation_gate.reason`]
+- Reason: `equity_gap_stale_seconds=93680` [source: `system_activation_gate.reason`]
 
 ## Top blockers
 
-- `position_recon_stale_s=6215535.626224`
+- `equity_gap_stale_seconds=93680`
 
 _Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
 
@@ -28,7 +28,7 @@ _Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT ad
 
 ## What operator must do
 
-1. Re-run the position reconciliation reporter and verify Alpaca side reflects the same positions.
+1. Review learning-loop/equity_gap_reconciliation_latest.json and the upstream account/equity sources; do NOT flip any broker or live-trading flag.
 
 ## Equity reconciliation
 
