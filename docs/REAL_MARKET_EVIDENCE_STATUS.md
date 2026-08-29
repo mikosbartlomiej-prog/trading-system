@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-27T15:24:40.223152+00:00`
-**As of:** `2026-08-27T15:24:40.142659+00:00`
-**Git HEAD:** `7e103b427312cd70b87d7081fba6cd084d587aca`
+**Generated:** `2026-08-29T11:18:14.638748+00:00`
+**As of:** `2026-08-29T11:18:14.566969+00:00`
+**Git HEAD:** `18a026274290db5dfbd6229a36ed922a24431171`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1842` |
+| Total ledger rows today | `1340` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,44 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1842 |
+| `crypto-monitor` | 1340 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 1842 |
+| `crypto-momentum` | 1340 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `ETH/USD` | 195 |
-| `BTC/USD` | 183 |
-| `SOL/USD` | 183 |
-| `AVAX/USD` | 183 |
-| `LINK/USD` | 183 |
-| `DOT/USD` | 183 |
-| `LTC/USD` | 183 |
-| `BCH/USD` | 183 |
-| `UNI/USD` | 183 |
-| `AAVE/USD` | 183 |
+| `BTC/USD` | 134 |
+| `ETH/USD` | 134 |
+| `SOL/USD` | 134 |
+| `AVAX/USD` | 134 |
+| `LINK/USD` | 134 |
+| `DOT/USD` | 134 |
+| `LTC/USD` | 134 |
+| `BCH/USD` | 134 |
+| `UNI/USD` | 134 |
+| `AAVE/USD` | 134 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 12 |
+| `0.0-0.5` | 0 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1830 |
+| `null` | 1340 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1842 |
+| `UNKNOWN` | 1340 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `33013108227` |
+| Last workflow run id | `33219476617` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |

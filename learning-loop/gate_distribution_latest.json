@@ -1,38 +1,38 @@
 {
   "actionable_next_fix": [
     {
-      "hint": "20569 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
+      "hint": "19280 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels).",
       "priority": "P2"
     }
   ],
-  "as_of": "2026-08-27T15:24:40.528830+00:00",
+  "as_of": "2026-08-29T11:18:14.890592+00:00",
   "dominant_explanation": [
     {
-      "explanation": "25/20605 rows blocked at the confidence gate (BLOCK)",
+      "explanation": "36/19327 rows blocked at the confidence gate (BLOCK)",
       "factor": "confidence_decision=BLOCK",
-      "share_pct": 0.1
+      "share_pct": 0.2
     }
   ],
-  "generated_at_iso": "2026-08-27T15:24:40.780569+00:00",
-  "git_head": "7e103b427312cd70b87d7081fba6cd084d587aca",
+  "generated_at_iso": "2026-08-29T11:18:15.154555+00:00",
+  "git_head": "18a026274290db5dfbd6229a36ed922a24431171",
   "rows_by_confidence_decision": {
     "ALERT_ONLY": 11,
-    "BLOCK": 25,
-    "OBSERVE_ONLY_SKIP": 20569
+    "BLOCK": 36,
+    "OBSERVE_ONLY_SKIP": 19280
   },
   "rows_by_data_failure_token": {},
   "rows_by_gate_blocker": {
-    "NO_BLOCKER": 20605
+    "NO_BLOCKER": 19327
   },
   "rows_by_monitor": {
-    "crypto-monitor": 20605
+    "crypto-monitor": 19327
   },
   "rows_by_risk_decision": {
-    "UNKNOWN": 20605
+    "UNKNOWN": 19327
   },
   "rows_by_strategy": {
-    "crypto-breakdown": 25,
-    "crypto-momentum": 20558,
+    "crypto-breakdown": 36,
+    "crypto-momentum": 19269,
     "crypto-oversold-bounce": 22
   },
   "safety": {
@@ -42,7 +42,7 @@
     "modifies_state_json": false
   },
   "shadow_eligibility_distribution": {
-    "risk_blocked": 20605
+    "risk_blocked": 19327
   },
   "shadow_eligible_count": 0,
   "standing_markers": [
@@ -56,19 +56,19 @@
   ],
   "top_blocker_per_monitor": {
     "crypto-monitor": {
-      "count": 20605,
+      "count": 19327,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     }
   },
   "top_blocker_per_strategy": {
     "crypto-breakdown": {
-      "count": 25,
+      "count": 36,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     },
     "crypto-momentum": {
-      "count": 20558,
+      "count": 19269,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     },
@@ -78,7 +78,7 @@
       "top_blocker": "NO_BLOCKER"
     }
   },
-  "total_rows": 20605,
+  "total_rows": 19327,
   "version": "v3.24.0",
   "window_days": 7
 }
