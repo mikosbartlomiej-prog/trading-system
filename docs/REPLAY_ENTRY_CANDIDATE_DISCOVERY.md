@@ -1,15 +1,15 @@
 # Replay entry-candidate discovery (v3.26.0)
 
-**Generated:** `2026-08-29T11:18:56.919597+00:00`
-**As of:** `2026-08-29T11:18:56.845025+00:00`
-**Git HEAD:** `18a026274290db5dfbd6229a36ed922a24431171`
+**Generated:** `2026-08-30T10:04:19.372341+00:00`
+**As of:** `2026-08-30T10:04:19.315230+00:00`
+**Git HEAD:** `fc3beb4745625597ea05883db0a98d345c9cd290`
 **Lookback days:** `7`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
 ## Totals
 
 - Candidates (replay): **0**
-- Near-misses (within 15%): **2**
+- Near-misses (within 15%): **0**
 - Threshold crosses: **0**
 - (strategy, symbol) pairs scanned: **10**
 
@@ -39,7 +39,7 @@ These symbols have no cached bars at `learning-loop/backfill_snapshots`. Replay 
 | `crypto-momentum` | `LTC/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 | `crypto-oversold-bounce` | `LTC/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 | `crypto-momentum` | `AVAX/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 5000 | 7 | 0 | 2 | 0 | OK |
+| `crypto-oversold-bounce` | `AVAX/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 
 ## Safety contract
 
