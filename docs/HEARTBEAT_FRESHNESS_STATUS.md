@@ -1,24 +1,24 @@
 # Heartbeat Freshness Status
 
-- Generated at: `2026-08-30T10:03:42.480768+00:00`
-- US market session: **CLOSED** (weekend)
+- Generated at: `2026-08-31T11:02:57.033232+00:00`
+- US market session: **CLOSED** (pre_market)
 - Stale threshold in effect: `86400s`
 - Exit code: `2`
 
-- Summary: FRESH=7, STALE=3, MISSING=1, TOTAL=11
+- Summary: FRESH=8, STALE=2, MISSING=1, TOTAL=11
 
 | Component | Status | Age (s) | Last seen |
 |---|---|---|---|
-| `crypto-monitor` | FRESH | 171 | 2026-08-30T10:00:51.214708+00:00 |
-| `defense-monitor` | FRESH | 170 | 2026-08-30T10:00:52.626094+00:00 |
-| `twitter-monitor` | FRESH | 146 | 2026-08-30T10:01:16.829164+00:00 |
-| `reddit-monitor` | STALE | 110037 | 2026-08-29T03:29:45.402258+00:00 |
-| `geo-monitor` | FRESH | 1970 | 2026-08-30T09:30:52.891493+00:00 |
-| `politician-monitor` | FRESH | 8219 | 2026-08-30T07:46:43.960191+00:00 |
-| `options-monitor` | STALE | 126650 | 2026-08-28T22:52:52.560878+00:00 |
-| `options-exit-monitor` | FRESH | 470 | 2026-08-30T09:55:52.486655+00:00 |
-| `price-monitor` | STALE | 126572 | 2026-08-28T22:54:10.351311+00:00 |
-| `exit-monitor` | FRESH | 173 | 2026-08-30T10:00:49.424597+00:00 |
+| `crypto-monitor` | FRESH | 119 | 2026-08-31T11:00:58.152892+00:00 |
+| `defense-monitor` | FRESH | 420 | 2026-08-31T10:55:56.731340+00:00 |
+| `twitter-monitor` | FRESH | 96 | 2026-08-31T11:01:20.964547+00:00 |
+| `reddit-monitor` | FRESH | 39059 | 2026-08-31T00:11:57.669932+00:00 |
+| `geo-monitor` | FRESH | 7315 | 2026-08-31T09:01:02.455724+00:00 |
+| `politician-monitor` | FRESH | 10004 | 2026-08-31T08:16:12.540256+00:00 |
+| `options-monitor` | STALE | 216604 | 2026-08-28T22:52:52.560878+00:00 |
+| `options-exit-monitor` | FRESH | 126 | 2026-08-31T11:00:51.103619+00:00 |
+| `price-monitor` | STALE | 216527 | 2026-08-28T22:54:10.351311+00:00 |
+| `exit-monitor` | FRESH | 127 | 2026-08-31T11:00:49.740370+00:00 |
 | `incident-pattern-detector` | MISSING | n/a | — |
 
 ## Standing markers
