@@ -2390,3 +2390,14 @@
 - 2026-08-30 · rsi-alert [overbought]: BTC/USD RSI=82.6 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
 - 2026-08-30 · rsi-alert [overbought]: ETH/USD RSI=79.8 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
 
+- 2026-08-31 · LLM unavailable (skipped) — deterministic adapter only
+- 2026-08-31 · crypto-momentum: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · geo-defense: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · geo-energy: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · geo-gold: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · geo-xom: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · crypto-oversold-bounce: PIPELINE_FAILURE_SUSPECTED — SILENT 212d, 0 trades AND 0 placement attempts. NOT auto-pruned (v3.11.1). Likely cause: monitor routing broken, API quota, or strategy never fires. Operator check: monitor-health for this strategy's monitor.
+- 2026-08-31 · equity-gap [WARN]: Equity dropped $7,941 ($98,446 → $90,505) with 0 attributed closed trades. Likely sources: open-position mark-to-market, unfilled LIMITs, allocator order side-effects, or stale attribution. Cross-check positions tab + recent orders.
+- 2026-08-31 · rsi-alert [overbought]: BTC/USD RSI=79.4 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
+- 2026-08-31 · rsi-alert [overbought]: ETH/USD RSI=75.8 ≥ 75 — overbought, fade-the-trend risk for new long entries. Options PUT entries blocked by v3.8.6 regime gate; broader long-side caution warranted.
+
