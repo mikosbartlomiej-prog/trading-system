@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-08-31T11:02:57.240680+00:00`
-**As of:** `2026-08-31T11:02:57.157815+00:00`
-**Git HEAD:** `f482735959ed842b7cc9b43e032515a46f0698b1`
+**Generated:** `2026-09-01T09:32:58.444670+00:00`
+**As of:** `2026-09-01T09:32:58.375482+00:00`
+**Git HEAD:** `86745c47915b7fffc392e9bb88c7d2231e936dd1`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1352` |
+| Total ledger rows today | `1130` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,46 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1352 |
+| `crypto-monitor` | 1130 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-breakdown` | 1 |
-| `crypto-momentum` | 1327 |
-| `crypto-oversold-bounce` | 24 |
+| `crypto-momentum` | 1130 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BCH/USD` | 146 |
-| `BTC/USD` | 134 |
-| `ETH/USD` | 134 |
-| `SOL/USD` | 134 |
-| `AVAX/USD` | 134 |
-| `LINK/USD` | 134 |
-| `DOT/USD` | 134 |
-| `LTC/USD` | 134 |
-| `UNI/USD` | 134 |
-| `AAVE/USD` | 134 |
+| `BTC/USD` | 113 |
+| `ETH/USD` | 113 |
+| `SOL/USD` | 113 |
+| `AVAX/USD` | 113 |
+| `LINK/USD` | 113 |
+| `DOT/USD` | 113 |
+| `LTC/USD` | 113 |
+| `BCH/USD` | 113 |
+| `UNI/USD` | 113 |
+| `AAVE/USD` | 113 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 2 |
-| `0.5-0.65` | 10 |
+| `0.0-0.5` | 0 |
+| `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1340 |
+| `null` | 1130 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1352 |
+| `UNKNOWN` | 1130 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -78,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `33219476617` |
+| Last workflow run id | `33450206864` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
