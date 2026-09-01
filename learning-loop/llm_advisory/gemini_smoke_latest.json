@@ -1,11 +1,11 @@
 {
   "configured_model": "gemini-flash-latest",
-  "discovered_models_count": 36,
+  "discovered_models_count": 35,
   "error_redacted": "ReadTimeout: HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=15.0)",
   "failure_category": null,
   "failure_http": null,
   "free_only": true,
-  "generated_at_iso": "2026-08-31T05:22:02.255623+00:00",
+  "generated_at_iso": "2026-09-01T04:56:50.364962+00:00",
   "safe_to_schedule": false,
   "secret_values_logged": false,
   "selected_model": "gemini-flash-latest",
