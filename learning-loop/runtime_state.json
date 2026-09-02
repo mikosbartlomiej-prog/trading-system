@@ -1,5 +1,5 @@
 {
-  "_last_writer": "pre-open-planner",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
@@ -39,9 +39,9 @@
     },
     "options-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-09-02T16:55:51.966873+00:00",
+      "last_seen_iso": "2026-09-02T16:58:48.086847+00:00",
       "last_status": "ok",
-      "pings_today": 27
+      "pings_today": 28
     },
     "politician-monitor": {
       "last_message": "emitted=0",
