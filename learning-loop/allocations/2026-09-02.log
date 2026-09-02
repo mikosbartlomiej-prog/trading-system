@@ -1,0 +1,40 @@
+[00:24:56 INFO] ============================================================
+[00:24:56 INFO] AccountAwareAllocator — daily plan 2026-09-02
+[00:24:56 INFO] ============================================================
+[00:24:56 INFO] ── Step 1: fetching account state ──
+[00:24:56 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[00:24:56 INFO] ── Step 2: fetching open positions ──
+[00:24:56 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[00:24:56 INFO]   PDT mode=OK  dt_remaining=3
+[00:24:56 INFO] ── Step 3: defensive mode check ──
+[00:24:56 INFO]   defensive_mode OFF → proceed with deployment
+[00:24:56 INFO] ── Step 4: regime detection ──
+[00:24:56 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:24:56 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[00:24:56 INFO] ── Step 5: scoring allowed universe ──
+[00:24:57 DBG ]     CRM      score=+0.775  bucket=software_quality
+[00:24:57 DBG ]     USO      score=+0.584  bucket=inflation_energy
+[00:24:57 DBG ]     NOW      score=+0.543  bucket=software_quality
+[00:24:57 DBG ]     CVX      score=+0.389  bucket=inflation_energy
+[00:24:57 DBG ]     XLE      score=+0.379  bucket=inflation_energy
+[00:24:57 INFO] ── Step 6: target weight construction ──
+[00:24:57 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
+[00:24:57 INFO]   target_invested_ratio_after_plan = 1.0000
+[00:24:57 DBG ]     CRM        target_weight=0.1800 ($16290.88)
+[00:24:57 DBG ]     USO        target_weight=0.1800 ($16290.88)
+[00:24:57 DBG ]     NOW        target_weight=0.1800 ($16290.88)
+[00:24:57 DBG ]     CVX        target_weight=0.1800 ($16290.88)
+[00:24:57 DBG ]     XLE        target_weight=0.1800 ($16290.88)
+[00:24:57 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[00:24:57 DBG ]     QQQ        target_weight=0.0000 ($0.00)
+[00:24:57 INFO] ── Step 7: rebalance order generation ──
+[00:24:57 INFO]     CRM      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:24:57 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:24:57 INFO]     NOW      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:24:57 INFO]     CVX      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:24:57 INFO]     XLE      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:24:57 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:24:57 INFO]     QQQ      HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- target $0 below min_order_value $100
+[00:24:57 INFO]   summary: 6 actionable + 1 hold; passed=6  failed=0
+[00:24:57 INFO] ── Step 8: plan complete ──
+[00:24:57 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
