@@ -25,6 +25,12 @@
       "last_status": "ok",
       "pings_today": 2
     },
+    "options-exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-04T17:16:04.193392+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "options-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-09-04T17:11:01.996108+00:00",
