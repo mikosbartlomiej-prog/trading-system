@@ -1,7 +1,7 @@
 {
   "errors": [],
-  "generated_at_iso": "2026-09-04T09:00:04.309126+00:00",
-  "git_head": "5952b278766d231c64bfef15746842392823b363",
+  "generated_at_iso": "2026-09-05T08:30:38.727492+00:00",
+  "git_head": "fce4f70b01bf0b09386e85f9938270bc8bf5807f",
   "safety": {
     "allow_broker_paper": false,
     "allowed_modes_runtime_only": false,
@@ -33,7 +33,7 @@
         "shadow"
       ],
       "change_rationale": "threshold reality TOO_STRICT for some 7d windows; relax by 5 points to surface near-miss cluster around RSI 55-58. near-miss seed + replay both show density just below 60. [created_from: threshold_reality + near_miss seed]",
-      "created_at_iso": "2026-09-04T09:00:04.294382+00:00",
+      "created_at_iso": "2026-09-05T08:30:38.712109+00:00",
       "created_from": "threshold_reality + near_miss seed",
       "dataclass_status": "QUARANTINED",
       "description": "Lower RSI threshold from 60 to 55 (entry band shift -5 points)",
@@ -72,7 +72,7 @@
         "shadow"
       ],
       "change_rationale": "predator bracket [3%, 15%] blocks oversold-bounce setups; wider 2% floor surfaces additional candidates near RSI 60 without changing RSI threshold. [created_from: threshold_reality + near_miss seed]",
-      "created_at_iso": "2026-09-04T09:00:04.307114+00:00",
+      "created_at_iso": "2026-09-05T08:30:38.725380+00:00",
       "created_from": "threshold_reality + near_miss seed",
       "dataclass_status": "QUARANTINED",
       "description": "Lower 24h move bracket floor from 3% to 2% (entry filter widening)",
@@ -111,7 +111,7 @@
         "shadow"
       ],
       "change_rationale": "near-miss cluster observed around RSI 31-33; current 30 cutoff is TOO_LOOSE per threshold-reality output but on the other side the entries cluster near 31-33 \u2014 let operator evaluate. [created_from: threshold_reality + near_miss seed]",
-      "created_at_iso": "2026-09-04T09:00:04.307882+00:00",
+      "created_at_iso": "2026-09-05T08:30:38.726166+00:00",
       "created_from": "threshold_reality + near_miss seed",
       "dataclass_status": "QUARANTINED",
       "description": "Raise RSI threshold from 30 to 33 (entry band shift +3 points)",
@@ -150,7 +150,7 @@
         "shadow"
       ],
       "change_rationale": "0 production fires lifetime for momentum-long; replay candidates cluster near 1.5-2.0% breakout. Lower threshold may surface real entries \u2014 operator review. [created_from: threshold_reality + near_miss seed]",
-      "created_at_iso": "2026-09-04T09:00:04.308564+00:00",
+      "created_at_iso": "2026-09-05T08:30:38.726913+00:00",
       "created_from": "threshold_reality + near_miss seed",
       "dataclass_status": "QUARANTINED",
       "description": "Lower breakout threshold from 2.0% to 1.5% (entry sensitivity raise)",
