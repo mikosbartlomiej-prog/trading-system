@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-09-05T08:30:39.547753+00:00",
-  "generated_at_iso": "2026-09-05T08:30:39.613933+00:00",
-  "git_head": "fce4f70b01bf0b09386e85f9938270bc8bf5807f",
+  "as_of": "2026-09-06T08:48:11.224895+00:00",
+  "generated_at_iso": "2026-09-06T08:48:11.292041+00:00",
+  "git_head": "447169e966719c6a612c315dc452ab8cdf7215b3",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -129,7 +129,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 0,
+      "near_misses": 1,
       "strategy": "crypto-oversold-bounce",
       "symbol": "AVAX/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 0,
+    "near_misses": 1,
     "rows": 10,
     "threshold_crosses": 0
   },
