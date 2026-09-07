@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-09-06T08:48:11.224895+00:00",
-  "generated_at_iso": "2026-09-06T08:48:11.292041+00:00",
-  "git_head": "447169e966719c6a612c315dc452ab8cdf7215b3",
+  "as_of": "2026-09-07T09:35:50.956897+00:00",
+  "generated_at_iso": "2026-09-07T09:35:51.006942+00:00",
+  "git_head": "aa736d15e9c8313de8966e66df00b599ccb1b822",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -69,7 +69,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 0,
+      "near_misses": 1,
       "strategy": "crypto-momentum",
       "symbol": "SOL/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 1,
+    "near_misses": 2,
     "rows": 10,
     "threshold_crosses": 0
   },
