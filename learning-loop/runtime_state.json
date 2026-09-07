@@ -1,117 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-09-07T09:31:19.048348+00:00",
-=======
-      "last_seen_iso": "2026-09-07T09:31:37.299841+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 116
-    },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-09-07T09:26:19.599657+00:00",
-      "last_status": "ok",
-      "pings_today": 82
-    },
-    "doj-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-09-07T06:44:20.294270+00:00",
-      "last_status": "ok",
-      "pings_today": 2
-    },
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-07T09:31:14.497248+00:00",
-      "last_status": "ok",
-      "pings_today": 94
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-07T09:31:21.362225+00:00",
-      "last_status": "ok",
-      "pings_today": 16
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-07T09:21:11.988974+00:00",
-      "last_status": "ok",
-      "pings_today": 93
-    },
-    "politician-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-09-07T09:03:57.851426+00:00",
-      "last_status": "ok",
-      "pings_today": 4
-    },
-    "reddit-monitor": {
-      "last_message": "sent=0",
-      "last_seen_iso": "2026-09-06T23:28:35.773501+00:00",
+      "last_seen_iso": "2026-09-07T09:36:14.433587+00:00",
       "last_status": "ok",
       "pings_today": 1
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-07T09:31:38.787443+00:00",
-      "last_status": "ok",
-      "pings_today": 117
     }
-  },
-  "intraday_governor": {
-    "account_unavailable": false,
-    "alerts_sent": {},
-    "block_new_entries": false,
-    "current_equity": 90504.88,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
-    "date": "2026-09-07",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
-    "intraday_peak_equity": 90504.88,
-    "intraday_peak_pnl": 0.0,
-    "intraday_peak_pnl_pct": 0.0,
-    "last_action": "noop",
-    "last_update_at": "2026-09-07T09:31:14.493797+00:00",
-    "max_gross_target": 1.5,
-    "options_first_reduction": false,
-    "peak_at": "2026-09-07T00:06:28.686137+00:00",
-    "pnl_state": "FLAT",
-    "profit_floor_usd": 0.0,
-    "session_start_equity": 90504.88,
-    "state_entered_at": "2026-09-07T00:06:28.686137+00:00",
-    "top_giveback_symbols": []
-  },
-  "llm_availability": {
-    "actions_enqueued_this_run": [],
-    "consecutive_failures": 2,
-    "history": [
-      {
-        "at": "2026-09-06T22:30:44.435938+00:00",
-        "reason": "senior_pm_unavailable",
-        "success": false
-      },
-      {
-        "at": "2026-09-07T00:11:51.570184+00:00",
-        "reason": "senior_pm_unavailable",
-        "success": false
-      }
-    ],
-    "last_reason": "senior_pm_unavailable",
-    "last_run_at": "2026-09-07T00:11:51.570184+00:00",
-    "last_success": false
-  },
-  "routine_budget": {
-    "by_routine": {
-      "daily-learning-pm": 1
-    },
-    "by_tier": {
-      "P0_essential": 1
-    },
-    "date": "2026-09-07",
-    "last_updated": "2026-09-07T00:11:51.250786+00:00",
-    "total": 1
   }
 }
