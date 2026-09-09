@@ -1,40 +1,40 @@
-[00:27:01 INFO] ============================================================
-[00:27:01 INFO] AccountAwareAllocator — daily plan 2026-09-09
-[00:27:01 INFO] ============================================================
-[00:27:01 INFO] ── Step 1: fetching account state ──
-[00:27:02 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
-[00:27:02 INFO] ── Step 2: fetching open positions ──
-[00:27:02 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
-[00:27:02 INFO]   PDT mode=OK  dt_remaining=3
-[00:27:02 INFO] ── Step 3: defensive mode check ──
-[00:27:02 INFO]   defensive_mode OFF → proceed with deployment
-[00:27:02 INFO] ── Step 4: regime detection ──
-[00:27:02 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[00:27:02 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[00:27:02 INFO] ── Step 5: scoring allowed universe ──
-[00:27:08 DBG ]     USO      score=+0.525  bucket=inflation_energy
-[00:27:08 DBG ]     ORCL     score=+0.472  bucket=software_quality
-[00:27:08 DBG ]     CRM      score=+0.421  bucket=software_quality
-[00:27:08 DBG ]     AMD      score=+0.402  bucket=ai_nasdaq_semis
-[00:27:08 DBG ]     TSLA     score=+0.342  bucket=ai_nasdaq_semis
-[00:27:08 INFO] ── Step 6: target weight construction ──
-[00:27:08 INFO]   reason: regime=NEUTRAL | primary_picks=4(72%) | fallback=['SPY', 'QQQ', 'GLD']
-[00:27:08 INFO]   target_invested_ratio_after_plan = 1.0000
-[00:27:08 DBG ]     USO        target_weight=0.1800 ($16290.88)
-[00:27:08 DBG ]     ORCL       target_weight=0.1800 ($16290.88)
-[00:27:08 DBG ]     CRM        target_weight=0.1800 ($16290.88)
-[00:27:08 DBG ]     AMD        target_weight=0.1800 ($16290.88)
-[00:27:08 DBG ]     SPY        target_weight=0.1000 ($9050.49)
-[00:27:08 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
-[00:27:08 DBG ]     GLD        target_weight=0.0800 ($7240.39)
-[00:27:08 INFO] ── Step 7: rebalance order generation ──
-[00:27:08 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:27:08 INFO]     ORCL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:27:08 INFO]     CRM      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:27:08 INFO]     AMD      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
-[00:27:08 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:27:08 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:27:08 INFO]     GLD      BUY     current=$     0.00 target=$  7240.39 delta=$ +7240.39  -- new position at target 8.0%
-[00:27:08 INFO]   summary: 7 actionable + 0 hold; passed=7  failed=0
-[00:27:08 INFO] ── Step 8: plan complete ──
-[00:27:08 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+[22:49:26 INFO] ============================================================
+[22:49:26 INFO] AccountAwareAllocator — daily plan 2026-09-09
+[22:49:26 INFO] ============================================================
+[22:49:26 INFO] ── Step 1: fetching account state ──
+[22:49:26 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[22:49:26 INFO] ── Step 2: fetching open positions ──
+[22:49:26 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[22:49:26 INFO]   PDT mode=OK  dt_remaining=3
+[22:49:26 INFO] ── Step 3: defensive mode check ──
+[22:49:26 INFO]   defensive_mode OFF → proceed with deployment
+[22:49:26 INFO] ── Step 4: regime detection ──
+[22:49:26 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[22:49:26 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[22:49:26 INFO] ── Step 5: scoring allowed universe ──
+[22:49:27 DBG ]     USO      score=+0.616  bucket=inflation_energy
+[22:49:27 DBG ]     META     score=+0.506  bucket=ai_nasdaq_semis
+[22:49:27 DBG ]     AMD      score=+0.452  bucket=ai_nasdaq_semis
+[22:49:27 DBG ]     ORCL     score=+0.416  bucket=software_quality
+[22:49:27 DBG ]     CRM      score=+0.397  bucket=software_quality
+[22:49:27 INFO] ── Step 6: target weight construction ──
+[22:49:27 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
+[22:49:27 INFO]   target_invested_ratio_after_plan = 1.0000
+[22:49:27 DBG ]     USO        target_weight=0.1800 ($16290.88)
+[22:49:27 DBG ]     META       target_weight=0.1800 ($16290.88)
+[22:49:27 DBG ]     AMD        target_weight=0.1800 ($16290.88)
+[22:49:27 DBG ]     ORCL       target_weight=0.1800 ($16290.88)
+[22:49:27 DBG ]     CRM        target_weight=0.1800 ($16290.88)
+[22:49:27 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[22:49:27 DBG ]     QQQ        target_weight=0.0000 ($0.00)
+[22:49:27 INFO] ── Step 7: rebalance order generation ──
+[22:49:27 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:49:27 INFO]     META     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:49:27 INFO]     AMD      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:49:27 INFO]     ORCL     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:49:27 INFO]     CRM      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[22:49:27 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[22:49:27 INFO]     QQQ      HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- target $0 below min_order_value $100
+[22:49:27 INFO]   summary: 6 actionable + 1 hold; passed=6  failed=0
+[22:49:27 INFO] ── Step 8: plan complete ──
+[22:49:27 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
