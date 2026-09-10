@@ -1,6 +1,12 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+    "crypto-monitor": {
+      "last_message": "scanned 11 coins",
+      "last_seen_iso": "2026-09-10T22:01:00.463336+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "defense-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-09-10T21:59:31.115407+00:00",
