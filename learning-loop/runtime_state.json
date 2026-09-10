@@ -3,7 +3,11 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
+<<<<<<< Updated upstream
       "last_seen_iso": "2026-09-10T00:20:36.896224+00:00",
+=======
+      "last_seen_iso": "2026-09-10T00:21:02.283544+00:00",
+>>>>>>> Stashed changes
       "last_status": "ok",
       "pings_today": 4
     },
