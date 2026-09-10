@@ -1,5 +1,13 @@
 {
-  "_last_writer": "llm-availability",
+  "_last_writer": "heartbeat",
+  "heartbeat": {
+    "defense-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-10T00:29:30.313469+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    }
+  },
   "llm_availability": {
     "actions_enqueued_this_run": [],
     "consecutive_failures": 1,
