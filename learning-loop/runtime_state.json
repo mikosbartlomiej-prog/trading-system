@@ -1,35 +1,28 @@
 {
-  "_last_writer": "heartbeat",
-  "heartbeat": {
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-10T00:25:56.817962+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    }
+  "_last_writer": "llm-availability",
+  "llm_availability": {
+    "actions_enqueued_this_run": [],
+    "consecutive_failures": 1,
+    "history": [
+      {
+        "at": "2026-09-10T00:26:33.942460+00:00",
+        "reason": "senior_pm_unavailable",
+        "success": false
+      }
+    ],
+    "last_reason": "senior_pm_unavailable",
+    "last_run_at": "2026-09-10T00:26:33.942460+00:00",
+    "last_success": false
   },
-  "intraday_governor": {
-    "account_unavailable": false,
-    "alerts_sent": {},
-    "block_new_entries": false,
-    "current_equity": 90504.88,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
+  "routine_budget": {
+    "by_routine": {
+      "daily-learning-pm": 1
+    },
+    "by_tier": {
+      "P0_essential": 1
+    },
     "date": "2026-09-10",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
-    "intraday_peak_equity": 90504.88,
-    "intraday_peak_pnl": 0.0,
-    "intraday_peak_pnl_pct": 0.0,
-    "last_action": "transition_NEW_DAY_to_FLAT",
-    "last_update_at": "2026-09-10T00:25:56.809466+00:00",
-    "max_gross_target": 1.5,
-    "options_first_reduction": false,
-    "peak_at": "2026-09-10T00:25:56.809466+00:00",
-    "pnl_state": "FLAT",
-    "profit_floor_usd": 0.0,
-    "session_start_equity": 90504.88,
-    "state_entered_at": "2026-09-10T00:25:56.809466+00:00",
-    "top_giveback_symbols": []
+    "last_updated": "2026-09-10T00:26:33.748675+00:00",
+    "total": 1
   }
 }
