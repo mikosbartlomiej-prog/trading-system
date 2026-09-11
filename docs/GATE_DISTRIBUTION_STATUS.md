@@ -1,71 +1,69 @@
 # Gate Distribution Status (v3.24.0)
 
-**Generated:** `2026-09-10T09:04:26.358050+00:00`
-**As of:** `2026-09-10T09:04:26.133942+00:00`
-**Git HEAD:** `d8d898ad473ad8ed24a966b7dd2d0225ff6bd6a5`
+**Generated:** `2026-09-11T09:02:28.642023+00:00`
+**As of:** `2026-09-11T09:02:28.286571+00:00`
+**Git HEAD:** `fb1d5ab6a30d8d48428f5f5a9f8753d64d571641`
 **Window:** last 7 days
-**Total ledger rows:** `17748`
+**Total ledger rows:** `17766`
 **Shadow-eligible rows:** `0`
 
 ## Why `shadow_eligible_count = 0`
 
 | Factor | Share % | Explanation |
 |---|---|---|
-| `confidence_decision=BLOCK` | 0.1% | 22/17748 rows blocked at the confidence gate (BLOCK) |
+| `confidence_decision=BLOCK` | 0.2% | 33/17766 rows blocked at the confidence gate (BLOCK) |
 
 ## Top 3 blockers overall
 
 | Blocker | Count |
 |---|---|
-| `NO_BLOCKER` | 17748 |
+| `NO_BLOCKER` | 17766 |
 
 ## Top blocker per monitor
 
 | Monitor | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-monitor` | `NO_BLOCKER` | 17748 | 100.0% |
+| `crypto-monitor` | `NO_BLOCKER` | 17766 | 100.0% |
 
 ## Top blocker per strategy
 
 | Strategy | Top blocker | Count | Share |
 |---|---|---|---|
-| `crypto-momentum` | `NO_BLOCKER` | 17657 | 100.0% |
-| `crypto-oversold-bounce` | `NO_BLOCKER` | 78 | 100.0% |
-| `crypto-breakdown` | `NO_BLOCKER` | 13 | 100.0% |
+| `crypto-momentum` | `NO_BLOCKER` | 17716 | 100.0% |
+| `crypto-oversold-bounce` | `NO_BLOCKER` | 50 | 100.0% |
 
 ## Rows by monitor
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 17748 |
+| `crypto-monitor` | 17766 |
 
 ## Rows by strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 17657 |
-| `crypto-oversold-bounce` | 78 |
-| `crypto-breakdown` | 13 |
+| `crypto-momentum` | 17716 |
+| `crypto-oversold-bounce` | 50 |
 
 ## Rows by risk_decision
 
 | Risk decision | Count |
 |---|---|
-| `UNKNOWN` | 17748 |
+| `UNKNOWN` | 17766 |
 
 ## Rows by confidence_decision
 
 | Confidence decision | Count |
 |---|---|
-| `OBSERVE_ONLY_SKIP` | 17700 |
-| `ALERT_ONLY` | 26 |
-| `BLOCK` | 22 |
+| `OBSERVE_ONLY_SKIP` | 17720 |
+| `BLOCK` | 33 |
+| `ALERT_ONLY` | 13 |
 
 ## Rows by gate blocker
 
 | Gate blocker | Count |
 |---|---|
-| `NO_BLOCKER` | 17748 |
+| `NO_BLOCKER` | 17766 |
 
 ## Rows by data-failure token
 
@@ -77,13 +75,13 @@
 
 | Bucket | Count |
 |---|---|
-| `risk_blocked` | 17748 |
+| `risk_blocked` | 17766 |
 
 ## Actionable next-fix advice
 
 | Priority | Hint |
 |---|---|
-| `P2` | 17700 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels). |
+| `P2` | 17720 OBSERVE_ONLY_SKIP rows present. Verify v3.24 confidence emitter promotes top-level fields (or extend readers to consume raw_signal.* sentinels). |
 
 ## Standing markers
 
