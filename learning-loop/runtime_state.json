@@ -30,6 +30,12 @@
       "last_seen_iso": "2026-09-16T18:41:06.577628+00:00",
       "last_status": "ok",
       "pings_today": 2
+    },
+    "price-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-16T18:46:16.566745+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
