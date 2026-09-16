@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-09-15T09:32:56.692033+00:00`
-**As of:** `2026-09-15T09:32:56.632768+00:00`
-**Git HEAD:** `24beb0c6616345f3175565612f4a14382d6c943a`
+**Generated:** `2026-09-16T09:26:09.404918+00:00`
+**As of:** `2026-09-16T09:26:09.330517+00:00`
+**Git HEAD:** `edff290dea5ed0e0ec907accf06a57fb0c58462e`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1142` |
+| Total ledger rows today | `1135` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,20 +17,20 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1142 |
+| `crypto-monitor` | 1135 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 1118 |
-| `crypto-oversold-bounce` | 24 |
+| `crypto-momentum` | 1125 |
+| `crypto-oversold-bounce` | 10 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `LINK/USD` | 125 |
+| `LINK/USD` | 118 |
 | `BTC/USD` | 113 |
 | `ETH/USD` | 113 |
 | `SOL/USD` | 113 |
@@ -45,7 +45,7 @@
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 12 |
+| `0.0-0.5` | 5 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
@@ -55,7 +55,7 @@
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1142 |
+| `UNKNOWN` | 1135 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -77,7 +77,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `34905321918` |
+| Last workflow run id | `35026933302` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
