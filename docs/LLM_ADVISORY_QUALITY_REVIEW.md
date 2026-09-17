@@ -1,11 +1,11 @@
 # LLM Advisory Quality Review (v3.28.3)
 
-- **Run ID:** `v3300-calibration-35056487698`
+- **Run ID:** `v3300-calibration-35182978897`
 - **Quality status:** `LLM_ADVISORY_QUALITY_EMPTY_ANALYSIS`
 - **Rows seen:** 11
-- **Rows with PROVIDER_USED:** **1**
+- **Rows with PROVIDER_USED:** **5**
 - **Rows with PROVIDER_SKIPPED_DISABLED:** 0
-- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 10
+- **Rows with PROVIDER_FAILED_FAIL_SOFT:** 6
 - **generic_placeholder_count:** 0
 - **empty_risks_count:** 11
 - **empty_next_actions_count:** 11
