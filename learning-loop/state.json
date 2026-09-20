@@ -6,26 +6,26 @@
     "starting_equity": 90504.88
   },
   "daily_peak": {
-    "date": "2026-09-19",
+    "date": "2026-09-20",
     "peak_pl_usd": 0.0,
     "peak_pl_pct": 0.0,
-    "peak_at": "2026-09-19T09:45:47.364775+00:00",
+    "peak_at": "2026-09-20T00:00:27.669384+00:00",
     "peak_equity": 90504.88,
     "current_pl_usd": 0.0,
     "current_equity": 90504.88,
     "retrace_from_peak": 0.0,
     "verdict": "FLAT",
-    "verdict_at": "2026-09-19T22:30:30.654565+00:00",
+    "verdict_at": "2026-09-20T00:10:28.056808+00:00",
     "alerts_sent": {},
     "source": "runtime_state.intraday_governor (v3.8.6 sync)"
   },
-  "days_tracked": 250,
+  "days_tracked": 251,
   "global_overrides": {
     "max_concurrent_per_strategy": {},
     "max_open_options": null,
     "options_side_bias": null
   },
-  "last_updated": "2026-09-19T22:33:28.828663+00:00",
+  "last_updated": "2026-09-20T00:16:28.905385+00:00",
   "last_validated_at": "2026-05-21T12:00:00+00:00",
   "last_write_reason": "v3.9.1: add NOW to tickers (software_quality bucket — Senior PM diversification recommendation 2026-05-21)",
   "last_writer": "manual-maintenance",
