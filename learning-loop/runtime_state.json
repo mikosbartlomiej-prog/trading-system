@@ -1,5 +1,13 @@
 {
-  "_last_writer": "pre-open-planner",
+  "_last_writer": "heartbeat",
+  "heartbeat": {
+    "options-exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-21T18:25:30.731591+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    }
+  },
   "pre_open_plan": {
     "confidence_caps_per_strategy": {},
     "confidence_caps_per_symbol": {
