@@ -21,9 +21,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-09-21T01:05:24.712218+00:00",
+      "last_seen_iso": "2026-09-21T01:10:27.466855+00:00",
       "last_status": "ok",
-      "pings_today": 14
+      "pings_today": 15
     },
     "geo-monitor": {
       "last_message": "",
@@ -64,7 +64,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-09-21T01:05:24.709754+00:00",
+    "last_update_at": "2026-09-21T01:10:27.463847+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-09-21T00:05:51.329641+00:00",
