@@ -25,6 +25,12 @@
       "last_status": "ok",
       "pings_today": 7
     },
+    "geo-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-22T18:00:41.161300+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "options-exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-09-22T17:55:40.885361+00:00",
