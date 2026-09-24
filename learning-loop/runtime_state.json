@@ -31,6 +31,12 @@
       "last_status": "ok",
       "pings_today": 2
     },
+    "options-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-09-24T23:33:35.119133+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "twitter-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-09-24T23:30:48.603189+00:00",
