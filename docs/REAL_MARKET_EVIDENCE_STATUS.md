@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-09-24T09:26:49.131554+00:00`
-**As of:** `2026-09-24T09:26:49.080281+00:00`
-**Git HEAD:** `74568744c60aa49e1ffce3c91669f4216726fd5c`
+**Generated:** `2026-09-25T09:44:49.543732+00:00`
+**As of:** `2026-09-25T09:44:49.476236+00:00`
+**Git HEAD:** `f6210f3de286a092e5a20deb93b8910ed4d453cd`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1150` |
+| Total ledger rows today | `1160` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,28 +17,28 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1150 |
+| `crypto-monitor` | 1160 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 1150 |
+| `crypto-momentum` | 1160 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `BTC/USD` | 115 |
-| `ETH/USD` | 115 |
-| `SOL/USD` | 115 |
-| `AVAX/USD` | 115 |
-| `LINK/USD` | 115 |
-| `DOT/USD` | 115 |
-| `LTC/USD` | 115 |
-| `BCH/USD` | 115 |
-| `UNI/USD` | 115 |
-| `AAVE/USD` | 115 |
+| `BTC/USD` | 116 |
+| `ETH/USD` | 116 |
+| `SOL/USD` | 116 |
+| `AVAX/USD` | 116 |
+| `LINK/USD` | 116 |
+| `DOT/USD` | 116 |
+| `LTC/USD` | 116 |
+| `BCH/USD` | 116 |
+| `UNI/USD` | 116 |
+| `AAVE/USD` | 116 |
 
 ## Confidence-score distribution
 
@@ -48,13 +48,13 @@
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1150 |
+| `null` | 1160 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1150 |
+| `UNKNOWN` | 1160 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `35924011913` |
+| Last workflow run id | `36063219412` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
