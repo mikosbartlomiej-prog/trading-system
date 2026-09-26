@@ -1,15 +1,15 @@
 # Replay entry-candidate discovery (v3.26.0)
 
-**Generated:** `2026-09-25T09:45:26.035459+00:00`
-**As of:** `2026-09-25T09:45:25.975432+00:00`
-**Git HEAD:** `f6210f3de286a092e5a20deb93b8910ed4d453cd`
+**Generated:** `2026-09-26T09:29:51.409288+00:00`
+**As of:** `2026-09-26T09:29:51.339340+00:00`
+**Git HEAD:** `a87ac45521a5b41129b233b36f4780b95002cd9e`
 **Lookback days:** `7`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
 ## Totals
 
 - Candidates (replay): **0**
-- Near-misses (within 15%): **1**
+- Near-misses (within 15%): **4**
 - Threshold crosses: **0**
 - (strategy, symbol) pairs scanned: **10**
 
@@ -35,9 +35,9 @@ These symbols have no cached bars at `learning-loop/backfill_snapshots`. Replay 
 | `crypto-momentum` | `ETH/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 | `crypto-oversold-bounce` | `ETH/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 | `crypto-momentum` | `SOL/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
-| `crypto-oversold-bounce` | `SOL/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
-| `crypto-momentum` | `LTC/USD` | crypto | 5000 | 7 | 0 | 1 | 0 | OK |
-| `crypto-oversold-bounce` | `LTC/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `SOL/USD` | crypto | 5000 | 7 | 0 | 2 | 0 | OK |
+| `crypto-momentum` | `LTC/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
+| `crypto-oversold-bounce` | `LTC/USD` | crypto | 5000 | 7 | 0 | 2 | 0 | OK |
 | `crypto-momentum` | `AVAX/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 | `crypto-oversold-bounce` | `AVAX/USD` | crypto | 5000 | 7 | 0 | 0 | 0 | OK |
 
