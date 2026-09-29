@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-09-28T11:09:17.786162+00:00`
-**As of:** `2026-09-28T11:09:17.713659+00:00`
-**Git HEAD:** `926f3f11ae8ab448492e543b3b94e1a25bec895c`
+**Generated:** `2026-09-29T10:51:14.181599+00:00`
+**As of:** `2026-09-29T10:51:14.107820+00:00`
+**Git HEAD:** `04107ea9d990ff8d35cc0c5cfd9e0002db825c1d`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1341` |
+| Total ledger rows today | `1320` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,44 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1341 |
+| `crypto-monitor` | 1320 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-momentum` | 1341 |
+| `crypto-momentum` | 1320 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `LINK/USD` | 145 |
-| `BTC/USD` | 133 |
-| `ETH/USD` | 133 |
-| `AVAX/USD` | 133 |
-| `DOT/USD` | 133 |
-| `LTC/USD` | 133 |
-| `BCH/USD` | 133 |
-| `UNI/USD` | 133 |
-| `AAVE/USD` | 133 |
+| `BTC/USD` | 132 |
+| `ETH/USD` | 132 |
 | `SOL/USD` | 132 |
+| `AVAX/USD` | 132 |
+| `LINK/USD` | 132 |
+| `DOT/USD` | 132 |
+| `LTC/USD` | 132 |
+| `BCH/USD` | 132 |
+| `UNI/USD` | 132 |
+| `AAVE/USD` | 132 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 12 |
+| `0.0-0.5` | 0 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1329 |
+| `null` | 1320 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1341 |
+| `UNKNOWN` | 1320 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -76,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `36193280868` |
+| Last workflow run id | `36477487756` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |

@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-09-28T11:09:54.998428+00:00",
+  "generated_at_iso": "2026-09-29T10:51:56.063818+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 18719,
+  "row_count": 18672,
   "strategies": [
     {
       "actual_signals_fired": 310,
@@ -36,31 +36,31 @@
       "threshold_realism": "TOO_LOOSE"
     },
     {
-      "actual_signals_fired": 24,
-      "evaluations": 18409,
+      "actual_signals_fired": 46,
+      "evaluations": 18362,
       "metrics": [
         {
-          "actual_hits": 6911,
-          "avg_distance_to_trigger": -6.71546,
+          "actual_hits": 7156,
+          "avg_distance_to_trigger": -6.38883,
           "direction": "above",
-          "hit_rate": 0.3754,
+          "hit_rate": 0.3897,
           "metric_name": "rsi",
-          "near_miss_rate": 0.111,
-          "near_misses": 2044,
-          "sample_size": 18409,
+          "near_miss_rate": 0.1164,
+          "near_misses": 2138,
+          "sample_size": 18362,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 5623,
-          "avg_distance_to_trigger": -2.431153,
+          "actual_hits": 5761,
+          "avg_distance_to_trigger": -2.429778,
           "direction": "between",
-          "hit_rate": 0.3054,
+          "hit_rate": 0.3137,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0347,
-          "near_misses": 639,
-          "sample_size": 18409,
+          "near_miss_rate": 0.0332,
+          "near_misses": 609,
+          "sample_size": 18362,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 2683,
+      "near_misses": 2747,
       "recommendation": "KEEP",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
