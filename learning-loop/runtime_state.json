@@ -1,23 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-<<<<<<< Updated upstream
-    "options-exit-monitor": {
+    "options-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-09-30T13:56:20.232370+00:00",
-=======
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-09-30T13:56:30.603666+00:00",
->>>>>>> Stashed changes
+      "last_seen_iso": "2026-09-30T14:01:34.687360+00:00",
       "last_status": "ok",
       "pings_today": 1
-    },
-    "twitter-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-09-30T13:56:48.921631+00:00",
-      "last_status": "ok",
-      "pings_today": 2
     }
   }
 }
