@@ -1,23 +1,23 @@
 {
   "components": [
     {
-      "age_seconds": 209.333468,
+      "age_seconds": 319.862753,
       "component": "crypto-monitor",
-      "last_seen_iso": "2026-09-30T10:36:22.860067+00:00",
+      "last_seen_iso": "2026-10-01T11:01:47.568976+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 1410.505379,
+      "age_seconds": 314.027925,
       "component": "defense-monitor",
-      "last_seen_iso": "2026-09-30T10:16:21.688156+00:00",
+      "last_seen_iso": "2026-10-01T11:01:53.403804+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 196.920815,
+      "age_seconds": 307.038455,
       "component": "twitter-monitor",
-      "last_seen_iso": "2026-09-30T10:36:35.272720+00:00",
+      "last_seen_iso": "2026-10-01T11:02:00.393274+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
@@ -29,17 +29,17 @@
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": null,
+      "age_seconds": 324.156415,
       "component": "geo-monitor",
-      "last_seen_iso": null,
-      "status": "MISSING",
+      "last_seen_iso": "2026-10-01T11:01:43.275314+00:00",
+      "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 447.833892,
+      "age_seconds": null,
       "component": "politician-monitor",
-      "last_seen_iso": "2026-09-30T10:32:24.359643+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
@@ -50,9 +50,9 @@
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 203.588875,
+      "age_seconds": 326.266815,
       "component": "options-exit-monitor",
-      "last_seen_iso": "2026-09-30T10:36:28.604660+00:00",
+      "last_seen_iso": "2026-10-01T11:01:41.164914+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
@@ -64,9 +64,9 @@
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 207.206127,
+      "age_seconds": 945.473997,
       "component": "exit-monitor",
-      "last_seen_iso": "2026-09-30T10:36:24.987408+00:00",
+      "last_seen_iso": "2026-10-01T10:51:21.957732+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
@@ -79,7 +79,7 @@
     }
   ],
   "exit_code": 0,
-  "generated_at_iso": "2026-09-30T10:39:52.193535+00:00",
+  "generated_at_iso": "2026-10-01T11:07:07.431729+00:00",
   "market_open": false,
   "market_reason": "pre_market",
   "summary": {
