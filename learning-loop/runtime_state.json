@@ -1,6 +1,12 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
+    "defense-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-01T10:11:23.977053+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-01T10:06:17.021200+00:00",
