@@ -7,6 +7,12 @@
       "last_status": "ok",
       "pings_today": 2
     },
+    "defense-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-01T13:01:55.944723+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-01T12:56:20.411227+00:00",
