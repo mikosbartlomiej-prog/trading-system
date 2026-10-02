@@ -24,6 +24,12 @@
       "last_seen_iso": "2026-10-02T01:01:25.826580+00:00",
       "last_status": "ok",
       "pings_today": 3
+    },
+    "twitter-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-02T01:06:24.547946+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
