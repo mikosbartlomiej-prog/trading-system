@@ -6,6 +6,12 @@
       "last_seen_iso": "2026-10-02T20:06:15.035138+00:00",
       "last_status": "ok",
       "pings_today": 1
+    },
+    "options-exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-02T20:11:21.628643+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   }
 }
