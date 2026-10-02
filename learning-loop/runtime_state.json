@@ -1,63 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-10-02T13:01:38.420098+00:00",
-      "last_status": "ok",
-      "pings_today": 2
-    },
     "defense-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-10-02T13:01:34.872781+00:00",
-=======
-      "last_seen_iso": "2026-10-02T13:02:16.534545+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 2
-    },
-    "defense-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-02T13:02:15.676319+00:00",
+      "last_seen_iso": "2026-10-02T13:06:22.105932+00:00",
       "last_status": "ok",
       "pings_today": 1
-    },
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-02T13:01:30.466802+00:00",
-      "last_status": "ok",
-      "pings_today": 2
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-02T13:01:31.766315+00:00",
-      "last_status": "ok",
-      "pings_today": 2
     }
-  },
-  "intraday_governor": {
-    "account_unavailable": false,
-    "alerts_sent": {},
-    "block_new_entries": false,
-    "current_equity": 90504.88,
-    "current_intraday_pnl": 0.0,
-    "current_intraday_pnl_pct": 0.0,
-    "date": "2026-10-02",
-    "giveback_pct_of_peak": 0.0,
-    "giveback_usd": 0.0,
-    "intraday_peak_equity": 90504.88,
-    "intraday_peak_pnl": 0.0,
-    "intraday_peak_pnl_pct": 0.0,
-    "last_action": "noop",
-    "last_update_at": "2026-10-02T13:01:30.462136+00:00",
-    "max_gross_target": 1.5,
-    "options_first_reduction": false,
-    "peak_at": "2026-10-02T12:51:15.238723+00:00",
-    "pnl_state": "FLAT",
-    "profit_floor_usd": 0.0,
-    "session_start_equity": 90504.88,
-    "state_entered_at": "2026-10-02T12:51:15.238723+00:00",
-    "top_giveback_symbols": []
   }
 }
