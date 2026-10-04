@@ -1,12 +1,12 @@
 {
-  "as_of": "2026-10-03T10:00:43.154368+00:00",
-  "generated_at_iso": "2026-10-03T10:00:43.288826+00:00",
-  "git_head": "9848b712d9e47c2456bb58e99c946c5347409da8",
+  "as_of": "2026-10-04T10:43:31.160855+00:00",
+  "generated_at_iso": "2026-10-04T10:43:31.272085+00:00",
+  "git_head": "1960123b0d042c33a50d5efc593e7199705ea10c",
   "inputs_available": {
     "confidence_precalibration_readiness": true,
     "monitor_emission_status": true,
     "near_miss_dir_present": true,
-    "near_miss_rows_7d": 25564,
+    "near_miss_rows_7d": 27320,
     "replay_discovery": true,
     "shadow_candidate_queue": true,
     "strategy_threshold_reality": true,
@@ -35,7 +35,7 @@
       {
         "actual_signals_fired": 46,
         "advisory_note": "operator-review only; auto-threshold changes refused",
-        "near_miss_rate": 0.1454,
+        "near_miss_rate": 0.1548,
         "recommendation": "KEEP",
         "replay_candidates": 0,
         "strategy_id": "crypto-momentum",
@@ -81,61 +81,61 @@
     "B_top_symbols_by_near_misses": [
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 3368,
+        "near_miss_count": 3265,
         "symbol": "UNI/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2871,
+        "near_miss_count": 3238,
         "symbol": "ETH/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2781,
+        "near_miss_count": 3158,
         "symbol": "BTC/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2694,
+        "near_miss_count": 2858,
         "symbol": "AVAX/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2594,
+        "near_miss_count": 2725,
         "symbol": "DOT/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2576,
+        "near_miss_count": 2672,
         "symbol": "LINK/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2318,
-        "symbol": "AAVE/USD",
-        "top_strategy": "crypto-momentum"
-      },
-      {
-        "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2265,
+        "near_miss_count": 2547,
         "symbol": "BCH/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 2051,
+        "near_miss_count": 2447,
+        "symbol": "AAVE/USD",
+        "top_strategy": "crypto-momentum"
+      },
+      {
+        "advisory_note": "observational; never auto-promotes",
+        "near_miss_count": 2317,
         "symbol": "SOL/USD",
         "top_strategy": "crypto-momentum"
       },
       {
         "advisory_note": "observational; never auto-promotes",
-        "near_miss_count": 1614,
+        "near_miss_count": 1661,
         "symbol": "LTC/USD",
         "top_strategy": "crypto-momentum"
       }
@@ -231,7 +231,7 @@
     ],
     "G_data_collection_plan": {
       "global": {
-        "near_miss_rows": 25564,
+        "near_miss_rows": 27320,
         "outcomes_available": false,
         "production_positive_rows": 104,
         "replay_positive_rows": 0,
@@ -250,9 +250,9 @@
         {
           "actual_signals_fired": 46,
           "advisory_note": "estimate based on current evaluation rate; NEVER auto-acts",
-          "current_sample": 18090,
+          "current_sample": 18130,
           "eta_band": "30d_full_review",
-          "evaluations": 18090,
+          "evaluations": 18130,
           "strategy_id": "crypto-momentum"
         },
         {

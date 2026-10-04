@@ -1,8 +1,8 @@
 # Opportunity Density Plan (v3.27.0)
 
-**Generated:** `2026-10-03T10:00:43.288826+00:00`
-**As of:** `2026-10-03T10:00:43.154368+00:00`
-**Git HEAD:** `9848b712d9e47c2456bb58e99c946c5347409da8`
+**Generated:** `2026-10-04T10:43:31.272085+00:00`
+**As of:** `2026-10-04T10:43:31.160855+00:00`
+**Git HEAD:** `1960123b0d042c33a50d5efc593e7199705ea10c`
 
 > Reporter NEVER recommends auto-lowering thresholds. NEVER recommends
 > enabling broker / paper / live. NEVER promises profit. NEVER counts
@@ -13,7 +13,7 @@
 
 | Strategy | Replay candidates | Near-miss rate | Signals fired | Recommendation | Realism |
 |---|---|---|---|---|---|
-| `crypto-momentum` | 0 | 0.1454 | 46 | `KEEP` | `REALISTIC` |
+| `crypto-momentum` | 0 | 0.1548 | 46 | `KEEP` | `REALISTIC` |
 | `crypto-oversold-bounce` | 0 | 0.0 | 162 | `REPLAY_TEST_VARIANT` | `TOO_LOOSE` |
 | `momentum-long` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
 | `momentum-long-loose` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
@@ -23,16 +23,16 @@
 
 | Symbol | Near-miss count | Top strategy |
 |---|---|---|
-| `UNI/USD` | 3368 | `crypto-momentum` |
-| `ETH/USD` | 2871 | `crypto-momentum` |
-| `BTC/USD` | 2781 | `crypto-momentum` |
-| `AVAX/USD` | 2694 | `crypto-momentum` |
-| `DOT/USD` | 2594 | `crypto-momentum` |
-| `LINK/USD` | 2576 | `crypto-momentum` |
-| `AAVE/USD` | 2318 | `crypto-momentum` |
-| `BCH/USD` | 2265 | `crypto-momentum` |
-| `SOL/USD` | 2051 | `crypto-momentum` |
-| `LTC/USD` | 1614 | `crypto-momentum` |
+| `UNI/USD` | 3265 | `crypto-momentum` |
+| `ETH/USD` | 3238 | `crypto-momentum` |
+| `BTC/USD` | 3158 | `crypto-momentum` |
+| `AVAX/USD` | 2858 | `crypto-momentum` |
+| `DOT/USD` | 2725 | `crypto-momentum` |
+| `LINK/USD` | 2672 | `crypto-momentum` |
+| `BCH/USD` | 2547 | `crypto-momentum` |
+| `AAVE/USD` | 2447 | `crypto-momentum` |
+| `SOL/USD` | 2317 | `crypto-momentum` |
+| `LTC/USD` | 1661 | `crypto-momentum` |
 
 ## C. Variants worth observing (top 5 from quarantine)
 
@@ -88,7 +88,7 @@
 
 - Production positive rows: `104`
 - Replay positive rows: `0`
-- Near-miss rows (7d): `25564`
+- Near-miss rows (7d): `27320`
 - Outcomes available: `False`
 - Verdict (v3.27): `NOT_READY_NO_OUTCOMES`
 
@@ -97,7 +97,7 @@
 | Strategy | Sample | ETA band | Evaluations | Signals fired |
 |---|---|---|---|---|
 | `crypto-oversold-bounce` | 162 | `30d_full_review` | 162 | 162 |
-| `crypto-momentum` | 18090 | `30d_full_review` | 18090 | 46 |
+| `crypto-momentum` | 18130 | `30d_full_review` | 18130 | 46 |
 | `momentum-long` | 0 | `7d_minimum` | 0 | 0 |
 | `momentum-long-loose` | 0 | `7d_minimum` | 0 | 0 |
 | `overbought-short` | 0 | `7d_minimum` | 0 | 0 |
