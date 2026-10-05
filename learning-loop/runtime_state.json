@@ -18,6 +18,12 @@
       "last_seen_iso": "2026-10-05T18:36:21.187786+00:00",
       "last_status": "ok",
       "pings_today": 1
+    },
+    "options-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-05T18:41:33.883144+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
