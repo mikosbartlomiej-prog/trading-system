@@ -1,51 +1,11 @@
 {
   "_last_writer": "heartbeat",
   "heartbeat": {
-    "crypto-monitor": {
-      "last_message": "scanned 11 coins",
-<<<<<<< Updated upstream
-      "last_seen_iso": "2026-10-06T17:31:40.990002+00:00",
-=======
-      "last_seen_iso": "2026-10-06T17:32:18.740184+00:00",
->>>>>>> Stashed changes
-      "last_status": "ok",
-      "pings_today": 4
-    },
-    "defense-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-06T17:31:52.176420+00:00",
-      "last_status": "ok",
-      "pings_today": 3
-    },
-    "doj-monitor": {
-      "last_message": "emitted=0",
-      "last_seen_iso": "2026-10-06T17:32:29.226993+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-10-06T17:11:14.887994+00:00",
+      "last_seen_iso": "2026-10-06T17:36:18.752357+00:00",
       "last_status": "ok",
       "pings_today": 1
-    },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-06T17:31:44.508078+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
-    "options-exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-06T17:31:34.046263+00:00",
-      "last_status": "ok",
-      "pings_today": 3
-    },
-    "options-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-06T17:31:35.009195+00:00",
-      "last_status": "ok",
-      "pings_today": 3
     }
   },
   "intraday_governor": {
@@ -62,14 +22,14 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "transition_NEW_DAY_to_FLAT",
-    "last_update_at": "2026-10-06T17:11:14.880820+00:00",
+    "last_update_at": "2026-10-06T17:36:18.744399+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
-    "peak_at": "2026-10-06T17:11:14.880820+00:00",
+    "peak_at": "2026-10-06T17:36:18.744399+00:00",
     "pnl_state": "FLAT",
     "profit_floor_usd": 0.0,
     "session_start_equity": 90504.88,
-    "state_entered_at": "2026-10-06T17:11:14.880820+00:00",
+    "state_entered_at": "2026-10-06T17:36:18.744399+00:00",
     "top_giveback_symbols": []
   }
 }
