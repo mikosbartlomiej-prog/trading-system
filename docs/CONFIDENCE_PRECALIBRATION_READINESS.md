@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-10-06T11:26:43.808493+00:00`
-**As of:** `2026-10-06T11:26:43.471963+00:00`
-**Git HEAD:** `294759eaf5f78f4f2e4cb03347dc53aecd7dfbe8`
+**Generated:** `2026-10-07T11:17:28.830538+00:00`
+**As of:** `2026-10-07T11:17:28.537993+00:00`
+**Git HEAD:** `b54b4771582a7f5460f032c8be7937ca4fd7228a`
 **Window:** last 7 days
-**Rows total:** `18255`
+**Rows total:** `18235`
 **Positive rows (non-null confidence_score):** `145`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `145` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `24231` | NO (advisory) |
+| NEAR_MISS_ROWS           | `24158` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -37,11 +37,11 @@
 | Stat | Value |
 |---|---|
 | `count` | 145 |
-| `min` | 0.2163 |
-| `median` | 0.5407 |
+| `min` | 0.1081 |
+| `median` | 0.5256 |
 | `p95` | 0.6316 |
 | `max` | 0.6392 |
-| `mean` | 0.4864 |
+| `mean` | 0.4504 |
 
 ## Builder completeness
 
@@ -60,7 +60,7 @@ Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 145 | 0.4 | 1.0 | 0.8603 | 0.040621 | yes |
+| `anomaly_penalty` | 145 | 0.2 | 1.0 | 0.7941 | 0.07092 | yes |
 | `data_quality` | 145 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `edge_evidence` | 145 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `event_risk_penalty` | 145 | 1.0 | 1.0 | 1.0 | 0.0 | no |
@@ -71,7 +71,7 @@ Default-only components: `9`
 | `risk_state` | 145 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `signal_strength` | 145 | 0.6 | 1.0 | 0.68 | 0.015778 | yes |
 | `slippage_risk` | 145 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 145 | 0.0 | 0.5455 | 0.4301 | 0.010589 | yes |
+| `system_health` | 145 | 0.0 | 0.6364 | 0.437 | 0.010709 | yes |
 
 ## Confidence decision counts
 

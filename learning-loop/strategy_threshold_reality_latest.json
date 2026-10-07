@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-10-06T11:26:44.090193+00:00",
+  "generated_at_iso": "2026-10-07T11:17:29.175983+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 18147,
+  "row_count": 18127,
   "strategies": [
     {
       "actual_signals_fired": 290,
@@ -18,7 +18,7 @@
       "metrics": [
         {
           "actual_hits": 290,
-          "avg_distance_to_trigger": -4.753103,
+          "avg_distance_to_trigger": -4.786207,
           "direction": "below",
           "hit_rate": 1.0,
           "metric_name": "rsi",
@@ -37,30 +37,30 @@
     },
     {
       "actual_signals_fired": 0,
-      "evaluations": 17857,
+      "evaluations": 17837,
       "metrics": [
         {
-          "actual_hits": 4109,
-          "avg_distance_to_trigger": -10.809604,
+          "actual_hits": 4893,
+          "avg_distance_to_trigger": -9.417004,
           "direction": "above",
-          "hit_rate": 0.2301,
+          "hit_rate": 0.2743,
           "metric_name": "rsi",
-          "near_miss_rate": 0.1471,
-          "near_misses": 2626,
-          "sample_size": 17857,
+          "near_miss_rate": 0.1477,
+          "near_misses": 2635,
+          "sample_size": 17837,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 2044,
-          "avg_distance_to_trigger": -3.484119,
+          "actual_hits": 2097,
+          "avg_distance_to_trigger": -3.411093,
           "direction": "between",
-          "hit_rate": 0.1145,
+          "hit_rate": 0.1176,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0192,
-          "near_misses": 343,
-          "sample_size": 17857,
+          "near_miss_rate": 0.0233,
+          "near_misses": 416,
+          "sample_size": 17837,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 2969,
+      "near_misses": 3051,
       "recommendation": "SHADOW_VARIANT_REVIEW",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"

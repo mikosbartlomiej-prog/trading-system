@@ -1,72 +1,72 @@
 {
   "components": [
     {
-      "age_seconds": 295.421932,
+      "age_seconds": null,
       "component": "crypto-monitor",
-      "last_seen_iso": "2026-10-06T11:21:21.684926+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 292.435697,
+      "age_seconds": null,
       "component": "defense-monitor",
-      "last_seen_iso": "2026-10-06T11:21:24.671161+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 286.308088,
+      "age_seconds": null,
       "component": "twitter-monitor",
-      "last_seen_iso": "2026-10-06T11:21:30.798770+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 33747.889249,
+      "age_seconds": null,
       "component": "reddit-monitor",
-      "last_seen_iso": "2026-10-06T02:03:49.217609+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 595.708595,
+      "age_seconds": null,
       "component": "geo-monitor",
-      "last_seen_iso": "2026-10-06T11:16:21.398263+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 5012.71046,
+      "age_seconds": null,
       "component": "politician-monitor",
-      "last_seen_iso": "2026-10-06T10:02:44.396398+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 51357.478324,
+      "age_seconds": null,
       "component": "options-monitor",
-      "last_seen_iso": "2026-10-05T21:10:19.628534+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 301.522809,
+      "age_seconds": null,
       "component": "options-exit-monitor",
-      "last_seen_iso": "2026-10-06T11:21:15.584049+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 56366.885633,
+      "age_seconds": null,
       "component": "price-monitor",
-      "last_seen_iso": "2026-10-05T19:46:50.221225+00:00",
-      "status": "FRESH",
+      "last_seen_iso": null,
+      "status": "MISSING",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 604.297686,
+      "age_seconds": 335.921099,
       "component": "exit-monitor",
-      "last_seen_iso": "2026-10-06T11:16:12.809172+00:00",
+      "last_seen_iso": "2026-10-07T11:11:12.889316+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
@@ -79,12 +79,12 @@
     }
   ],
   "exit_code": 0,
-  "generated_at_iso": "2026-10-06T11:26:17.106858+00:00",
+  "generated_at_iso": "2026-10-07T11:16:48.810415+00:00",
   "market_open": false,
   "market_reason": "pre_market",
   "summary": {
-    "fresh": 10,
-    "missing": 1,
+    "fresh": 1,
+    "missing": 10,
     "stale": 0,
     "total": 11
   },
