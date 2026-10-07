@@ -24,6 +24,12 @@
       "last_seen_iso": "2026-10-07T18:47:37.130387+00:00",
       "last_status": "ok",
       "pings_today": 2
+    },
+    "reddit-monitor": {
+      "last_message": "sent=0",
+      "last_seen_iso": "2026-10-07T18:49:18.518621+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   },
   "intraday_governor": {
