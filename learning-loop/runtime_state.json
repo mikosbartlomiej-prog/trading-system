@@ -3,9 +3,13 @@
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-10-07T07:46:14.834953+00:00",
+      "last_seen_iso": "2026-10-07T07:51:16.533724+00:00",
       "last_status": "ok",
+<<<<<<< Updated upstream
       "pings_today": 2
+=======
+      "pings_today": 3
+>>>>>>> Stashed changes
     },
     "defense-monitor": {
       "last_message": "",
@@ -13,12 +17,15 @@
       "last_status": "ok",
       "pings_today": 1
     },
+<<<<<<< Updated upstream
     "doj-monitor": {
       "last_message": "emitted=0",
       "last_seen_iso": "2026-10-07T07:50:53.558930+00:00",
       "last_status": "ok",
       "pings_today": 1
     },
+=======
+>>>>>>> Stashed changes
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-07T07:46:11.858247+00:00",
