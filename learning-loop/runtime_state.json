@@ -7,15 +7,21 @@
       "last_status": "ok",
       "pings_today": 2
     },
-    "exit-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-07T07:46:11.858247+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
     "defense-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-07T07:46:40.888701+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "doj-monitor": {
+      "last_message": "emitted=0",
+      "last_seen_iso": "2026-10-07T07:50:53.558930+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
+    "exit-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-07T07:46:11.858247+00:00",
       "last_status": "ok",
       "pings_today": 1
     },
