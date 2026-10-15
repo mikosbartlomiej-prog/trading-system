@@ -7,23 +7,23 @@
       "last_status": "ok",
       "pings_today": 2
     },
-    "geo-monitor": {
-      "last_message": "",
-      "last_seen_iso": "2026-10-15T23:16:24.464138+00:00",
-      "last_status": "ok",
-      "pings_today": 1
-    },
     "exit-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-15T23:16:28.116794+00:00",
       "last_status": "ok",
       "pings_today": 1
     },
+    "geo-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-15T23:16:24.464138+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "options-exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-10-15T23:16:56.442443+00:00",
+      "last_seen_iso": "2026-10-15T23:21:13.370883+00:00",
       "last_status": "ok",
-      "pings_today": 4
+      "pings_today": 5
     },
     "options-monitor": {
       "last_message": "",
