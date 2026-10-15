@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-10-14T09:40:38.798529+00:00",
+  "generated_at_iso": "2026-10-15T09:19:13.321521+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,7 +10,7 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 17950,
+  "row_count": 17910,
   "strategies": [
     {
       "actual_signals_fired": 338,
@@ -37,30 +37,30 @@
     },
     {
       "actual_signals_fired": 0,
-      "evaluations": 17612,
+      "evaluations": 17572,
       "metrics": [
         {
-          "actual_hits": 3237,
-          "avg_distance_to_trigger": -14.236611,
+          "actual_hits": 4651,
+          "avg_distance_to_trigger": -12.080862,
           "direction": "above",
-          "hit_rate": 0.1838,
+          "hit_rate": 0.2647,
           "metric_name": "rsi",
-          "near_miss_rate": 0.1189,
-          "near_misses": 2094,
-          "sample_size": 17612,
+          "near_miss_rate": 0.1101,
+          "near_misses": 1934,
+          "sample_size": 17572,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 1160,
-          "avg_distance_to_trigger": -4.236895,
+          "actual_hits": 1584,
+          "avg_distance_to_trigger": -4.024583,
           "direction": "between",
-          "hit_rate": 0.0659,
+          "hit_rate": 0.0901,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.0151,
-          "near_misses": 266,
-          "sample_size": 17612,
+          "near_miss_rate": 0.0178,
+          "near_misses": 313,
+          "sample_size": 17572,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 2360,
+      "near_misses": 2247,
       "recommendation": "SHADOW_VARIANT_REVIEW",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
