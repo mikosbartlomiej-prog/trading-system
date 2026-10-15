@@ -12,6 +12,12 @@
       "last_seen_iso": "2026-10-15T23:11:17.456365+00:00",
       "last_status": "ok",
       "pings_today": 2
+    },
+    "options-monitor": {
+      "last_message": "",
+      "last_seen_iso": "2026-10-15T23:13:58.081389+00:00",
+      "last_status": "ok",
+      "pings_today": 1
     }
   }
 }
