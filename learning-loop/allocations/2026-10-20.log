@@ -1,32 +1,42 @@
-[00:00:24 INFO] ============================================================
-[00:00:24 INFO] AccountAwareAllocator — daily plan 2026-10-20
-[00:00:24 INFO] ============================================================
-[00:00:24 INFO] ── Step 1: fetching account state ──
-[00:00:24 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
-[00:00:24 INFO] ── Step 2: fetching open positions ──
-[00:00:24 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
-[00:00:24 INFO]   PDT mode=OK  dt_remaining=3
-[00:00:24 INFO] ── Step 3: defensive mode check ──
-[00:00:24 INFO]   defensive_mode OFF → proceed with deployment
-[00:00:24 INFO] ── Step 4: regime detection ──
-[00:00:24 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
-[00:00:24 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
-[00:00:24 INFO] ── Step 5: scoring allowed universe ──
-[00:00:27 DBG ]     CVX      score=+0.340  bucket=inflation_energy
-[00:00:27 DBG ]     XOM      score=+0.327  bucket=inflation_energy
-[00:00:27 DBG ]     OXY      score=+0.326  bucket=inflation_energy
-[00:00:27 DBG ]     USO      score=+0.323  bucket=inflation_energy
-[00:00:27 DBG ]     XLE      score=+0.270  bucket=inflation_energy
-[00:00:27 INFO] ── Step 6: target weight construction ──
-[00:00:27 INFO]   reason: regime=NEUTRAL | primary_picks=0(0%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=70.00%
-[00:00:27 INFO]   target_invested_ratio_after_plan = 0.3000
-[00:00:27 DBG ]     SPY        target_weight=0.1000 ($9050.49)
-[00:00:27 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
-[00:00:27 DBG ]     GLD        target_weight=0.1000 ($9050.49)
-[00:00:27 INFO] ── Step 7: rebalance order generation ──
-[00:00:27 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:00:27 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:00:27 INFO]     GLD      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
-[00:00:27 INFO]   summary: 3 actionable + 0 hold; passed=3  failed=0
-[00:00:27 INFO] ── Step 8: plan complete ──
-[00:00:27 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
+[23:32:00 INFO] ============================================================
+[23:32:00 INFO] AccountAwareAllocator — daily plan 2026-10-20
+[23:32:00 INFO] ============================================================
+[23:32:00 INFO] ── Step 1: fetching account state ──
+[23:32:00 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[23:32:00 INFO] ── Step 2: fetching open positions ──
+[23:32:00 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[23:32:00 INFO]   PDT mode=OK  dt_remaining=3
+[23:32:00 INFO] ── Step 3: defensive mode check ──
+[23:32:00 INFO]   defensive_mode OFF → proceed with deployment
+[23:32:00 INFO] ── Step 4: regime detection ──
+[23:32:00 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[23:32:00 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[23:32:00 INFO] ── Step 5: scoring allowed universe ──
+[23:32:03 DBG ]     INTU     score=+0.577  bucket=software_quality
+[23:32:03 DBG ]     NOW      score=+0.432  bucket=software_quality
+[23:32:03 DBG ]     WDAY     score=+0.423  bucket=software_quality
+[23:32:03 DBG ]     USO      score=+0.384  bucket=inflation_energy
+[23:32:03 DBG ]     ADBE     score=+0.374  bucket=software_quality
+[23:32:03 INFO] ── Step 6: target weight construction ──
+[23:32:03 INFO]   reason: regime=NEUTRAL | primary_picks=5(73%) | fallback=['SPY', 'QQQ', 'GLD']
+[23:32:03 INFO]   target_invested_ratio_after_plan = 1.0000
+[23:32:03 DBG ]     INTU       target_weight=0.1375 ($12444.42)
+[23:32:03 DBG ]     NOW        target_weight=0.1375 ($12444.42)
+[23:32:03 DBG ]     WDAY       target_weight=0.1375 ($12444.42)
+[23:32:03 DBG ]     USO        target_weight=0.1800 ($16290.88)
+[23:32:03 DBG ]     ADBE       target_weight=0.1375 ($12444.42)
+[23:32:03 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[23:32:03 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[23:32:03 DBG ]     GLD        target_weight=0.0700 ($6335.34)
+[23:32:03 INFO] ── Step 7: rebalance order generation ──
+[23:32:03 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[23:32:03 INFO]     INTU     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[23:32:03 INFO]     NOW      BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[23:32:03 INFO]     WDAY     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[23:32:03 INFO]     ADBE     BUY     current=$     0.00 target=$ 12444.42 delta=$+12444.42  -- new position at target 13.8%
+[23:32:03 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[23:32:03 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[23:32:03 INFO]     GLD      BUY     current=$     0.00 target=$  6335.34 delta=$ +6335.34  -- new position at target 7.0%
+[23:32:03 INFO]   summary: 8 actionable + 0 hold; passed=8  failed=0
+[23:32:03 INFO] ── Step 8: plan complete ──
+[23:32:03 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
