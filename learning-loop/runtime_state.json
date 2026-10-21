@@ -55,6 +55,12 @@
       "last_status": "ok",
       "pings_today": 48
     },
+    "reddit-monitor": {
+      "last_message": "sent=0",
+      "last_seen_iso": "2026-10-21T17:57:34.960911+00:00",
+      "last_status": "ok",
+      "pings_today": 1
+    },
     "twitter-monitor": {
       "last_message": "",
       "last_seen_iso": "2026-10-21T17:56:12.757150+00:00",
