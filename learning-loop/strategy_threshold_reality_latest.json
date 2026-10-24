@@ -1,5 +1,5 @@
 {
-  "generated_at_iso": "2026-10-23T09:30:38.791813+00:00",
+  "generated_at_iso": "2026-10-24T09:01:55.869334+00:00",
   "hard_safety": {
     "auto_threshold_change": false,
     "broker_call_made": false,
@@ -10,21 +10,21 @@
     "min_eval_recommendation": 50,
     "near_miss_pct": 0.1
   },
-  "row_count": 18185,
+  "row_count": 18056,
   "strategies": [
     {
-      "actual_signals_fired": 334,
-      "evaluations": 334,
+      "actual_signals_fired": 166,
+      "evaluations": 166,
       "metrics": [
         {
-          "actual_hits": 334,
-          "avg_distance_to_trigger": -3.179641,
+          "actual_hits": 166,
+          "avg_distance_to_trigger": -2.254217,
           "direction": "below",
           "hit_rate": 1.0,
           "metric_name": "rsi",
           "near_miss_rate": 0.0,
           "near_misses": 0,
-          "sample_size": 334,
+          "sample_size": 166,
           "strategy_id": "crypto-oversold-bounce",
           "threshold": 30.0,
           "threshold_realism": "TOO_LOOSE"
@@ -37,30 +37,30 @@
     },
     {
       "actual_signals_fired": 24,
-      "evaluations": 17851,
+      "evaluations": 17890,
       "metrics": [
         {
-          "actual_hits": 3990,
-          "avg_distance_to_trigger": -12.741309,
+          "actual_hits": 5010,
+          "avg_distance_to_trigger": -9.741179,
           "direction": "above",
-          "hit_rate": 0.2235,
+          "hit_rate": 0.28,
           "metric_name": "rsi",
-          "near_miss_rate": 0.0942,
-          "near_misses": 1681,
-          "sample_size": 17851,
+          "near_miss_rate": 0.122,
+          "near_misses": 2182,
+          "sample_size": 17890,
           "strategy_id": "crypto-momentum",
           "threshold": 60.0,
           "threshold_realism": "REALISTIC"
         },
         {
-          "actual_hits": 2020,
-          "avg_distance_to_trigger": -3.734332,
+          "actual_hits": 2624,
+          "avg_distance_to_trigger": -3.177878,
           "direction": "between",
-          "hit_rate": 0.1132,
+          "hit_rate": 0.1467,
           "metric_name": "move_24h_pct",
-          "near_miss_rate": 0.012,
-          "near_misses": 214,
-          "sample_size": 17851,
+          "near_miss_rate": 0.0233,
+          "near_misses": 416,
+          "sample_size": 17890,
           "strategy_id": "crypto-momentum",
           "threshold": [
             3.0,
@@ -69,7 +69,7 @@
           "threshold_realism": "REALISTIC"
         }
       ],
-      "near_misses": 1895,
+      "near_misses": 2598,
       "recommendation": "KEEP",
       "strategy_id": "crypto-momentum",
       "threshold_realism": "REALISTIC"
