@@ -9,9 +9,9 @@
     },
     "exit-monitor": {
       "last_message": "",
-      "last_seen_iso": "2026-10-25T17:25:46.419290+00:00",
+      "last_seen_iso": "2026-10-25T17:30:46.035025+00:00",
       "last_status": "ok",
-      "pings_today": 2
+      "pings_today": 3
     },
     "politician-monitor": {
       "last_message": "emitted=0",
@@ -34,7 +34,7 @@
     "intraday_peak_pnl": 0.0,
     "intraday_peak_pnl_pct": 0.0,
     "last_action": "noop",
-    "last_update_at": "2026-10-25T17:25:46.414526+00:00",
+    "last_update_at": "2026-10-25T17:30:46.031590+00:00",
     "max_gross_target": 1.5,
     "options_first_reduction": false,
     "peak_at": "2026-10-25T17:20:49.757756+00:00",
