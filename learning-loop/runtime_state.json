@@ -1,11 +1,11 @@
 {
-  "_last_writer": "llm-availability",
+  "_last_writer": "heartbeat",
   "heartbeat": {
     "crypto-monitor": {
       "last_message": "scanned 11 coins",
-      "last_seen_iso": "2026-10-25T22:50:51.545055+00:00",
+      "last_seen_iso": "2026-10-25T22:55:47.626661+00:00",
       "last_status": "ok",
-      "pings_today": 67
+      "pings_today": 68
     },
     "defense-monitor": {
       "last_message": "",
