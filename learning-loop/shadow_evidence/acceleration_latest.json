@@ -13,7 +13,7 @@
   "counters_snapshot": {
     "completed_shadow_outcomes_count": 0,
     "first_real_market_record_seen": false,
-    "halt_path_records_count": 317,
+    "halt_path_records_count": 319,
     "latest_workflow_verdict": "AUTOMATED_PIPELINE_HEALTHY_NO_REAL_DATA_YET",
     "real_market_opportunities_count": 0,
     "scaffold_no_market_data_records_count": 5
@@ -28,7 +28,7 @@
     "PLACE_BROKER_ORDERS",
     "ENABLE_BROKER_PAPER"
   ],
-  "generated_at_iso": "2026-10-24T00:16:52.852782+00:00",
+  "generated_at_iso": "2026-10-27T01:08:15.404565+00:00",
   "rationale": [
     "no dominant blocker \u2014 pipeline appears to be making progress"
   ],
@@ -52,6 +52,6 @@
     "LIVE_TRADING_UNSUPPORTED",
     "DETERMINISTIC_GATES_REMAIN_FINAL"
   ],
-  "successful_runs_observed": 297,
+  "successful_runs_observed": 299,
   "version": "v3.29.1"
 }
