@@ -1,7 +1,7 @@
 # Universe opportunity review (v3.26.0)
 
-**Generated:** `2026-10-30T11:00:37.489697+00:00`
-**As of:** `2026-10-30T11:00:37.215038+00:00`
+**Generated:** `2026-10-31T10:32:59.973587+00:00`
+**As of:** `2026-10-31T10:32:59.718375+00:00`
 **Window:** last 7 days
 **Universe size:** 13
 
@@ -27,11 +27,11 @@
 | `NOW` | us_equity | **REMOVE_LOW_QUALITY** | 0 | 0 | 0 | 0 | n/a | n/a | 0 ledger rows, 0 near-misses, 0 data failures; candidate for removal review |
 | `PANW` | us_equity | **REMOVE_LOW_QUALITY** | 0 | 0 | 0 | 0 | n/a | n/a | 0 ledger rows, 0 near-misses, 0 data failures; candidate for removal review |
 | `ORCL` | us_equity | **REMOVE_LOW_QUALITY** | 0 | 0 | 0 | 0 | n/a | n/a | 0 ledger rows, 0 near-misses, 0 data failures; candidate for removal review |
-| `BTC/USD` | crypto | **KEEP** | 1861 | 1861 | 2695 | 0 | n/a | n/a | rows=1861, near_misses=2695, candidates=1861 |
-| `ETH/USD` | crypto | **KEEP** | 1872 | 1872 | 2563 | 0 | n/a | n/a | rows=1872, near_misses=2563, candidates=1872 |
-| `SOL/USD` | crypto | **KEEP** | 1872 | 1872 | 3297 | 0 | n/a | n/a | rows=1872, near_misses=3297, candidates=1872 |
-| `LTC/USD` | crypto | **KEEP** | 1849 | 1849 | 2620 | 0 | n/a | n/a | rows=1849, near_misses=2620, candidates=1849 |
-| `AVAX/USD` | crypto | **KEEP** | 1872 | 1872 | 2763 | 0 | n/a | n/a | rows=1872, near_misses=2763, candidates=1872 |
+| `BTC/USD` | crypto | **KEEP** | 1846 | 1846 | 2685 | 0 | n/a | n/a | rows=1846, near_misses=2685, candidates=1846 |
+| `ETH/USD` | crypto | **KEEP** | 1857 | 1857 | 2574 | 0 | n/a | n/a | rows=1857, near_misses=2574, candidates=1857 |
+| `SOL/USD` | crypto | **KEEP** | 1857 | 1857 | 3238 | 0 | n/a | n/a | rows=1857, near_misses=3238, candidates=1857 |
+| `LTC/USD` | crypto | **KEEP** | 1834 | 1834 | 2765 | 0 | n/a | n/a | rows=1834, near_misses=2765, candidates=1834 |
+| `AVAX/USD` | crypto | **KEEP** | 1857 | 1857 | 2760 | 0 | n/a | n/a | rows=1857, near_misses=2760, candidates=1857 |
 
 ## Safety contract
 

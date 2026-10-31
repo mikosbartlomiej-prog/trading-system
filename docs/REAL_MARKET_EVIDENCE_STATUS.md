@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-10-30T10:59:48.384329+00:00`
-**As of:** `2026-10-30T10:59:48.299414+00:00`
-**Git HEAD:** `987f7726a4b9975af1f4807635f9b9c6ca1d7971`
+**Generated:** `2026-10-31T10:32:11.946721+00:00`
+**As of:** `2026-10-31T10:32:11.871287+00:00`
+**Git HEAD:** `b3234542aba06dde14d0e24711eb825bcdccaa5a`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1293` |
+| Total ledger rows today | `1250` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,46 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1293 |
+| `crypto-monitor` | 1250 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-breakdown` | 12 |
-| `crypto-momentum` | 1255 |
-| `crypto-oversold-bounce` | 26 |
+| `crypto-momentum` | 1250 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `LINK/USD` | 141 |
-| `BTC/USD` | 128 |
-| `ETH/USD` | 128 |
-| `SOL/USD` | 128 |
-| `AVAX/USD` | 128 |
-| `DOT/USD` | 128 |
-| `LTC/USD` | 128 |
-| `BCH/USD` | 128 |
-| `UNI/USD` | 128 |
-| `AAVE/USD` | 128 |
+| `BTC/USD` | 125 |
+| `ETH/USD` | 125 |
+| `SOL/USD` | 125 |
+| `AVAX/USD` | 125 |
+| `LINK/USD` | 125 |
+| `DOT/USD` | 125 |
+| `LTC/USD` | 125 |
+| `BCH/USD` | 125 |
+| `UNI/USD` | 125 |
+| `AAVE/USD` | 125 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 13 |
+| `0.0-0.5` | 0 |
 | `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1280 |
+| `null` | 1250 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1293 |
+| `UNKNOWN` | 1250 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -78,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `40973588301` |
+| Last workflow run id | `41142499762` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |
