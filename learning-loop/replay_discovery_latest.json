@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-10-31T10:32:56.119024+00:00",
-  "generated_at_iso": "2026-10-31T10:32:56.185523+00:00",
-  "git_head": "b3234542aba06dde14d0e24711eb825bcdccaa5a",
+  "as_of": "2026-11-01T11:27:14.364475+00:00",
+  "generated_at_iso": "2026-11-01T11:27:14.405599+00:00",
+  "git_head": "d36ba485e49d12a00332930bb0c2ffcf40cd6b1a",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -93,7 +93,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 0,
+      "near_misses": 2,
       "strategy": "crypto-momentum",
       "symbol": "LTC/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 0,
+    "near_misses": 2,
     "rows": 10,
     "threshold_crosses": 0
   },
