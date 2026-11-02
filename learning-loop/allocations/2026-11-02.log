@@ -1,0 +1,40 @@
+[00:00:54 INFO] ============================================================
+[00:00:54 INFO] AccountAwareAllocator — daily plan 2026-11-02
+[00:00:54 INFO] ============================================================
+[00:00:54 INFO] ── Step 1: fetching account state ──
+[00:00:54 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[00:00:54 INFO] ── Step 2: fetching open positions ──
+[00:00:54 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[00:00:54 INFO]   PDT mode=OK  dt_remaining=3
+[00:00:54 INFO] ── Step 3: defensive mode check ──
+[00:00:54 INFO]   defensive_mode OFF → proceed with deployment
+[00:00:54 INFO] ── Step 4: regime detection ──
+[00:00:54 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:00:54 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[00:00:54 INFO] ── Step 5: scoring allowed universe ──
+[00:00:55 DBG ]     XOM      score=+0.474  bucket=inflation_energy
+[00:00:55 DBG ]     INTU     score=+0.454  bucket=software_quality
+[00:00:55 DBG ]     CVX      score=+0.425  bucket=inflation_energy
+[00:00:55 DBG ]     TSLA     score=+0.416  bucket=ai_nasdaq_semis
+[00:00:55 DBG ]     USO      score=+0.415  bucket=inflation_energy
+[00:00:55 INFO] ── Step 6: target weight construction ──
+[00:00:55 INFO]   reason: regime=NEUTRAL | primary_picks=5(90%) | fallback=['SPY', 'QQQ']
+[00:00:55 INFO]   target_invested_ratio_after_plan = 1.0000
+[00:00:55 DBG ]     XOM        target_weight=0.1800 ($16290.88)
+[00:00:55 DBG ]     INTU       target_weight=0.1800 ($16290.88)
+[00:00:55 DBG ]     CVX        target_weight=0.1800 ($16290.88)
+[00:00:55 DBG ]     TSLA       target_weight=0.1800 ($16290.88)
+[00:00:55 DBG ]     USO        target_weight=0.1800 ($16290.88)
+[00:00:55 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[00:00:55 DBG ]     QQQ        target_weight=0.0000 ($0.00)
+[00:00:55 INFO] ── Step 7: rebalance order generation ──
+[00:00:55 INFO]     XOM      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:00:55 INFO]     INTU     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:00:55 INFO]     CVX      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:00:55 INFO]     TSLA     BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:00:55 INFO]     USO      BUY     current=$     0.00 target=$ 16290.88 delta=$+16290.88  -- new position at target 18.0%
+[00:00:55 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:00:55 INFO]     QQQ      HOLD    current=$     0.00 target=$     0.00 delta=$    +0.00  -- target $0 below min_order_value $100
+[00:00:55 INFO]   summary: 6 actionable + 1 hold; passed=6  failed=0
+[00:00:55 INFO] ── Step 8: plan complete ──
+[00:00:55 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
