@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-11-04T12:25:46.249091+00:00`
-**As of:** `2026-11-04T12:25:45.917324+00:00`
-**Git HEAD:** `12e298622786e92dbb3c27657a47f44e98dca990`
+**Generated:** `2026-11-05T12:40:30.054975+00:00`
+**As of:** `2026-11-05T12:40:29.775131+00:00`
+**Git HEAD:** `a456a22a55ac304f04db6218092dafad98dfe315`
 **Window:** last 7 days
-**Rows total:** `18466`
+**Rows total:** `18506`
 **Positive rows (non-null confidence_score):** `120`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `120` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `29116` | NO (advisory) |
+| NEAR_MISS_ROWS           | `28678` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -30,7 +30,7 @@
 
 **`NEEDS_COMPONENT_VARIANCE`**
 
-3/8 components show meaningful variance; need >= 4.
+2/8 components show meaningful variance; need >= 4.
 
 ## Confidence-score distribution
 
@@ -38,10 +38,10 @@
 |---|---|
 | `count` | 120 |
 | `min` | 0.1081 |
-| `median` | 0.301 |
+| `median` | 0.4596 |
 | `p95` | 0.5483 |
 | `max` | 0.5483 |
-| `mean` | 0.31 |
+| `mean` | 0.327 |
 
 ## Builder completeness
 
@@ -55,12 +55,12 @@
 ## Per-component variance
 
 Total components observed: `12`
-Varying components: `3`
-Default-only components: `9`
+Varying components: `2`
+Default-only components: `10`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 120 | 0.2 | 1.0 | 0.5746 | 0.10605 | yes |
+| `anomaly_penalty` | 120 | 0.2 | 1.0 | 0.5996 | 0.113004 | yes |
 | `data_quality` | 120 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `edge_evidence` | 120 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `event_risk_penalty` | 120 | 1.0 | 1.0 | 1.0 | 0.0 | no |
@@ -69,9 +69,9 @@ Default-only components: `9`
 | `recent_strategy_health` | 120 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `regime_alignment` | 120 | 0.7 | 0.7 | 0.7 | 0.0 | no |
 | `risk_state` | 120 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 120 | 0.34 | 0.6 | 0.574 | 0.006135 | yes |
+| `signal_strength` | 120 | 0.6 | 0.6 | 0.6 | 0.0 | no |
 | `slippage_risk` | 120 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 120 | 0.0 | 0.6364 | 0.4303 | 0.01427 | yes |
+| `system_health` | 120 | 0.0 | 0.6364 | 0.4311 | 0.014653 | yes |
 
 ## Confidence decision counts
 
