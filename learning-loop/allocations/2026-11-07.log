@@ -1,0 +1,32 @@
+[00:29:19 INFO] ============================================================
+[00:29:19 INFO] AccountAwareAllocator — daily plan 2026-11-07
+[00:29:19 INFO] ============================================================
+[00:29:19 INFO] ── Step 1: fetching account state ──
+[00:29:19 INFO]   equity=$  90504.88  cash=$ 316767.08  buying_power=$ 362019.52
+[00:29:19 INFO] ── Step 2: fetching open positions ──
+[00:29:19 INFO]   0 positions, invested_ratio=0.0000 (target=1.00, min=0.98)
+[00:29:19 INFO]   PDT mode=OK  dt_remaining=3
+[00:29:19 INFO] ── Step 3: defensive mode check ──
+[00:29:19 INFO]   defensive_mode OFF → proceed with deployment
+[00:29:19 INFO] ── Step 4: regime detection ──
+[00:29:19 INFO]   regime=NEUTRAL  source=auto  size_mult=0.70
+[00:29:19 INFO]     allowed_buckets=['ai_nasdaq_semis', 'software_quality', 'inflation_energy', 'crypto']
+[00:29:19 INFO] ── Step 5: scoring allowed universe ──
+[00:29:23 DBG ]     INTU     score=+0.282  bucket=software_quality
+[00:29:23 DBG ]     AMZN     score=+0.257  bucket=ai_nasdaq_semis
+[00:29:23 DBG ]     MSFT     score=+0.140  bucket=ai_nasdaq_semis
+[00:29:23 DBG ]     AAPL     score=+0.129  bucket=ai_nasdaq_semis
+[00:29:23 DBG ]     WDAY     score=+0.105  bucket=software_quality
+[00:29:23 INFO] ── Step 6: target weight construction ──
+[00:29:23 INFO]   reason: regime=NEUTRAL | primary_picks=0(0%) | fallback=['SPY', 'QQQ', 'GLD'] | unfilled=70.00%
+[00:29:23 INFO]   target_invested_ratio_after_plan = 0.3000
+[00:29:23 DBG ]     SPY        target_weight=0.1000 ($9050.49)
+[00:29:23 DBG ]     QQQ        target_weight=0.1000 ($9050.49)
+[00:29:23 DBG ]     GLD        target_weight=0.1000 ($9050.49)
+[00:29:23 INFO] ── Step 7: rebalance order generation ──
+[00:29:23 INFO]     SPY      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:29:23 INFO]     QQQ      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:29:23 INFO]     GLD      BUY     current=$     0.00 target=$  9050.49 delta=$ +9050.49  -- new position at target 10.0%
+[00:29:23 INFO]   summary: 3 actionable + 0 hold; passed=3  failed=0
+[00:29:23 INFO] ── Step 8: plan complete ──
+[00:29:23 INFO]   auto_execute=True  (flip config/capital_deployment.json::capital_deployment.auto_execute_rebalance to enable)
