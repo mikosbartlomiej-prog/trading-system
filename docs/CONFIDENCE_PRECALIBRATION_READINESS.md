@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-11-06T12:22:18.064033+00:00`
-**As of:** `2026-11-06T12:22:17.876637+00:00`
-**Git HEAD:** `e1af0d58d8c4caf39b1f23b6e234e5090fa77e56`
+**Generated:** `2026-11-07T11:16:36.034208+00:00`
+**As of:** `2026-11-07T11:16:35.783430+00:00`
+**Git HEAD:** `c0b0b5f9757f9f3319a32940158e93ab0ad1ed07`
 **Window:** last 7 days
-**Rows total:** `18564`
+**Rows total:** `18448`
 **Positive rows (non-null confidence_score):** `180`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `180` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `28064` | NO (advisory) |
+| NEAR_MISS_ROWS           | `28000` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -37,11 +37,11 @@
 | Stat | Value |
 |---|---|
 | `count` | 180 |
-| `min` | 0.1066 |
+| `min` | 0.1028 |
 | `median` | 0.4661 |
 | `p95` | 0.5483 |
 | `max` | 0.5483 |
-| `mean` | 0.3921 |
+| `mean` | 0.3918 |
 
 ## Builder completeness
 
@@ -69,9 +69,9 @@ Default-only components: `9`
 | `recent_strategy_health` | 180 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `regime_alignment` | 180 | 0.7 | 0.7 | 0.7 | 0.0 | no |
 | `risk_state` | 180 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 180 | 0.6 | 0.8 | 0.6133 | 0.002503 | yes |
+| `signal_strength` | 180 | 0.472 | 0.8 | 0.6048 | 0.003757 | yes |
 | `slippage_risk` | 180 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 180 | 0.0 | 0.7273 | 0.4379 | 0.010663 | yes |
+| `system_health` | 180 | 0.0 | 0.7273 | 0.4354 | 0.010249 | yes |
 
 ## Confidence decision counts
 
