@@ -1,23 +1,23 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-11-08T11:28:55.905365+00:00`
-**As of:** `2026-11-08T11:28:55.607968+00:00`
-**Git HEAD:** `59e06bd1939e6227339d425079e7f32d9488c896`
+**Generated:** `2026-11-09T13:14:18.397267+00:00`
+**As of:** `2026-11-09T13:14:18.179056+00:00`
+**Git HEAD:** `f4ad55cab0e2fff7f1ab613111b24dd77e2832c3`
 **Window:** last 7 days
-**Rows total:** `18450`
-**Positive rows (non-null confidence_score):** `143`
+**Rows total:** `18772`
+**Positive rows (non-null confidence_score):** `215`
 
 ## v3.27 Source separation
 
 **Verdict (v3.27):** `NOT_READY_NO_OUTCOMES`
 
-143 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle.
+215 production positive row(s) present BUT no outcomes attached yet. Calibration remains explicitly NOT recommended until outcomes are collected via the shadow-outcome cycle.
 
 | Source | Count | Counts as production? |
 |---|---|---|
-| PRODUCTION_POSITIVE_ROWS | `143` | yes |
+| PRODUCTION_POSITIVE_ROWS | `215` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `28019` | NO (advisory) |
+| NEAR_MISS_ROWS           | `28363` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -36,12 +36,12 @@
 
 | Stat | Value |
 |---|---|
-| `count` | 143 |
+| `count` | 215 |
 | `min` | 0.1028 |
-| `median` | 0.4661 |
-| `p95` | 0.5483 |
-| `max` | 0.5483 |
-| `mean` | 0.4024 |
+| `median` | 0.4725 |
+| `p95` | 0.6241 |
+| `max` | 0.6468 |
+| `mean` | 0.4039 |
 
 ## Builder completeness
 
@@ -60,18 +60,18 @@ Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 143 | 0.2 | 1.0 | 0.7322 | 0.103711 | yes |
-| `data_quality` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `edge_evidence` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `event_risk_penalty` | 143 | 1.0 | 1.0 | 1.0 | 0.0 | no |
-| `liquidity_quality` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `paper_sample_size_score` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `recent_strategy_health` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `regime_alignment` | 143 | 0.7 | 0.7 | 0.7 | 0.0 | no |
-| `risk_state` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 143 | 0.472 | 0.8 | 0.606 | 0.004728 | yes |
-| `slippage_risk` | 143 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 143 | 0.0 | 0.7273 | 0.4304 | 0.011402 | yes |
+| `anomaly_penalty` | 215 | 0.2 | 1.0 | 0.706 | 0.120851 | yes |
+| `data_quality` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `edge_evidence` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `event_risk_penalty` | 215 | 1.0 | 1.0 | 1.0 | 0.0 | no |
+| `liquidity_quality` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `paper_sample_size_score` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `recent_strategy_health` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `regime_alignment` | 215 | 0.7 | 0.7 | 0.7 | 0.0 | no |
+| `risk_state` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `signal_strength` | 215 | 0.472 | 1.0 | 0.6915 | 0.016814 | yes |
+| `slippage_risk` | 215 | 0.5 | 0.5 | 0.5 | 0.0 | no |
+| `system_health` | 215 | 0.2727 | 0.7273 | 0.4558 | 0.004285 | yes |
 
 ## Confidence decision counts
 
