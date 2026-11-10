@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-11-09T13:14:18.179056+00:00",
+  "as_of": "2026-11-10T12:54:20.172421+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -11,10 +11,10 @@
     "per_component": {
       "anomaly_penalty": {
         "max": 1.0,
-        "mean": 0.706,
+        "mean": 0.6698,
         "min": 0.2,
         "samples": 215,
-        "variance": 0.120851,
+        "variance": 0.132727,
         "varying": true
       },
       "data_quality": {
@@ -99,10 +99,10 @@
       },
       "system_health": {
         "max": 0.7273,
-        "mean": 0.4558,
+        "mean": 0.455,
         "min": 0.2727,
         "samples": 215,
-        "variance": 0.004285,
+        "variance": 0.004209,
         "varying": true
       }
     },
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-11-09T13:14:18.397267+00:00",
-  "git_head": "f4ad55cab0e2fff7f1ab613111b24dd77e2832c3",
+  "generated_at_iso": "2026-11-10T12:54:20.420279+00:00",
+  "git_head": "cb9ddec0b656ff24f8b3a74e11ea4e28abdceca2",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 215,
-  "rows_total": 18772,
+  "rows_total": 18732,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -135,14 +135,14 @@
   "score_summary": {
     "count": 215,
     "max": 0.6468,
-    "mean": 0.4039,
+    "mean": 0.3839,
     "median": 0.4725,
     "min": 0.1028,
     "p95": 0.6241
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 28363,
+    "near_miss_rows": 28227,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 215,
