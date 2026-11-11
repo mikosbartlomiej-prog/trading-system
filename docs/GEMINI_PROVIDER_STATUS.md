@@ -3,7 +3,7 @@
 - **Smoke status:** `GEMINI_SMOKE_FAILED`
 - **Selected model:** `gemini-flash-latest`
 - **Configured model:** `gemini-flash-latest`
-- **Discovered models count:** 42
+- **Discovered models count:** 43
 - **Failure category:** `None`
 - **Failure HTTP:** None
 - **Safe to schedule:** false
