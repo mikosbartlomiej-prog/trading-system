@@ -1,34 +1,26 @@
 ========================================================================
-# Daily Operational Brief — 2026-11-12
+# Daily Operational Brief — 2026-11-13
 ========================================================================
 
-## TOP BANNER: YELLOW
+## TOP BANNER: GREEN
 
-**ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_POSITION_RECONCILIATION**
+**ALLOCATOR_ALLOWED — deterministic gates green**
 
-Active blockers: position_recon_stale_s=12858450.171976. No orders will be placed.
-
-_The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
+No deterministic blocker is gating the allocator. TRADING_EXECUTION_ON remains false; review LLM advisory (advisory-only) before any operator-driven change.
 
 ## Master verdict
 
-- Decision: `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
+- Decision: `ALLOCATOR_ALLOWED` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
 - Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
-- Reason: `position_recon_stale_s=12858450` [source: `system_activation_gate.reason`]
+- Reason: `all_gates_clear` [source: `system_activation_gate.reason`]
 
 ## Top blockers
 
-- `position_recon_stale_s=12858450.171976`
-
-_Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
+- (No deterministic blocker found.)
 
 ## What changed since yesterday
 
 - No prior brief sidecar found on disk. First brief or history not persisted — nothing to diff against.
-
-## What operator must do
-
-1. Re-run the position reconciliation reporter and verify Alpaca side reflects the same positions.
 
 ## Equity reconciliation
 
