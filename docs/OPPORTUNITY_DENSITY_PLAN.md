@@ -1,8 +1,8 @@
 # Opportunity Density Plan (v3.27.0)
 
-**Generated:** `2026-11-13T12:30:34.259784+00:00`
-**As of:** `2026-11-13T12:30:34.141824+00:00`
-**Git HEAD:** `ff8369ffd1b11e6ccc3a30cf39788d0c72268a11`
+**Generated:** `2026-11-14T11:42:25.499385+00:00`
+**As of:** `2026-11-14T11:42:25.357505+00:00`
+**Git HEAD:** `59549b9148b29d877dbd035fefd07dcb2c36b578`
 
 > Reporter NEVER recommends auto-lowering thresholds. NEVER recommends
 > enabling broker / paper / live. NEVER promises profit. NEVER counts
@@ -13,8 +13,8 @@
 
 | Strategy | Replay candidates | Near-miss rate | Signals fired | Recommendation | Realism |
 |---|---|---|---|---|---|
-| `crypto-momentum` | 0 | 0.1227 | 24 | `KEEP` | `REALISTIC` |
-| `crypto-oversold-bounce` | 0 | 0.0 | 388 | `REPLAY_TEST_VARIANT` | `TOO_LOOSE` |
+| `crypto-momentum` | 0 | 0.1172 | 0 | `SHADOW_VARIANT_REVIEW` | `REALISTIC` |
+| `crypto-oversold-bounce` | 0 | 0.0 | 444 | `REPLAY_TEST_VARIANT` | `TOO_LOOSE` |
 | `momentum-long` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
 | `momentum-long-loose` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
 | `overbought-short` | 0 | 0.0 | 0 | `OBSERVE_MORE` | `INSUFFICIENT_DATA` |
@@ -23,16 +23,16 @@
 
 | Symbol | Near-miss count | Top strategy |
 |---|---|---|
-| `BTC/USD` | 3611 | `crypto-momentum` |
-| `AAVE/USD` | 3385 | `crypto-momentum` |
-| `LINK/USD` | 3000 | `crypto-momentum` |
-| `UNI/USD` | 2942 | `crypto-momentum` |
-| `SOL/USD` | 2893 | `crypto-momentum` |
-| `DOT/USD` | 2867 | `crypto-momentum` |
-| `ETH/USD` | 2802 | `crypto-momentum` |
-| `LTC/USD` | 2383 | `crypto-momentum` |
-| `BCH/USD` | 2276 | `crypto-momentum` |
-| `AVAX/USD` | 1952 | `crypto-momentum` |
+| `AAVE/USD` | 3719 | `crypto-momentum` |
+| `BTC/USD` | 3635 | `crypto-momentum` |
+| `SOL/USD` | 3032 | `crypto-momentum` |
+| `UNI/USD` | 2962 | `crypto-momentum` |
+| `LINK/USD` | 2945 | `crypto-momentum` |
+| `ETH/USD` | 2784 | `crypto-momentum` |
+| `DOT/USD` | 2609 | `crypto-momentum` |
+| `LTC/USD` | 2283 | `crypto-momentum` |
+| `BCH/USD` | 2133 | `crypto-momentum` |
+| `AVAX/USD` | 1855 | `crypto-momentum` |
 
 ## C. Variants worth observing (top 5 from quarantine)
 
@@ -77,7 +77,7 @@
 
 | Strategy | Metric | Threshold | Realism | Hit rate | Near-miss rate | Sample |
 |---|---|---|---|---|---|---|
-| `crypto-oversold-bounce` | `rsi` | 30.0 | `TOO_LOOSE` | 1.0 | 0.0 | 388 |
+| `crypto-oversold-bounce` | `rsi` | 30.0 | `TOO_LOOSE` | 1.0 | 0.0 | 444 |
 
 > This reporter NEVER auto-lowers any threshold — it surfaces the
 > three most-blocked thresholds and asks the operator to review them.
@@ -86,9 +86,9 @@
 
 **Global snapshot:**
 
-- Production positive rows: `206`
+- Production positive rows: `222`
 - Replay positive rows: `0`
-- Near-miss rows (7d): `28615`
+- Near-miss rows (7d): `28461`
 - Outcomes available: `False`
 - Verdict (v3.27): `NOT_READY_NO_OUTCOMES`
 
@@ -96,8 +96,8 @@
 
 | Strategy | Sample | ETA band | Evaluations | Signals fired |
 |---|---|---|---|---|
-| `crypto-oversold-bounce` | 388 | `30d_full_review` | 388 | 388 |
-| `crypto-momentum` | 18052 | `30d_full_review` | 18052 | 24 |
+| `crypto-oversold-bounce` | 444 | `30d_full_review` | 444 | 444 |
+| `crypto-momentum` | 17820 | `30d_full_review` | 17820 | 0 |
 | `momentum-long` | 0 | `7d_minimum` | 0 | 0 |
 | `momentum-long-loose` | 0 | `7d_minimum` | 0 | 0 |
 | `overbought-short` | 0 | `7d_minimum` | 0 | 0 |

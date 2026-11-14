@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-11-13T12:30:34.033178+00:00",
-  "generated_at_iso": "2026-11-13T12:30:34.086528+00:00",
-  "git_head": "ff8369ffd1b11e6ccc3a30cf39788d0c72268a11",
+  "as_of": "2026-11-14T11:42:25.226387+00:00",
+  "generated_at_iso": "2026-11-14T11:42:25.292865+00:00",
+  "git_head": "59549b9148b29d877dbd035fefd07dcb2c36b578",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -57,7 +57,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 2,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "ETH/USD",
       "threshold_crosses": 0
@@ -129,7 +129,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 0,
+      "near_misses": 1,
       "strategy": "crypto-oversold-bounce",
       "symbol": "AVAX/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 2,
+    "near_misses": 1,
     "rows": 10,
     "threshold_crosses": 0
   },
