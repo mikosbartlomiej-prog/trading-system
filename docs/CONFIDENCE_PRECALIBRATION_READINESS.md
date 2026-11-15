@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-11-14T11:42:24.759789+00:00`
-**As of:** `2026-11-14T11:42:24.468107+00:00`
-**Git HEAD:** `59549b9148b29d877dbd035fefd07dcb2c36b578`
+**Generated:** `2026-11-15T12:10:02.711834+00:00`
+**As of:** `2026-11-15T12:10:02.492205+00:00`
+**Git HEAD:** `799f366bd8e826bc4aa22cb399bf76a535d11bd9`
 **Window:** last 7 days
-**Rows total:** `18482`
+**Rows total:** `18562`
 **Positive rows (non-null confidence_score):** `222`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `222` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `28461` | NO (advisory) |
+| NEAR_MISS_ROWS           | `28107` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -38,10 +38,10 @@
 |---|---|
 | `count` | 222 |
 | `min` | 0.1081 |
-| `median` | 0.4789 |
-| `p95` | 0.6231 |
-| `max` | 0.6468 |
-| `mean` | 0.3596 |
+| `median` | 0.236 |
+| `p95` | 0.6155 |
+| `max` | 0.6316 |
+| `mean` | 0.3389 |
 
 ## Builder completeness
 
@@ -60,7 +60,7 @@ Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 222 | 0.2 | 1.0 | 0.6137 | 0.132944 | yes |
+| `anomaly_penalty` | 222 | 0.2 | 1.0 | 0.5869 | 0.114195 | yes |
 | `data_quality` | 222 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `edge_evidence` | 222 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `event_risk_penalty` | 222 | 1.0 | 1.0 | 1.0 | 0.0 | no |
@@ -69,9 +69,9 @@ Default-only components: `9`
 | `recent_strategy_health` | 222 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `regime_alignment` | 222 | 0.7 | 0.7 | 0.7 | 0.0 | no |
 | `risk_state` | 222 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 222 | 0.6 | 1.0 | 0.7477 | 0.012099 | yes |
+| `signal_strength` | 222 | 0.58 | 1.0 | 0.725 | 0.013998 | yes |
 | `slippage_risk` | 222 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 222 | 0.3636 | 0.7273 | 0.4771 | 0.006409 | yes |
+| `system_health` | 222 | 0.2727 | 0.7273 | 0.475 | 0.005487 | yes |
 
 ## Confidence decision counts
 
