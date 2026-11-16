@@ -3540,3 +3540,5 @@
 - 2026-11-16 · rsi-alert [oversold]: BTC/USD RSI=24.7 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 - 2026-11-16 · rsi-alert [oversold]: ETH/USD RSI=27.1 ≤ 30 — deep oversold. Statistically high bounce probability. crypto-momentum / momentum-long should watch for entry.
 
+- 2026-11-16 · WEEKLY RETRO: LLM unavailable — fallback report only
+
