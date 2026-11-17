@@ -1,6 +1,6 @@
 # SYSTEM ACTIVATION STATUS
 
-_Generated at:_ `2026-11-16T13:38:27.590562+00:00`
+_Generated at:_ `2026-11-17T13:45:39.640320+00:00`
 
 ## Top-level flags
 
@@ -22,14 +22,14 @@ _Generated at:_ `2026-11-16T13:38:27.590562+00:00`
 | `OPERATOR_WORK_REMAINING` | `False` |
 | `SECRET_WORK_REMAINING` | `True` |
 | `MARKET_DATA_WORK_REMAINING` | `True` |
-| `OPERATOR_ACTION_REASON` | position_recon_stale_s=13203615.603837 |
+| `OPERATOR_ACTION_REASON` | position_recon_stale_s=13290448.474721 |
 
 ## Next operator actions
 
 1. Re-run the position reconciliation reporter and verify Alpaca side reflects the same positions.
 
 **Master gate decision:** `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION`  
-**Active blockers:** `position_recon_stale_s=13203615.603837`  
+**Active blockers:** `position_recon_stale_s=13290448.474721`  
 **LLM advisory status:** `unavailable`
 
 ## Subsystems
@@ -40,8 +40,8 @@ _Generated at:_ `2026-11-16T13:38:27.590562+00:00`
 | Safe mode | `AUTO` | `INACTIVE` | yes | — | auto on incident triggers; never auto-cleared |
 | Safe mode consistency checker | `ENFORCED` | `CONSISTENT` | yes | — | blocks allocator on audit-vs-runtime mismatch |
 | Equity reconciliation | `FRESH` | `EQUITY_GAP_OK` | yes | — | blocks allocator if unresolved, schema-invalid, or stale |
-| Allocator gate | `ENFORCED` | `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION` | yes | position_recon_stale_s=13203615.603837 | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
-| Position reconciliation | `FRESH` | `STALE_AGE_S=13203615` | yes | position_recon_stale | informational outside market hours |
+| Allocator gate | `ENFORCED` | `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION` | yes | position_recon_stale_s=13290448.474721 | fail-closed default UNKNOWN_BLOCK_FAIL_CLOSED |
+| Position reconciliation | `FRESH` | `STALE_AGE_S=13290448` | yes | position_recon_stale | informational outside market hours |
 | Kill switch | `DISARMED` | `DISARMED` | yes | — | informational |
 | Discovery reporters | `READ_ONLY_ON` | `MISSING` | no | — | never places orders |
 | Trigger watchlist | `READ_ONLY_ON` | `READ_ONLY_ON` | yes | — | never places orders |

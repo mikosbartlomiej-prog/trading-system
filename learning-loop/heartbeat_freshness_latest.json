@@ -1,72 +1,72 @@
 {
   "components": [
     {
-      "age_seconds": 124.665639,
+      "age_seconds": 212.981212,
       "component": "crypto-monitor",
-      "last_seen_iso": "2026-11-16T13:01:36.591313+00:00",
+      "last_seen_iso": "2026-11-17T13:41:33.880172+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 427.315843,
+      "age_seconds": 216.890895,
       "component": "defense-monitor",
-      "last_seen_iso": "2026-11-16T12:56:33.941109+00:00",
+      "last_seen_iso": "2026-11-17T13:41:29.970489+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 408.677649,
+      "age_seconds": 204.969625,
       "component": "twitter-monitor",
-      "last_seen_iso": "2026-11-16T12:56:52.579303+00:00",
+      "last_seen_iso": "2026-11-17T13:41:41.891759+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": null,
+      "age_seconds": 33933.521397,
       "component": "reddit-monitor",
-      "last_seen_iso": null,
-      "status": "MISSING",
+      "last_seen_iso": "2026-11-17T04:19:33.339987+00:00",
+      "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 125.313901,
+      "age_seconds": 1722.28097,
       "component": "geo-monitor",
-      "last_seen_iso": "2026-11-16T13:01:35.943051+00:00",
+      "last_seen_iso": "2026-11-17T13:16:24.580414+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": null,
+      "age_seconds": 749.346425,
       "component": "politician-monitor",
-      "last_seen_iso": null,
-      "status": "MISSING",
+      "last_seen_iso": "2026-11-17T13:32:37.514959+00:00",
+      "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 128.627592,
+      "age_seconds": 491.905256,
       "component": "options-monitor",
-      "last_seen_iso": "2026-11-16T13:01:32.629360+00:00",
+      "last_seen_iso": "2026-11-17T13:36:54.956128+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 435.110524,
+      "age_seconds": 208.682344,
       "component": "options-exit-monitor",
-      "last_seen_iso": "2026-11-16T12:56:26.146428+00:00",
+      "last_seen_iso": "2026-11-17T13:41:38.179040+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": null,
+      "age_seconds": 510.106363,
       "component": "price-monitor",
-      "last_seen_iso": null,
-      "status": "MISSING",
+      "last_seen_iso": "2026-11-17T13:36:36.755021+00:00",
+      "status": "FRESH",
       "threshold_seconds": 86400
     },
     {
-      "age_seconds": 127.851232,
+      "age_seconds": 211.59825,
       "component": "exit-monitor",
-      "last_seen_iso": "2026-11-16T13:01:33.405720+00:00",
+      "last_seen_iso": "2026-11-17T13:41:35.263134+00:00",
       "status": "FRESH",
       "threshold_seconds": 86400
     },
@@ -79,12 +79,12 @@
     }
   ],
   "exit_code": 0,
-  "generated_at_iso": "2026-11-16T13:03:41.256952+00:00",
+  "generated_at_iso": "2026-11-17T13:45:06.861384+00:00",
   "market_open": false,
   "market_reason": "pre_market",
   "summary": {
-    "fresh": 7,
-    "missing": 4,
+    "fresh": 10,
+    "missing": 1,
     "stale": 0,
     "total": 11
   },
