@@ -1,15 +1,15 @@
 # Real-Market Evidence Status (v3.23.0)
 
-**Generated:** `2026-11-17T13:45:07.450934+00:00`
-**As of:** `2026-11-17T13:45:07.387386+00:00`
-**Git HEAD:** `01bec03e7c92518aa215bb40d3f2c5d6ced30497`
+**Generated:** `2026-11-18T13:19:52.933340+00:00`
+**As of:** `2026-11-18T13:19:52.864451+00:00`
+**Git HEAD:** `a88c2e70566715ea34b4c9e1d5d74765ffbaf535`
 **Current blocker:** **`NO_REAL_MARKET_DATA`**
 
 ## Opportunities today
 
 | Metric | Value |
 |---|---|
-| Total ledger rows today | `1719` |
+| Total ledger rows today | `1560` |
 | Shadow-eligible today (risk_decision in (APPROVE,DETECTED) & confidence >= 0.50) | `0` |
 | Observation records today (DO NOT count toward unlock) | `0` |
 
@@ -17,46 +17,44 @@
 
 | Monitor | Count |
 |---|---|
-| `crypto-monitor` | 1719 |
+| `crypto-monitor` | 1560 |
 
 ## By strategy
 
 | Strategy | Count |
 |---|---|
-| `crypto-breakdown` | 119 |
-| `crypto-momentum` | 1462 |
-| `crypto-oversold-bounce` | 138 |
+| `crypto-momentum` | 1560 |
 
 ## By symbol (top 10)
 
 | Symbol | Count |
 |---|---|
-| `UNI/USD` | 188 |
-| `DOT/USD` | 187 |
-| `BTC/USD` | 177 |
-| `SOL/USD` | 177 |
-| `ETH/USD` | 165 |
-| `AVAX/USD` | 165 |
-| `LINK/USD` | 165 |
-| `LTC/USD` | 165 |
-| `BCH/USD` | 165 |
-| `AAVE/USD` | 165 |
+| `BTC/USD` | 156 |
+| `ETH/USD` | 156 |
+| `SOL/USD` | 156 |
+| `AVAX/USD` | 156 |
+| `LINK/USD` | 156 |
+| `DOT/USD` | 156 |
+| `LTC/USD` | 156 |
+| `BCH/USD` | 156 |
+| `UNI/USD` | 156 |
+| `AAVE/USD` | 156 |
 
 ## Confidence-score distribution
 
 | Bucket | Count |
 |---|---|
-| `0.0-0.5` | 46 |
-| `0.5-0.65` | 23 |
+| `0.0-0.5` | 0 |
+| `0.5-0.65` | 0 |
 | `0.65-0.80` | 0 |
 | `0.80+` | 0 |
-| `null` | 1650 |
+| `null` | 1560 |
 
 ## Gate-decision distribution
 
 | Decision | Count |
 |---|---|
-| `UNKNOWN` | 1719 |
+| `UNKNOWN` | 1560 |
 
 ## Data-failure signature (latest workflow_health diagnostic_token_counts)
 
@@ -78,7 +76,7 @@
 
 | Field | Value |
 |---|---|
-| Last workflow run id | `43975145675` |
+| Last workflow run id | `44184191887` |
 | Last workflow run conclusion | `success` |
 | Last collector status | `SHADOW_COLLECTION_SKIPPED_NO_MARKET_DATA` |
 | Secrets status | `SECRETS_AVAILABLE` |

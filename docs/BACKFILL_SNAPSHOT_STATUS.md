@@ -1,7 +1,7 @@
 # Backfill snapshot status (v3.27.0)
 
-**Generated:** `2026-11-17T13:45:15.559650+00:00`
-**Git HEAD:** `01bec03e7c92518aa215bb40d3f2c5d6ced30497`
+**Generated:** `2026-11-18T13:20:03.505644+00:00`
+**Git HEAD:** `a88c2e70566715ea34b4c9e1d5d74765ffbaf535`
 **Snapshot dir:** `learning-loop/backfill_snapshots`
 
 ## Status: `LEDGER_DERIVED_PARTIAL`
