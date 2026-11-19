@@ -5,35 +5,35 @@
       "priority": "P2"
     }
   ],
-  "as_of": "2026-11-18T13:19:53.151571+00:00",
+  "as_of": "2026-11-19T13:45:08.640748+00:00",
   "dominant_explanation": [
     {
-      "explanation": "218/18829 rows blocked at the confidence gate (BLOCK)",
+      "explanation": "215/18818 rows blocked at the confidence gate (BLOCK)",
       "factor": "confidence_decision=BLOCK",
-      "share_pct": 1.2
+      "share_pct": 1.1
     }
   ],
-  "generated_at_iso": "2026-11-18T13:19:53.389436+00:00",
-  "git_head": "a88c2e70566715ea34b4c9e1d5d74765ffbaf535",
+  "generated_at_iso": "2026-11-19T13:45:08.922946+00:00",
+  "git_head": "a2bd414bff2458fe6a1535b9ac12bcf1436aaf8a",
   "rows_by_confidence_decision": {
-    "ALERT_ONLY": 201,
-    "BLOCK": 218,
+    "ALERT_ONLY": 193,
+    "BLOCK": 215,
     "OBSERVE_ONLY_SKIP": 18410
   },
   "rows_by_data_failure_token": {},
   "rows_by_gate_blocker": {
-    "NO_BLOCKER": 18829
+    "NO_BLOCKER": 18818
   },
   "rows_by_monitor": {
-    "crypto-monitor": 18829
+    "crypto-monitor": 18818
   },
   "rows_by_risk_decision": {
-    "UNKNOWN": 18829
+    "UNKNOWN": 18818
   },
   "rows_by_strategy": {
     "crypto-breakdown": 409,
-    "crypto-momentum": 17606,
-    "crypto-oversold-bounce": 814
+    "crypto-momentum": 17617,
+    "crypto-oversold-bounce": 792
   },
   "safety": {
     "allow_broker_paper": false,
@@ -42,7 +42,7 @@
     "modifies_state_json": false
   },
   "shadow_eligibility_distribution": {
-    "risk_blocked": 18829
+    "risk_blocked": 18818
   },
   "shadow_eligible_count": 0,
   "standing_markers": [
@@ -56,7 +56,7 @@
   ],
   "top_blocker_per_monitor": {
     "crypto-monitor": {
-      "count": 18829,
+      "count": 18818,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     }
@@ -68,17 +68,17 @@
       "top_blocker": "NO_BLOCKER"
     },
     "crypto-momentum": {
-      "count": 17606,
+      "count": 17617,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     },
     "crypto-oversold-bounce": {
-      "count": 814,
+      "count": 792,
       "share_pct": 100.0,
       "top_blocker": "NO_BLOCKER"
     }
   },
-  "total_rows": 18829,
+  "total_rows": 18818,
   "version": "v3.24.0",
   "window_days": 7
 }
