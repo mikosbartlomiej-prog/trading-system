@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-11-20T13:27:58.044586+00:00",
+  "as_of": "2026-11-21T12:56:27.909938+00:00",
   "completeness_summary": {
     "count": 0,
     "mean": null,
@@ -11,10 +11,10 @@
     "per_component": {
       "anomaly_penalty": {
         "max": 1.0,
-        "mean": 0.6869,
+        "mean": 0.6937,
         "min": 0.2,
         "samples": 351,
-        "variance": 0.108099,
+        "variance": 0.105489,
         "varying": true
       },
       "data_quality": {
@@ -83,10 +83,10 @@
       },
       "signal_strength": {
         "max": 1.0,
-        "mean": 0.7401,
-        "min": 0.58,
+        "mean": 0.7407,
+        "min": 0.6,
         "samples": 351,
-        "variance": 0.019085,
+        "variance": 0.018878,
         "varying": true
       },
       "slippage_risk": {
@@ -99,10 +99,10 @@
       },
       "system_health": {
         "max": 0.7273,
-        "mean": 0.468,
+        "mean": 0.4675,
         "min": 0.2727,
         "samples": 351,
-        "variance": 0.005485,
+        "variance": 0.005499,
         "varying": true
       }
     },
@@ -110,15 +110,15 @@
     "varying_components": 3
   },
   "decision_counts": {},
-  "generated_at_iso": "2026-11-20T13:27:58.302346+00:00",
-  "git_head": "c9a19b634b3dc95b075f62a0ed9d705e5d53f63d",
+  "generated_at_iso": "2026-11-21T12:56:28.227303+00:00",
+  "git_head": "c9ef13f820f53d36c078b8edadbcf2406921708e",
   "params": {
     "min_positive_rows": 30,
     "min_varying_components": 4,
     "variance_epsilon": 1e-09
   },
   "positive_rows": 351,
-  "rows_total": 18751,
+  "rows_total": 18641,
   "safety": {
     "allow_broker_paper": false,
     "auto_adjusts_thresholds": false,
@@ -135,14 +135,14 @@
   "score_summary": {
     "count": 351,
     "max": 0.6468,
-    "mean": 0.4014,
+    "mean": 0.4052,
     "median": 0.495,
     "min": 0.1081,
     "p95": 0.6316
   },
   "source_separation": {
     "fixture_only_rows": 0,
-    "near_miss_rows": 24217,
+    "near_miss_rows": 24395,
     "note": "Calibration is NEVER recommended without outcomes. Replay / near-miss / fixture rows NEVER count as production positives.",
     "outcomes_available": false,
     "production_positive_rows": 351,

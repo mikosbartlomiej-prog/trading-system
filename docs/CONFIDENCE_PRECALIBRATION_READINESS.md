@@ -1,10 +1,10 @@
 # Confidence Pre-Calibration Readiness (v3.27.0)
 
-**Generated:** `2026-11-20T13:27:58.302346+00:00`
-**As of:** `2026-11-20T13:27:58.044586+00:00`
-**Git HEAD:** `c9a19b634b3dc95b075f62a0ed9d705e5d53f63d`
+**Generated:** `2026-11-21T12:56:28.227303+00:00`
+**As of:** `2026-11-21T12:56:27.909938+00:00`
+**Git HEAD:** `c9ef13f820f53d36c078b8edadbcf2406921708e`
 **Window:** last 7 days
-**Rows total:** `18751`
+**Rows total:** `18641`
 **Positive rows (non-null confidence_score):** `351`
 
 ## v3.27 Source separation
@@ -17,7 +17,7 @@
 |---|---|---|
 | PRODUCTION_POSITIVE_ROWS | `351` | yes |
 | REPLAY_POSITIVE_ROWS     | `0` | NO (review-only) |
-| NEAR_MISS_ROWS           | `24217` | NO (advisory) |
+| NEAR_MISS_ROWS           | `24395` | NO (advisory) |
 | FIXTURE_ONLY_ROWS        | `0` | NO (test artefacts) |
 | OUTCOMES_AVAILABLE       | `False` | gate for calibration |
 
@@ -41,7 +41,7 @@
 | `median` | 0.495 |
 | `p95` | 0.6316 |
 | `max` | 0.6468 |
-| `mean` | 0.4014 |
+| `mean` | 0.4052 |
 
 ## Builder completeness
 
@@ -60,7 +60,7 @@ Default-only components: `9`
 
 | Component | Samples | Min | Max | Mean | Variance | Varying |
 |---|---|---|---|---|---|---|
-| `anomaly_penalty` | 351 | 0.2 | 1.0 | 0.6869 | 0.108099 | yes |
+| `anomaly_penalty` | 351 | 0.2 | 1.0 | 0.6937 | 0.105489 | yes |
 | `data_quality` | 351 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `edge_evidence` | 351 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `event_risk_penalty` | 351 | 1.0 | 1.0 | 1.0 | 0.0 | no |
@@ -69,9 +69,9 @@ Default-only components: `9`
 | `recent_strategy_health` | 351 | 0.5 | 0.5 | 0.5 | 0.0 | no |
 | `regime_alignment` | 351 | 0.7 | 0.7 | 0.7 | 0.0 | no |
 | `risk_state` | 351 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `signal_strength` | 351 | 0.58 | 1.0 | 0.7401 | 0.019085 | yes |
+| `signal_strength` | 351 | 0.6 | 1.0 | 0.7407 | 0.018878 | yes |
 | `slippage_risk` | 351 | 0.5 | 0.5 | 0.5 | 0.0 | no |
-| `system_health` | 351 | 0.2727 | 0.7273 | 0.468 | 0.005485 | yes |
+| `system_health` | 351 | 0.2727 | 0.7273 | 0.4675 | 0.005499 | yes |
 
 ## Confidence decision counts
 
