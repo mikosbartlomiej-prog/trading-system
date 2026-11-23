@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-11-22T12:47:56.215822+00:00",
-  "generated_at_iso": "2026-11-22T12:47:56.258629+00:00",
-  "git_head": "6efecfc18f3d23331121dbcfd66d41c10ed15d9f",
+  "as_of": "2026-11-23T15:11:56.894520+00:00",
+  "generated_at_iso": "2026-11-23T15:11:56.960625+00:00",
+  "git_head": "0634c2605cf06bb139553cba7b8954a287fdc2d2",
   "lookback_days": 7,
   "missing_snapshots": [
     "SPY",
@@ -57,7 +57,7 @@
       "candidate_records": [],
       "candidates": 0,
       "diagnostic": "OK",
-      "near_misses": 1,
+      "near_misses": 0,
       "strategy": "crypto-oversold-bounce",
       "symbol": "ETH/USD",
       "threshold_crosses": 0
@@ -165,7 +165,7 @@
   ],
   "totals": {
     "candidates": 0,
-    "near_misses": 1,
+    "near_misses": 0,
     "rows": 10,
     "threshold_crosses": 0
   },
