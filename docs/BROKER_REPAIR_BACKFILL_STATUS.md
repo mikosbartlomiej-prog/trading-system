@@ -1,6 +1,6 @@
 # Broker repair backfill status
 
-_Generated at 2026-11-23T15:11:57.505844+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
+_Generated at 2026-11-24T15:09:19.555407+00:00 by `scripts/backfill_broker_repair_from_incidents.py`._
 
 ## Summary
 

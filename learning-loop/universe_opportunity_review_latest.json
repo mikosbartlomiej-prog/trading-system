@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-11-23T15:12:00.835743+00:00",
+  "as_of": "2026-11-24T15:09:22.910217+00:00",
   "crypto_universe": [
     "BTC/USD",
     "ETH/USD",
@@ -17,7 +17,7 @@
     "PANW",
     "ORCL"
   ],
-  "generated_at_iso": "2026-11-23T15:12:01.073747+00:00",
+  "generated_at_iso": "2026-11-24T15:09:23.149960+00:00",
   "recommendation_distribution": {
     "KEEP": 5,
     "REMOVE_LOW_QUALITY": 8
@@ -136,7 +136,7 @@
       "symbol": "ORCL"
     },
     {
-      "advisory_reason": "rows=1892, near_misses=2665, candidates=1892",
+      "advisory_reason": "rows=1892, near_misses=2749, candidates=1892",
       "asset_class": "crypto",
       "candidates_7d": 1892,
       "data_failure_token_distribution": {},
@@ -144,41 +144,41 @@
       "latest_volume": null,
       "ledger_rows_7d": 1892,
       "modifies_live_universe": false,
-      "near_miss_count_7d": 2665,
+      "near_miss_count_7d": 2749,
       "recommendation": "KEEP",
       "spread_proxy_pct": null,
       "symbol": "BTC/USD"
     },
     {
-      "advisory_reason": "rows=1880, near_misses=2405, candidates=1880",
+      "advisory_reason": "rows=1868, near_misses=2499, candidates=1868",
       "asset_class": "crypto",
-      "candidates_7d": 1880,
+      "candidates_7d": 1868,
       "data_failure_token_distribution": {},
       "inferred_liquidity_proxy": null,
       "latest_volume": null,
-      "ledger_rows_7d": 1880,
+      "ledger_rows_7d": 1868,
       "modifies_live_universe": false,
-      "near_miss_count_7d": 2405,
+      "near_miss_count_7d": 2499,
       "recommendation": "KEEP",
       "spread_proxy_pct": null,
       "symbol": "ETH/USD"
     },
     {
-      "advisory_reason": "rows=1880, near_misses=2091, candidates=1880",
+      "advisory_reason": "rows=1868, near_misses=2203, candidates=1868",
       "asset_class": "crypto",
-      "candidates_7d": 1880,
+      "candidates_7d": 1868,
       "data_failure_token_distribution": {},
       "inferred_liquidity_proxy": null,
       "latest_volume": null,
-      "ledger_rows_7d": 1880,
+      "ledger_rows_7d": 1868,
       "modifies_live_universe": false,
-      "near_miss_count_7d": 2091,
+      "near_miss_count_7d": 2203,
       "recommendation": "KEEP",
       "spread_proxy_pct": null,
       "symbol": "SOL/USD"
     },
     {
-      "advisory_reason": "rows=1879, near_misses=2707, candidates=1879",
+      "advisory_reason": "rows=1879, near_misses=2779, candidates=1879",
       "asset_class": "crypto",
       "candidates_7d": 1879,
       "data_failure_token_distribution": {},
@@ -186,13 +186,13 @@
       "latest_volume": null,
       "ledger_rows_7d": 1879,
       "modifies_live_universe": false,
-      "near_miss_count_7d": 2707,
+      "near_miss_count_7d": 2779,
       "recommendation": "KEEP",
       "spread_proxy_pct": null,
       "symbol": "LTC/USD"
     },
     {
-      "advisory_reason": "rows=1880, near_misses=2956, candidates=1880",
+      "advisory_reason": "rows=1880, near_misses=3091, candidates=1880",
       "asset_class": "crypto",
       "candidates_7d": 1880,
       "data_failure_token_distribution": {},
@@ -200,7 +200,7 @@
       "latest_volume": null,
       "ledger_rows_7d": 1880,
       "modifies_live_universe": false,
-      "near_miss_count_7d": 2956,
+      "near_miss_count_7d": 3091,
       "recommendation": "KEEP",
       "spread_proxy_pct": null,
       "symbol": "AVAX/USD"
