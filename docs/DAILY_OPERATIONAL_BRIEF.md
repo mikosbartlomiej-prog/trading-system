@@ -1,12 +1,12 @@
 ========================================================================
-# Daily Operational Brief — 2026-11-26
+# Daily Operational Brief — 2026-11-27
 ========================================================================
 
 ## TOP BANNER: YELLOW
 
 **ALLOCATOR_BLOCKED — ALLOCATOR_BLOCKED_POSITION_RECONCILIATION**
 
-Active blockers: position_recon_stale_s=14073212.809488. No orders will be placed.
+Active blockers: position_recon_stale_s=14159113.841899. No orders will be placed.
 
 _The banner reflects the deterministic gate state only. LLM advisory output is informational and CANNOT override this verdict._
 
@@ -14,11 +14,11 @@ _The banner reflects the deterministic gate state only. LLM advisory output is i
 
 - Decision: `ALLOCATOR_BLOCKED_POSITION_RECONCILIATION` [source: `learning-loop/system_activation_status_latest.json::master_decision`]
 - Shadow simulator permitted: `True` [source: `system_activation_gate.shadow_only_allowed`]
-- Reason: `position_recon_stale_s=14073212` [source: `system_activation_gate.reason`]
+- Reason: `position_recon_stale_s=14159113` [source: `system_activation_gate.reason`]
 
 ## Top blockers
 
-- `position_recon_stale_s=14073212.809488`
+- `position_recon_stale_s=14159113.841899`
 
 _Blockers are pulled from deterministic artefacts. LLM advisory output CANNOT add or remove items from this list._
 
