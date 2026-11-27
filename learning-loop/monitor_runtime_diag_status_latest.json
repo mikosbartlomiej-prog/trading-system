@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T14:13:47.008512+00:00",
+  "generated_at": "2026-11-27T14:11:13.112698+00:00",
   "builder_version": "v3.25.0",
   "view_mode": "synthesized",
   "hard_safety": {
@@ -9,25 +9,25 @@
   },
   "aggregate": {
     "files_scanned": [
+      "learning-loop/opportunity_ledger/2026-11-27.jsonl",
       "learning-loop/opportunity_ledger/2026-11-26.jsonl",
       "learning-loop/opportunity_ledger/2026-11-25.jsonl",
       "learning-loop/opportunity_ledger/2026-11-24.jsonl",
       "learning-loop/opportunity_ledger/2026-11-23.jsonl",
       "learning-loop/opportunity_ledger/2026-11-22.jsonl",
-      "learning-loop/opportunity_ledger/2026-11-21.jsonl",
-      "learning-loop/opportunity_ledger/2026-11-20.jsonl"
+      "learning-loop/opportunity_ledger/2026-11-21.jsonl"
     ],
-    "total_rows": 18637,
-    "earliest_record": "2026-11-20T00:06:28.757994+00:00",
-    "latest_record": "2026-11-26T14:06:01.715068+00:00",
+    "total_rows": 18679,
+    "earliest_record": "2026-11-21T00:01:06.684221+00:00",
+    "latest_record": "2026-11-27T14:06:15.890367+00:00",
     "per_monitor": {
       "crypto-monitor": {
-        "RAN": 18637,
+        "RAN": 18679,
         "INPUT_EMPTY": 0,
-        "NO_SIGNAL": 18470,
-        "SIGNAL_DETECTED": 167,
-        "EMIT_ATTEMPTED": 18637,
-        "EMIT_SUCCESS": 18637,
+        "NO_SIGNAL": 18500,
+        "SIGNAL_DETECTED": 179,
+        "EMIT_ATTEMPTED": 18679,
+        "EMIT_SUCCESS": 18679,
         "EMIT_FAILED": 0,
         "UNKNOWN": 0
       }
